@@ -1,8 +1,13 @@
+# syntax=docker/dockerfile:1
 # Multi-stage build for production
 FROM node:20-alpine AS base
 
 # Install system dependencies including Chromium for Puppeteer, Canvas for chart rendering, and FFmpeg for video processing
-RUN apk add --no-cache \
+# Cache mount on the apk cache so a clean rebuild reuses already-downloaded packages
+# instead of re-fetching ~200MB (chromium + native toolchain) from the mirror every time.
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    ln -sf /var/cache/apk /etc/apk/cache && \
+    apk add \
     chromium \
     nss \
     freetype \
@@ -52,7 +57,10 @@ COPY backend/package*.json ./backend/
 COPY backend/prisma ./backend/prisma/
 
 # Install backend dependencies (including dev dependencies for build)
-RUN cd backend && npm ci
+# Cache mount on npm's download cache: clean rebuilds reuse downloaded tarballs
+# even when the node_modules layer is invalidated by a package.json change.
+RUN --mount=type=cache,target=/root/.npm \
+    cd backend && npm ci
 
 # Copy backend source
 COPY backend/ ./backend/
@@ -66,24 +74,11 @@ RUN cd backend && npm run build
 # Prune dev dependencies after build
 RUN cd backend && npm prune --production
 
-# Frontend build stage
-FROM base AS frontend-build
-
-# Copy frontend package files
-COPY frontend/package*.json ./frontend/
-
-# Install frontend dependencies (including dev for build tools like tsc, vite)
-# Use install instead of ci due to lock file complexity
-RUN cd frontend && npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps
-
-# Copy frontend source
-COPY frontend/ ./frontend/
-
-# Clean Vite cache to prevent stale builds
-RUN rm -rf frontend/node_modules/.vite frontend/dist
-
-# Build frontend
-RUN cd frontend && npm run build
+# NOTE: The frontend is built and served by its own image (frontend/Dockerfile,
+# target production-node) as a separate container in docker-compose.prod.yml.
+# The backend production image below is API-only (node dist/src/main.js) and does
+# NOT serve any static frontend, so there is intentionally no frontend-build stage
+# here — building it would just be thrown away and bloat the backend image.
 
 # Development stage
 FROM base AS development
@@ -92,9 +87,12 @@ FROM base AS development
 COPY backend/package*.json ./backend/
 COPY frontend/package*.json ./frontend/
 
-# Install all dependencies (including dev dependencies) with clean cache
-RUN cd backend && npm cache clean --force && npm install --no-audit --no-fund
-RUN cd frontend && npm cache clean --force && npm install --legacy-peer-deps --no-audit --no-fund
+# Install all dependencies (including dev dependencies).
+# Use a persistent npm cache mount (do NOT `npm cache clean`, which would defeat it).
+RUN --mount=type=cache,target=/root/.npm \
+    cd backend && npm install --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm \
+    cd frontend && npm install --legacy-peer-deps --no-audit --no-fund
 
 # Copy source code
 COPY backend/ ./backend/
@@ -125,18 +123,17 @@ COPY --chown=appuser:appuser --from=backend-build /app/backend/node_modules ./ba
 COPY --chown=appuser:appuser --from=backend-build /app/backend/package*.json ./backend/
 COPY --chown=appuser:appuser --from=backend-build /app/backend/prisma ./backend/prisma
 
-# Copy assets (logo, templates) needed at runtime
-COPY --chown=appuser:appuser --from=backend-build /app/backend/src/assets ./backend/dist/assets
+# NOTE: runtime assets (company-logo.png/svg under src/modules/pdf/assets) are now
+# copied into dist by the Nest build (nest-cli.json assets includes *.png/*.svg),
+# so they ship inside the `backend/dist` copy above — no separate asset COPY needed.
+# (The old `COPY .../src/assets` referenced a path that never existed and broke clean builds.)
 
-COPY --chown=appuser:appuser --from=frontend-build /app/frontend/dist ./frontend/dist
-COPY --chown=appuser:appuser --from=frontend-build /app/frontend/node_modules ./frontend/node_modules
-COPY --chown=appuser:appuser --from=frontend-build /app/frontend/package*.json ./frontend/
+# NOTE: frontend/dist + frontend/node_modules + server.cjs are intentionally NOT
+# copied here — the backend image is API-only. The frontend runs as its own
+# container (frontend/Dockerfile). This keeps the backend image hundreds of MB smaller.
 
 # Copy shared files with correct ownership
 COPY --chown=appuser:appuser shared/ ./shared/
-
-# Copy frontend server script (CommonJS format for ES module package)
-COPY --chown=appuser:appuser frontend/server.cjs ./frontend/
 
 # Create necessary directories with correct ownership
 RUN mkdir -p uploads storage logs backup && \

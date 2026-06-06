@@ -79,26 +79,37 @@ export class IndonesianPdfFormatter {
    * Get company logo as data URI (SVG or PNG)
    */
   static getCompanyLogo(): string {
-    // Logo will be embedded at build time
     const fs = require("fs");
     const path = require("path");
 
     try {
-      // Try SVG first (optimized logo)
-      const svgLogoPath = path.join(__dirname, "../../../assets/logo.svg");
-      if (fs.existsSync(svgLogoPath)) {
-        const svgContent = fs.readFileSync(svgLogoPath, "utf8");
-        // Encode SVG as data URI
-        const svgBase64 = Buffer.from(svgContent).toString("base64");
-        return `data:image/svg+xml;base64,${svgBase64}`;
-      }
+      // The logo lives at src/modules/pdf/assets/company-logo.{svg,png} and is
+      // copied into dist by the Nest build (nest-cli.json assets *.svg/*.png).
+      // Resolve it the same robust way pdf.service does, since this file compiles
+      // to dist/src/modules/reports and the assets land in dist/modules/pdf/assets.
+      const logoFileNames = ["company-logo.svg", "company-logo.png"];
+      const basePaths = [
+        path.join(__dirname, "..", "pdf", "assets"), // alongside compiled modules (dist/src/modules/pdf/assets / src/modules/pdf/assets)
+        path.join(__dirname, "..", "..", "..", "modules", "pdf", "assets"), // production (compiled dist/src -> dist/modules)
+        path.join(process.cwd(), "backend", "dist", "modules", "pdf", "assets"), // production explicit
+        path.join(process.cwd(), "backend", "src", "modules", "pdf", "assets"), // docker dev
+        path.join(process.cwd(), "src", "modules", "pdf", "assets"), // alternative cwd
+      ];
 
-      // Fallback to PNG
-      const pngLogoPath = path.join(__dirname, "../../../assets/logo.png");
-      if (fs.existsSync(pngLogoPath)) {
-        const logoBuffer = fs.readFileSync(pngLogoPath);
-        const logoBase64 = logoBuffer.toString("base64");
-        return `data:image/png;base64,${logoBase64}`;
+      for (const fileName of logoFileNames) {
+        for (const basePath of basePaths) {
+          const logoPath = path.join(basePath, fileName);
+          if (fs.existsSync(logoPath)) {
+            if (fileName.endsWith(".svg")) {
+              const svgBase64 = Buffer.from(
+                fs.readFileSync(logoPath, "utf8"),
+              ).toString("base64");
+              return `data:image/svg+xml;base64,${svgBase64}`;
+            }
+            const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+            return `data:image/png;base64,${logoBase64}`;
+          }
+        }
       }
     } catch (error) {
       // Logo not found, return empty string

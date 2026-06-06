@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # =============================================================================
 # MONOMI FINANCE - OPTIMIZED MULTI-STAGE FRONTEND DOCKERFILE
 # Enterprise Production-Ready React 19 + Mantine v7 Application
@@ -31,9 +32,11 @@ WORKDIR /app
 # Copy package files for dependency installation
 COPY package*.json ./
 
-# Install ALL dependencies (including devDependencies for building)
-RUN npm ci --include=dev --frozen-lockfile && \
-    npm cache clean --force
+# Install ALL dependencies (including devDependencies for building).
+# Persistent npm cache mount speeds clean rebuilds; do NOT `npm cache clean`
+# afterwards (it would wipe the mount and negate the benefit).
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --include=dev --frozen-lockfile
 
 # =============================================================================
 # STAGE 3: BUILD STAGE
@@ -52,12 +55,11 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy source code
 COPY . .
 
-# Build the application with optimizations
+# Build the application (Vite already builds in production mode by default).
+# Previously this ran `npm run build` twice — pure waste of the slowest step.
 RUN npm run build && \
     # Remove source maps and other dev artifacts for production
-    find dist -name "*.map" -delete && \
-    # Optimize bundle size
-    npm run build --mode=production
+    find dist -name "*.map" -delete
 
 # =============================================================================
 # STAGE 4: PRODUCTION RUNTIME WITH NGINX

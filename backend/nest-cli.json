@@ -7,7 +7,7 @@
     "deleteOutDir": false,
     "webpack": false,
     "tsConfigPath": "tsconfig.build.json",
-    "assets": ["**/*.json"],
+    "assets": ["**/*.json", "**/*.png", "**/*.svg"],
     "watchAssets": true
   }
 }
