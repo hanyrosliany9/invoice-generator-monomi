@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Download, BookOpen,
@@ -83,6 +84,7 @@ const toNumber = (v: unknown): number => {
 
 export default function ARAgingPageV2() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [asOfDate, setAsOfDate] = useState<Date>(new Date());
 
@@ -310,9 +312,11 @@ export default function ARAgingPageV2() {
                   {matrix.map((row) => (
                     <tr
                       key={row.clientId}
-                      className="border-b border-border-subtle/60 last:border-0 hover:bg-accent-navy-soft transition-colors"
+                      className="border-b border-border-subtle/60 last:border-0 hover:bg-accent-navy-soft transition-colors cursor-pointer"
+                      onClick={() => navigate(`/invoices?clientId=${row.clientId}`)}
+                      title={t('accounting.arAging.viewInvoicesTitle', 'View invoices for this client')}
                     >
-                      <td className="px-4 py-3.5 text-text-primary">{row.clientName}</td>
+                      <td className="px-4 py-3.5 text-text-primary underline-offset-2 hover:underline">{row.clientName}</td>
                       {BUCKETS.map((b) => {
                         const v = row.buckets[b.key];
                         return (

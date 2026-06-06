@@ -264,6 +264,7 @@ const RevenueView = ({ data }: { data: any }) => {
 
 const PaymentView = ({ data }: { data: any }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const byStatus = (data?.invoicesByStatus ?? []).map((s: any) => ({
     status: s.status,
     count: s._count?.id ?? 0,
@@ -327,8 +328,17 @@ const PaymentView = ({ data }: { data: any }) => {
           <DataTable<any>
             data={data?.overdueInvoices ?? []}
             enablePagination={false}
+            onRowClick={(row) => navigate(`/invoices/${row.id}`)}
             columns={[
-              { accessorKey: 'invoiceNumber', header: t('systemReport.payment.invoice', 'Invoice') },
+              {
+                accessorKey: 'invoiceNumber',
+                header: t('systemReport.payment.invoice', 'Invoice'),
+                cell: ({ row }) => (
+                  <span className="font-medium text-text-primary cursor-pointer hover:text-info transition-colors">
+                    {row.original.invoiceNumber}
+                  </span>
+                ),
+              },
               {
                 id: 'client',
                 header: t('systemReport.payment.client', 'Client'),

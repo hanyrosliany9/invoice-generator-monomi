@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm, Controller, type SubmitHandler } from 'react-hook-form';
@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 
 import { useAuthStore } from '@/store/auth';
 import { decksApi, slidesApi } from '@/services/decks';
@@ -91,6 +92,8 @@ export default function DeckEditorPageV2() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefillProjectId = searchParams.get('projectId') ?? '';
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
@@ -108,7 +111,7 @@ export default function DeckEditorPageV2() {
   /* ---------- defaults derived from server data ---------- */
   const defaultValues = useMemo<FormValues>(() => {
     if (!deck) {
-      return { title: '', description: '', status: 'DRAFT', projectId: '', slides: [] };
+      return { title: '', description: '', status: 'DRAFT', projectId: prefillProjectId, slides: [] };
     }
     return {
       title:       deck.title,
@@ -318,27 +321,38 @@ export default function DeckEditorPageV2() {
                 <Controller
                   control={control}
                   name="projectId"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || '__none__'}
-                      onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)}
-                    >
-                      <SelectTrigger className="w-full bg-bg-sunken border-border-default text-text-primary data-[placeholder]:text-text-tertiary">
-                        <SelectValue placeholder={t('deckEditor.notLinked', 'Not linked')} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72">
-                        <SelectItem value="__none__">{t('deckEditor.notLinked', 'Not linked')}</SelectItem>
-                        {projects.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            <span className="font-mono text-xs text-text-tertiary mr-2">
-                              {p.number || '—'}
-                            </span>
-                            {p.description}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  render={({ field }) => {
+                    const projectOptions = [
+                      {
+                        value: '__none__',
+                        label: t('deckEditor.notLinked', 'Not linked'),
+                        keywords: [],
+                        node: <span className="text-text-tertiary italic">{t('deckEditor.notLinked', 'Not linked')}</span>,
+                      },
+                      ...projects.map((p) => ({
+                        value: p.id,
+                        label: p.description || p.number || p.id,
+                        keywords: [p.number, p.description],
+                        node: (
+                          <span className="flex items-baseline gap-2">
+                            <span className="font-mono text-xs text-text-tertiary">{p.number || '—'}</span>
+                            <span className="truncate">{p.description || t('common.noDescription', 'No description')}</span>
+                          </span>
+                        ),
+                      })),
+                    ];
+                    return (
+                      <Combobox
+                        value={field.value || '__none__'}
+                        onChange={(v) => field.onChange(v === '__none__' ? '' : v)}
+                        options={projectOptions}
+                        placeholder={t('deckEditor.notLinked', 'Not linked')}
+                        searchPlaceholder={t('deckEditor.searchProject', 'Search by name or number…')}
+                        emptyText={t('deckEditor.noProjectsFound', 'No projects found')}
+                        className="w-full bg-bg-sunken border-border-default text-text-primary"
+                      />
+                    );
+                  }}
                 />
               </div>
             </div>

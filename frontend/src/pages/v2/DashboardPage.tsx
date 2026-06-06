@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
+  Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings, Plus,
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -95,6 +95,7 @@ export default function DashboardPageV2() {
   const { data: revenueAnalytics } = useQuery({
     queryKey: ['dashboard-revenue'],
     queryFn: () => reportsService.getRevenueAnalytics({ period: 'monthly' }),
+    staleTime: 5 * 60 * 1000, // 5 min — prevents refetch-flicker on window focus
   });
   const revenueData = useMemo(
     () => (revenueAnalytics?.revenueByPeriod ?? []).map((item) => ({
@@ -151,6 +152,18 @@ export default function DashboardPageV2() {
         <PageHeader
           title={t('dashboard.title', 'Dashboard')}
           description={t('dashboard.subtitle', 'Ringkasan bisnis Anda hari ini')}
+          actions={
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigate('/quotations/new')}>
+                <Plus className="h-4 w-4" />
+                {t('dashboard.newQuotation', '+ Penawaran Baru')}
+              </Button>
+              <Button size="sm" onClick={() => navigate('/invoices/new')}>
+                <Plus className="h-4 w-4" />
+                {t('dashboard.newInvoice', '+ Invoice Baru')}
+              </Button>
+            </div>
+          }
         />
 
         {/* KPI band — tight gap so the four cards read as one band, not four billboards */}
@@ -173,6 +186,7 @@ export default function DashboardPageV2() {
                     label={t('dashboard.revenue', 'Pendapatan')}
                     value={<MoneyDisplay amount={stats.totalRevenue} />}
                     sublabel={t('dashboard.thisMonth', 'bulan ini')}
+                    href="/invoices?status=PAID"
                   />
                 </RevealOnView>
                 <RevealOnView delay={80}>
@@ -180,6 +194,7 @@ export default function DashboardPageV2() {
                     label={t('dashboard.outstanding', 'Belum Tertagih')}
                     value={<MoneyDisplay amount={stats.pendingPayments} />}
                     sublabel={t('dashboard.unpaid', 'belum dibayar')}
+                    href="/invoices?status=OVERDUE"
                   />
                 </RevealOnView>
                 <RevealOnView delay={160}>
@@ -187,6 +202,7 @@ export default function DashboardPageV2() {
                     label={t('dashboard.activeProjects', 'Proyek Aktif')}
                     value={stats.totalProjects}
                     sublabel={t('dashboard.ongoing', 'berlangsung')}
+                    href="/projects?status=IN_PROGRESS"
                   />
                 </RevealOnView>
                 <RevealOnView delay={240}>
@@ -194,6 +210,7 @@ export default function DashboardPageV2() {
                     label={t('dashboard.totalClients', 'Klien Aktif')}
                     value={stats.totalClients}
                     sublabel={t('dashboard.active', 'aktif')}
+                    href="/clients"
                   />
                 </RevealOnView>
               </>
@@ -285,6 +302,12 @@ export default function DashboardPageV2() {
                 icon={<ReceiptText className="h-8 w-8" />}
                 title={t('dashboard.noQuotations', 'Belum ada penawaran')}
                 description={t('dashboard.noQuotationsDesc', 'Buat penawaran pertama Anda')}
+                action={
+                  <Button size="sm" onClick={() => navigate('/quotations/new')}>
+                    <Plus className="h-4 w-4" />
+                    {t('dashboard.newQuotation', '+ Penawaran Baru')}
+                  </Button>
+                }
               />
             ) : (
               <DataTable
@@ -347,6 +370,12 @@ export default function DashboardPageV2() {
                 icon={<FileText className="h-8 w-8" />}
                 title={t('dashboard.noInvoices', 'Belum ada invoice')}
                 description={t('dashboard.noInvoicesDesc', 'Buat invoice pertama Anda')}
+                action={
+                  <Button size="sm" onClick={() => navigate('/invoices/new')}>
+                    <Plus className="h-4 w-4" />
+                    {t('dashboard.newInvoice', '+ Invoice Baru')}
+                  </Button>
+                }
               />
             ) : (
               <DataTable

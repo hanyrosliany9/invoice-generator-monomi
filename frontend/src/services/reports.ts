@@ -125,15 +125,31 @@ export const reportsService = {
   },
 
   // Get client analytics
-  getClientAnalytics: async (limit?: number): Promise<ClientAnalytics> => {
-    const url = `/reports/clients${limit ? `?limit=${limit}` : ''}`
+  getClientAnalytics: async (
+    limit?: number,
+    dateRange?: { startDate?: string; endDate?: string },
+  ): Promise<ClientAnalytics> => {
+    const params = new URLSearchParams()
+    if (limit) params.append('limit', String(limit))
+    if (dateRange?.startDate) params.append('startDate', dateRange.startDate)
+    if (dateRange?.endDate) params.append('endDate', dateRange.endDate)
+    const qs = params.toString()
+    const url = `/reports/clients${qs ? `?${qs}` : ''}`
     const response = await apiClient.get(url)
     return response?.data?.data || { topClients: [], totalClients: 0 }
   },
 
   // Get project analytics
-  getProjectAnalytics: async (limit?: number): Promise<ProjectAnalytics> => {
-    const url = `/reports/projects${limit ? `?limit=${limit}` : ''}`
+  getProjectAnalytics: async (
+    limit?: number,
+    dateRange?: { startDate?: string; endDate?: string },
+  ): Promise<ProjectAnalytics> => {
+    const params = new URLSearchParams()
+    if (limit) params.append('limit', String(limit))
+    if (dateRange?.startDate) params.append('startDate', dateRange.startDate)
+    if (dateRange?.endDate) params.append('endDate', dateRange.endDate)
+    const qs = params.toString()
+    const url = `/reports/projects${qs ? `?${qs}` : ''}`
     const response = await apiClient.get(url)
     return (
       response?.data?.data || {
@@ -145,8 +161,15 @@ export const reportsService = {
   },
 
   // Get payment analytics
-  getPaymentAnalytics: async (): Promise<PaymentAnalytics> => {
-    const response = await apiClient.get('/reports/payments')
+  getPaymentAnalytics: async (
+    dateRange?: { startDate?: string; endDate?: string },
+  ): Promise<PaymentAnalytics> => {
+    const params = new URLSearchParams()
+    if (dateRange?.startDate) params.append('startDate', dateRange.startDate)
+    if (dateRange?.endDate) params.append('endDate', dateRange.endDate)
+    const qs = params.toString()
+    const url = `/reports/payments${qs ? `?${qs}` : ''}`
+    const response = await apiClient.get(url)
     return (
       response?.data?.data || {
         invoicesByStatus: [],

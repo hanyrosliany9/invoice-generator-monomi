@@ -7,8 +7,7 @@ import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
-  BookOpen, Loader2, Plus, Trash2, Save, ArrowLeft, CheckCircle2, AlertTriangle,
+  BookOpen, Loader2, Plus, Trash2, Save, ArrowLeft, CheckCircle2, AlertTriangle, Lock,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -27,6 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useAuthStore } from '@/store/auth';
 import {
   createJournalEntry, getChartOfAccounts, getCurrentFiscalPeriod, getJournalEntry,
@@ -34,10 +34,6 @@ import {
   type ChartOfAccount, type JournalEntry,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
-
-/* ------------------------------------------------------------------ */
-/*  Sidebar (consistent with sibling pages)                            */
-/* ------------------------------------------------------------------ */
 
 /* ------------------------------------------------------------------ */
 /*  Schema — refined: every line must have an account; either debit   */
@@ -187,7 +183,7 @@ export default function JournalEntryFormPageV2() {
   }, [isEdit, existing, prefilled]);
 
   const {
-    register, handleSubmit, control, watch, setValue, reset, formState: { errors, isSubmitting },
+    register, handleSubmit, control, watch, reset, formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(makeFormSchema(t)),
     defaultValues,
@@ -217,10 +213,10 @@ export default function JournalEntryFormPageV2() {
   /* ----- mutations: save + post in two flavors ----- */
   const createMutation = useMutation({
     mutationFn: createJournalEntry,
-    onSuccess: () => {
+    onSuccess: (created: JournalEntry) => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       toast.success(t('accounting.journalEntryForm.saveDraftSuccess'));
-      navigate('/accounting/journal-entries');
+      navigate(`/accounting/journal-entries/${created.id}/edit`);
     },
     onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.saveDraftFail')),
   });
@@ -231,17 +227,17 @@ export default function JournalEntryFormPageV2() {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entry', id] });
       toast.success(t('accounting.journalEntryForm.updateSuccess'));
-      navigate('/accounting/journal-entries');
+      navigate(`/accounting/journal-entries/${id}/edit`);
     },
     onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.updateFail')),
   });
 
   const postMutation = useMutation({
     mutationFn: postJournalEntry,
-    onSuccess: () => {
+    onSuccess: (posted: JournalEntry) => {
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       toast.success(t('accounting.journalEntryForm.postSuccess'));
-      navigate('/accounting/journal-entries');
+      navigate(`/accounting/journal-entries/${posted.id}/edit`);
     },
     onError: (e: Error) => toast.error(e.message || t('accounting.journalEntryForm.postFail')),
   });
@@ -281,7 +277,7 @@ export default function JournalEntryFormPageV2() {
         const created = await createJournalEntry(payload);
         await postMutation.mutateAsync(created.id);
       }
-    } catch (e) {
+    } catch {
       // mutation onError handles toast.
     }
   };
@@ -292,6 +288,27 @@ export default function JournalEntryFormPageV2() {
     || createMutation.isPending
     || updateMutation.isPending
     || postMutation.isPending;
+
+  /* ----- fiscal period closed guard ----- */
+  const isFiscalPeriodClosed = fiscalPeriod?.status === 'CLOSED';
+  const isSaveDisabled = isPending || isFiscalPeriodClosed;
+  const isPostDisabled = isPending || !totals.balanced || isFiscalPeriodClosed;
+
+  /* ----- account combobox options (memoised) ----- */
+  const accountOptions = useMemo(() =>
+    accounts.map((a: ChartOfAccount) => ({
+      value:    a.code,
+      label:    `${a.code} ${a.nameId}`,
+      keywords: [a.code, a.nameId, a.name],
+      node: (
+        <span className="flex items-baseline gap-2 min-w-0">
+          <span className="font-mono text-[11px] text-text-tertiary shrink-0">{a.code}</span>
+          <span className="truncate">{a.nameId}</span>
+        </span>
+      ),
+    })),
+    [accounts],
+  );
 
   /* ----- guard: posted entries can't be edited ----- */
   if (isEdit && existing?.isPosted) {
@@ -352,6 +369,21 @@ export default function JournalEntryFormPageV2() {
             </Button>
           }
         />
+
+        {/* Closed fiscal period warning */}
+        {isFiscalPeriodClosed && (
+          <div className="flex items-start gap-3 rounded-md border border-warning/30 bg-warning/5 px-4 py-3 mb-4">
+            <Lock className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+            <div className="text-sm">
+              <div className="font-medium text-text-primary">
+                {t('accounting.journalEntryForm.fiscalPeriodClosedTitle', 'Fiscal period is closed')}
+              </div>
+              <div className="mt-0.5 text-text-secondary">
+                {t('accounting.journalEntryForm.fiscalPeriodClosedDesc', 'This fiscal period has been closed. Saving or posting new entries is disabled. Contact your administrator to re-open it.')}
+              </div>
+            </div>
+          </div>
+        )}
 
         <form className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_340px] gap-4 items-start">
@@ -461,31 +493,22 @@ export default function JournalEntryFormPageV2() {
                       key={field.id}
                       className="grid grid-cols-1 md:grid-cols-[1fr_1fr_140px_140px_32px] gap-3 py-3 items-start"
                     >
-                      {/* Account */}
+                      {/* Account — searchable Combobox */}
                       <div className="space-y-1.5 min-w-0">
                         <Controller
                           control={control}
                           name={`lineItems.${idx}.accountCode` as const}
-                          render={({ field }) => (
-                            <Select
-                              value={field.value || undefined}
-                              onValueChange={field.onChange}
+                          render={({ field: f }) => (
+                            <Combobox
+                              value={f.value || ''}
+                              onChange={f.onChange}
                               disabled={accountsLoading}
-                            >
-                              <SelectTrigger className="w-full bg-bg-sunken border-border-subtle text-text-primary data-[placeholder]:text-text-tertiary">
-                                <SelectValue placeholder={t('accounting.journalEntryForm.selectAccountPlaceholder', 'Select account')} />
-                              </SelectTrigger>
-                              <SelectContent className="max-h-72">
-                                {accounts.map((a: ChartOfAccount) => (
-                                  <SelectItem key={a.code} value={a.code}>
-                                    <span className="font-mono text-xs text-text-tertiary mr-2">
-                                      {a.code}
-                                    </span>
-                                    {a.nameId}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder={t('accounting.journalEntryForm.selectAccountPlaceholder', 'Select account')}
+                              searchPlaceholder={t('accounting.journalEntryForm.searchAccountPlaceholder', 'Search by code or name…')}
+                              emptyText={t('accounting.journalEntryForm.noAccountFound', 'No account found')}
+                              className="bg-bg-sunken border-border-subtle text-text-primary"
+                              options={accountOptions}
+                            />
                           )}
                         />
                         <FieldError message={errors.lineItems?.[idx]?.accountCode?.message} />
@@ -609,7 +632,10 @@ export default function JournalEntryFormPageV2() {
                   <div className="text-xs text-text-secondary mt-1">
                     {fiscalPeriod.startDate?.slice(0, 10)} — {fiscalPeriod.endDate?.slice(0, 10)}
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.12em] mt-2 text-text-tertiary">
+                  <div className={cn(
+                    'text-[10px] uppercase tracking-[0.12em] mt-2',
+                    isFiscalPeriodClosed ? 'text-warning font-medium' : 'text-text-tertiary',
+                  )}>
                     {fiscalPeriod.status}
                   </div>
                 </GlassPanel>
@@ -621,9 +647,11 @@ export default function JournalEntryFormPageV2() {
           <div className="sticky bottom-0 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="text-xs text-text-tertiary">
-                {totals.balanced
-                  ? t('accounting.journalEntryForm.footerBalanced')
-                  : t('accounting.journalEntryForm.footerUnbalanced')}
+                {isFiscalPeriodClosed
+                  ? t('accounting.journalEntryForm.footerPeriodClosed', 'Fiscal period closed — editing disabled')
+                  : totals.balanced
+                    ? t('accounting.journalEntryForm.footerBalanced')
+                    : t('accounting.journalEntryForm.footerUnbalanced')}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -638,7 +666,7 @@ export default function JournalEntryFormPageV2() {
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={isPending}
+                  disabled={isSaveDisabled}
                   onClick={handleSubmit(onSaveDraft)}
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -646,7 +674,7 @@ export default function JournalEntryFormPageV2() {
                 </Button>
                 <Button
                   type="button"
-                  disabled={isPending || !totals.balanced}
+                  disabled={isPostDisabled}
                   onClick={handleSubmit(onSaveAndPost)}
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 font-medium min-w-[120px]"
                 >

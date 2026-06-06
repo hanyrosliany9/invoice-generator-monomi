@@ -72,7 +72,14 @@
     "validation": {
       "emailInvalid": "Invalid email",
       "passwordRequired": "Password is required"
-    }
+    },
+    "userMenu": "User menu",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "rateLimited": "Too many login attempts. Please try again in a few minutes.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -218,7 +225,9 @@
     "autoRefresh": "Auto-refreshes every 5 minutes",
     "error": {
       "title": "Cannot load dashboard"
-    }
+    },
+    "newQuotation": "+ New Quotation",
+    "newInvoice": "+ New Invoice"
   },
   "quotations": {
     "title": "Quotations",
@@ -606,7 +615,8 @@
       "materaiApplied": "Materai Applied",
       "materaiPending": "Materai Pending",
       "materaiRequired": "Materai Required",
-      "status": "Status"
+      "status": "Status",
+      "clientChip": "Client: {{name}}"
     },
     "form": {
       "addItem": "Add Line Item",
@@ -1280,7 +1290,8 @@
       "completedProjects": "Completed Projects",
       "totalRevenue": "Total Revenue"
     },
-    "subtitle": "Manage your account, company identity, and system settings."
+    "subtitle": "Manage your account, company identity, and system settings.",
+    "unsavedConfirm": "You have unsaved changes. Leave this section?"
   },
   "actions": {
     "details": "Details",
@@ -1433,7 +1444,8 @@
         "residual": "Residual Value",
         "straightLine": "Straight-line",
         "usefulLife": "Useful Life",
-        "years": "years"
+        "years": "years",
+        "processBtn": "Process Depreciation"
       },
       "depreciationSection": "Depreciation Schedule",
       "error": {
@@ -1479,6 +1491,11 @@
         "months": "months",
         "labelFirst": "First Period",
         "labelLast": "Last Period"
+      },
+      "maintenance": {
+        "addBtn": "Log Maintenance",
+        "addComingSoon": "POST /assets/:id/maintenance endpoint not yet available on backend",
+        "addNotAvailable": "Maintenance logging not yet available. Use Edit to update asset status."
       }
     },
     "edit": {
@@ -1562,7 +1579,9 @@
       "notesPh": "Internal notes about this asset…",
       "requiredNote": "Fields marked * are required.",
       "residualHint": "Estimated asset value at the end of its useful life.",
-      "usefulLifeHint": "How long the asset is expected to provide economic benefit."
+      "usefulLifeHint": "How long the asset is expected to provide economic benefit.",
+      "paymentSource": "Payment Source",
+      "paymentSourceHint": "Payment method at time of acquisition."
     },
     "kpi": {
       "depreciating": "Actively Depreciating",
@@ -1673,6 +1692,61 @@
       "categoryRequired": "Category is required",
       "purchaseDateRequired": "Purchase date is required",
       "residualValueTooHigh": "Residual value must be less than purchase price"
+    },
+    "action": {
+      "checkOut": {
+        "btn": "Check Out",
+        "title": "Check Out Asset",
+        "desc": "Select the user and project borrowing this asset.",
+        "user": "User",
+        "userPh": "Select user",
+        "project": "Project",
+        "projectPh": "Select project (optional)",
+        "submit": "Check Out",
+        "success": "Asset checked out successfully.",
+        "error": "Failed to check out asset."
+      },
+      "checkIn": {
+        "btn": "Return",
+        "title": "Return Asset",
+        "desc": "Record the asset condition on return.",
+        "conditionLabel": "Condition on Return",
+        "notesLabel": "Notes",
+        "notesPh": "Condition, damage, other notes…",
+        "submit": "Return",
+        "success": "Asset returned successfully.",
+        "error": "Failed to return asset."
+      },
+      "dispose": {
+        "menuItem": "Write Off / Retire",
+        "title": "Write Off / Retire Asset",
+        "desc": "This will post an asset disposal journal entry and change status to RETIRED.",
+        "dateLabel": "Disposal Date",
+        "proceedsLabel": "Sale Proceeds (IDR)",
+        "submit": "Write Off",
+        "success": "Asset written off successfully.",
+        "error": "Failed to write off asset."
+      },
+      "changeStatus": {
+        "menuItem": "Change Status",
+        "title": "Change Asset Status",
+        "desc": "Update the operational status and physical condition.",
+        "statusLabel": "New Status",
+        "conditionLabel": "Condition",
+        "notesLabel": "Notes",
+        "notesPh": "Reason for status change…",
+        "submit": "Save",
+        "success": "Asset status updated.",
+        "error": "Failed to update status."
+      }
+    },
+    "status": {
+      "available": "Available",
+      "reserved": "Reserved",
+      "checkedOut": "Checked Out",
+      "inMaintenance": "In Maintenance",
+      "broken": "Broken",
+      "retired": "Retired"
     }
   },
   "builder": {
@@ -2449,6 +2523,12 @@
     "roles": {
       "superAdminDesc": "Full system access — users, settings, all data.",
       "videographerDesc": "Media-collab access only — upload and edit assets."
+    },
+    "pwRule": {
+      "length": "Min. 8 characters",
+      "upper": "Uppercase letter",
+      "lower": "Lowercase letter",
+      "digit": "Number"
     }
   },
   "vendors": {
@@ -2717,7 +2797,8 @@
       "actionEdit": "Edit",
       "actionDelete": "Delete",
       "filterAccountType": "Account Type",
-      "searchPlaceholderAlt": "Search by code or account name..."
+      "searchPlaceholderAlt": "Search by code or account name...",
+      "actionViewGL": "View in GL"
     },
     "arAging": {
       "title": "Accounts Receivable Aging",
@@ -2749,7 +2830,8 @@
       "bucket61to90": "61–90",
       "bucketOver90": "> 90",
       "unknownClient": "Unknown Client",
-      "asOfDatePlaceholder": "As of date"
+      "asOfDatePlaceholder": "As of date",
+      "viewInvoicesTitle": "View invoices for this client"
     },
     "apAging": {
       "title": "Accounts Payable Aging",
@@ -2855,7 +2937,12 @@
       "validationDateRequired": "Date is required",
       "validationSelectTransactionType": "Select a transaction type",
       "validationMinTwoLines": "At least 2 lines (debit and credit) are required.",
-      "validationDebitCreditBalance": "Total debits must equal total credits."
+      "validationDebitCreditBalance": "Total debits must equal total credits.",
+      "searchAccountPlaceholder": "Search by code or name…",
+      "noAccountFound": "No account found",
+      "fiscalPeriodClosedTitle": "Fiscal period is closed",
+      "fiscalPeriodClosedDesc": "This fiscal period has been closed. Saving or posting new entries is disabled. Contact your administrator to re-open it.",
+      "footerPeriodClosed": "Fiscal period closed — editing disabled"
     },
     "cashReceipts": {
       "title": "Cash Receipts",
@@ -3941,7 +4028,9 @@
     "descriptionPlaceholder": "Brief description (optional)",
     "createSubmit": "Create Shot List",
     "newShotList": "New Shot List",
-    "selectProject": "Select a project"
+    "selectProject": "Select a project",
+    "searchProject": "Search by name or number…",
+    "noProjectsFound": "No projects found"
   },
   "projectCalendar": {
     "title": "Project Calendar",
@@ -4690,7 +4779,12 @@
     "addFirstExpense": "Record Expense",
     "addQuotation": "New Quotation",
     "addFirstQuotation": "Create Quotation",
-    "backToClient": "Back to client"
+    "backToClient": "Back to client",
+    "productionGroup": "Production",
+    "newShotList": "New Shot List",
+    "newCallSheet": "New Call Sheet",
+    "newDeck": "New Deck",
+    "newContentItem": "New Content Item"
   },
   "projectForm": {
     "identity": {
@@ -4938,7 +5032,8 @@
       "desc": "Compiled automatically from your live data — revenue, AR, overdue, conversion, top clients & projects. No manual input.",
       "open": "Open →"
     },
-    "invalidPdfUrl": "Invalid PDF URL"
+    "invalidPdfUrl": "Invalid PDF URL",
+    "exportPdfPending": "Generating…"
   },
   "reportDetail": {
     "subtitle": "Report details, sections, and associated visualizations.",
@@ -4980,7 +5075,9 @@
     "rows": "rows",
     "metricCardMisconfigured": "metric_card configuration incomplete (valueKey missing).",
     "noViz": "No visualizations in this section yet.",
-    "invalidPdfUrl": "Invalid PDF URL"
+    "invalidPdfUrl": "Invalid PDF URL",
+    "back": "Back",
+    "generatePdfPending": "Generating…"
   },
   "reportBuilder": {
     "createTitle": "New Report",
@@ -5127,7 +5224,8 @@
       "updatedAt": "Updated",
       "actions": "Actions"
     },
-    "reportActions": "Report actions"
+    "reportActions": "Report actions",
+    "sampleDataNotice": "Sample data — real analytics coming soon. The numbers below are placeholders and do not reflect actual account performance."
   },
   "calendarPage": {
     "title": "Calendar",
@@ -5219,7 +5317,9 @@
       "publishFailed": "Publish failed — needs review",
       "published": "Published",
       "title": "Content Detail"
-    }
+    },
+    "searchProject": "Search by name or number…",
+    "noProjectsFound": "No projects found"
   },
   "projectContentCalendar": {
     "title": "Content Calendar",
@@ -5374,7 +5474,9 @@
     "layoutQuote": "Quote",
     "layoutSection": "Section Break",
     "descriptionPlaceholder": "Brief description (optional)",
-    "slide": "Slide {{index}}"
+    "slide": "Slide {{index}}",
+    "searchProject": "Search by name or number…",
+    "noProjectsFound": "No projects found"
   },
   "shotListEditor": {
     "saveSuccess": "Shot list saved",
@@ -5546,7 +5648,9 @@
     "saveAllFailed": "Failed to save call sheet.",
     "savedAll": "Call sheet saved.",
     "savedAllChanges": "All changes saved.",
-    "unsavedChanges": "You have unsaved changes."
+    "unsavedChanges": "You have unsaved changes.",
+    "unsaved": "New",
+    "unsavedRowHint": "This row is new — click \"Save Call Sheet\" to persist it."
   },
   "mediaCollab": {
     "loadMore": "Load more",
@@ -5673,7 +5777,14 @@
     "creating": "Creating…",
     "createProjectSubmit": "Create Project",
     "createSuccess": "Project \"{{name}}\" created successfully.",
-    "createFailed": "Failed to create project."
+    "createFailed": "Failed to create project.",
+    "uploadError": "Failed",
+    "retry": "Retry",
+    "retryHint": "Please re-select \"{{name}}\" to retry.",
+    "accessLevelViewOnly": "View-only link",
+    "accessLevelDownload": "View + Download",
+    "accessLevelComment": "View + Comment",
+    "accessLevelNote": "Anyone with this link can view without signing in."
   },
   "salaries": {
     "pageTitle": "Staff Salaries",

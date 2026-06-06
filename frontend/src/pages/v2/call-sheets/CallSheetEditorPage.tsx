@@ -1617,27 +1617,25 @@ const TimeInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
   />
 );
 
-/* Row save/remove pair — unsaved rows show Save, saved rows show only
-   the trash icon (per-field updates fire onBlur).
+/* Row actions — unsaved rows show a quiet "Unsaved" badge (Save All
+   commits them). The per-row Save icon has been removed because it
+   implied rows weren't auto-saved on blur, creating a data-loss
+   footgun. Per-field onBlur handlers still fire PATCH requests for
+   existing (saved) rows; new rows are committed on "Save All".
    disabled=true while a Save All is in progress (prevents races). */
 const RowActions = ({
-  isSaved, onSave, onRemove, disabled,
+  isSaved, onSave: _onSave, onRemove, disabled,
 }: { isSaved: boolean; onSave: () => void; onRemove: () => void; disabled?: boolean }) => {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-1.5">
       {!isSaved && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={onSave}
-          disabled={disabled}
-          className="text-success hover:text-success hover:bg-success/10"
-          aria-label={t('callSheetEditor.saveRow', 'Save row')}
+        <span
+          title={t('callSheetEditor.unsavedRowHint', 'This row is new — click "Save Call Sheet" to persist it.')}
+          className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] bg-warning/10 text-warning border border-warning/20 cursor-default select-none"
         >
-          <Save className="h-3.5 w-3.5" />
-        </Button>
+          {t('callSheetEditor.unsaved', 'New')}
+        </span>
       )}
       <Button
         type="button"

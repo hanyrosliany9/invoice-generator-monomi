@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
@@ -29,6 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
@@ -74,10 +75,17 @@ export default function ShotListsPageV2() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const [searchParams] = useSearchParams();
+  const prefillProjectId = searchParams.get('projectId') ?? '';
 
   const [searchText, setSearchText] = useState('');
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Auto-open dialog when ?projectId is present in the URL
+  useEffect(() => {
+    if (prefillProjectId) setCreateOpen(true);
+  }, [prefillProjectId]);
 
   /* ----- data: projects power both the filter and the create dropdown ----- */
   const { data: projects = [] } = useQuery({
@@ -381,6 +389,7 @@ export default function ShotListsPageV2() {
         projects={projects}
         onSubmit={(values) => createMutation.mutate(values)}
         isPending={createMutation.isPending}
+        prefillProjectId={prefillProjectId}
       />
     </Shell>
   );
@@ -418,28 +427,48 @@ function Shell({
 /* ------------------------------------------------------------------ */
 
 function CreateShotListDialog({
-  open, onOpenChange, projects, onSubmit, isPending,
+  open, onOpenChange, projects, onSubmit, isPending, prefillProjectId = '',
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects: Array<{ id: string; number: string; description: string }>;
   onSubmit: (values: CreateFormValues) => void;
   isPending: boolean;
+  prefillProjectId?: string;
 }) {
   const { t } = useTranslation();
   const {
     register, handleSubmit, control, reset, formState: { errors },
   } = useForm<CreateFormValues>({
     resolver: zodResolver(createSchema),
-    defaultValues: { name: '', projectId: '', description: '' },
+    defaultValues: { name: '', projectId: prefillProjectId, description: '' },
   });
+
+  // When dialog reopens with a prefill, restore the prefilled project.
+  useEffect(() => {
+    if (open && prefillProjectId) {
+      reset((prev) => ({ ...prev, projectId: prev.projectId || prefillProjectId }));
+    }
+  }, [open, prefillProjectId, reset]);
+
+  const projectOptions = useMemo(() => projects.map((p) => ({
+    value: p.id,
+    label: p.description || p.number,
+    keywords: [p.number, p.description],
+    node: (
+      <span className="flex items-baseline gap-2">
+        <span className="font-mono text-xs text-text-tertiary">{p.number}</span>
+        <span className="truncate">{p.description || t('common.noDescription', 'No description')}</span>
+      </span>
+    ),
+  })), [projects, t]);
 
   return (
     <Dialog
       open={open}
       onOpenChange={(o) => {
         onOpenChange(o);
-        if (!o) reset();
+        if (!o) reset({ name: '', projectId: prefillProjectId, description: '' });
       }}
     >
       <DialogContent className="sm:max-w-md">
@@ -475,21 +504,16 @@ function CreateShotListDialog({
               control={control}
               name="projectId"
               render={({ field }) => (
-                <Select value={field.value || undefined} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full bg-bg-sunken border-border-default text-text-primary data-[placeholder]:text-text-tertiary">
-                    <SelectValue placeholder={t('shotLists.selectProject', 'Select a project')} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        <span className="font-mono text-xs text-text-tertiary mr-2">
-                          {p.number}
-                        </span>
-                        {p.description || t('common.noDescription', 'No description')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={field.value || undefined}
+                  onChange={field.onChange}
+                  options={projectOptions}
+                  placeholder={t('shotLists.selectProject', 'Select a project')}
+                  searchPlaceholder={t('shotLists.searchProject', 'Search by name or number…')}
+                  emptyText={t('shotLists.noProjectsFound', 'No projects found')}
+                  className="w-full bg-bg-sunken border-border-default text-text-primary"
+                  aria-invalid={!!errors.projectId}
+                />
               )}
             />
             {errors.projectId?.message && (

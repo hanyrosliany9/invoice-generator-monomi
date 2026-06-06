@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { Button } from '@/components/ui/button';
@@ -240,8 +240,19 @@ export const UserForm = ({
   }, [JSON.stringify(defaultValues)]);
 
   const watchedEmail = watch('email');
+  const watchedPassword = watch('password') ?? '';
   const isEditingSelf =
     mode === 'edit' && !!selfEmail && watchedEmail?.toLowerCase() === selfEmail.toLowerCase();
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Live password strength rules
+  const pwRules = [
+    { key: 'length', met: watchedPassword.length >= 8 },
+    { key: 'upper', met: /[A-Z]/.test(watchedPassword) },
+    { key: 'lower', met: /[a-z]/.test(watchedPassword) },
+    { key: 'digit', met: /[0-9]/.test(watchedPassword) },
+  ];
 
   return (
     <form id={formId} onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
@@ -451,27 +462,63 @@ export const UserForm = ({
               ? t('users.form.password', 'Kata Sandi')
               : t('users.form.passwordNew', 'Kata Sandi Baru')
           }
-          hint={t(
-            'users.form.passwordHint',
-            'Min. 8 karakter, mengandung huruf besar, huruf kecil, dan angka.',
-          )}
           required={mode === 'create'}
           error={errors.password?.message}
         >
-          <Input
-            id="uf-password"
-            type="password"
-            placeholder={
-              mode === 'create'
-                ? t('users.form.passwordPlaceholder', 'Masukkan kata sandi awal')
-                : t('users.form.passwordEditPlaceholder', 'Kosongkan untuk tidak mengubah')
-            }
-            autoComplete="new-password"
-            aria-invalid={!!errors.password}
-            className={cn(fieldInputClass, errors.password && fieldInvalidClass)}
-            disabled={isSubmitting}
-            {...register('password')}
-          />
+          <div className="relative">
+            <Input
+              id="uf-password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder={
+                mode === 'create'
+                  ? t('users.form.passwordPlaceholder', 'Masukkan kata sandi awal')
+                  : t('users.form.passwordEditPlaceholder', 'Kosongkan untuk tidak mengubah')
+              }
+              autoComplete="new-password"
+              aria-invalid={!!errors.password}
+              className={cn(fieldInputClass, errors.password && fieldInvalidClass, 'pr-9')}
+              disabled={isSubmitting}
+              {...register('password')}
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-0 flex items-center px-2.5 text-text-tertiary hover:text-text-secondary transition-colors"
+              aria-label={showPassword
+                ? t('auth.hidePassword', 'Hide password')
+                : t('auth.showPassword', 'Show password')}
+            >
+              {showPassword
+                ? <EyeOff className="h-4 w-4" />
+                : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {/* Live strength indicator — shows as soon as the user types */}
+          {watchedPassword.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              {pwRules.map((r) => {
+                const label = r.key === 'length'
+                  ? t('users.pwRule.length', 'Min. 8 karakter')
+                  : r.key === 'upper'
+                    ? t('users.pwRule.upper', 'Huruf besar')
+                    : r.key === 'lower'
+                      ? t('users.pwRule.lower', 'Huruf kecil')
+                      : t('users.pwRule.digit', 'Angka');
+                return (
+                  <span
+                    key={r.key}
+                    className={cn(
+                      'text-[11px] transition-colors',
+                      r.met ? 'text-success' : 'text-text-tertiary',
+                    )}
+                  >
+                    {r.met ? '✓' : '·'} {label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </FieldShell>
       </GlassPanel>
 

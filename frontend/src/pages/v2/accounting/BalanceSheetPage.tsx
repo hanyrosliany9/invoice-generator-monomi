@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation, getI18n } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { useDateLocale } from '@/lib/dateLocale';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -53,18 +54,26 @@ import { cn } from '@/lib/utils';
 interface AccountRowProps {
   account: BalanceSheetAccount;
   indent?: number; // 0, 1, 2
+  onClickCode?: (code: string) => void;
 }
 
-const AccountRow = ({ account, indent = 1 }: AccountRowProps) => {
+const AccountRow = ({ account, indent = 1, onClickCode }: AccountRowProps) => {
   const padClass = indent === 0 ? 'pl-0' : indent === 1 ? 'pl-4' : indent === 2 ? 'pl-8' : 'pl-12';
+  const isClickable = !!onClickCode;
   return (
-    <tr className="border-b border-border-subtle/40 last:border-0 hover:bg-accent-navy-soft transition-colors">
+    <tr
+      className={cn(
+        'border-b border-border-subtle/40 last:border-0 hover:bg-accent-navy-soft transition-colors',
+        isClickable && 'cursor-pointer',
+      )}
+      onClick={isClickable ? () => onClickCode(account.accountCode) : undefined}
+    >
       <td className={cn('py-2.5 text-text-secondary', padClass)}>
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-[11px] text-text-tertiary tracking-tight w-14 shrink-0">
             {account.accountCode}
           </span>
-          <span className="text-sm">
+          <span className={cn('text-sm', isClickable && 'underline-offset-2 hover:underline')}>
             {getI18n().language === 'en'
               ? (account.accountName || account.accountNameId)
               : (account.accountNameId || account.accountName)}
@@ -169,10 +178,11 @@ interface StatementSectionProps {
   total: number;
   grandLabel: string; // e.g. "TOTAL ASET"
   tone?: 'asset' | 'liabEq';
+  onClickCode?: (code: string) => void;
 }
 
 const StatementSection = ({
-  title, accounts, byType, total, grandLabel, tone,
+  title, accounts, byType, total, grandLabel, tone, onClickCode,
 }: StatementSectionProps) => {
   // Prefer grouped render if the API supplied a meaningful byType map.
   const groupKeys = byType ? Object.keys(byType).filter((k) => byType[k]?.length > 0) : [];
@@ -214,7 +224,7 @@ const StatementSection = ({
                       </td>
                     </tr>
                     {rows.map((acc) => (
-                      <AccountRow key={acc.accountCode} account={acc} indent={2} />
+                      <AccountRow key={acc.accountCode} account={acc} indent={2} onClickCode={onClickCode} />
                     ))}
                     <SubtotalRow label={`${getI18n().t('accounting.balanceSheet.subtotalPrefix', 'Total')} ${subtypeLabel(subType)}`} amount={subtotal} />
                   </>
@@ -222,7 +232,7 @@ const StatementSection = ({
               })
             ) : (
               accounts.map((acc) => (
-                <AccountRow key={acc.accountCode} account={acc} indent={1} />
+                <AccountRow key={acc.accountCode} account={acc} indent={1} onClickCode={onClickCode} />
               ))
             )}
             <GrandTotalRow label={grandLabel} amount={total} tone={tone} />
@@ -241,8 +251,15 @@ const StatementSection = ({
 export default function BalanceSheetPageV2() {
   const { t } = useTranslation();
   const idLocale = useDateLocale();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [asOfDate, setAsOfDate] = useState<Date>(new Date());
+
+  const goToGL = (accountCode: string) => {
+    const params = new URLSearchParams({ accountCode });
+    params.set('endDate', format(asOfDate, 'yyyy-MM-dd'));
+    navigate(`/accounting/general-ledger?${params.toString()}`);
+  };
 
   const dateStr = format(asOfDate, 'yyyy-MM-dd');
 
@@ -400,6 +417,7 @@ export default function BalanceSheetPageV2() {
                 total={data.assets.total}
                 grandLabel={t('accounting.balanceSheet.totalAssets', 'Total Assets')}
                 tone="asset"
+                onClickCode={goToGL}
               />
 
               {/* KEWAJIBAN + EKUITAS — stacked inside one column */}
@@ -411,6 +429,7 @@ export default function BalanceSheetPageV2() {
                   total={data.liabilities.total}
                   grandLabel={t('accounting.balanceSheet.totalLiabilities', 'Total Liabilities')}
                   tone="liabEq"
+                  onClickCode={goToGL}
                 />
                 <StatementSection
                   title={t('accounting.accountTypes.EQUITY', 'Equity')}
@@ -418,6 +437,7 @@ export default function BalanceSheetPageV2() {
                   total={data.equity.total}
                   grandLabel={t('accounting.balanceSheet.totalEquity', 'Total Equity')}
                   tone="liabEq"
+                  onClickCode={goToGL}
                 />
                 {/* Reconciliation strip — explicit so the equation reads
                     even when both columns scroll independently. */}

@@ -146,7 +146,14 @@
     "validation": {
       "emailInvalid": "Email tidak valid",
       "passwordRequired": "Password wajib diisi"
-    }
+    },
+    "userMenu": "Menu pengguna",
+    "settings": "Pengaturan",
+    "signOut": "Keluar",
+    "sessionExpired": "Sesi Anda telah berakhir. Silakan masuk kembali.",
+    "rateLimited": "Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.",
+    "showPassword": "Tampilkan kata sandi",
+    "hidePassword": "Sembunyikan kata sandi"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -309,7 +316,9 @@
     "autoRefresh": "Otomatis menyegarkan setiap 5 menit",
     "error": {
       "title": "Tidak bisa memuat dashboard"
-    }
+    },
+    "newQuotation": "+ Penawaran Baru",
+    "newInvoice": "+ Invoice Baru"
   },
   "quotations": {
     "title": "Penawaran",
@@ -697,7 +706,8 @@
       "materaiApplied": "Materai Terpasang",
       "materaiPending": "Materai Tertunda",
       "materaiRequired": "Materai Diperlukan",
-      "status": "Status"
+      "status": "Status",
+      "clientChip": "Klien: {{name}}"
     },
     "form": {
       "addItem": "Tambah Baris",
@@ -1210,7 +1220,8 @@
         "residual": "Nilai Sisa",
         "straightLine": "Garis Lurus",
         "usefulLife": "Umur Ekonomis",
-        "years": "tahun"
+        "years": "tahun",
+        "processBtn": "Proses Penyusutan"
       },
       "depreciationSection": "Skema Penyusutan",
       "error": {
@@ -1256,6 +1267,11 @@
         "months": "bulan",
         "labelFirst": "Periode Pertama",
         "labelLast": "Periode Terakhir"
+      },
+      "maintenance": {
+        "addBtn": "Catat Perawatan",
+        "addComingSoon": "Endpoint POST /assets/:id/maintenance belum tersedia di backend",
+        "addNotAvailable": "Pencatatan perawatan belum tersedia. Gunakan menu Edit untuk memperbarui status aset."
       }
     },
     "assetCode": "Kode Aset",
@@ -1429,7 +1445,9 @@
       "notesPh": "Catatan internal tentang aset ini…",
       "requiredNote": "Tanda * menandakan kolom wajib diisi.",
       "residualHint": "Estimasi nilai aset di akhir umur ekonomis.",
-      "usefulLifeHint": "Lama aset diperkirakan memberi manfaat ekonomis."
+      "usefulLifeHint": "Lama aset diperkirakan memberi manfaat ekonomis.",
+      "paymentSource": "Sumber Dana",
+      "paymentSourceHint": "Metode pembayaran saat akuisisi."
     },
     "kpi": {
       "depreciating": "Aktif Disusutkan",
@@ -1451,6 +1469,61 @@
       "categoryRequired": "Kategori wajib dipilih",
       "purchaseDateRequired": "Tanggal pembelian wajib diisi",
       "residualValueTooHigh": "Nilai sisa harus lebih kecil dari harga pembelian"
+    },
+    "action": {
+      "checkOut": {
+        "btn": "Pinjam",
+        "title": "Pinjam Aset",
+        "desc": "Tentukan pengguna dan proyek yang meminjam aset ini.",
+        "user": "Pengguna",
+        "userPh": "Pilih pengguna",
+        "project": "Proyek",
+        "projectPh": "Pilih proyek (opsional)",
+        "submit": "Pinjam",
+        "success": "Aset berhasil dipinjam.",
+        "error": "Gagal meminjam aset."
+      },
+      "checkIn": {
+        "btn": "Kembalikan",
+        "title": "Kembalikan Aset",
+        "desc": "Catat kondisi aset saat dikembalikan.",
+        "conditionLabel": "Kondisi Saat Kembali",
+        "notesLabel": "Catatan",
+        "notesPh": "Kondisi, kerusakan, catatan lain…",
+        "submit": "Kembalikan",
+        "success": "Aset berhasil dikembalikan.",
+        "error": "Gagal mengembalikan aset."
+      },
+      "dispose": {
+        "menuItem": "Hapusbuku / Pensiun",
+        "title": "Hapusbuku / Pensiunkan Aset",
+        "desc": "Tindakan ini akan memposting jurnal pelepasan aset dan mengubah status menjadi RETIRED.",
+        "dateLabel": "Tanggal Pelepasan",
+        "proceedsLabel": "Hasil Penjualan (IDR)",
+        "submit": "Hapusbuku",
+        "success": "Aset berhasil dihapusbukukan.",
+        "error": "Gagal menghapusbukukan aset."
+      },
+      "changeStatus": {
+        "menuItem": "Ubah Status",
+        "title": "Ubah Status Aset",
+        "desc": "Perbarui status dan kondisi operasional aset.",
+        "statusLabel": "Status Baru",
+        "conditionLabel": "Kondisi",
+        "notesLabel": "Catatan",
+        "notesPh": "Alasan perubahan status…",
+        "submit": "Simpan",
+        "success": "Status aset diperbarui.",
+        "error": "Gagal memperbarui status."
+      }
+    },
+    "status": {
+      "available": "Tersedia",
+      "reserved": "Direservasi",
+      "checkedOut": "Dipinjam",
+      "inMaintenance": "Dalam Perawatan",
+      "broken": "Rusak",
+      "retired": "Pensiun"
     }
   },
   "currency": {
@@ -1630,7 +1703,8 @@
       "completedProjects": "Proyek Selesai",
       "totalRevenue": "Total Pendapatan"
     },
-    "subtitle": "Kelola akun pribadi, identitas perusahaan, dan pengaturan sistem."
+    "subtitle": "Kelola akun pribadi, identitas perusahaan, dan pengaturan sistem.",
+    "unsavedConfirm": "Ada perubahan yang belum disimpan. Tinggalkan seksi ini?"
   },
   "actions": {
     "details": "Detail",
@@ -2540,6 +2614,12 @@
     "roles": {
       "superAdminDesc": "Akses penuh sistem — pengguna, pengaturan, semua data.",
       "videographerDesc": "Akses media-collab saja — upload dan edit aset."
+    },
+    "pwRule": {
+      "length": "Min. 8 karakter",
+      "upper": "Huruf besar",
+      "lower": "Huruf kecil",
+      "digit": "Angka"
     }
   },
   "vendors": {
@@ -2808,7 +2888,8 @@
       "actionEdit": "Edit",
       "actionDelete": "Hapus",
       "filterAccountType": "Tipe Akun",
-      "searchPlaceholderAlt": "Cari kode atau nama akun..."
+      "searchPlaceholderAlt": "Cari kode atau nama akun...",
+      "actionViewGL": "Lihat di Buku Besar"
     },
     "arAging": {
       "title": "Aging Piutang",
@@ -2840,7 +2921,8 @@
       "bucket61to90": "61–90",
       "bucketOver90": "> 90",
       "unknownClient": "Klien tidak diketahui",
-      "asOfDatePlaceholder": "Per tanggal"
+      "asOfDatePlaceholder": "Per tanggal",
+      "viewInvoicesTitle": "Lihat faktur untuk klien ini"
     },
     "apAging": {
       "title": "Aging Hutang",
@@ -2946,7 +3028,12 @@
       "validationDateRequired": "Tanggal wajib diisi",
       "validationSelectTransactionType": "Pilih tipe transaksi",
       "validationMinTwoLines": "Minimal 2 baris (debit dan kredit).",
-      "validationDebitCreditBalance": "Total debit harus sama dengan total kredit."
+      "validationDebitCreditBalance": "Total debit harus sama dengan total kredit.",
+      "searchAccountPlaceholder": "Cari berdasarkan kode atau nama…",
+      "noAccountFound": "Akun tidak ditemukan",
+      "fiscalPeriodClosedTitle": "Periode fiskal sudah ditutup",
+      "fiscalPeriodClosedDesc": "Periode fiskal ini sudah ditutup. Menyimpan atau memposting entri baru tidak dapat dilakukan. Hubungi administrator Anda untuk membukanya kembali.",
+      "footerPeriodClosed": "Periode fiskal ditutup — pengeditan dinonaktifkan"
     },
     "cashReceipts": {
       "title": "Penerimaan Kas",
@@ -4032,7 +4119,9 @@
     "descriptionPlaceholder": "Deskripsi singkat (opsional)",
     "createSubmit": "Buat Shot List",
     "newShotList": "Shot List Baru",
-    "selectProject": "Pilih proyek"
+    "selectProject": "Pilih proyek",
+    "searchProject": "Cari berdasarkan nama atau nomor…",
+    "noProjectsFound": "Proyek tidak ditemukan"
   },
   "projectCalendar": {
     "title": "Kalender Proyek",
@@ -4781,7 +4870,12 @@
     "addFirstExpense": "Catat Biaya",
     "addQuotation": "Penawaran Baru",
     "addFirstQuotation": "Buat Penawaran",
-    "backToClient": "Kembali ke klien"
+    "backToClient": "Kembali ke klien",
+    "productionGroup": "Produksi",
+    "newShotList": "Shot List Baru",
+    "newCallSheet": "Call Sheet Baru",
+    "newDeck": "Deck Baru",
+    "newContentItem": "Konten Baru"
   },
   "projectForm": {
     "identity": {
@@ -5029,7 +5123,8 @@
       "desc": "Disusun otomatis dari data langsung Anda — pendapatan, piutang, jatuh tempo, konversi, klien & proyek teratas. Tanpa input manual.",
       "open": "Buka →"
     },
-    "invalidPdfUrl": "URL PDF tidak valid"
+    "invalidPdfUrl": "URL PDF tidak valid",
+    "exportPdfPending": "Membuat…"
   },
   "reportDetail": {
     "subtitle": "Detail laporan, bagian, dan visualisasi terkait.",
@@ -5071,7 +5166,9 @@
     "rows": "baris",
     "metricCardMisconfigured": "Konfigurasi metric_card tidak lengkap (valueKey tidak ada).",
     "noViz": "Belum ada visualisasi di bagian ini.",
-    "invalidPdfUrl": "URL PDF tidak valid"
+    "invalidPdfUrl": "URL PDF tidak valid",
+    "back": "Kembali",
+    "generatePdfPending": "Membuat…"
   },
   "reportBuilder": {
     "createTitle": "Laporan Baru",
@@ -5218,7 +5315,8 @@
       "updatedAt": "Diperbarui",
       "actions": "Tindakan"
     },
-    "reportActions": "Tindakan laporan"
+    "reportActions": "Tindakan laporan",
+    "sampleDataNotice": "Data sampel — analitik nyata segera hadir. Angka di bawah ini adalah placeholder dan tidak mencerminkan performa akun sebenarnya."
   },
   "calendarPage": {
     "title": "Kalender",
@@ -5310,7 +5408,9 @@
       "publishFailed": "Publikasi gagal — perlu pemeriksaan",
       "published": "Terbit",
       "title": "Detail Konten"
-    }
+    },
+    "searchProject": "Cari berdasarkan nama atau nomor…",
+    "noProjectsFound": "Proyek tidak ditemukan"
   },
   "projectContentCalendar": {
     "title": "Kalender Konten",
@@ -5465,7 +5565,9 @@
     "layoutQuote": "Kutipan",
     "layoutSection": "Pemisah Bagian",
     "descriptionPlaceholder": "Deskripsi singkat (opsional)",
-    "slide": "Slide {{index}}"
+    "slide": "Slide {{index}}",
+    "searchProject": "Cari berdasarkan nama atau nomor…",
+    "noProjectsFound": "Proyek tidak ditemukan"
   },
   "shotListEditor": {
     "saveSuccess": "Shot list tersimpan",
@@ -5637,7 +5739,9 @@
     "saveAllFailed": "Gagal menyimpan call sheet.",
     "savedAll": "Call sheet tersimpan.",
     "savedAllChanges": "Semua perubahan tersimpan.",
-    "unsavedChanges": "Ada perubahan yang belum disimpan."
+    "unsavedChanges": "Ada perubahan yang belum disimpan.",
+    "unsaved": "Baru",
+    "unsavedRowHint": "Baris ini baru — klik \"Simpan Call Sheet\" untuk menyimpannya."
   },
   "mediaCollab": {
     "loadMore": "Muat lainnya",
@@ -5764,7 +5868,14 @@
     "creating": "Membuat…",
     "createProjectSubmit": "Buat Proyek",
     "createSuccess": "Proyek \"{{name}}\" berhasil dibuat.",
-    "createFailed": "Gagal membuat proyek."
+    "createFailed": "Gagal membuat proyek.",
+    "uploadError": "Gagal",
+    "retry": "Coba lagi",
+    "retryHint": "Pilih ulang \"{{name}}\" untuk mencoba lagi.",
+    "accessLevelViewOnly": "Tautan hanya lihat",
+    "accessLevelDownload": "Lihat + Unduh",
+    "accessLevelComment": "Lihat + Komentar",
+    "accessLevelNote": "Siapa pun dengan tautan ini bisa melihat tanpa masuk."
   },
   "salaries": {
     "pageTitle": "Gaji Karyawan",

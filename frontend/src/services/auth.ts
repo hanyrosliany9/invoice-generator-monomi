@@ -64,4 +64,17 @@ export const authService = {
     }
     return response.data.data
   },
+
+  /**
+   * Ask the backend to invalidate the httpOnly refresh-token cookie.
+   * This is best-effort — if the network call fails the local logout
+   * (store.logout()) still proceeds so the user is never stuck.
+   */
+  logout: async (): Promise<void> => {
+    try {
+      await apiClient.post('/auth/logout')
+    } catch {
+      // Swallow — local logout proceeds regardless.
+    }
+  },
 }

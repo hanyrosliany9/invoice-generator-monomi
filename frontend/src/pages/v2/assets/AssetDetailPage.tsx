@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Pencil, Trash2, Boxes,
   Camera, Cpu, Lightbulb, Mic, Aperture, Wrench, Package,
-  MapPin, Calendar, Building2,
+  MapPin, Calendar, Building2, LogIn, LogOut, Trash, RefreshCcw, Plus,
+  ExternalLink, Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,6 +25,15 @@ import { DataTable } from '@/components/monomi/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -33,6 +42,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { assetService, type Asset, type DepreciationPeriodRow } from '@/services/assets';
+import { usersService } from '@/services/users';
+import { projectService } from '@/services/projects';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical to the list page so the chrome doesn't shift  */
@@ -103,6 +114,503 @@ const categoryIcon = (category?: string) => {
 };
 
 /* ------------------------------------------------------------------ */
+/*  Shared dialog style helpers                                        */
+/* ------------------------------------------------------------------ */
+
+const dlgInputCls =
+  'bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary ' +
+  'focus-visible:border-accent-navy-ring focus-visible:ring-accent-navy-ring/40';
+
+const DlgLabel = ({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) => (
+  <Label
+    htmlFor={htmlFor}
+    className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary"
+  >
+    {children}
+  </Label>
+);
+
+/* ------------------------------------------------------------------ */
+/*  CheckOutDialog                                                      */
+/* ------------------------------------------------------------------ */
+
+interface CheckOutDialogProps {
+  assetId: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSuccess: () => void;
+}
+
+function CheckOutDialog({ assetId, open, onOpenChange, onSuccess }: CheckOutDialogProps) {
+  const { t } = useTranslation();
+  const [userId, setUserId] = useState('');
+  const [projectId, setProjectId] = useState('');
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users-list'],
+    queryFn: () => usersService.getUsers({ limit: 200 }),
+    enabled: open,
+  });
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects-list'],
+    queryFn: () => projectService.getProjects(),
+    enabled: open,
+  });
+
+  // reset on open
+  const [openKey, setOpenKey] = useState<boolean | null>(null);
+  if (open !== openKey) {
+    setOpenKey(open);
+    if (open) { setUserId(''); setProjectId(''); }
+  }
+
+  const mutation = useMutation({
+    mutationFn: () => assetService.checkOutAsset(assetId, userId, projectId || undefined),
+    onSuccess: () => {
+      toast.success(t('assets.action.checkOut.success', 'Aset berhasil dipinjam.'));
+      onOpenChange(false);
+      onSuccess();
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('assets.action.checkOut.error', 'Gagal meminjam aset.'));
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-bg-raised border-border-subtle sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-text-primary font-display">
+            {t('assets.action.checkOut.title', 'Pinjam Aset')}
+          </DialogTitle>
+          <DialogDescription className="text-text-tertiary">
+            {t('assets.action.checkOut.desc', 'Tentukan pengguna dan proyek yang meminjam aset ini.')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="co-user">{t('assets.action.checkOut.user', 'Pengguna')}</DlgLabel>
+            <Select value={userId} onValueChange={setUserId}>
+              <SelectTrigger id="co-user" className={cn('w-full', dlgInputCls)}>
+                <SelectValue placeholder={t('assets.action.checkOut.userPh', 'Pilih pengguna')} />
+              </SelectTrigger>
+              <SelectContent className="bg-bg-raised border-border-subtle max-h-60">
+                {users.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="co-project">
+              {t('assets.action.checkOut.project', 'Proyek')}{' '}
+              <span className="normal-case text-text-tertiary">
+                ({t('common.optional', 'opsional')})
+              </span>
+            </DlgLabel>
+            <Select value={projectId} onValueChange={setProjectId}>
+              <SelectTrigger id="co-project" className={cn('w-full', dlgInputCls)}>
+                <SelectValue placeholder={t('assets.action.checkOut.projectPh', 'Pilih proyek (opsional)')} />
+              </SelectTrigger>
+              <SelectContent className="bg-bg-raised border-border-subtle max-h-60">
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.number ? `${p.number} — ${p.description}` : p.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="ghost" size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={mutation.isPending}
+            className="text-text-secondary hover:text-text-primary"
+          >
+            {t('common.cancel', 'Batal')}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => mutation.mutate()}
+            disabled={!userId || mutation.isPending}
+            className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[120px]"
+          >
+            {mutation.isPending ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />{t('common.saving', 'Menyimpan…')}</>
+            ) : (
+              t('assets.action.checkOut.submit', 'Pinjam')
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  CheckInDialog                                                       */
+/* ------------------------------------------------------------------ */
+
+interface CheckInDialogProps {
+  assetId: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSuccess: () => void;
+}
+
+const CONDITION_VALUES_LOCAL = ['EXCELLENT', 'GOOD', 'FAIR', 'POOR', 'BROKEN'] as const;
+
+function CheckInDialog({ assetId, open, onOpenChange, onSuccess }: CheckInDialogProps) {
+  const { t } = useTranslation();
+  const [condition, setCondition] = useState<string>('GOOD');
+  const [notes, setNotes] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: () => assetService.checkInAsset(assetId, condition, notes.trim() || undefined),
+    onSuccess: () => {
+      toast.success(t('assets.action.checkIn.success', 'Aset berhasil dikembalikan.'));
+      onOpenChange(false);
+      onSuccess();
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('assets.action.checkIn.error', 'Gagal mengembalikan aset.'));
+    },
+  });
+
+  const conditionLabels: Record<string, string> = {
+    EXCELLENT: t('assets.condition.excellent', 'Sangat Baik'),
+    GOOD: t('assets.condition.good', 'Baik'),
+    FAIR: t('assets.condition.fair', 'Cukup'),
+    POOR: t('assets.condition.poor', 'Buruk'),
+    BROKEN: t('assets.condition.broken', 'Rusak'),
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-bg-raised border-border-subtle sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-text-primary font-display">
+            {t('assets.action.checkIn.title', 'Kembalikan Aset')}
+          </DialogTitle>
+          <DialogDescription className="text-text-tertiary">
+            {t('assets.action.checkIn.desc', 'Catat kondisi aset saat dikembalikan.')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="ci-condition">{t('assets.action.checkIn.conditionLabel', 'Kondisi Saat Kembali')}</DlgLabel>
+            <Select value={condition} onValueChange={setCondition}>
+              <SelectTrigger id="ci-condition" className={cn('w-full', dlgInputCls)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-bg-raised border-border-subtle">
+                {CONDITION_VALUES_LOCAL.map((c) => (
+                  <SelectItem key={c} value={c}>{conditionLabels[c]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="ci-notes">
+              {t('assets.action.checkIn.notesLabel', 'Catatan')}{' '}
+              <span className="normal-case text-text-tertiary">({t('common.optional', 'opsional')})</span>
+            </DlgLabel>
+            <Input
+              id="ci-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t('assets.action.checkIn.notesPh', 'Kondisi, kerusakan, catatan lain…')}
+              className={dlgInputCls}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="ghost" size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={mutation.isPending}
+            className="text-text-secondary hover:text-text-primary"
+          >
+            {t('common.cancel', 'Batal')}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+            className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[120px]"
+          >
+            {mutation.isPending ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />{t('common.saving', 'Menyimpan…')}</>
+            ) : (
+              t('assets.action.checkIn.submit', 'Kembalikan')
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  DisposeDialog                                                       */
+/* ------------------------------------------------------------------ */
+
+interface DisposeDialogProps {
+  assetId: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSuccess: () => void;
+}
+
+function DisposeDialog({ assetId, open, onOpenChange, onSuccess }: DisposeDialogProps) {
+  const { t } = useTranslation();
+  const [proceeds, setProceeds] = useState('');
+  const [disposalDate, setDisposalDate] = useState(
+    () => new Date().toISOString().slice(0, 10),
+  );
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      assetService.disposeAsset(
+        assetId,
+        proceeds ? Number(proceeds) : undefined,
+        disposalDate || undefined,
+      ),
+    onSuccess: () => {
+      toast.success(t('assets.action.dispose.success', 'Aset berhasil dihapusbukukan.'));
+      onOpenChange(false);
+      onSuccess();
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('assets.action.dispose.error', 'Gagal menghapusbukukan aset.'));
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-bg-raised border-border-subtle sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-text-primary font-display">
+            {t('assets.action.dispose.title', 'Hapusbuku / Pensiunkan Aset')}
+          </DialogTitle>
+          <DialogDescription className="text-text-tertiary">
+            {t('assets.action.dispose.desc', 'Tindakan ini akan memposting jurnal pelepasan aset dan mengubah status menjadi RETIRED.')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="dp-date">{t('assets.action.dispose.dateLabel', 'Tanggal Pelepasan')}</DlgLabel>
+            <Input
+              id="dp-date"
+              type="date"
+              value={disposalDate}
+              onChange={(e) => setDisposalDate(e.target.value)}
+              className={dlgInputCls}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="dp-proceeds">
+              {t('assets.action.dispose.proceedsLabel', 'Hasil Penjualan (IDR)')}{' '}
+              <span className="normal-case text-text-tertiary">({t('common.optional', 'opsional')})</span>
+            </DlgLabel>
+            <Input
+              id="dp-proceeds"
+              type="number"
+              min={0}
+              value={proceeds}
+              onChange={(e) => setProceeds(e.target.value)}
+              placeholder="0"
+              className={cn(dlgInputCls, 'text-right font-mono tabular-nums')}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="ghost" size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={mutation.isPending}
+            className="text-text-secondary hover:text-text-primary"
+          >
+            {t('common.cancel', 'Batal')}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+            className="bg-danger text-white hover:bg-danger/90 min-w-[120px]"
+          >
+            {mutation.isPending ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />{t('common.saving', 'Menyimpan…')}</>
+            ) : (
+              t('assets.action.dispose.submit', 'Hapusbuku')
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  ChangeStatusDialog                                                  */
+/* ------------------------------------------------------------------ */
+
+interface ChangeStatusDialogProps {
+  assetId: string;
+  currentStatus: Asset['status'];
+  currentCondition: Asset['condition'];
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSuccess: () => void;
+}
+
+const STATUS_VALUES_LOCAL = [
+  'AVAILABLE', 'RESERVED', 'CHECKED_OUT', 'IN_MAINTENANCE', 'BROKEN', 'RETIRED',
+] as const;
+
+function ChangeStatusDialog({
+  assetId, currentStatus, currentCondition, open, onOpenChange, onSuccess,
+}: ChangeStatusDialogProps) {
+  const { t } = useTranslation();
+  const [status, setStatus] = useState<Asset['status']>(currentStatus);
+  const [condition, setCondition] = useState<Asset['condition']>(currentCondition);
+  const [notes, setNotes] = useState('');
+
+  // Sync when asset data changes
+  const [syncKey, setSyncKey] = useState('');
+  const key = currentStatus + currentCondition;
+  if (key !== syncKey) {
+    setSyncKey(key);
+    setStatus(currentStatus);
+    setCondition(currentCondition);
+    setNotes('');
+  }
+
+  const mutation = useMutation({
+    mutationFn: () => assetService.updateStatus(assetId, status, condition, notes.trim() || undefined),
+    onSuccess: () => {
+      toast.success(t('assets.action.changeStatus.success', 'Status aset diperbarui.'));
+      onOpenChange(false);
+      onSuccess();
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? t('assets.action.changeStatus.error', 'Gagal memperbarui status.'));
+    },
+  });
+
+  const statusLabels: Record<Asset['status'], string> = {
+    AVAILABLE: t('assets.status.available', 'Tersedia'),
+    RESERVED: t('assets.status.reserved', 'Direservasi'),
+    CHECKED_OUT: t('assets.status.checkedOut', 'Dipinjam'),
+    IN_MAINTENANCE: t('assets.status.inMaintenance', 'Dalam Perawatan'),
+    BROKEN: t('assets.status.broken', 'Rusak'),
+    RETIRED: t('assets.status.retired', 'Pensiun'),
+  };
+
+  const conditionLabels: Record<Asset['condition'], string> = {
+    EXCELLENT: t('assets.condition.excellent', 'Sangat Baik'),
+    GOOD: t('assets.condition.good', 'Baik'),
+    FAIR: t('assets.condition.fair', 'Cukup'),
+    POOR: t('assets.condition.poor', 'Buruk'),
+    BROKEN: t('assets.condition.broken', 'Rusak'),
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-bg-raised border-border-subtle sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-text-primary font-display">
+            {t('assets.action.changeStatus.title', 'Ubah Status Aset')}
+          </DialogTitle>
+          <DialogDescription className="text-text-tertiary">
+            {t('assets.action.changeStatus.desc', 'Perbarui status dan kondisi operasional aset.')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="cs-status">{t('assets.action.changeStatus.statusLabel', 'Status Baru')}</DlgLabel>
+            <Select value={status} onValueChange={(v) => setStatus(v as Asset['status'])}>
+              <SelectTrigger id="cs-status" className={cn('w-full', dlgInputCls)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-bg-raised border-border-subtle">
+                {STATUS_VALUES_LOCAL.map((s) => (
+                  <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="cs-condition">{t('assets.action.changeStatus.conditionLabel', 'Kondisi')}</DlgLabel>
+            <Select value={condition} onValueChange={(v) => setCondition(v as Asset['condition'])}>
+              <SelectTrigger id="cs-condition" className={cn('w-full', dlgInputCls)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-bg-raised border-border-subtle">
+                {CONDITION_VALUES_LOCAL.map((c) => (
+                  <SelectItem key={c} value={c}>{conditionLabels[c]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="cs-notes">
+              {t('assets.action.changeStatus.notesLabel', 'Catatan')}{' '}
+              <span className="normal-case text-text-tertiary">({t('common.optional', 'opsional')})</span>
+            </DlgLabel>
+            <Input
+              id="cs-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t('assets.action.changeStatus.notesPh', 'Alasan perubahan status…')}
+              className={dlgInputCls}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="ghost" size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={mutation.isPending}
+            className="text-text-secondary hover:text-text-primary"
+          >
+            {t('common.cancel', 'Batal')}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+            className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[120px]"
+          >
+            {mutation.isPending ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />{t('common.saving', 'Menyimpan…')}</>
+            ) : (
+              t('assets.action.changeStatus.submit', 'Simpan')
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Shell — hoisted to module scope to prevent focus-loss remounts     */
 /* ------------------------------------------------------------------ */
 
@@ -133,10 +641,18 @@ function PageShell({ user, children }: ShellProps) {
 /*  page body, causing the same remount issue as Shell).               */
 /* ------------------------------------------------------------------ */
 
-function SectionHeader({ title, count }: { title: string; count: number }) {
+function SectionHeader({
+  title,
+  count,
+  action,
+}: {
+  title: string;
+  count: number;
+  action?: React.ReactNode;
+}) {
   const { t } = useTranslation();
   return (
-    <div className="mb-5 flex items-baseline justify-between gap-4">
+    <div className="mb-5 flex items-start justify-between gap-4">
       <div>
         <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
           {title}
@@ -145,6 +661,7 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
           {t('assets.detail.recordCount', '{{count}} catatan', { count })}
         </p>
       </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
@@ -159,6 +676,18 @@ export default function AssetDetailPageV2() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
+  /* ---------- dialog open state ---------- */
+  const [checkOutOpen, setCheckOutOpen] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [disposeOpen, setDisposeOpen] = useState(false);
+  const [changeStatusOpen, setChangeStatusOpen] = useState(false);
+
+  const invalidateAsset = () => {
+    queryClient.invalidateQueries({ queryKey: ['asset', id] });
+    queryClient.invalidateQueries({ queryKey: ['assets'] });
+  };
 
   /* ---------- data ---------- */
   const {
@@ -430,7 +959,7 @@ export default function AssetDetailPageV2() {
             : t('assets.detail.subtitle', 'Detail aset, nilai, dan riwayat operasional.')
         }
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant="outline"
               className={cn(
@@ -440,10 +969,26 @@ export default function AssetDetailPageV2() {
             >
               {STATUS_LABEL[asset.status] ?? asset.status}
             </Badge>
-            <Button size="sm" onClick={() => navigate(`/assets/${id}/edit`)}>
+
+            {/* Status-aware primary CTAs */}
+            {(asset.status === 'AVAILABLE' || asset.status === 'RESERVED') && (
+              <Button size="sm" onClick={() => setCheckOutOpen(true)}>
+                <LogOut className="h-4 w-4" />
+                {t('assets.action.checkOut.btn', 'Pinjam')}
+              </Button>
+            )}
+            {asset.status === 'CHECKED_OUT' && (
+              <Button size="sm" onClick={() => setCheckInOpen(true)}>
+                <LogIn className="h-4 w-4" />
+                {t('assets.action.checkIn.btn', 'Kembalikan')}
+              </Button>
+            )}
+
+            <Button size="sm" variant="outline" onClick={() => navigate(`/assets/${id}/edit`)}>
               <Pencil className="h-4 w-4" />
               {t('common.edit', 'Ubah')}
             </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -455,12 +1000,26 @@ export default function AssetDetailPageV2() {
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setChangeStatusOpen(true)}>
+                  <RefreshCcw className="h-3.5 w-3.5" />
+                  {t('assets.action.changeStatus.menuItem', 'Ubah Status')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {isAdmin && (
+                  <DropdownMenuItem
+                    onClick={() => setDisposeOpen(true)}
+                    className="text-warning focus:text-warning"
+                  >
+                    <Trash className="h-3.5 w-3.5" />
+                    {t('assets.action.dispose.menuItem', 'Hapusbuku / Pensiun')}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate(`/assets/${id}/edit`)}>
                   <Pencil className="h-3.5 w-3.5" />
                   {t('common.edit', 'Ubah')}
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleDelete}
                   className="text-danger focus:text-danger"
@@ -637,6 +1196,17 @@ export default function AssetDetailPageV2() {
             <SectionHeader
               title={t('assets.detail.depreciationSection', 'Skema Penyusutan')}
               count={1}
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/accounting/depreciation')}
+                  className="text-text-secondary border-border-subtle hover:text-text-primary"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {t('assets.detail.depr.processBtn', 'Proses Penyusutan')}
+                </Button>
+              }
             />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
               <div>
@@ -823,6 +1393,25 @@ export default function AssetDetailPageV2() {
           <SectionHeader
             title={t('assets.detail.maintenanceSection', 'Riwayat Perawatan')}
             count={maintenanceRecords.length}
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-text-secondary border-border-subtle hover:text-text-primary"
+                title={t('assets.detail.maintenance.addComingSoon', 'Endpoint POST /assets/:id/maintenance belum tersedia di backend')}
+                onClick={() =>
+                  toast.info(
+                    t(
+                      'assets.detail.maintenance.addNotAvailable',
+                      'Pencatatan perawatan belum tersedia. Gunakan menu Edit untuk memperbarui status aset.',
+                    ),
+                  )
+                }
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {t('assets.detail.maintenance.addBtn', 'Catat Perawatan')}
+              </Button>
+            }
           />
           {maintenanceRecords.length === 0 ? (
             <EmptyState
@@ -832,6 +1421,24 @@ export default function AssetDetailPageV2() {
                 'assets.detail.noMaintenanceDesc',
                 'Aset ini belum pernah diservis atau dirawat.',
               )}
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-text-secondary border-border-subtle hover:text-text-primary"
+                  onClick={() =>
+                    toast.info(
+                      t(
+                        'assets.detail.maintenance.addNotAvailable',
+                        'Pencatatan perawatan belum tersedia. Gunakan menu Edit untuk memperbarui status aset.',
+                      ),
+                    )
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('assets.detail.maintenance.addBtn', 'Catat Perawatan')}
+                </Button>
+              }
             />
           ) : (
             <DataTable
@@ -891,6 +1498,34 @@ export default function AssetDetailPageV2() {
           </GlassPanel>
         </section>
       )}
+
+      {/* ── Action Dialogs ─────────────────────────────────────────── */}
+      <CheckOutDialog
+        assetId={id!}
+        open={checkOutOpen}
+        onOpenChange={setCheckOutOpen}
+        onSuccess={invalidateAsset}
+      />
+      <CheckInDialog
+        assetId={id!}
+        open={checkInOpen}
+        onOpenChange={setCheckInOpen}
+        onSuccess={invalidateAsset}
+      />
+      <DisposeDialog
+        assetId={id!}
+        open={disposeOpen}
+        onOpenChange={setDisposeOpen}
+        onSuccess={invalidateAsset}
+      />
+      <ChangeStatusDialog
+        assetId={id!}
+        currentStatus={asset.status}
+        currentCondition={asset.condition}
+        open={changeStatusOpen}
+        onOpenChange={setChangeStatusOpen}
+        onSuccess={invalidateAsset}
+      />
     </PageShell>
   );
 }

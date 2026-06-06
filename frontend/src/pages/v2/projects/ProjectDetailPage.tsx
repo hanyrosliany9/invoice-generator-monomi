@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
@@ -571,6 +571,26 @@ export default function ProjectDetailPageV2() {
                     {t('projectDetail.action.hold', 'Put on Hold')}
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-text-tertiary text-[10px] uppercase tracking-[0.14em]">
+                  {t('projectDetail.productionGroup', 'Production')}
+                </DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate(`/shot-lists?projectId=${id}`)}>
+                  <ListChecks className="h-3.5 w-3.5" />
+                  {t('projectDetail.newShotList', 'New Shot List')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/call-sheets?projectId=${id}`)}>
+                  <FileText className="h-3.5 w-3.5" />
+                  {t('projectDetail.newCallSheet', 'New Call Sheet')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/decks?projectId=${id}`)}>
+                  <Briefcase className="h-3.5 w-3.5" />
+                  {t('projectDetail.newDeck', 'New Deck')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/calendar/content?projectId=${id}`)}>
+                  <Calendar className="h-3.5 w-3.5" />
+                  {t('projectDetail.newContentItem', 'New Content Item')}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleDelete}

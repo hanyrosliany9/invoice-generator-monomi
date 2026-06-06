@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,6 +23,8 @@ import {
   DatabaseBackup,
   Loader2,
   Download,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
@@ -245,6 +247,8 @@ const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
     }
   }, [data, reset]);
 
+  useRegisterDirty(isDirty);
+
   const mutation = useMutation({
     mutationFn: settingsService.updateUserSettings,
     onSuccess: (res: any) => {
@@ -363,11 +367,28 @@ const SecuritySection = () => {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isDirty },
   } = useForm<SecurityFormValues>({
     resolver: zodResolver(securitySchema),
     defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
   });
+
+  useRegisterDirty(isDirty);
+
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const watchedNew = watch('newPassword') ?? '';
+
+  // Live strength rules for new password
+  const pwRules = [
+    { key: 'length', met: watchedNew.length >= 8 },
+    { key: 'upper', met: /[A-Z]/.test(watchedNew) },
+    { key: 'lower', met: /[a-z]/.test(watchedNew) },
+    { key: 'digit', met: /[0-9]/.test(watchedNew) },
+  ];
 
   const mutation = useMutation({
     mutationFn: authService.changePassword,
@@ -402,14 +423,25 @@ const SecuritySection = () => {
           error={errors.currentPassword?.message}
           className="md:col-span-2"
         >
-          <Input
-            id="ss-current"
-            type="password"
-            autoComplete="current-password"
-            className={cn(fieldInputClass, errors.currentPassword && fieldInvalidClass)}
-            disabled={mutation.isPending}
-            {...register('currentPassword')}
-          />
+          <div className="relative">
+            <Input
+              id="ss-current"
+              type={showCurrent ? 'text' : 'password'}
+              autoComplete="current-password"
+              className={cn(fieldInputClass, errors.currentPassword && fieldInvalidClass, 'pr-9')}
+              disabled={mutation.isPending}
+              {...register('currentPassword')}
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowCurrent((v) => !v)}
+              className="absolute inset-y-0 right-0 flex items-center px-2.5 text-text-tertiary hover:text-text-secondary transition-colors"
+              aria-label={showCurrent ? t('auth.hidePassword', 'Hide password') : t('auth.showPassword', 'Show password')}
+            >
+              {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </FieldShell>
         <FieldShell
           id="ss-new"
@@ -417,14 +449,50 @@ const SecuritySection = () => {
           required
           error={errors.newPassword?.message}
         >
-          <Input
-            id="ss-new"
-            type="password"
-            autoComplete="new-password"
-            className={cn(fieldInputClass, errors.newPassword && fieldInvalidClass)}
-            disabled={mutation.isPending}
-            {...register('newPassword')}
-          />
+          <div className="relative">
+            <Input
+              id="ss-new"
+              type={showNew ? 'text' : 'password'}
+              autoComplete="new-password"
+              className={cn(fieldInputClass, errors.newPassword && fieldInvalidClass, 'pr-9')}
+              disabled={mutation.isPending}
+              {...register('newPassword')}
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowNew((v) => !v)}
+              className="absolute inset-y-0 right-0 flex items-center px-2.5 text-text-tertiary hover:text-text-secondary transition-colors"
+              aria-label={showNew ? t('auth.hidePassword', 'Hide password') : t('auth.showPassword', 'Show password')}
+            >
+              {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {/* Live strength indicator */}
+          {watchedNew.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              {pwRules.map((r) => {
+                const label = r.key === 'length'
+                  ? t('users.pwRule.length', 'Min. 8 karakter')
+                  : r.key === 'upper'
+                    ? t('users.pwRule.upper', 'Huruf besar')
+                    : r.key === 'lower'
+                      ? t('users.pwRule.lower', 'Huruf kecil')
+                      : t('users.pwRule.digit', 'Angka');
+                return (
+                  <span
+                    key={r.key}
+                    className={cn(
+                      'text-[11px] transition-colors',
+                      r.met ? 'text-success' : 'text-text-tertiary',
+                    )}
+                  >
+                    {r.met ? '✓' : '·'} {label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </FieldShell>
         <FieldShell
           id="ss-confirm"
@@ -432,14 +500,25 @@ const SecuritySection = () => {
           required
           error={errors.confirmPassword?.message}
         >
-          <Input
-            id="ss-confirm"
-            type="password"
-            autoComplete="new-password"
-            className={cn(fieldInputClass, errors.confirmPassword && fieldInvalidClass)}
-            disabled={mutation.isPending}
-            {...register('confirmPassword')}
-          />
+          <div className="relative">
+            <Input
+              id="ss-confirm"
+              type={showConfirm ? 'text' : 'password'}
+              autoComplete="new-password"
+              className={cn(fieldInputClass, errors.confirmPassword && fieldInvalidClass, 'pr-9')}
+              disabled={mutation.isPending}
+              {...register('confirmPassword')}
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setShowConfirm((v) => !v)}
+              className="absolute inset-y-0 right-0 flex items-center px-2.5 text-text-tertiary hover:text-text-secondary transition-colors"
+              aria-label={showConfirm ? t('auth.hidePassword', 'Hide password') : t('auth.showPassword', 'Show password')}
+            >
+              {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </FieldShell>
       </div>
       <SectionFooter
@@ -515,6 +594,8 @@ const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
       });
     }
   }, [data, reset]);
+
+  useRegisterDirty(isDirty);
 
   const mutation = useMutation({
     mutationFn: settingsService.updateCompanySettings,
@@ -704,6 +785,8 @@ const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
     }
   }, [data, reset]);
 
+  useRegisterDirty(isDirty);
+
   const mutation = useMutation({
     mutationFn: settingsService.updateCompanySettings,
     onSuccess: () => {
@@ -868,6 +951,8 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
       });
     }
   }, [data, reset]);
+
+  useRegisterDirty(isDirty);
 
   const mutation = useMutation({
     mutationFn: settingsService.updateSystemSettings,
@@ -1078,6 +1163,8 @@ const NotificationsSection = ({ data }: { data: UserSettings | undefined }) => {
     }
   }, [data, reset]);
 
+  useRegisterDirty(isDirty);
+
   const mutation = useMutation({
     mutationFn: settingsService.updateUserSettings,
     onSuccess: () => {
@@ -1177,6 +1264,8 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
       });
     }
   }, [data, reset]);
+
+  useRegisterDirty(isDirty);
 
   const mutation = useMutation({
     mutationFn: settingsService.updateSystemSettings,
@@ -1332,12 +1421,30 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
 // and an accordion stack hides the seam without solving the depth.
 // ──────────────────────────────────────────────────────────────
 
+// ──────────────────────────────────────────────────────────────
+// Dirty-state bridge — lets each sub-section form tell the
+// orchestrator "I have unsaved changes" so the nav can warn
+// before switching away. A simple ref is enough; we never need
+// to re-render the orchestrator because of this flag.
+// ──────────────────────────────────────────────────────────────
+const DirtyContext = React.createContext<React.MutableRefObject<boolean> | null>(null);
+
+const useRegisterDirty = (isDirty: boolean) => {
+  const ref = React.useContext(DirtyContext);
+  useEffect(() => {
+    if (ref) ref.current = isDirty;
+    return () => { if (ref) ref.current = false; };
+  }, [ref, isDirty]);
+};
+
 export default function SettingsPageV2() {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const { canManageSettings } = usePermissions();
 
   const [activeSection, setActiveSection] = useState<SectionId>('profile');
+  // Shared mutable ref that active sections write their isDirty into.
+  const activeDirtyRef = useRef(false);
 
   // Build SECTIONS with translations — must be inside the component so t() works.
   const SECTIONS: SectionMeta[] = useMemo(() => [
@@ -1453,6 +1560,18 @@ export default function SettingsPageV2() {
     }
   };
 
+  const handleSectionChange = useCallback((id: SectionId) => {
+    if (
+      activeDirtyRef.current &&
+      !window.confirm(t('settings.unsavedConfirm', 'You have unsaved changes. Leave this section?'))
+    ) {
+      return;
+    }
+    activeDirtyRef.current = false;
+    setActiveSection(id);
+    window.history.replaceState(null, '', `#${id}`);
+  }, [t]);
+
   return (
     <AppShell
       sidebar={{
@@ -1487,10 +1606,7 @@ export default function SettingsPageV2() {
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => {
-                        setActiveSection(s.id);
-                        window.history.replaceState(null, '', `#${s.id}`);
-                      }}
+                      onClick={() => handleSectionChange(s.id)}
                       className={cn(
                         'group w-full text-left rounded-md px-3 py-2.5 transition-colors',
                         'flex items-start gap-3',
@@ -1521,9 +1637,14 @@ export default function SettingsPageV2() {
             </GlassPanel>
           </aside>
 
-          {/* Active section body */}
+          {/* Active section body — wrapped in DirtyContext so each
+              sub-form can signal "I have unsaved changes" to the nav. */}
           <section>
-            <GlassPanel surface="glass" padding="lg">{renderSection()}</GlassPanel>
+            <GlassPanel surface="glass" padding="lg">
+              <DirtyContext.Provider value={activeDirtyRef}>
+                {renderSection()}
+              </DirtyContext.Provider>
+            </GlassPanel>
           </section>
         </div>
       </PageContainer>

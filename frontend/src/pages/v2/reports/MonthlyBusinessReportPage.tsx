@@ -67,9 +67,10 @@ export default function MonthlyBusinessReportPageV2() {
   const [year, setYear] = useState<number>(now.getFullYear());
 
   const months = (i18n.language || '').startsWith('id') ? MONTHS_ID : MONTHS_EN;
+  // 5-year lookback (covers most reporting needs without overloading the selector)
   const years = useMemo(() => {
     const y = now.getFullYear();
-    return [y, y - 1, y - 2];
+    return [y, y - 1, y - 2, y - 3, y - 4];
   }, [now]);
 
   const { startDate, endDate } = useMemo(() => {
@@ -87,16 +88,16 @@ export default function MonthlyBusinessReportPageV2() {
     queryFn: () => reportsService.getRevenueAnalytics({ startDate, endDate }),
   });
   const clientsQ = useQuery({
-    queryKey: ['monthly-report', 'clients'],
-    queryFn: () => reportsService.getClientAnalytics(10),
+    queryKey: ['monthly-report', 'clients', year, month],
+    queryFn: () => reportsService.getClientAnalytics(10, { startDate, endDate }),
   });
   const projectsQ = useQuery({
-    queryKey: ['monthly-report', 'projects'],
-    queryFn: () => reportsService.getProjectAnalytics(10),
+    queryKey: ['monthly-report', 'projects', year, month],
+    queryFn: () => reportsService.getProjectAnalytics(10, { startDate, endDate }),
   });
   const paymentsQ = useQuery({
-    queryKey: ['monthly-report', 'payments'],
-    queryFn: () => reportsService.getPaymentAnalytics(),
+    queryKey: ['monthly-report', 'payments', year, month],
+    queryFn: () => reportsService.getPaymentAnalytics({ startDate, endDate }),
   });
 
   const isLoading =
@@ -253,7 +254,7 @@ export default function MonthlyBusinessReportPageV2() {
               <GlassPanel surface="glass" padding="none" className="overflow-hidden">
                 <div className="px-5 py-4 border-b border-border-subtle flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-success" />
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('monthlyReport.topClients', 'Top Clients (all-time)')}</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('monthlyReport.topClients', 'Top Clients — {{month}} {{year}}', { month: months[month - 1], year })}</p>
                 </div>
                 <div className="px-1 pb-1">
                   <DataTable<any>
@@ -271,7 +272,7 @@ export default function MonthlyBusinessReportPageV2() {
               <GlassPanel surface="glass" padding="none" className="overflow-hidden">
                 <div className="px-5 py-4 border-b border-border-subtle flex items-center gap-2">
                   <Receipt className="h-4 w-4 text-info" />
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('monthlyReport.topProjects', 'Top Projects (all-time)')}</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('monthlyReport.topProjects', 'Top Projects — {{month}} {{year}}', { month: months[month - 1], year })}</p>
                 </div>
                 <div className="px-1 pb-1">
                   <DataTable<any>
@@ -290,7 +291,7 @@ export default function MonthlyBusinessReportPageV2() {
             <GlassPanel surface="glass" padding="none" className="overflow-hidden">
               <div className="px-5 py-4 border-b border-border-subtle flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-warning" />
-                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('monthlyReport.paymentStatus', 'Invoices by Status (all-time)')}</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary">{t('monthlyReport.paymentStatus', 'Invoices by Status — {{month}} {{year}}', { month: months[month - 1], year })}</p>
               </div>
               <div className="px-1 pb-1">
                 <DataTable<any>

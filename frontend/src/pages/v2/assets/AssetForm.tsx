@@ -43,6 +43,8 @@ const CONDITION_VALUES = [
   'BROKEN',
 ] as const;
 
+const PAYMENT_SOURCE_VALUES = ['CASH', 'BANK', 'CREDIT'] as const;
+
 const makeAssetFormSchema = (t: (key: string, fallback: string) => string) => z
   .object({
     // 01 · Identitas
@@ -58,6 +60,7 @@ const makeAssetFormSchema = (t: (key: string, fallback: string) => string) => z
     // 03 · Akuisisi
     purchaseDate: z.date({ message: t('assets.validation.purchaseDateRequired', 'Purchase date is required') }),
     purchasePrice: z.coerce.number().min(0, 'Min. 0'),
+    paymentSource: z.enum(PAYMENT_SOURCE_VALUES).default('CASH'),
     supplier: z.string().max(160, 'Terlalu panjang').optional().or(z.literal('')),
     invoiceNumber: z.string().max(80, 'Terlalu panjang').optional().or(z.literal('')),
     warrantyExpiration: z.date().optional().nullable(),
@@ -109,6 +112,7 @@ export const emptyAssetFormValues: AssetFormValues = {
   serialNumber: '',
   purchaseDate: new Date(),
   purchasePrice: 0,
+  paymentSource: 'CASH',
   supplier: '',
   invoiceNumber: '',
   warrantyExpiration: null,
@@ -156,6 +160,15 @@ const CONDITION_OPTIONS: Array<{
   { value: 'FAIR', label: 'Fair' },
   { value: 'POOR', label: 'Poor' },
   { value: 'BROKEN', label: 'Broken' },
+];
+
+const PAYMENT_SOURCE_OPTIONS: Array<{
+  value: (typeof PAYMENT_SOURCE_VALUES)[number];
+  label: string;
+}> = [
+  { value: 'CASH', label: 'Cash' },
+  { value: 'BANK', label: 'Bank Transfer' },
+  { value: 'CREDIT', label: 'Credit / Kredit' },
 ];
 
 // ──────────────────────────────────────────────────────────────
@@ -549,6 +562,45 @@ export const AssetForm = ({
                 errors.purchasePrice && fieldInvalidClass,
               )}
               {...register('purchasePrice', { valueAsNumber: true })}
+            />
+          </FieldShell>
+
+          <FieldShell
+            id="af-payment-source"
+            label={t('assets.form.paymentSource', 'Sumber Dana')}
+            hint={t('assets.form.paymentSourceHint', 'Metode pembayaran saat akuisisi.')}
+            error={errors.paymentSource?.message}
+          >
+            <Controller
+              control={control}
+              name="paymentSource"
+              render={({ field }) => (
+                <Select
+                  value={field.value || 'CASH'}
+                  onValueChange={(v) =>
+                    field.onChange(v as AssetFormValues['paymentSource'])
+                  }
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger
+                    id="af-payment-source"
+                    className={cn(
+                      'w-full',
+                      fieldInputClass,
+                      errors.paymentSource && fieldInvalidClass,
+                    )}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-bg-raised border-border-subtle">
+                    {PAYMENT_SOURCE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
           </FieldShell>
 

@@ -9,8 +9,8 @@
 /*  (volume + status, no IDR).                                         */
 /* ------------------------------------------------------------------ */
 
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -136,6 +136,8 @@ const isThisWeek = (dateStr?: string) => {
 export default function CallSheetsListPageV2() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefillProjectId = searchParams.get('projectId') ?? '';
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
@@ -148,6 +150,11 @@ export default function CallSheetsListPageV2() {
 
   /* ----- create modal ----- */
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Auto-open create dialog when ?projectId is present.
+  useEffect(() => {
+    if (prefillProjectId) setCreateOpen(true);
+  }, [prefillProjectId]);
   const [createForm, setCreateForm] = useState<{
     callSheetType: CallSheetType;
     productionName: string;

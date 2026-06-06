@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -104,12 +104,19 @@ const ASPECT_PRESETS = [
 export default function DecksPageV2() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefillProjectId = searchParams.get('projectId') ?? '';
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | DeckStatus>('all');
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Auto-open create dialog when ?projectId is present.
+  useEffect(() => {
+    if (prefillProjectId) setCreateOpen(true);
+  }, [prefillProjectId]);
 
   /* ----- data ----- */
   const { data: decks = [], isLoading, error, refetch } = useQuery({
@@ -300,7 +307,10 @@ export default function DecksPageV2() {
       <CreateDeckDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSubmit={(values) => createMutation.mutate(values)}
+        onSubmit={(values) => createMutation.mutate({
+          ...values,
+          projectId: prefillProjectId || undefined,
+        })}
         isPending={createMutation.isPending}
       />
     </Shell>

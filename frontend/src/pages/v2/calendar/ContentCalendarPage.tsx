@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -36,6 +36,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
@@ -155,6 +156,8 @@ export default function ContentCalendarPageV2() {
   const { t } = useTranslation();
   const idLocale = useDateLocale();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefillProjectId = searchParams.get('projectId') ?? '';
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
 
@@ -170,6 +173,11 @@ export default function ContentCalendarPageV2() {
   const [selectedItem, setSelectedItem] = useState<ContentCalendarItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createDate, setCreateDate] = useState<Date | undefined>(undefined);
+
+  // Auto-open create dialog when ?projectId is present.
+  useEffect(() => {
+    if (prefillProjectId) setCreateOpen(true);
+  }, [prefillProjectId]);
 
   /* ----- data ----- */
   const filters: ContentCalendarFilters = useMemo(() => ({
@@ -301,10 +309,12 @@ export default function ContentCalendarPageV2() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateContentDto) => contentCalendarService.createContent(data),
-    onSuccess: () => {
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
       toast.success(t('content.created', 'Konten dibuat.'));
       setCreateOpen(false);
+      // Open detail sheet so operator can immediately see / edit the new item.
+      if (created?.id) setSelectedItem(created);
     },
     onError: () => toast.error(t('content.createFailed', 'Gagal membuat konten.')),
   });
@@ -622,6 +632,7 @@ export default function ContentCalendarPageV2() {
         projects={projects.map((p) => ({ id: p.id, number: p.number, description: p.description }))}
         onSubmit={(data) => createMutation.mutate(data)}
         submitting={createMutation.isPending}
+        prefillProjectId={prefillProjectId}
       />
     </AppShell>
   );
@@ -1102,7 +1113,7 @@ function DetailSheet({
 /* ------------------------------------------------------------------ */
 
 function CreateDialog({
-  open, onOpenChange, initialDate, clients, projects, onSubmit, submitting,
+  open, onOpenChange, initialDate, clients, projects, onSubmit, submitting, prefillProjectId = '',
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -1111,6 +1122,7 @@ function CreateDialog({
   projects: Array<{ id: string; number: string; description: string }>;
   onSubmit: (data: CreateContentDto) => void;
   submitting: boolean;
+  prefillProjectId?: string;
 }) {
   const { t } = useTranslation();
   const [caption, setCaption] = useState('');
@@ -1118,18 +1130,43 @@ function CreateDialog({
   const [time, setTime] = useState('09:00');
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);
   const [clientId, setClientId] = useState<string>('');
-  const [projectId, setProjectId] = useState<string>('');
+  const [projectId, setProjectId] = useState<string>(prefillProjectId);
 
   // Reset every time we open with a different initial date so the
   // calendar's "+" button always gives a clean slate prefilled with
   // the day the operator clicked.
   useEffect(() => { setScheduledAt(initialDate); }, [initialDate]);
 
+  // Seed projectId when dialog opens with a prefill (deep-link scenario).
+  useEffect(() => {
+    if (open && prefillProjectId) setProjectId((prev) => prev || prefillProjectId);
+  }, [open, prefillProjectId]);
+
   const togglePlatform = (p: Platform) => {
     setSelectedPlatforms((prev) =>
       prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p],
     );
   };
+
+  const projectOptions = useMemo(() => [
+    {
+      value: 'none',
+      label: t('contentCalendar.createDialog.none', 'None'),
+      keywords: [],
+      node: <span className="text-text-tertiary italic">{t('contentCalendar.createDialog.none', 'None')}</span>,
+    },
+    ...projects.map((p) => ({
+      value: p.id,
+      label: p.description || p.number,
+      keywords: [p.number, p.description],
+      node: (
+        <span className="flex items-baseline gap-2">
+          <span className="font-mono text-xs text-text-tertiary">{p.number}</span>
+          <span className="truncate">{p.description || t('common.noDescription', 'No description')}</span>
+        </span>
+      ),
+    })),
+  ], [projects, t]);
 
   const handleSubmit = () => {
     if (!caption.trim()) {
@@ -1262,20 +1299,15 @@ function CreateDialog({
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
                 {t('contentCalendar.createDialog.project', 'Project')}
               </label>
-              <Select value={projectId || 'none'} onValueChange={(v) => setProjectId(v === 'none' ? '' : v)}>
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder={t('contentCalendar.createDialog.projectPlaceholder', 'Select project (optional)')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t('contentCalendar.createDialog.none', 'None')}</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      <span className="font-mono mr-2">{p.number}</span>
-                      {p.description}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={projectId || 'none'}
+                onChange={(v) => setProjectId(v === 'none' ? '' : v)}
+                options={projectOptions}
+                placeholder={t('contentCalendar.createDialog.projectPlaceholder', 'Select project (optional)')}
+                searchPlaceholder={t('contentCalendar.searchProject', 'Search by name or number…')}
+                emptyText={t('contentCalendar.noProjectsFound', 'No projects found')}
+                className="w-full bg-bg-sunken border-border-subtle text-text-secondary"
+              />
             </div>
           </div>
         </div>

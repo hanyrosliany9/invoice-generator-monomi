@@ -226,6 +226,17 @@ export default function SocialMediaReportsPageV2() {
           }
         />
 
+        {/* Sample-data notice — sits above analytics panels; removed when real API wired. */}
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
+          <span className="mt-0.5 shrink-0 text-warning" aria-hidden="true">⚠</span>
+          <p className="text-xs text-warning/90 leading-relaxed">
+            {t(
+              'socialMediaReports.sampleDataNotice',
+              'Sample data — real analytics coming soon. The numbers below are placeholders and do not reflect actual account performance.',
+            )}
+          </p>
+        </div>
+
         {/* KPI band — followers / reach / engagement / report count. */}
         <section className="mb-12">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

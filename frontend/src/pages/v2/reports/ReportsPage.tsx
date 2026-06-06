@@ -257,8 +257,10 @@ export default function ReportsPageV2() {
                 onClick={() => exportMutation.mutate()}
                 disabled={exportMutation.isPending}
               >
-                <Download className="h-4 w-4" />
-                {t('reportsPage.exportPdf', 'Export PDF')}
+                <Download className={cn('h-4 w-4', exportMutation.isPending && 'animate-spin')} />
+                {exportMutation.isPending
+                  ? t('reportsPage.exportPdfPending', 'Generating…')
+                  : t('reportsPage.exportPdf', 'Export PDF')}
               </Button>
               <Button onClick={() => navigate('/reports/builder')} size="sm">
                 <Plus className="h-4 w-4" />

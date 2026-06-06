@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +27,7 @@ export const PageHeader = ({
         {breadcrumbs.map((b, i) => (
           <span key={i} className="flex items-center gap-1">
             {b.href
-              ? <a href={b.href} className="hover:text-text-secondary transition-colors">{b.label}</a>
+              ? <Link to={b.href} className="hover:text-text-secondary transition-colors">{b.label}</Link>
               : <span>{b.label}</span>}
             {i < breadcrumbs.length - 1 && <ChevronRight className="h-3 w-3" />}
           </span>

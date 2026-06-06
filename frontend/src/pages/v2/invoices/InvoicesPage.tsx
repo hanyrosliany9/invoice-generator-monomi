@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -79,9 +79,13 @@ export default function InvoicesPageV2() {
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
+  const [searchParams] = useSearchParams();
   const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  // Honour ?status=OVERDUE (etc.) from dashboard StatCard deep links.
+  const [statusFilter, setStatusFilter] = useState<string>(() => searchParams.get('status') ?? 'all');
   const [materaiFilter, setMateraiFilter] = useState<string>('all');
+  // Honour ?clientId=… deep links (e.g. AR-aging drill-down) — filters to one client.
+  const [clientFilter, setClientFilter] = useState<string>(() => searchParams.get('clientId') ?? 'all');
 
   /* ----- data ----- */
   const { data: invoices = [], isLoading, error, refetch } = useQuery({
@@ -161,15 +165,17 @@ export default function InvoicesPageV2() {
 
       const matchesStatus = statusFilter === 'all' || inv.status === statusFilter;
 
+      const matchesClient = clientFilter === 'all' || inv.client?.id === clientFilter;
+
       const matchesMaterai =
         materaiFilter === 'all'
         || (materaiFilter === 'required' && inv.materaiRequired)
         || (materaiFilter === 'pending'  && inv.materaiRequired && !inv.materaiApplied)
         || (materaiFilter === 'applied'  && inv.materaiApplied);
 
-      return matchesSearch && matchesStatus && matchesMaterai;
+      return matchesSearch && matchesStatus && matchesClient && matchesMaterai;
     });
-  }, [invoices, searchText, statusFilter, materaiFilter]);
+  }, [invoices, searchText, statusFilter, clientFilter, materaiFilter]);
 
   /* ----- derived: KPI band ----- */
   const stats = useMemo(() => {
@@ -182,12 +188,18 @@ export default function InvoicesPageV2() {
     };
   }, [invoices]);
 
-  const hasActiveFilters = !!searchText || statusFilter !== 'all' || materaiFilter !== 'all';
+  const hasActiveFilters = !!searchText || statusFilter !== 'all' || materaiFilter !== 'all' || clientFilter !== 'all';
   const resetFilters = () => {
     setSearchText('');
     setStatusFilter('all');
     setMateraiFilter('all');
+    setClientFilter('all');
   };
+  // Name of the client we're filtered to (from the first matching invoice), for the chip.
+  const clientFilterName =
+    clientFilter !== 'all'
+      ? invoices.find((i) => i.client?.id === clientFilter)?.client?.name
+      : undefined;
 
   /* ----- error short-circuit ----- */
   if (error) {
@@ -338,6 +350,20 @@ export default function InvoicesPageV2() {
               )}
             </div>
           </div>
+
+          {/* Active client-filter chip (from an AR-aging / client drill-down) */}
+          {clientFilter !== 'all' && (
+            <div className="px-5 pb-3 -mt-1">
+              <button
+                type="button"
+                onClick={() => setClientFilter('all')}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-bg-sunken px-3 py-1 text-xs text-text-secondary hover:text-text-primary"
+              >
+                {t('invoices.filter.clientChip', 'Client: {{name}}', { name: clientFilterName ?? '—' })}
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
 
           {/* Table */}
           {isLoading ? (

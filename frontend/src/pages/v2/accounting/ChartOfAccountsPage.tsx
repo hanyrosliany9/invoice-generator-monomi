@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   BookOpen, Plus, Search, X, MoreHorizontal, Edit2, Power, Trash2,
   ChevronRight, ChevronDown, TrendingUp, TrendingDown, DollarSign, Shield, ShoppingBag,
-  RefreshCw,
+  RefreshCw, BarChart2,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -134,6 +135,7 @@ function PageShell({ user, children }: { user: { name: string; role: string } | 
 
 export default function ChartOfAccountsPageV2() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
 
@@ -523,7 +525,11 @@ export default function ChartOfAccountsPageV2() {
                                         <MoreHorizontal className="h-4 w-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-44">
+                                    <DropdownMenuContent align="end" className="w-48">
+                                      <DropdownMenuItem onClick={() => navigate(`/accounting/general-ledger?accountCode=${a.code}`)}>
+                                        <BarChart2 className="h-3.5 w-3.5" /> {t('accounting.chartOfAccounts.actionViewGL', 'View in GL')}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
                                       <DropdownMenuItem onClick={() => openEdit(a)}>
                                         <Edit2 className="h-3.5 w-3.5" /> {t('accounting.chartOfAccounts.actionEdit', 'Edit')}
                                       </DropdownMenuItem>

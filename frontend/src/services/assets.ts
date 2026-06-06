@@ -87,6 +87,7 @@ export interface CreateAssetRequest {
   serialNumber?: string
   purchaseDate: string
   purchasePrice: number
+  paymentSource?: 'CASH' | 'BANK' | 'CREDIT'
   supplier?: string
   location?: string
   notes?: string
@@ -100,7 +101,7 @@ export interface UpdateAssetRequest extends Partial<CreateAssetRequest> {
 export const assetService = {
   getAssets: async (): Promise<Asset[]> => {
     try {
-      const response = await apiClient.get('/assets')
+      const response = await apiClient.get('/assets', { params: { limit: 1000 } })
 
       // Handle nested response structure
       let data = response?.data?.data
@@ -164,6 +165,22 @@ export const assetService = {
 
   checkInAsset: async (id: string, condition?: string, notes?: string): Promise<any> => {
     const response = await apiClient.post(`/assets/${id}/checkin`, { condition, notes })
+    return response.data.data
+  },
+
+  disposeAsset: async (id: string, proceeds?: number, disposalDate?: string): Promise<any> => {
+    const response = await apiClient.post(`/assets/${id}/dispose`, { proceeds, disposalDate })
+    return response.data.data
+  },
+
+  updateStatus: async (
+    id: string,
+    status: Asset['status'],
+    condition?: Asset['condition'],
+    notes?: string,
+  ): Promise<Asset> => {
+    const response = await apiClient.patch(`/assets/${id}`, { status, condition, notes })
+    if (!response?.data?.data) throw new Error('Status update failed')
     return response.data.data
   },
 

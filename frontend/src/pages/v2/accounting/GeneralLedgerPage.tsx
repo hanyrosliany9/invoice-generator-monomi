@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -59,6 +60,7 @@ const toIsoDate = (d: Date) => d.toISOString().slice(0, 10);
 
 interface LedgerEntry {
   id: string;
+  journalEntryId?: string;
   entryDate: string;
   accountCode: string;
   accountName: string;
@@ -67,6 +69,7 @@ interface LedgerEntry {
   credit: number;
   runningBalance: number;
   journalEntry?: {
+    id?: string;
     entryNumber: string;
     description?: string;
     descriptionId?: string;
@@ -75,6 +78,7 @@ interface LedgerEntry {
 
 export default function GeneralLedgerPageV2() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
   const [startDate, setStartDate] = useState<Date>(startOfMonth());
@@ -346,7 +350,12 @@ export default function GeneralLedgerPageV2() {
             />
           ) : (
             <div className="px-1 pb-1">
-              <LedgerTable rows={filtered} />
+              <LedgerTable rows={filtered} onRowClick={(row) => {
+                const jeId = row.journalEntryId ?? row.journalEntry?.id;
+                if (jeId) {
+                  navigate(`/accounting/journal-entries/${jeId}/edit`);
+                }
+              }} />
             </div>
           )}
         </GlassPanel>
@@ -360,12 +369,13 @@ export default function GeneralLedgerPageV2() {
 /*  is the editorial anchor: tabular-nums + bold so the eye lands.    */
 /* ------------------------------------------------------------------ */
 
-function LedgerTable({ rows }: { rows: LedgerEntry[] }) {
+function LedgerTable({ rows, onRowClick }: { rows: LedgerEntry[]; onRowClick?: (row: LedgerEntry) => void }) {
   const { t } = useTranslation();
   return (
     <DataTable<LedgerEntry>
       data={rows}
       enablePagination
+      onRowClick={onRowClick}
       columns={[
         {
           accessorKey: 'entryDate',

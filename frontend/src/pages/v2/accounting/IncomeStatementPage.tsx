@@ -8,6 +8,7 @@ import {
   Download, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -80,12 +81,20 @@ interface LineRowProps {
   code?: string;
   negative?: boolean; // render with leading "(" wrap, like a subtraction
   muted?: boolean;
+  onClickCode?: (code: string) => void;
 }
 
-const LineRow = ({ label, amount, indent = 1, code, negative, muted }: LineRowProps) => {
+const LineRow = ({ label, amount, indent = 1, code, negative, muted, onClickCode }: LineRowProps) => {
   const padClass = indent === 0 ? 'pl-0' : indent === 1 ? 'pl-4' : indent === 2 ? 'pl-8' : 'pl-12';
+  const isClickable = !!code && !!onClickCode;
   return (
-    <tr className="border-b border-border-subtle/40 last:border-0 hover:bg-accent-navy-soft transition-colors">
+    <tr
+      className={cn(
+        'border-b border-border-subtle/40 last:border-0 hover:bg-accent-navy-soft transition-colors',
+        isClickable && 'cursor-pointer',
+      )}
+      onClick={isClickable ? () => onClickCode!(code!) : undefined}
+    >
       <td className={cn('py-2.5', padClass)}>
         <div className="flex items-baseline gap-3">
           {code && (
@@ -93,7 +102,7 @@ const LineRow = ({ label, amount, indent = 1, code, negative, muted }: LineRowPr
               {code}
             </span>
           )}
-          <span className={cn('text-sm', muted ? 'text-text-tertiary' : 'text-text-secondary')}>
+          <span className={cn('text-sm', muted ? 'text-text-tertiary' : 'text-text-secondary', isClickable && 'underline-offset-2 hover:underline')}>
             {label}
           </span>
         </div>
@@ -160,10 +169,18 @@ const SectionHeaderRow = ({ label }: { label: string }) => (
 export default function IncomeStatementPageV2() {
   const { t } = useTranslation();
   const idLocale = useDateLocale();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const today = new Date();
   const [startDate, setStartDate] = useState<Date>(startOfMonth(today));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(today));
+
+  const goToGL = (accountCode: string) => {
+    const params = new URLSearchParams({ accountCode });
+    params.set('startDate', format(startDate, 'yyyy-MM-dd'));
+    params.set('endDate', format(endDate, 'yyyy-MM-dd'));
+    navigate(`/accounting/general-ledger?${params.toString()}`);
+  };
 
   const startStr = format(startDate, 'yyyy-MM-dd');
   const endStr = format(endDate, 'yyyy-MM-dd');
@@ -365,6 +382,7 @@ export default function IncomeStatementPageV2() {
                         code={r.accountCode}
                         amount={r.balance}
                         indent={1}
+                        onClickCode={goToGL}
                       />
                     )),
                   ])}
@@ -385,6 +403,7 @@ export default function IncomeStatementPageV2() {
                           amount={r.balance}
                           indent={1}
                           negative
+                          onClickCode={goToGL}
                         />
                       ))}
                       <SubtotalRow label={t('incomeStatement.totalCOGS', 'Total COGS')} amount={-waterfall.totalCogs} />
@@ -413,6 +432,7 @@ export default function IncomeStatementPageV2() {
                                 amount={r.balance}
                                 indent={2}
                                 negative
+                                onClickCode={goToGL}
                               />
                             ))}
                             <tr className="border-t border-border-subtle">

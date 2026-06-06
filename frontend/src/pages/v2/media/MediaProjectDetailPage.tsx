@@ -104,7 +104,8 @@ export default function MediaProjectDetailPageV2() {
   const PAGE_SIZE = 48;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
-  const [pendingUploads, setPendingUploads] = useState<string[]>([]);
+  // Per-file upload state: name → { progress 0-100, error?: string }
+  const [uploadStates, setUploadStates] = useState<Record<string, { progress: number; error?: string }>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   /* ---------- data ---------- */
@@ -228,36 +229,67 @@ export default function MediaProjectDetailPageV2() {
     return { total, images, videos, inReview };
   }, [assets]);
 
-  /* ---------- upload (simple, multi) ----------
-     V2 first pass: standard file picker → mediaCollabService.uploadAsset
-     looped per file. Progress is shown as Skeleton placeholders in the
-     gallery (one per pending filename). Drag-and-drop, chunked, R2
-     presigned uploads, conflict resolution, and the duplicate check
-     flow from the classic page are intentionally deferred — see
-     report.                                                              */
-  const uploadAsset = async (file: File) => {
+  /* ---------- upload (simple, multi, with per-file progress + retry) --
+     Per-file progress is wired via mediaCollabService.uploadAsset's
+     onProgress callback. Failed files stay visible with a "Retry"
+     button so the operator doesn't lose track of what failed.
+     Drag-and-drop, chunked, R2 presigned uploads, conflict resolution,
+     and the duplicate check flow are deferred — see report.            */
+  const uploadSingleFile = async (file: File) => {
     if (!projectId) return;
+    const key = `${file.name}-${file.size}`;
+    setUploadStates((prev) => ({ ...prev, [key]: { progress: 0 } }));
     try {
-      await mediaCollabService.uploadAsset(projectId, file);
+      await mediaCollabService.uploadAsset(
+        projectId,
+        file,
+        undefined,
+        undefined,
+        undefined,
+        (evt) => {
+          const pct = evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0;
+          setUploadStates((prev) => ({ ...prev, [key]: { progress: pct } }));
+        },
+      );
+      // Remove from states on success so the gallery refreshes cleanly.
+      setUploadStates((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
       toast.success(t('mediaCollab.uploaded', '"{{name}}" diunggah.', { name: file.name }));
     } catch (err: any) {
-      toast.error(t('mediaCollab.uploadFailed', 'Gagal unggah "{{name}}": {{error}}', { name: file.name, error: err?.response?.data?.message ?? err?.message ?? 'error' }));
+      const errMsg = err?.response?.data?.message ?? err?.message ?? 'error';
+      setUploadStates((prev) => ({ ...prev, [key]: { progress: 0, error: errMsg } }));
+      toast.error(t('mediaCollab.uploadFailed', 'Gagal unggah "{{name}}": {{error}}', { name: file.name, error: errMsg }));
     }
   };
 
   const handleFilesPicked = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-
-    setPendingUploads(files.map((f) => f.name));
     // Sequential upload — predictable progress, kinder to backend than
-    // parallel storm of multipart requests.
+    // a parallel storm of multipart requests.
     for (const file of files) {
-      await uploadAsset(file);
+      await uploadSingleFile(file);
     }
-    setPendingUploads([]);
     invalidateAssets();
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Retry a failed upload (the File object is gone, so we need a new pick).
+  // We expose a "Retry" button that simply re-opens the file picker.
+  const retryUpload = (key: string, name: string) => {
+    // We can't re-use the File object after the input resets, so we just
+    // clear the error and prompt the user to re-select. A future improvement
+    // would cache the File ref.
+    setUploadStates((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    toast.info(t('mediaCollab.retryHint', 'Please re-select "{{name}}" to retry.', { name }));
+    fileInputRef.current?.click();
   };
 
   /* ---------- share link ----------
@@ -555,20 +587,54 @@ export default function MediaProjectDetailPageV2() {
             </div>
           </div>
 
-          {/* Pending upload tiles — skeleton placeholders, one per filename */}
-          {pendingUploads.length > 0 && (
+          {/* Per-file upload tiles — show progress bar and error/retry */}
+          {Object.entries(uploadStates).length > 0 && (
             <div className="mb-4 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-              {pendingUploads.map((name) => (
-                <div
-                  key={name}
-                  className="aspect-square rounded-md border border-border-subtle bg-bg-sunken/60 flex flex-col items-center justify-center p-3 text-center"
-                >
-                  <Loader2 className="h-5 w-5 text-text-tertiary animate-spin mb-2" />
-                  <span className="text-[11px] text-text-tertiary truncate w-full">
-                    {name}
-                  </span>
-                </div>
-              ))}
+              {Object.entries(uploadStates).map(([key, state]) => {
+                const name = key.split('-').slice(0, -1).join('-');
+                return (
+                  <div
+                    key={key}
+                    className={cn(
+                      'aspect-square rounded-md border flex flex-col items-center justify-center p-3 text-center',
+                      state.error
+                        ? 'border-danger/30 bg-danger/5'
+                        : 'border-border-subtle bg-bg-sunken/60',
+                    )}
+                  >
+                    {state.error ? (
+                      <>
+                        <span className="text-[11px] text-danger truncate w-full mb-2" title={state.error}>
+                          {t('mediaCollab.uploadError', 'Failed')}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-[10px] h-6 px-2 border-danger/40 text-danger hover:bg-danger/10"
+                          onClick={() => retryUpload(key, name)}
+                        >
+                          {t('mediaCollab.retry', 'Retry')}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Loader2 className="h-5 w-5 text-text-tertiary animate-spin mb-2" />
+                        <span className="text-[11px] text-text-tertiary truncate w-full mb-1">
+                          {name}
+                        </span>
+                        {state.progress > 0 && (
+                          <div className="w-full bg-bg-sunken rounded-full h-1 overflow-hidden">
+                            <div
+                              className="h-1 bg-accent rounded-full transition-all"
+                              style={{ width: `${state.progress}%` }}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -886,29 +952,54 @@ export default function MediaProjectDetailPageV2() {
             </div>
 
             {shareUrl && (
-              <div className="space-y-2">
-                <label className="text-xs text-text-tertiary uppercase tracking-wider">
-                  URL
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1 min-w-0">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-tertiary pointer-events-none" />
-                    <Input
-                      readOnly
-                      value={shareUrl}
-                      className="pl-8 bg-bg-sunken border-border-subtle text-text-secondary text-xs font-mono"
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                    />
+              <div className="space-y-3">
+                {/* Permission label */}
+                <div className="flex items-center gap-2 p-3 rounded-md bg-bg-sunken border border-border-subtle">
+                  <Eye className="h-4 w-4 text-text-tertiary shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-text-primary">
+                      {project.publicAccessLevel === 'DOWNLOAD'
+                        ? t('mediaCollab.accessLevelDownload', 'View + Download')
+                        : project.publicAccessLevel === 'COMMENT'
+                        ? t('mediaCollab.accessLevelComment', 'View + Comment')
+                        : t('mediaCollab.accessLevelViewOnly', 'View-only link')}
+                    </div>
+                    <div className="text-[11px] text-text-tertiary mt-0.5">
+                      {t('mediaCollab.accessLevelNote', 'Anyone with this link can view without signing in.')}
+                    </div>
                   </div>
-                  <Button size="sm" onClick={copyShareLink}>
-                    <Copy className="h-3.5 w-3.5" /> {t('mediaCollab.copy', 'Salin')}
-                  </Button>
                 </div>
+
+                <div>
+                  <label className="text-xs text-text-tertiary uppercase tracking-wider block mb-1.5">
+                    URL
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1 min-w-0">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-tertiary pointer-events-none" />
+                      <Input
+                        readOnly
+                        value={shareUrl}
+                        className="pl-8 bg-bg-sunken border-border-subtle text-text-secondary text-xs font-mono"
+                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                      />
+                    </div>
+                    <Button size="sm" onClick={copyShareLink}>
+                      <Copy className="h-3.5 w-3.5" /> {t('mediaCollab.copy', 'Salin')}
+                    </Button>
+                  </div>
+                </div>
+
                 {project.publicViewCount !== undefined && (
                   <div className="text-xs text-text-tertiary">
                     {t('mediaCollab.viewCountSoFar', '{{n}} views so far', { n: project.publicViewCount.toLocaleString('id-ID') })}
                   </div>
                 )}
+
+                {/* NOTE: Link expiry is not yet supported by the backend token.
+                    The publicSharedAt field is recorded but there is no expiresAt
+                    on the share token. Expiry date picker is deferred until the
+                    backend adds a tokenExpiresAt field to MediaProject. */}
               </div>
             )}
           </div>

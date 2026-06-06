@@ -16,7 +16,7 @@
  *   self-contained and avoids pulling in the AntD-flavoured ChartRenderer.
  */
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -445,13 +445,14 @@ export default function ReportDetailPageV2() {
     <Shell user={user}>
       {/* Back-link above H1 so the title gets its own line. */}
       <div className="mb-4">
-        <Link
-          to="/reports"
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('reportDetail.backToList', 'Back to Reports')}
-        </Link>
+          {t('reportDetail.back', 'Back')}
+        </button>
       </div>
 
       <PageHeader
@@ -503,8 +504,10 @@ export default function ReportDetailPageV2() {
               <DropdownMenuContent align="end" className="w-52">
                 {canGenPdf && (
                   <DropdownMenuItem onClick={handleGeneratePdf} disabled={pdfPending}>
-                    <FileSpreadsheet className="h-3.5 w-3.5" />
-                    {t('reportDetail.generatePdf', 'Generate PDF')}
+                    <FileSpreadsheet className={cn('h-3.5 w-3.5', pdfPending && 'animate-spin')} />
+                    {pdfPending
+                      ? t('reportDetail.generatePdfPending', 'Generating…')
+                      : t('reportDetail.generatePdf', 'Generate PDF')}
                   </DropdownMenuItem>
                 )}
                 {report.pdfUrl && (

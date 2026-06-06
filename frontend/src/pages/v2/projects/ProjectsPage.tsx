@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -113,8 +113,10 @@ export default function ProjectsPageV2() {
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
+  const [searchParams] = useSearchParams();
   const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  // Honour ?status=IN_PROGRESS (etc.) from dashboard StatCard deep links.
+  const [statusFilter, setStatusFilter] = useState<string>(() => searchParams.get('status') ?? 'all');
   const [clientFilter, setClientFilter] = useState<string>('all');
 
   /* ----- data ----- */

@@ -3,9 +3,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff, AlertCircle, Clock } from 'lucide-react'
 import { AuroraBackground } from '@/components/monomi/AuroraBackground'
 import { GlassPanel } from '@/components/monomi/GlassPanel'
 import { Button } from '@/components/ui/button'
@@ -21,11 +21,40 @@ const makeLoginSchema = (t: (key: string, fallback: string) => string) => z.obje
 
 type LoginFormData = z.infer<ReturnType<typeof makeLoginSchema>>
 
+/** Extract a human-friendly message from an Axios-style error. */
+function extractErrorMessage(error: unknown, t: (key: string, fallback: string) => string): string {
+  if (!error || typeof error !== 'object') {
+    return t('auth.invalidCredentials', 'Email atau password salah')
+  }
+  const err = error as Record<string, any>
+  const status: number | undefined = err?.response?.status
+  const serverMsg: string | undefined =
+    err?.response?.data?.message ??
+    err?.response?.data?.error ??
+    undefined
+
+  if (status === 429) {
+    return t(
+      'auth.rateLimited',
+      'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.',
+    )
+  }
+  if (status === 401) {
+    return t('auth.invalidCredentials', 'Email atau password salah')
+  }
+  if (serverMsg) return serverMsg
+  return err?.message ?? t('auth.invalidCredentials', 'Email atau password salah')
+}
+
 export const LoginPage: React.FC = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { login } = useAuthStore()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+
+  const sessionExpired = searchParams.get('session_expired') === 'true'
 
   const {
     register,
@@ -42,10 +71,8 @@ export const LoginPage: React.FC = () => {
       login(data.user, data.access_token, data.refresh_token, data.expires_in)
       navigate('/')
     },
-    onError: (error: any) => {
-      setErrorMessage(
-        error?.message || t('auth.invalidCredentials', 'Email atau password salah')
-      )
+    onError: (error: unknown) => {
+      setErrorMessage(extractErrorMessage(error, t))
     },
   })
 
@@ -80,9 +107,18 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Session-expired banner */}
+          {sessionExpired && !errorMessage && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-md border border-amber-400/30 bg-amber-400/[0.07] px-3.5 py-2.5 text-xs text-amber-400">
+              <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>{t('auth.sessionExpired', 'Sesi Anda telah berakhir. Silakan masuk kembali.')}</span>
+            </div>
+          )}
+
           {errorMessage && (
-            <div className="mb-5 rounded-md border border-danger/25 bg-danger/[0.07] px-3.5 py-2.5 text-xs text-danger">
-              {errorMessage}
+            <div className="mb-5 flex items-start gap-2.5 rounded-md border border-danger/25 bg-danger/[0.07] px-3.5 py-2.5 text-xs text-danger">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
 
@@ -108,14 +144,27 @@ export const LoginPage: React.FC = () => {
               <Label htmlFor="password" className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
                 {t('auth.password', 'Password')}
               </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register('password')}
-                className="bg-bg-sunken border-border-default text-text-primary placeholder:text-text-tertiary focus-visible:border-accent-navy-ring focus-visible:ring-accent-navy-ring/40"
-                disabled={loginMutation.isPending}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  {...register('password')}
+                  className="bg-bg-sunken border-border-default text-text-primary placeholder:text-text-tertiary focus-visible:border-accent-navy-ring focus-visible:ring-accent-navy-ring/40 pr-9"
+                  disabled={loginMutation.isPending}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex items-center px-2.5 text-text-tertiary hover:text-text-secondary transition-colors"
+                  aria-label={showPassword ? t('auth.hidePassword', 'Hide password') : t('auth.showPassword', 'Show password')}
+                >
+                  {showPassword
+                    ? <EyeOff className="h-4 w-4" />
+                    : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-xs text-danger">{errors.password.message}</p>
               )}
@@ -137,6 +186,11 @@ export const LoginPage: React.FC = () => {
                 )}
               </Button>
             </div>
+
+            {/* Forgot password guidance — no backend flow needed */}
+            <p className="text-center text-[11px] text-text-tertiary">
+              {t('auth.forgotPassword', 'Lupa password? Hubungi administrator.')}
+            </p>
           </form>
 
           <div className="mt-8 pt-5 border-t border-border-subtle text-center">

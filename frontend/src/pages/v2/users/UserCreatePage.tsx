@@ -63,7 +63,9 @@ export default function UserCreatePageV2() {
           name: created.name,
         }),
       );
-      navigate('/users');
+      // Navigate to the edit page so the operator can review/adjust
+      // the newly created user immediately (e.g. set a profile photo).
+      navigate(`/users/${created.id}/edit`);
     },
     onError: (err: unknown) => {
       const message =

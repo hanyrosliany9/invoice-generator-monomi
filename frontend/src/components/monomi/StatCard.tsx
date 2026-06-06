@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import { cn } from '@/lib/utils';
@@ -10,6 +11,10 @@ export interface StatCardProps {
   sublabel?: string;
   sparkline?: ReactNode;
   className?: string;
+  /** When provided, the card becomes a button/link with click affordance. */
+  onClick?: () => void;
+  /** Convenience shorthand: navigates to this href when clicked (uses react-router navigate). */
+  href?: string;
 }
 
 /**
@@ -23,15 +28,29 @@ export interface StatCardProps {
  */
 // Restrained hover polish — 2px lift + subtle inner-glow border on hover.
 // GPU-only transforms; runs at 60fps even on a row of 4 cards.
-export const StatCard = ({ label, value, delta, sublabel, sparkline, className }: StatCardProps) => (
+export const StatCard = ({ label, value, delta, sublabel, sparkline, className, onClick, href }: StatCardProps) => {
+  const navigate = useNavigate();
+  const isClickable = !!(onClick || href);
+  const handleClick = onClick ?? (href ? () => navigate(href) : undefined);
+
+  return (
   <GlassPanel
     padding="none"
     className={cn(
       'relative overflow-hidden p-5 transition-[transform,box-shadow,border-color] duration-300 ease-out',
       'hover:-translate-y-[2px] hover:shadow-[0_18px_48px_-12px_rgba(0,0,0,0.5)] hover:border-border-default',
       'will-change-transform',
+      isClickable && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
       className,
     )}
+    {...(isClickable
+      ? {
+          role: 'button' as const,
+          tabIndex: 0,
+          onClick: handleClick,
+          onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick?.(); } },
+        }
+      : {})}
   >
     <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
       {label}
@@ -62,4 +81,5 @@ export const StatCard = ({ label, value, delta, sublabel, sparkline, className }
 
     {sparkline && <div className="mt-4 h-10 -mx-1">{sparkline}</div>}
   </GlassPanel>
-);
+  );
+};
