@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Pencil, Trash2, Copy, Building2, Calendar,
-  PlayCircle, CheckCircle2, PauseCircle, ListChecks, Briefcase,
+  PlayCircle, CheckCircle2, PauseCircle, ListChecks, Briefcase, Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -145,9 +145,11 @@ const Shell = ({
 const SectionHeader = ({
   title,
   sublabel,
+  action,
 }: {
   title: string;
   sublabel: string;
+  action?: React.ReactNode;
 }) => (
   <div className="mb-5 flex items-baseline justify-between gap-4">
     <div>
@@ -156,6 +158,7 @@ const SectionHeader = ({
       </h2>
       <p className="mt-0.5 text-xs text-text-tertiary">{sublabel}</p>
     </div>
+    {action && <div className="shrink-0 self-center">{action}</div>}
   </div>
 );
 
@@ -168,6 +171,9 @@ export default function ProjectDetailPageV2() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  // Expense creation is admin-only (the /expenses/new route is guarded by
+  // AdminRoute), so only surface the CTA to admins to avoid a dead-end click.
+  const canAddExpense = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   const queryClient = useQueryClient();
 
   /* ---------- data ---------- */
@@ -787,6 +793,17 @@ export default function ProjectDetailPageV2() {
           <SectionHeader
             title={t('projectDetail.expensesSection', 'Related Expenses')}
             sublabel={expensesLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: expenses.length })}
+            action={
+              canAddExpense ? (
+                <Button
+                  size="sm"
+                  onClick={() => navigate(`/expenses/new?projectId=${id}`)}
+                >
+                  <Plus className="h-4 w-4" />
+                  {t('projectDetail.addExpense', 'Add Expense')}
+                </Button>
+              ) : undefined
+            }
           />
           {expensesLoading ? (
             <div className="space-y-2">
@@ -799,6 +816,17 @@ export default function ProjectDetailPageV2() {
               icon={<CreditCard className="h-12 w-12" />}
               title={t('projectDetail.noExpenses', 'No expenses yet')}
               description={t('projectDetail.noExpensesDesc', 'No expenses have been recorded for this project.')}
+              action={
+                canAddExpense ? (
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/expenses/new?projectId=${id}`)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t('projectDetail.addFirstExpense', 'Record Expense')}
+                  </Button>
+                ) : undefined
+              }
             />
           ) : (
             <DataTable

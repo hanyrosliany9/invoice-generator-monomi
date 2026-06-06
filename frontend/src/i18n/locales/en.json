@@ -4663,7 +4663,9 @@
       "validUntil": "Valid Until",
       "value": "Value",
       "description": "Description"
-    }
+    },
+    "addExpense": "Add Expense",
+    "addFirstExpense": "Record Expense"
   },
   "projectForm": {
     "identity": {

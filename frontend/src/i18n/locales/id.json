@@ -4754,7 +4754,9 @@
       "validUntil": "Berlaku Hingga",
       "value": "Nilai",
       "description": "Deskripsi"
-    }
+    },
+    "addExpense": "Tambah Biaya",
+    "addFirstExpense": "Catat Biaya"
   },
   "projectForm": {
     "identity": {
