@@ -479,7 +479,8 @@
       "invoiceCreated": "Invoice {{number}} created successfully.",
       "invoiceError": "Failed to create invoice from quotation.",
       "pdfDownloaded": "PDF downloaded successfully.",
-      "pdfError": "Failed to download PDF."
+      "pdfError": "Failed to download PDF.",
+      "viewInvoice": "View invoice"
     },
     "actions": {
       "aria": "Quotation actions",
@@ -495,7 +496,8 @@
       "createInvoice": "Create Invoice",
       "downloadPdf": "Download PDF",
       "deleteConfirm": "Delete quotation {{number}}? This action cannot be undone.",
-      "delete": "Delete"
+      "delete": "Delete",
+      "viewInvoice": "View Invoice"
     },
     "filter": {
       "statusPlaceholder": "Status",
@@ -4676,7 +4678,9 @@
       "description": "Description"
     },
     "addExpense": "Add Expense",
-    "addFirstExpense": "Record Expense"
+    "addFirstExpense": "Record Expense",
+    "addQuotation": "New Quotation",
+    "addFirstQuotation": "Create Quotation"
   },
   "projectForm": {
     "identity": {
@@ -4782,7 +4786,8 @@
       "send": "Send",
       "download": "Download PDF",
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "recordPayment": "Record Payment"
     },
     "moreActions": "More actions",
     "subtitle": "Invoice details, payment history, and related actions.",
@@ -4820,7 +4825,8 @@
     "paymentCount": "Transactions",
     "milestone": "Payment Milestone",
     "ofTotal": "of total",
-    "pdfFailed": "Failed to download PDF"
+    "pdfFailed": "Failed to download PDF",
+    "paymentHistory": "Payment history"
   },
   "invoiceCreate": {
     "backToList": "Back to Invoices",
@@ -6225,5 +6231,29 @@
     "cancel": "Cancel",
     "saving": "Saving...",
     "save": "Save Expense"
+  },
+  "recordPayment": {
+    "title": "Record Payment",
+    "subtitle": "Record a payment against this invoice.",
+    "subtitleNamed": "Invoice {{n}}",
+    "outstanding": "Outstanding",
+    "amount": "Amount (IDR)",
+    "payFull": "Pay full outstanding",
+    "exceeds": "Exceeds outstanding amount",
+    "date": "Payment Date",
+    "methodLabel": "Method",
+    "reference": "Reference / note",
+    "optional": "optional",
+    "referencePlaceholder": "e.g. transfer ref, bank, payer",
+    "cancel": "Cancel",
+    "saving": "Recording...",
+    "submit": "Record Payment",
+    "success": "Payment recorded.",
+    "error": "Failed to record payment.",
+    "method": {
+      "bankTransfer": "Bank Transfer",
+      "cash": "Cash",
+      "other": "Other (GoPay, QRIS, etc.)"
+    }
   }
 }

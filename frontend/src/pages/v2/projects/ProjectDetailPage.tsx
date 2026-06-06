@@ -766,6 +766,17 @@ export default function ProjectDetailPageV2() {
           <SectionHeader
             title={t('projectDetail.quotationsSection', 'Related Quotations')}
             sublabel={quotationsLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: quotations.length })}
+            action={
+              canAddExpense ? (
+                <Button
+                  size="sm"
+                  onClick={() => navigate(`/quotations/new?projectId=${id}${project?.clientId ? `&clientId=${project.clientId}` : ''}`)}
+                >
+                  <Plus className="h-4 w-4" />
+                  {t('projectDetail.addQuotation', 'New Quotation')}
+                </Button>
+              ) : undefined
+            }
           />
           {quotationsLoading ? (
             <div className="space-y-2">
@@ -778,6 +789,17 @@ export default function ProjectDetailPageV2() {
               icon={<ReceiptText className="h-12 w-12" />}
               title={t('projectDetail.noQuotations', 'No quotations yet')}
               description={t('projectDetail.noQuotationsDesc', 'No quotations have been created for this project.')}
+              action={
+                canAddExpense ? (
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/quotations/new?projectId=${id}${project?.clientId ? `&clientId=${project.clientId}` : ''}`)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t('projectDetail.addFirstQuotation', 'Create Quotation')}
+                  </Button>
+                ) : undefined
+              }
             />
           ) : (
             <DataTable

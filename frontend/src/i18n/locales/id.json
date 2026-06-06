@@ -570,7 +570,8 @@
       "invoiceCreated": "Tagihan {{number}} berhasil dibuat.",
       "invoiceError": "Gagal membuat tagihan dari penawaran.",
       "pdfDownloaded": "PDF berhasil diunduh.",
-      "pdfError": "Gagal mengunduh PDF."
+      "pdfError": "Gagal mengunduh PDF.",
+      "viewInvoice": "Lihat faktur"
     },
     "actions": {
       "aria": "Aksi penawaran",
@@ -586,7 +587,8 @@
       "createInvoice": "Buat Tagihan",
       "downloadPdf": "Unduh PDF",
       "deleteConfirm": "Hapus penawaran {{number}}? Tindakan ini tidak dapat dibatalkan.",
-      "delete": "Hapus"
+      "delete": "Hapus",
+      "viewInvoice": "Lihat Faktur"
     },
     "filter": {
       "statusPlaceholder": "Status",
@@ -4767,7 +4769,9 @@
       "description": "Deskripsi"
     },
     "addExpense": "Tambah Biaya",
-    "addFirstExpense": "Catat Biaya"
+    "addFirstExpense": "Catat Biaya",
+    "addQuotation": "Penawaran Baru",
+    "addFirstQuotation": "Buat Penawaran"
   },
   "projectForm": {
     "identity": {
@@ -4873,7 +4877,8 @@
       "send": "Kirim",
       "download": "Unduh PDF",
       "edit": "Edit",
-      "delete": "Hapus"
+      "delete": "Hapus",
+      "recordPayment": "Catat Pembayaran"
     },
     "moreActions": "Tindakan lainnya",
     "subtitle": "Detail faktur, riwayat pembayaran, dan tindakan terkait.",
@@ -4911,7 +4916,8 @@
     "paymentCount": "Transaksi",
     "milestone": "Tonggak Pembayaran",
     "ofTotal": "dari total",
-    "pdfFailed": "Gagal mengunduh PDF"
+    "pdfFailed": "Gagal mengunduh PDF",
+    "paymentHistory": "Riwayat pembayaran"
   },
   "invoiceCreate": {
     "backToList": "Kembali ke Tagihan",
@@ -6225,5 +6231,29 @@
     "cancel": "Batal",
     "saving": "Menyimpan...",
     "save": "Simpan Pengeluaran"
+  },
+  "recordPayment": {
+    "title": "Catat Pembayaran",
+    "subtitle": "Catat pembayaran untuk faktur ini.",
+    "subtitleNamed": "Faktur {{n}}",
+    "outstanding": "Sisa Tagihan",
+    "amount": "Jumlah (IDR)",
+    "payFull": "Bayar lunas sisa tagihan",
+    "exceeds": "Melebihi sisa tagihan",
+    "date": "Tanggal Pembayaran",
+    "methodLabel": "Metode",
+    "reference": "Referensi / catatan",
+    "optional": "opsional",
+    "referencePlaceholder": "mis. ref transfer, bank, pembayar",
+    "cancel": "Batal",
+    "saving": "Menyimpan...",
+    "submit": "Catat Pembayaran",
+    "success": "Pembayaran dicatat.",
+    "error": "Gagal mencatat pembayaran.",
+    "method": {
+      "bankTransfer": "Transfer Bank",
+      "cash": "Tunai",
+      "other": "Lainnya (GoPay, QRIS, dll.)"
+    }
   }
 }

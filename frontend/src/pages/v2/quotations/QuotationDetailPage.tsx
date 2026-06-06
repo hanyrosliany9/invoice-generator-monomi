@@ -141,7 +141,12 @@ export default function QuotationDetailPageV2() {
           () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
           500,
         );
-        toast.success(t('quotations.toast.approved', 'Quotation approved — invoice created automatically.'));
+        toast.success(t('quotations.toast.approved', 'Quotation approved — invoice created automatically.'), {
+          action: {
+            label: t('quotations.toast.viewInvoice', 'View invoice'),
+            onClick: () => invoiceMutation.mutate(quotation!.id),
+          },
+        });
       } else if (variables.status === 'SENT') {
         toast.success(t('quotations.toast.sent', 'Quotation sent to client.'));
       } else if (variables.status === 'DECLINED') {
@@ -462,6 +467,8 @@ export default function QuotationDetailPageV2() {
       );
     }
     if (statusKey === 'APPROVED') {
+      // The invoice was already auto-created on approval; this opens it
+      // (the backend call is idempotent and returns the existing invoice).
       return (
         <Button
           size="sm"
@@ -470,7 +477,7 @@ export default function QuotationDetailPageV2() {
           className="gap-2"
         >
           <FileInput className="h-4 w-4" />
-          {t('quotations.actions.createInvoice', 'Create Invoice')}
+          {t('quotations.actions.viewInvoice', 'View Invoice')}
         </Button>
       );
     }

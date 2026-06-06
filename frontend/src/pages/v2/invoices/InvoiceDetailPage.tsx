@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -29,6 +29,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth';
 import { invoiceService } from '@/services/invoices';
+import { paymentService } from '@/services/payments';
+import { RecordPaymentModal } from './RecordPaymentModal';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -151,15 +153,19 @@ export default function InvoiceDetailPageV2() {
     onError: onMutationError,
   });
 
-  const markPaidMutation = useMutation({
-    mutationFn: () => invoiceService.markAsPaid(id!, {
-      paymentMethod: 'BANK_TRANSFER',
-      paymentDate:   new Date().toISOString(),
-      notes:         'Marked as paid from detail page (v2)',
-    }),
-    onSuccess: invalidate,
-    onError: onMutationError,
+  // Payment recording modal + history
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const { data: payments = [] } = useQuery({
+    queryKey: ['payments', id],
+    queryFn: () => paymentService.getByInvoice(id!),
+    enabled: !!id,
   });
+  const methodLabel = (m: string) =>
+    m === 'CASH'
+      ? t('recordPayment.method.cash', 'Cash')
+      : m === 'OTHER'
+      ? t('recordPayment.method.other', 'Other (GoPay, QRIS, etc.)')
+      : t('recordPayment.method.bankTransfer', 'Bank Transfer');
 
   const deleteMutation = useMutation({
     mutationFn: () => invoiceService.deleteInvoice(id!),
@@ -272,11 +278,10 @@ export default function InvoiceDetailPageV2() {
     ? (
       <Button
         size="sm"
-        onClick={() => markPaidMutation.mutate()}
-        disabled={markPaidMutation.isPending}
+        onClick={() => setPaymentModalOpen(true)}
       >
         <CheckCircle2 className="h-4 w-4" />
-        {t('invoiceDetail.action.markPaid', 'Mark as Paid')}
+        {t('invoiceDetail.action.recordPayment', 'Record Payment')}
       </Button>
     )
     : canSend
@@ -727,6 +732,30 @@ export default function InvoiceDetailPageV2() {
                     </span>
                   </div>
                 )}
+
+                {payments.length > 0 && (
+                  <div className="pt-3 mt-1 border-t border-border-subtle space-y-2.5">
+                    <div className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary">
+                      {t('invoiceDetail.paymentHistory', 'Payment history')}
+                    </div>
+                    {payments.map((p) => (
+                      <div key={p.id} className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <DateDisplay date={p.paymentDate} className="text-xs text-text-secondary" />
+                          <div className="text-[10px] text-text-tertiary truncate">
+                            {methodLabel(p.paymentMethod)}
+                            {p.transactionRef ? ` · ${p.transactionRef}` : ''}
+                            {p.status && p.status !== 'CONFIRMED' ? ` · ${p.status}` : ''}
+                          </div>
+                        </div>
+                        <MoneyDisplay
+                          amount={Number(p.amount)}
+                          className="text-xs text-text-primary tabular-nums shrink-0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </GlassPanel>
           )}
@@ -757,6 +786,16 @@ export default function InvoiceDetailPageV2() {
           )}
         </div>
       </div>
+
+      {id && (
+        <RecordPaymentModal
+          invoiceId={id}
+          invoiceNumber={invoice.invoiceNumber}
+          remaining={totals.remaining}
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+        />
+      )}
     </Shell>
   );
 }
