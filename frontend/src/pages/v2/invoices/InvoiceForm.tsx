@@ -21,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { clientService } from '@/services/clients';
 import { projectService } from '@/services/projects';
 import { settingsService } from '@/services/settings';
@@ -379,27 +380,34 @@ export const InvoiceForm = ({
                   control={control}
                   name="clientId"
                   render={({ field }) => (
-                    <Select
+                    <Combobox
                       value={field.value || undefined}
-                      onValueChange={(v) => {
+                      onChange={(v) => {
                         field.onChange(v);
                         // Reset project if it doesn't belong to new client
                         const proj = projects.find((p) => p.id === watch('projectId'));
                         if (proj && proj.clientId !== v) setValue('projectId', '');
                       }}
                       disabled={clientsLoading}
-                    >
-                      <SelectTrigger className="w-full bg-bg-sunken border-border-default text-text-primary data-[placeholder]:text-text-tertiary">
-                        <SelectValue placeholder={t('invoices.form.selectClient', 'Pilih klien')} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72">
-                        {clients.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}{c.company ? ` · ${c.company}` : ''}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      aria-invalid={!!errors.clientId}
+                      className={cn('w-full', 'bg-bg-sunken border-border-default text-text-primary placeholder:text-text-tertiary')}
+                      placeholder={t('invoices.form.selectClient', 'Pilih klien')}
+                      searchPlaceholder={t('invoices.form.clientSearch', 'Cari nama atau perusahaan…')}
+                      emptyText={t('invoices.form.noClients', 'Belum ada klien')}
+                      options={clients.map((c) => ({
+                        value: c.id,
+                        label: c.name,
+                        keywords: [c.name, c.company, c.email].filter(Boolean) as string[],
+                        node: (
+                          <span className="flex items-baseline gap-1.5">
+                            <span>{c.name}</span>
+                            {c.company && (
+                              <span className="text-text-tertiary text-xs">· {c.company}</span>
+                            )}
+                          </span>
+                        ),
+                      }))}
+                    />
                   )}
                 />
                 <FieldError message={errors.clientId?.message} />
@@ -412,36 +420,33 @@ export const InvoiceForm = ({
                   control={control}
                   name="projectId"
                   render={({ field }) => (
-                    <Select
+                    <Combobox
                       value={field.value || undefined}
-                      onValueChange={field.onChange}
+                      onChange={field.onChange}
                       disabled={projectsLoading || !clientId}
-                    >
-                      <SelectTrigger className="w-full bg-bg-sunken border-border-default text-text-primary data-[placeholder]:text-text-tertiary">
-                        <SelectValue
-                          placeholder={
-                            clientId
-                              ? t('invoices.form.selectProject', 'Pilih proyek')
-                              : t('invoices.form.selectClientFirst', 'Pilih klien dulu')
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72">
-                        {projectsForClient.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            <span className="font-mono text-xs text-text-tertiary mr-2">
+                      aria-invalid={!!errors.projectId}
+                      className={cn('w-full', 'bg-bg-sunken border-border-default text-text-primary placeholder:text-text-tertiary')}
+                      placeholder={
+                        clientId
+                          ? t('invoices.form.selectProject', 'Pilih proyek')
+                          : t('invoices.form.selectClientFirst', 'Pilih klien dulu')
+                      }
+                      searchPlaceholder={t('invoices.form.projectSearch', 'Cari nomor atau deskripsi proyek…')}
+                      emptyText={t('invoices.form.noProjects', 'Belum ada proyek untuk klien ini')}
+                      options={projectsForClient.map((p) => ({
+                        value: p.id,
+                        label: p.description,
+                        keywords: [p.number || '', p.description],
+                        node: (
+                          <span className="flex items-baseline gap-2">
+                            <span className="font-mono text-xs text-text-tertiary">
                               {p.number || '—'}
                             </span>
-                            {p.description}
-                          </SelectItem>
-                        ))}
-                        {projectsForClient.length === 0 && clientId && (
-                          <div className="px-2 py-2 text-xs text-text-tertiary">
-                            {t('invoices.form.noProjects', 'Belum ada proyek untuk klien ini')}
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
+                            <span className="truncate">{p.description}</span>
+                          </span>
+                        ),
+                      }))}
+                    />
                   )}
                 />
                 <FieldError message={errors.projectId?.message} />

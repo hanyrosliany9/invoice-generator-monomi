@@ -523,7 +523,9 @@
       "terminTotal": "Total persentase",
       "terminReadonly": "Termin tidak dapat diubah karena tagihan sudah diterbitkan untuk salah satu tahap. Batalkan tagihan terlebih dahulu.",
       "terminInvalid": "Mohon periksa kembali termin pembayaran.",
-      "termsPlaceholder": "1. Pembayaran Net 30 sejak tanggal tagihan.\n2. Termasuk PPN 11%.\n3. Maksimal 3 revisi.\n4. ..."
+      "termsPlaceholder": "1. Pembayaran Net 30 sejak tanggal tagihan.\n2. Termasuk PPN 11%.\n3. Maksimal 3 revisi.\n4. ...",
+      "clientSearch": "Cari berdasarkan nama atau perusahaan…",
+      "projectSearch": "Cari berdasarkan nomor atau deskripsi…"
     },
     "kpi": {
       "approved": "Disetujui",
@@ -764,7 +766,10 @@
       "editDesc": "Mengubah {{n}} — perubahan tersimpan ke catatan tagihan.",
       "materaiDesc": "Total melebihi Rp 5.000.000 — tempel materai Rp 10.000 pada cetakan sebelum dikirim.",
       "notFoundDesc": "Tagihan ini mungkin sudah dihapus atau Anda tidak memiliki akses.",
-      "statusHelp": "Perubahan status akan diproses melalui endpoint terpisah."
+      "statusHelp": "Perubahan status akan diproses melalui endpoint terpisah.",
+      "clientSearch": "Cari nama atau perusahaan…",
+      "noClients": "Belum ada klien",
+      "projectSearch": "Cari nomor atau deskripsi proyek…"
     },
     "kpi": {
       "drafts": "Draf",
@@ -866,7 +871,11 @@
       "notFoundDesc": "Klien yang Anda cari tidak ada atau telah dihapus.",
       "overdueDesc": "Tinjau riwayat invoice di bawah untuk menindaklanjuti pembayaran.",
       "overdueTitle": "{{count}} invoice jatuh tempo",
-      "recordCount": "{{count}} catatan"
+      "recordCount": "{{count}} catatan",
+      "addProject": "Proyek Baru",
+      "addFirstProject": "Buat Proyek",
+      "addQuotation": "Penawaran Baru",
+      "addFirstQuotation": "Buat Penawaran"
     },
     "name": "Nama",
     "email": "Email",
@@ -4833,7 +4842,8 @@
     "saving": "Menyimpan...",
     "save": "Simpan",
     "loading": "Memuat...",
-    "statusLabel": "Status"
+    "statusLabel": "Status",
+    "clientSearch": "Cari berdasarkan nama atau perusahaan…"
   },
   "projectCreate": {
     "success": "Proyek \"{{name}}\" berhasil dibuat.",

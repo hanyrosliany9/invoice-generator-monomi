@@ -38,14 +38,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Combobox } from '@/components/ui/combobox';
 import { cn } from '@/lib/utils';
 
 import { clientService } from '@/services/clients';
@@ -460,47 +454,31 @@ export const QuotationForm = ({
                     control={control}
                     name="clientId"
                     render={({ field }) => (
-                      <Select
+                      <Combobox
                         value={field.value || undefined}
-                        onValueChange={field.onChange}
+                        onChange={field.onChange}
                         disabled={isSubmitting}
-                      >
-                        <SelectTrigger
-                          id="clientId"
-                          className={cn('w-full', inputClasses)}
-                        >
-                          <SelectValue
-                            placeholder={t(
-                              'quotations.form.clientPlaceholder',
-                              'Select client…',
-                            )}
-                          />
-                        </SelectTrigger>
-                        <SelectContent
-                          position="popper"
-                          className="bg-bg-raised border-border-default text-text-primary"
-                        >
-                          {clients.length === 0 ? (
-                            <div className="px-3 py-6 text-center text-xs text-text-tertiary">
-                              {t(
-                                'quotations.form.noClients',
-                                'No clients yet.',
+                        aria-invalid={!!errors.clientId}
+                        className={cn('w-full', inputClasses)}
+                        placeholder={t('quotations.form.clientPlaceholder', 'Select client…')}
+                        searchPlaceholder={t('quotations.form.clientSearch', 'Search by name or company…')}
+                        emptyText={t('quotations.form.noClients', 'No clients yet.')}
+                        options={clients.map((c) => ({
+                          value: c.id,
+                          label: c.name,
+                          keywords: [c.name, c.company, c.email].filter(Boolean) as string[],
+                          node: (
+                            <span className="flex items-baseline gap-1.5">
+                              <span className="text-text-primary">{c.name}</span>
+                              {c.company && (
+                                <span className="text-text-tertiary text-xs">
+                                  · {c.company}
+                                </span>
                               )}
-                            </div>
-                          ) : (
-                            clients.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                <span className="text-text-primary">{c.name}</span>
-                                {c.company && (
-                                  <span className="text-text-tertiary text-xs ml-1.5">
-                                    · {c.company}
-                                  </span>
-                                )}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                            </span>
+                          ),
+                        }))}
+                      />
                     )}
                   />
                 )}
@@ -519,54 +497,35 @@ export const QuotationForm = ({
                     control={control}
                     name="projectId"
                     render={({ field }) => (
-                      <Select
+                      <Combobox
                         value={field.value || undefined}
-                        onValueChange={field.onChange}
+                        onChange={field.onChange}
                         disabled={isSubmitting || !watchedClientId}
-                      >
-                        <SelectTrigger
-                          id="projectId"
-                          className={cn('w-full', inputClasses)}
-                        >
-                          <SelectValue
-                            placeholder={
-                              watchedClientId
-                                ? t(
-                                    'quotations.form.projectPlaceholder',
-                                    'Select project…',
-                                  )
-                                : t(
-                                    'quotations.form.projectPlaceholderNoClient',
-                                    'Select a client first',
-                                  )
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent
-                          position="popper"
-                          className="bg-bg-raised border-border-default text-text-primary"
-                        >
-                          {filteredProjects.length === 0 ? (
-                            <div className="px-3 py-6 text-center text-xs text-text-tertiary">
-                              {t(
-                                'quotations.form.noProjects',
-                                'No projects for this client.',
-                              )}
-                            </div>
-                          ) : (
-                            filteredProjects.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>
-                                <span className="font-mono text-text-primary text-xs">
-                                  {p.number}
-                                </span>
-                                <span className="text-text-secondary text-xs ml-1.5 truncate">
-                                  · {p.description}
-                                </span>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                        aria-invalid={!!errors.projectId}
+                        className={cn('w-full', inputClasses)}
+                        placeholder={
+                          watchedClientId
+                            ? t('quotations.form.projectPlaceholder', 'Select project…')
+                            : t('quotations.form.projectPlaceholderNoClient', 'Select a client first')
+                        }
+                        searchPlaceholder={t('quotations.form.projectSearch', 'Search by number or description…')}
+                        emptyText={t('quotations.form.noProjects', 'No projects for this client.')}
+                        options={filteredProjects.map((p) => ({
+                          value: p.id,
+                          label: p.description,
+                          keywords: [p.number || '', p.description],
+                          node: (
+                            <span className="flex items-baseline gap-2">
+                              <span className="font-mono text-xs text-text-tertiary">
+                                {p.number || '—'}
+                              </span>
+                              <span className="truncate text-text-secondary">
+                                · {p.description}
+                              </span>
+                            </span>
+                          ),
+                        }))}
+                      />
                     )}
                   />
                 )}

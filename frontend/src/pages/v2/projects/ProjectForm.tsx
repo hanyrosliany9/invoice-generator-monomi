@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { clientService } from '@/services/clients';
 import { projectTypesApi, type ProjectType } from '@/services/project-types';
 import { cn } from '@/lib/utils';
@@ -404,42 +405,33 @@ export const ProjectForm = ({
               control={control}
               name="clientId"
               render={({ field }) => (
-                <Select
+                <Combobox
                   value={field.value || undefined}
-                  onValueChange={field.onChange}
+                  onChange={field.onChange}
                   disabled={isSubmitting || clientsLoading}
-                >
-                  <SelectTrigger
-                    id="pf-client"
-                    className={cn(
-                      'w-full',
-                      fieldInputClass,
-                      'data-[placeholder]:text-text-tertiary',
-                      errors.clientId && fieldInvalidClass,
-                    )}
-                  >
-                    <SelectValue
-                      placeholder={
-                        clientsLoading
-                          ? t('projectForm.loading', 'Loading...')
-                          : t('projectForm.clientPh', 'Select client')
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="bg-bg-raised border-border-subtle max-h-72">
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                        {c.company ? ` · ${c.company}` : ''}
-                      </SelectItem>
-                    ))}
-                    {clients.length === 0 && !clientsLoading && (
-                      <div className="px-2 py-2 text-xs text-text-tertiary">
-                        {t('projectForm.noClients', 'No clients registered yet.')}
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
+                  aria-invalid={!!errors.clientId}
+                  className={cn('w-full', fieldInputClass, errors.clientId && fieldInvalidClass)}
+                  placeholder={
+                    clientsLoading
+                      ? t('projectForm.loading', 'Loading...')
+                      : t('projectForm.clientPh', 'Select client')
+                  }
+                  searchPlaceholder={t('projectForm.clientSearch', 'Search by name or company…')}
+                  emptyText={t('projectForm.noClients', 'No clients registered yet.')}
+                  options={clients.map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                    keywords: [c.name, c.company, c.email].filter(Boolean) as string[],
+                    node: (
+                      <span className="flex items-baseline gap-1.5">
+                        <span>{c.name}</span>
+                        {c.company && (
+                          <span className="text-text-tertiary text-xs">· {c.company}</span>
+                        )}
+                      </span>
+                    ),
+                  }))}
+                />
               )}
             />
           </FieldShell>

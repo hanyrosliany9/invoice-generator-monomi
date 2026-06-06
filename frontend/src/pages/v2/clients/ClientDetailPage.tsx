@@ -22,6 +22,7 @@ import {
   Trash2,
   ExternalLink,
   AlertTriangle,
+  Plus,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -61,9 +62,11 @@ import { quotationService, type Quotation } from '@/services/quotations';
 const SectionHeader = ({
   title,
   sublabel,
+  action,
 }: {
   title: string;
   sublabel: string;
+  action?: React.ReactNode;
 }) => (
   <div className="mb-5 flex items-baseline justify-between gap-4">
     <div>
@@ -72,6 +75,7 @@ const SectionHeader = ({
       </h2>
       <p className="mt-0.5 text-xs text-text-tertiary">{sublabel}</p>
     </div>
+    {action && <div className="shrink-0 self-center">{action}</div>}
   </div>
 );
 
@@ -141,6 +145,9 @@ export default function ClientDetailPageV2() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+  // Project/quotation creation is admin-only (AdminRoute), so only show the
+  // CTAs to admins to avoid a dead-end click.
+  const canCreate = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
 
   const shell = {
     sidebar: {
@@ -802,6 +809,14 @@ export default function ClientDetailPageV2() {
             <SectionHeader
               title={t('clients.detail.projectsSection', 'Riwayat Proyek')}
               sublabel={projectsLoading ? t('common.loading', 'Memuat…') : t('clients.detail.recordCount', '{{count}} catatan', { count: projects.length })}
+              action={
+                canCreate ? (
+                  <Button size="sm" onClick={() => navigate(`/projects/new?clientId=${id}`)}>
+                    <Plus className="h-4 w-4" />
+                    {t('clients.detail.addProject', 'New Project')}
+                  </Button>
+                ) : undefined
+              }
             />
             {projectsLoading ? (
               <div className="space-y-2">
@@ -817,6 +832,14 @@ export default function ClientDetailPageV2() {
                   'clients.detail.noProjectsDesc',
                   'Klien ini belum memiliki proyek yang tercatat.',
                 )}
+                action={
+                  canCreate ? (
+                    <Button size="sm" onClick={() => navigate(`/projects/new?clientId=${id}`)}>
+                      <Plus className="h-4 w-4" />
+                      {t('clients.detail.addFirstProject', 'Create Project')}
+                    </Button>
+                  ) : undefined
+                }
               />
             ) : (
               <DataTable
@@ -868,6 +891,14 @@ export default function ClientDetailPageV2() {
             <SectionHeader
               title={t('clients.detail.quotationsSection', 'Riwayat Penawaran')}
               sublabel={quotationsLoading ? t('common.loading', 'Memuat…') : t('clients.detail.recordCount', '{{count}} catatan', { count: quotations.length })}
+              action={
+                canCreate ? (
+                  <Button size="sm" onClick={() => navigate(`/quotations/new?clientId=${id}`)}>
+                    <Plus className="h-4 w-4" />
+                    {t('clients.detail.addQuotation', 'New Quotation')}
+                  </Button>
+                ) : undefined
+              }
             />
             {quotationsLoading ? (
               <div className="space-y-2">
@@ -883,6 +914,14 @@ export default function ClientDetailPageV2() {
                   'clients.detail.noQuotationsDesc',
                   'Belum ada penawaran yang dibuat untuk klien ini.',
                 )}
+                action={
+                  canCreate ? (
+                    <Button size="sm" onClick={() => navigate(`/quotations/new?clientId=${id}`)}>
+                      <Plus className="h-4 w-4" />
+                      {t('clients.detail.addFirstQuotation', 'Create Quotation')}
+                    </Button>
+                  ) : undefined
+                }
               />
             ) : (
               <DataTable

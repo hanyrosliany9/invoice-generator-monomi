@@ -432,7 +432,9 @@
       "terminTotal": "Total percentage",
       "terminReadonly": "Milestones cannot be changed because an invoice has already been issued for one of the stages. Cancel the invoice first.",
       "terminInvalid": "Please review the payment milestones.",
-      "termsPlaceholder": "1. Payment Net 30 from invoice date.\n2. Includes VAT 11%.\n3. Maximum 3 revisions.\n4. ..."
+      "termsPlaceholder": "1. Payment Net 30 from invoice date.\n2. Includes VAT 11%.\n3. Maximum 3 revisions.\n4. ...",
+      "clientSearch": "Search by name or company…",
+      "projectSearch": "Search by number or description…"
     },
     "kpi": {
       "approved": "Approved",
@@ -673,7 +675,10 @@
       "editDesc": "Editing {{n}} — changes are saved to the invoice record.",
       "materaiDesc": "Total exceeds IDR 5,000,000 — affix a IDR 10,000 stamp duty to the printed copy before sending.",
       "notFoundDesc": "This invoice may have been deleted or you don't have access.",
-      "statusHelp": "Status changes are processed via a separate endpoint."
+      "statusHelp": "Status changes are processed via a separate endpoint.",
+      "clientSearch": "Search by name or company…",
+      "noClients": "No clients yet",
+      "projectSearch": "Search by project number or description…"
     },
     "kpi": {
       "drafts": "Drafts",
@@ -782,7 +787,11 @@
       "notFoundDesc": "The client you're looking for does not exist or has been deleted.",
       "overdueDesc": "Review the invoice history below to follow up on overdue payments.",
       "overdueTitle": "{{count}} invoice overdue",
-      "recordCount": "{{count}} records"
+      "recordCount": "{{count}} records",
+      "addProject": "New Project",
+      "addFirstProject": "Create Project",
+      "addQuotation": "New Quotation",
+      "addFirstQuotation": "Create Quotation"
     },
     "directory": "Client Directory",
     "edit": {
@@ -4742,7 +4751,8 @@
     "saving": "Saving...",
     "save": "Save",
     "loading": "Loading...",
-    "statusLabel": "Status"
+    "statusLabel": "Status",
+    "clientSearch": "Search by name or company…"
   },
   "projectCreate": {
     "success": "Project \"{{name}}\" created successfully.",
