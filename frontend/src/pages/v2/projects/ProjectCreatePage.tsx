@@ -45,6 +45,12 @@ export default function ProjectCreatePageV2() {
   // working when we toggle to v2.
   const prefilledClientId = searchParams.get('clientId') ?? undefined;
 
+  // When launched from a client, close the loop back to that client.
+  const backTo = prefilledClientId ? `/clients/${prefilledClientId}` : '/projects';
+  const backLabel = prefilledClientId
+    ? t('projectCreate.backToClient', 'Back to client')
+    : t('projectCreate.backToList', 'Back to Projects');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const createMutation = useMutation({
@@ -56,9 +62,11 @@ export default function ProjectCreatePageV2() {
       toast.success(
         t('projectCreate.success', 'Project "{{name}}" created successfully.', { name: project.number || project.description }),
       );
-      // Route to v2 detail when it lands; for now fall back to the v2 list
-      // (detail page is not built yet) — keep navigation in v2.
-      navigate('/projects');
+      // Land on the new project so the user can act on it immediately (add a
+      // quotation, expense, milestones). Thread ?from when we came from a client
+      // so the project's back button returns there.
+      const fromQuery = prefilledClientId ? `?from=${encodeURIComponent(backTo)}` : '';
+      navigate(`/projects/${project.id}${fromQuery}`);
     },
     onError: (error: unknown) => {
       const message =
@@ -125,18 +133,27 @@ export default function ProjectCreatePageV2() {
         <PageHeader
           title={t('projectCreate.title', 'New Project')}
           description={t('projectCreate.subtitle', 'Set up a new project with client, type, and billable product details.')}
-          breadcrumbs={[
-            { label: t('projectCreate.listLabel', 'Projects'), href: '/projects' },
-            { label: t('projectCreate.title', 'New Project') },
-          ]}
+          breadcrumbs={
+            prefilledClientId
+              ? [
+                  { label: t('projectCreate.clientsLabel', 'Clients'), href: '/clients' },
+                  { label: t('projectCreate.clientCrumb', 'Client'), href: backTo },
+                  { label: t('projectCreate.title', 'New Project') },
+                ]
+              : [
+                  { label: t('projectCreate.listLabel', 'Projects'), href: '/projects' },
+                  { label: t('projectCreate.title', 'New Project') },
+                ]
+          }
           actions={
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/projects')}
+                onClick={() => navigate(backTo)}
                 disabled={isSubmitting}
                 className="text-text-secondary hover:text-text-primary"
+                title={backLabel}
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t('projectCreate.cancel', 'Cancel')}

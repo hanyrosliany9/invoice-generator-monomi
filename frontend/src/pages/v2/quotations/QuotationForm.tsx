@@ -9,7 +9,7 @@
 // of mode, which is the whole point of v2.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -32,6 +32,7 @@ import {
 
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
+import { CreateClientModal } from '@/components/monomi/CreateClientModal';
 import { MoneyDisplay } from '@/components/monomi/MoneyDisplay';
 import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { Button } from '@/components/ui/button';
@@ -258,6 +259,9 @@ export const QuotationForm = ({
     name: 'lineItems',
   });
 
+  // Inline "create client" so a missing client doesn't force leaving the form.
+  const [addClientOpen, setAddClientOpen] = useState(false);
+
   // ── Data fetching ──
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
@@ -463,6 +467,8 @@ export const QuotationForm = ({
                         placeholder={t('quotations.form.clientPlaceholder', 'Select client…')}
                         searchPlaceholder={t('quotations.form.clientSearch', 'Search by name or company…')}
                         emptyText={t('quotations.form.noClients', 'No clients yet.')}
+                        onCreateNew={() => setAddClientOpen(true)}
+                        createNewLabel={t('form.addNewClient', '+ New client')}
                         options={clients.map((c) => ({
                           value: c.id,
                           label: c.name,
@@ -1160,6 +1166,12 @@ export const QuotationForm = ({
           </Button>
         </div>
       </form>
+
+      <CreateClientModal
+        open={addClientOpen}
+        onOpenChange={setAddClientOpen}
+        onCreated={(c) => setValue('clientId', c.id, { shouldValidate: true, shouldDirty: true })}
+      />
     </>
   );
 };

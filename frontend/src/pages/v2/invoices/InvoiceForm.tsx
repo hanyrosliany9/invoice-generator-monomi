@@ -22,6 +22,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
+import { CreateClientModal } from '@/components/monomi/CreateClientModal';
 import { clientService } from '@/services/clients';
 import { projectService } from '@/services/projects';
 import { settingsService } from '@/services/settings';
@@ -206,6 +207,9 @@ export const InvoiceForm = ({
   useEffect(() => { reset(defaultValues); }, [defaultValues, reset]);
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+
+  // Inline "create client" so a missing client doesn't force leaving the form.
+  const [addClientOpen, setAddClientOpen] = useState(false);
 
   /* ---------- live derived totals ---------- */
   const items = watch('items');
@@ -394,6 +398,8 @@ export const InvoiceForm = ({
                       placeholder={t('invoices.form.selectClient', 'Pilih klien')}
                       searchPlaceholder={t('invoices.form.clientSearch', 'Cari nama atau perusahaan…')}
                       emptyText={t('invoices.form.noClients', 'Belum ada klien')}
+                      onCreateNew={() => setAddClientOpen(true)}
+                      createNewLabel={t('form.addNewClient', '+ New client')}
                       options={clients.map((c) => ({
                         value: c.id,
                         label: c.name,
@@ -892,6 +898,12 @@ export const InvoiceForm = ({
           </div>
         </div>
       </div>
+
+      <CreateClientModal
+        open={addClientOpen}
+        onOpenChange={setAddClientOpen}
+        onCreated={(c) => setValue('clientId', c.id, { shouldValidate: true, shouldDirty: true })}
+      />
     </form>
   );
 };

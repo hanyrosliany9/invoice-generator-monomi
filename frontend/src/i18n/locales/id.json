@@ -4780,7 +4780,8 @@
     "addExpense": "Tambah Biaya",
     "addFirstExpense": "Catat Biaya",
     "addQuotation": "Penawaran Baru",
-    "addFirstQuotation": "Buat Penawaran"
+    "addFirstQuotation": "Buat Penawaran",
+    "backToClient": "Kembali ke klien"
   },
   "projectForm": {
     "identity": {
@@ -4854,7 +4855,10 @@
     "crumb": "Baru",
     "cancel": "Batal",
     "saving": "Menyimpan...",
-    "save": "Simpan"
+    "save": "Simpan",
+    "backToClient": "Kembali ke klien",
+    "clientsLabel": "Klien",
+    "clientCrumb": "Klien"
   },
   "projectEdit": {
     "success": "Perubahan untuk \"{{name}}\" tersimpan.",
@@ -6265,5 +6269,23 @@
       "cash": "Tunai",
       "other": "Lainnya (GoPay, QRIS, dll.)"
     }
+  },
+  "form": {
+    "addNewClient": "+ Klien baru"
+  },
+  "createClient": {
+    "title": "Klien Baru",
+    "subtitle": "Tambah klien tanpa meninggalkan formulir ini.",
+    "name": "Nama",
+    "namePlaceholder": "Nama kontak atau klien",
+    "company": "Perusahaan",
+    "companyPlaceholder": "PT / nama perusahaan",
+    "email": "Email",
+    "phone": "Telepon",
+    "cancel": "Batal",
+    "saving": "Menyimpan...",
+    "submit": "Buat Klien",
+    "success": "Klien dibuat.",
+    "error": "Gagal membuat klien."
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFieldArray, useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2, Plus, Trash2, CalendarDays } from 'lucide-react';
 
 import { GlassPanel } from '@/components/monomi/GlassPanel';
+import { CreateClientModal } from '@/components/monomi/CreateClientModal';
 import { MoneyDisplay } from '@/components/monomi/MoneyDisplay';
 import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { Button } from '@/components/ui/button';
@@ -254,12 +255,16 @@ export const ProjectForm = ({
     control,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<ProjectFormValues>({
     resolver: zodResolver(makeProjectFormSchema(t)),
     defaultValues: { ...emptyProjectFormValues, ...defaultValues },
     mode: 'onBlur',
   });
+
+  // Inline "create client" so a missing client doesn't force leaving the form.
+  const [addClientOpen, setAddClientOpen] = useState(false);
 
   // Parent loads data asynchronously on Edit; reset so RHF picks the
   // new defaults up. Serialise for stable equality.
@@ -418,6 +423,8 @@ export const ProjectForm = ({
                   }
                   searchPlaceholder={t('projectForm.clientSearch', 'Search by name or company…')}
                   emptyText={t('projectForm.noClients', 'No clients registered yet.')}
+                  onCreateNew={() => setAddClientOpen(true)}
+                  createNewLabel={t('form.addNewClient', '+ New client')}
                   options={clients.map((c) => ({
                     value: c.id,
                     label: c.name,
@@ -807,6 +814,12 @@ export const ProjectForm = ({
           )}
         </Button>
       </div>
+
+      <CreateClientModal
+        open={addClientOpen}
+        onOpenChange={setAddClientOpen}
+        onCreated={(c) => setValue('clientId', c.id, { shouldValidate: true, shouldDirty: true })}
+      />
     </form>
   );
 };

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { Check, ChevronsUpDown, Search, Plus } from 'lucide-react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,10 @@ export interface ComboboxProps {
   contentClassName?: string;
   id?: string;
   'aria-invalid'?: boolean;
+  /** When set, renders a footer button (e.g. "+ New client") that closes the
+   *  dropdown and invokes this — for inline creation of a missing entity. */
+  onCreateNew?: () => void;
+  createNewLabel?: string;
 }
 
 /**
@@ -50,6 +54,8 @@ export function Combobox({
   contentClassName,
   id,
   'aria-invalid': ariaInvalid,
+  onCreateNew,
+  createNewLabel,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
@@ -170,6 +176,20 @@ export function Combobox({
             ))
           )}
         </div>
+        {onCreateNew && (
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              setQuery('');
+              onCreateNew();
+            }}
+            className="flex w-full items-center gap-2 border-t border-border-subtle px-3 py-2.5 text-left text-sm text-brand-cream hover:bg-bg-sunken transition-colors"
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            <span className="truncate">{createNewLabel ?? 'Add new'}</span>
+          </button>
+        )}
       </PopoverContent>
     </Popover>
   );

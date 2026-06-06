@@ -4689,7 +4689,8 @@
     "addExpense": "Add Expense",
     "addFirstExpense": "Record Expense",
     "addQuotation": "New Quotation",
-    "addFirstQuotation": "Create Quotation"
+    "addFirstQuotation": "Create Quotation",
+    "backToClient": "Back to client"
   },
   "projectForm": {
     "identity": {
@@ -4763,7 +4764,10 @@
     "crumb": "New",
     "cancel": "Cancel",
     "saving": "Saving...",
-    "save": "Save"
+    "save": "Save",
+    "backToClient": "Back to client",
+    "clientsLabel": "Clients",
+    "clientCrumb": "Client"
   },
   "projectEdit": {
     "success": "Changes for \"{{name}}\" saved.",
@@ -6265,5 +6269,23 @@
       "cash": "Cash",
       "other": "Other (GoPay, QRIS, etc.)"
     }
+  },
+  "form": {
+    "addNewClient": "+ New client"
+  },
+  "createClient": {
+    "title": "New Client",
+    "subtitle": "Add a client without leaving this form.",
+    "name": "Name",
+    "namePlaceholder": "Contact or client name",
+    "company": "Company",
+    "companyPlaceholder": "PT / company name",
+    "email": "Email",
+    "phone": "Phone",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "submit": "Create Client",
+    "success": "Client created.",
+    "error": "Failed to create client."
   }
 }

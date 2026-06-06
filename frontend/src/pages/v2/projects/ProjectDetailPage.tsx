@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -171,6 +171,14 @@ export default function ProjectDetailPageV2() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // "back" returns to ?from (e.g. the client we created this project from),
+  // otherwise the projects list.
+  const fromParam = searchParams.get('from');
+  const backTo = fromParam && fromParam.startsWith('/') ? fromParam : '/projects';
+  const backLabel = backTo.startsWith('/clients/')
+    ? t('projectDetail.backToClient', 'Back to client')
+    : t('projectDetail.backToList', 'Back to Projects');
   const user = useAuthStore((state) => state.user);
   // Expense creation is admin-only (the /expenses/new route is guarded by
   // AdminRoute), so only surface the CTA to admins to avoid a dead-end click.
@@ -308,9 +316,9 @@ export default function ProjectDetailPageV2() {
           }
           action={
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/projects')}>
+              <Button variant="outline" size="sm" onClick={() => navigate(backTo)}>
                 <ArrowLeft className="h-4 w-4" />
-                {t('projectDetail.backToList', 'Back to Projects')}
+                {backLabel}
               </Button>
               <Button size="sm" onClick={() => refetch()}>
                 {t('projectDetail.retry', 'Try Again')}
@@ -499,11 +507,11 @@ export default function ProjectDetailPageV2() {
          ─────────────────────────────────────────────────────────── */}
       <div className="mb-4">
         <Link
-          to="/projects"
+          to={backTo}
           className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          {t('projectDetail.backToList', 'Back to Projects')}
+          {backLabel}
         </Link>
       </div>
 
