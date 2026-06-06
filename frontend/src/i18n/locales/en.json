@@ -4484,7 +4484,8 @@
       "approvalStatus": "Approval Status",
       "notesPlaceholder": "e.g. duplicate invoice, requires finance manager approval...",
       "paymentSource": "Pay from (Balance)",
-      "paymentSourceHint": "Cash deducts the Cash balance; Bank deducts the default bank account."
+      "paymentSourceHint": "Cash deducts the Cash balance; Bank deducts the default bank account.",
+      "categorySearch": "Search by name or account code…"
     },
     "noCategories": "No expense categories yet",
     "submitNote": "Save as draft to review later, or submit immediately for approval.",

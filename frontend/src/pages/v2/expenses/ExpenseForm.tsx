@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { cn } from '@/lib/utils';
 import { expenseService } from '@/services/expenses';
 import { projectService } from '@/services/projects';
@@ -432,36 +433,32 @@ export const ExpenseForm = ({
                   control={control}
                   name="categoryId"
                   render={({ field }) => (
-                    <Select
+                    <Combobox
                       value={field.value || undefined}
-                      onValueChange={field.onChange}
+                      onChange={field.onChange}
                       disabled={categoriesLoading || isSubmitting}
-                    >
-                      <SelectTrigger
-                        className={cn(
-                          'w-full',
-                          fieldInputClass,
-                          errors.categoryId && fieldInvalidClass,
-                        )}
-                      >
-                        <SelectValue placeholder={t('expenseForm.field.categoryPlaceholder', 'Select expense category')} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72 bg-bg-raised border-border-subtle">
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            <span className="font-mono text-xs text-text-tertiary mr-2">
+                      aria-invalid={!!errors.categoryId}
+                      className={cn(
+                        fieldInputClass,
+                        errors.categoryId && fieldInvalidClass,
+                      )}
+                      placeholder={t('expenseForm.field.categoryPlaceholder', 'Select expense category')}
+                      searchPlaceholder={t('expenseForm.field.categorySearch', 'Search by name or account code…')}
+                      emptyText={t('expenseForm.noCategories', 'No expense categories yet')}
+                      options={categories.map((cat) => ({
+                        value: cat.id,
+                        label: cat.nameId || cat.name,
+                        keywords: [cat.accountCode, cat.name, cat.nameId, cat.expenseClass],
+                        node: (
+                          <span className="flex items-baseline gap-2">
+                            <span className="font-mono text-xs text-text-tertiary">
                               {cat.accountCode}
                             </span>
-                            {cat.nameId || cat.name}
-                          </SelectItem>
-                        ))}
-                        {categories.length === 0 && !categoriesLoading && (
-                          <div className="px-2 py-2 text-xs text-text-tertiary">
-                            {t('expenseForm.noCategories', 'No expense categories yet')}
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
+                            <span className="truncate">{cat.nameId || cat.name}</span>
+                          </span>
+                        ),
+                      }))}
+                    />
                   )}
                 />
                 {resolvedCategory && (

@@ -4575,7 +4575,8 @@
       "approvalStatus": "Status Persetujuan",
       "notesPlaceholder": "contoh: faktur duplikat, perlu persetujuan manajer keuangan...",
       "paymentSource": "Bayar dari (Saldo)",
-      "paymentSourceHint": "Kas mengurangi saldo Kas; Bank mengurangi rekening bank default."
+      "paymentSourceHint": "Kas mengurangi saldo Kas; Bank mengurangi rekening bank default.",
+      "categorySearch": "Cari berdasarkan nama atau kode akun…"
     },
     "noCategories": "Belum ada kategori pengeluaran",
     "submitNote": "Simpan sebagai draf untuk ditinjau nanti, atau kirim langsung untuk persetujuan.",
