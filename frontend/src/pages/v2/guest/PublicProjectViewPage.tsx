@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -38,6 +39,7 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 
 export const PublicProjectViewPage = () => {
+  const { t } = useTranslation();
   const { token: shareToken } = useParams<{ token: string }>();
 
   const [search, setSearch] = useState('');
@@ -146,8 +148,8 @@ export const PublicProjectViewPage = () => {
     return (
       <ShellFrame>
         <ErrorPanel
-          title="Tautan Tidak Lengkap"
-          body="Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan."
+          title={t('guest.publicProjectView.incompleteLink', 'Tautan Tidak Lengkap')}
+          body={t('guest.publicProjectView.incompleteLinkBody', 'Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.')}
         />
       </ShellFrame>
     );
@@ -157,8 +159,8 @@ export const PublicProjectViewPage = () => {
     return (
       <ShellFrame>
         <ErrorPanel
-          title="Galeri Tidak Ditemukan"
-          body="Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya."
+          title={t('guest.publicProjectView.galleryNotFound', 'Galeri Tidak Ditemukan')}
+          body={t('guest.publicProjectView.galleryNotFoundBody', 'Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya.')}
         />
       </ShellFrame>
     );
@@ -240,7 +242,7 @@ export const PublicProjectViewPage = () => {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari berkas..."
+                placeholder={t('guest.publicProjectView.searchPlaceholder', 'Cari berkas...')}
                 className="bg-bg-sunken border-border-subtle pl-9 text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -296,13 +298,13 @@ export const PublicProjectViewPage = () => {
                 icon={<ImageIcon />}
                 title={
                   search
-                    ? 'Tidak ada berkas yang cocok'
+                    ? t('guest.publicProjectView.noFilesMatch', 'Tidak ada berkas yang cocok')
                     : 'Folder ini kosong'
                 }
                 description={
                   search
-                    ? 'Coba kata kunci lain atau hapus pencarian.'
-                    : 'Belum ada aset atau folder di tingkat ini.'
+                    ? t('guest.publicProjectView.tryOtherKeyword', 'Coba kata kunci lain atau hapus pencarian.')
+                    : t('guest.publicProjectView.emptyFolder', 'Belum ada aset atau folder di tingkat ini.')
                 }
                 action={
                   search ? (

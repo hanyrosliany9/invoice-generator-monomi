@@ -318,7 +318,7 @@ export const RelationshipPanel: React.FC<RelationshipPanelProps> = ({
     return (
       <Card className={`${styles.relationshipPanel} ${className || ''}`}>
         <Empty
-          description='Tidak ada informasi relasi tersedia'
+          description={t('nav.relationshipPanel.noRelationInfo', 'Tidak ada informasi relasi tersedia')}
           className={styles.emptyState}
         />
       </Card>

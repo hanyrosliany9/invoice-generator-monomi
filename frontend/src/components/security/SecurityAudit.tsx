@@ -167,8 +167,10 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         id: 'business_document_security',
         name: 'Keamanan Dokumen Bisnis',
         category: 'data_protection',
-        description:
-          'Proteksi dokumen quotation dan invoice sesuai standar Indonesia',
+        description: t(
+          'security.securityAudit.businessDocumentSecurityDesc',
+          'Proteksi dokumen quotation dan invoice sesuai standar Indonesia'
+        ),
         severity: 'high',
         enabled: true,
         indonesianSpecific: true,
@@ -177,7 +179,10 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         id: 'xss_prevention',
         name: 'Pencegahan XSS',
         category: 'input_validation',
-        description: 'Validasi dan sanitasi input untuk mencegah XSS attacks',
+        description: t(
+          'security.securityAudit.xssPreventionDesc',
+          'Validasi dan sanitasi input untuk mencegah XSS attacks'
+        ),
         severity: 'critical',
         enabled: true,
         indonesianSpecific: false,
@@ -186,7 +191,10 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         id: 'csrf_protection',
         name: 'Proteksi CSRF',
         category: 'authentication',
-        description: 'Implementasi CSRF tokens untuk form submission',
+        description: t(
+          'security.securityAudit.csrfProtectionDesc',
+          'Implementasi CSRF tokens untuk form submission'
+        ),
         severity: 'high',
         enabled: true,
         indonesianSpecific: false,
@@ -348,13 +356,19 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         type: 'xss',
         severity: 'high',
         title: 'Potensi XSS pada Input Form',
-        description:
-          'Input form tidak memiliki sanitasi yang memadai terhadap script injection',
+        description: t(
+          'security.securityAudit.xssDescription',
+          'Input form tidak memiliki sanitasi yang memadai terhadap script injection'
+        ),
         location: 'components/forms/QuotationForm.tsx:line 45',
-        impact:
-          'Penyerang dapat menjalankan script berbahaya di browser pengguna',
-        recommendation:
-          'Implementasikan sanitasi input menggunakan DOMPurify dan validasi server-side',
+        impact: t(
+          'security.securityAudit.xssImpact',
+          'Penyerang dapat menjalankan script berbahaya di browser pengguna'
+        ),
+        recommendation: t(
+          'security.securityAudit.xssRecommendation',
+          'Implementasikan sanitasi input menggunakan DOMPurify dan validasi server-side'
+        ),
         cwe: 'CWE-79',
         cvss: 7.5,
         foundAt: now(),
@@ -378,12 +392,19 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         type: 'materai_compliance',
         severity: 'medium',
         title: 'Ketidakakuratan Kalkulasi Materai',
-        description:
-          'Perhitungan materai tidak sesuai dengan UU No. 13 Tahun 1985',
+        description: t(
+          'security.securityAudit.materaiDescription',
+          'Perhitungan materai tidak sesuai dengan UU No. 13 Tahun 1985'
+        ),
         location: 'utils/materaiCalculator.ts',
-        impact: 'Potensi pelanggaran regulasi Indonesia dan denda pajak',
-        recommendation:
-          'Update algoritma materai sesuai dengan tarif terbaru (Rp 10.000 untuk transaksi 5-1M, Rp 20.000 untuk >1M)',
+        impact: t(
+          'security.securityAudit.materaiImpact',
+          'Potensi pelanggaran regulasi Indonesia dan denda pajak'
+        ),
+        recommendation: t(
+          'security.securityAudit.materaiRecommendation',
+          'Update algoritma materai sesuai dengan tarif terbaru (Rp 10.000 untuk transaksi 5-1M, Rp 20.000 untuk >1M)'
+        ),
         foundAt: now(),
         status: 'open',
         affectsIndonesianCompliance: true,
@@ -406,12 +427,17 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         type: 'indonesian_privacy',
         severity: 'high',
         title: 'Pelanggaran UU Perlindungan Data Pribadi',
-        description: 'Data pribadi disimpan tanpa enkripsi yang memadai',
+        description: t(
+          'security.securityAudit.privacyDescription',
+          'Data pribadi disimpan tanpa enkripsi yang memadai'
+        ),
         location: 'database/schema/clients.ts',
         impact:
           'Pelanggaran UU No. 27 Tahun 2022, potensi denda hingga 2% dari pendapatan tahunan',
-        recommendation:
-          'Implementasikan enkripsi AES-256 untuk data sensitif seperti NIK, NPWP',
+        recommendation: t(
+          'security.securityAudit.privacyRecommendation',
+          'Implementasikan enkripsi AES-256 untuk data sensitif seperti NIK, NPWP'
+        ),
         foundAt: now(),
         status: 'open',
         affectsIndonesianCompliance: true,
@@ -436,11 +462,19 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         type: 'sensitive_data',
         severity: 'critical',
         title: 'Paparan Data Sensitif Indonesia',
-        description: 'NPWP dan NIK terpapar dalam log atau response API',
+        description: t(
+          'security.securityAudit.sensitiveDataDescription',
+          'NPWP dan NIK terpapar dalam log atau response API'
+        ),
         location: 'api/clients/getClientDetails',
-        impact: 'Potensi pencurian identitas dan pelanggaran privasi',
-        recommendation:
-          'Masking data sensitif dalam log dan API response, implementasikan field-level encryption',
+        impact: t(
+          'security.securityAudit.sensitiveDataImpact',
+          'Potensi pencurian identitas dan pelanggaran privasi'
+        ),
+        recommendation: t(
+          'security.securityAudit.sensitiveDataRecommendation',
+          'Masking data sensitif dalam log dan API response, implementasikan field-level encryption'
+        ),
         cwe: 'CWE-200',
         cvss: 8.5,
         foundAt: now(),
@@ -465,9 +499,15 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         type: 'csrf',
         severity: 'high',
         title: 'Kurangnya Proteksi CSRF',
-        description: 'Form tidak memiliki CSRF token yang memadai',
+        description: t(
+          'security.securityAudit.csrfDescription',
+          'Form tidak memiliki CSRF token yang memadai'
+        ),
         location: 'components/forms/InvoiceForm.tsx',
-        impact: 'Penyerang dapat melakukan aksi tidak sah atas nama pengguna',
+        impact: t(
+          'security.securityAudit.csrfImpact',
+          'Penyerang dapat melakukan aksi tidak sah atas nama pengguna'
+        ),
         recommendation: 'Implementasikan CSRF token pada semua form submission',
         cwe: 'CWE-352',
         cvss: 6.8,
@@ -493,12 +533,16 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
         type: 'weak_auth',
         severity: 'medium',
         title: 'Keamanan Dokumen Bisnis Lemah',
-        description:
-          'Dokumen quotation dan invoice dapat diakses tanpa otorisasi proper',
+        description: t(
+          'security.securityAudit.docSecurityDescription',
+          'Dokumen quotation dan invoice dapat diakses tanpa otorisasi proper'
+        ),
         location: 'api/documents/download',
         impact: 'Kebocoran informasi bisnis sensitif',
-        recommendation:
-          'Implementasikan access control berbasis role dan audit trail',
+        recommendation: t(
+          'security.securityAudit.docSecurityRecommendation',
+          'Implementasikan access control berbasis role dan audit trail'
+        ),
         foundAt: now(),
         status: 'open',
         affectsIndonesianCompliance: true,
@@ -804,8 +848,8 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
             </Card>
           ) : (
             <Alert
-              message='Belum ada scan yang dilakukan'
-              description="Klik 'Mulai Scan' untuk memulai audit keamanan"
+              message={t('security.securityAudit.noScanMessage', 'Belum ada scan yang dilakukan')}
+              description={t('security.securityAudit.noScanDescription', "Klik 'Mulai Scan' untuk memulai audit keamanan")}
               type='info'
               showIcon
             />
@@ -959,20 +1003,26 @@ const SecurityAudit: React.FC<SecurityAuditProps> = ({
                   <p>
                     <strong>Affects Indonesian Compliance:</strong>
                     {selectedVulnerability.affectsIndonesianCompliance
-                      ? ' Ya'
-                      : ' Tidak'}
+                      ? ` ${t('security.securityAudit.yes', 'Ya')}`
+                      : ` ${t('security.securityAudit.no', 'Tidak')}`}
                   </p>
                   <p>
                     <strong>Materai Related:</strong>
-                    {selectedVulnerability.materaiRelated ? ' Ya' : ' Tidak'}
+                    {selectedVulnerability.materaiRelated
+                      ? ` ${t('security.securityAudit.yes', 'Ya')}`
+                      : ` ${t('security.securityAudit.no', 'Tidak')}`}
                   </p>
                   <p>
                     <strong>Privacy Impact:</strong>
-                    {selectedVulnerability.privacyImpact ? ' Ya' : ' Tidak'}
+                    {selectedVulnerability.privacyImpact
+                      ? ` ${t('security.securityAudit.yes', 'Ya')}`
+                      : ` ${t('security.securityAudit.no', 'Tidak')}`}
                   </p>
                   <p>
                     <strong>Business Critical:</strong>
-                    {selectedVulnerability.businessCritical ? ' Ya' : ' Tidak'}
+                    {selectedVulnerability.businessCritical
+                      ? ` ${t('security.securityAudit.yes', 'Ya')}`
+                      : ` ${t('security.securityAudit.no', 'Tidak')}`}
                   </p>
                 </Card>
               </Col>

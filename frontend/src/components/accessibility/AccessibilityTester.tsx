@@ -32,6 +32,7 @@ import {
   InfoCircleOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import { useAccessibility } from '../../contexts/AccessibilityContext'
 import type {
   AccessibilityIssue,
@@ -77,6 +78,7 @@ const AccessibilityTester: React.FC<AccessibilityTesterProps> = ({
   onTestComplete,
   onIssueFound,
 }) => {
+  const { t } = useTranslation()
   const {
     state: _accessibilityState,
     checkCompliance: _checkCompliance,
@@ -103,8 +105,10 @@ const AccessibilityTester: React.FC<AccessibilityTesterProps> = ({
         name: 'Perceivable',
         description:
           'Information must be presentable in ways users can perceive',
-        indonesianContext:
-          'Informasi harus dapat dipersepsikan pengguna Indonesia',
+        indonesianContext: t(
+          'a11y.accessibilityTester.perceivableContext',
+          'Informasi harus dapat dipersepsikan pengguna Indonesia'
+        ),
         tests: [
           'color-contrast',
           'text-alternatives',
@@ -117,7 +121,10 @@ const AccessibilityTester: React.FC<AccessibilityTesterProps> = ({
         id: 'operable',
         name: 'Operable',
         description: 'Interface components must be operable',
-        indonesianContext: 'Komponen antarmuka harus dapat dioperasikan',
+        indonesianContext: t(
+          'a11y.accessibilityTester.operableContext',
+          'Komponen antarmuka harus dapat dioperasikan'
+        ),
         tests: [
           'keyboard-accessible',
           'no-seizures',
@@ -129,8 +136,10 @@ const AccessibilityTester: React.FC<AccessibilityTesterProps> = ({
         id: 'understandable',
         name: 'Understandable',
         description: 'Information and UI operation must be understandable',
-        indonesianContext:
-          'Informasi dan operasi UI harus dapat dipahami dalam konteks Indonesia',
+        indonesianContext: t(
+          'a11y.accessibilityTester.understandableContext',
+          'Informasi dan operasi UI harus dapat dipahami dalam konteks Indonesia'
+        ),
         tests: ['readable', 'predictable', 'input-assistance'],
       },
       {
@@ -138,8 +147,10 @@ const AccessibilityTester: React.FC<AccessibilityTesterProps> = ({
         name: 'Robust',
         description:
           'Content must be robust enough for various assistive technologies',
-        indonesianContext:
-          'Konten harus robust untuk berbagai teknologi assistif',
+        indonesianContext: t(
+          'a11y.accessibilityTester.robustContext',
+          'Konten harus robust untuk berbagai teknologi assistif'
+        ),
         tests: ['compatible'],
       },
     ],
@@ -258,7 +269,7 @@ const AccessibilityTester: React.FC<AccessibilityTesterProps> = ({
       )
     } catch (error) {
       console.error('Accessibility test failed:', error)
-      announce('Pengujian aksesibilitas gagal', 'assertive')
+      announce(t('a11y.accessibilityTester.testFailed', 'Pengujian aksesibilitas gagal'), 'assertive')
     } finally {
       setIsTestingActive(false)
       setTestProgress(0)
@@ -310,7 +321,7 @@ const AccessibilityTester: React.FC<AccessibilityTesterProps> = ({
       if (issues.length > 0) {
         issues.forEach(issue => onIssueFound?.(issue))
         announce(
-          `${issues.length} masalah aksesibilitas ditemukan`,
+          t('a11y.accessibilityTester.issuesFound', '{{count}} masalah aksesibilitas ditemukan', { count: issues.length }),
           'assertive'
         )
       }

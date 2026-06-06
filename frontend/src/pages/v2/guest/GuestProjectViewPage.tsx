@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -38,6 +39,7 @@ const ROLE_LABEL: Record<string, string> = {
 /* ------------------------------------------------------------------ */
 
 export const GuestProjectViewPage = () => {
+  const { t } = useTranslation();
   const { projectId } = useParams<{ projectId: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -78,7 +80,7 @@ export const GuestProjectViewPage = () => {
         <GlassPanel surface="strong" padding="lg" className="w-full max-w-[460px]">
           <ErrorBlock
             title="Token Akses Hilang"
-            body="Tautan tidak menyertakan token akses tamu. Mintalah pemilik proyek untuk membagikan ulang tautan undangan Anda."
+            body={t('guest.guestProjectView.missingTokenBody', 'Tautan tidak menyertakan token akses tamu. Mintalah pemilik proyek untuk membagikan ulang tautan undangan Anda.')}
           />
         </GlassPanel>
       </ShellFrame>
@@ -91,8 +93,8 @@ export const GuestProjectViewPage = () => {
       <ShellFrame>
         <GlassPanel surface="strong" padding="lg" className="w-full max-w-[460px]">
           <ErrorBlock
-            title="Akses Tidak Tersedia"
-            body="Token akses tidak valid atau sudah kedaluwarsa. Mintalah pemilik proyek untuk mengirim undangan baru."
+            title={t('guest.guestProjectView.accessUnavailable', 'Akses Tidak Tersedia')}
+            body={t('guest.guestProjectView.accessUnavailableBody', 'Token akses tidak valid atau sudah kedaluwarsa. Mintalah pemilik proyek untuk mengirim undangan baru.')}
           />
         </GlassPanel>
       </ShellFrame>
@@ -183,7 +185,7 @@ export const GuestProjectViewPage = () => {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari berkas..."
+                placeholder={t('guest.guestProjectView.searchPlaceholder', 'Cari berkas...')}
                 className="bg-bg-sunken border-border-subtle pl-9 text-text-primary placeholder:text-text-tertiary"
               />
             </div>
@@ -202,13 +204,13 @@ export const GuestProjectViewPage = () => {
                 icon={<ImageIcon />}
                 title={
                   search
-                    ? 'Tidak ada berkas yang cocok'
-                    : 'Belum ada aset media'
+                    ? t('guest.guestProjectView.noFilesMatch', 'Tidak ada berkas yang cocok')
+                    : t('guest.guestProjectView.noAssets', 'Belum ada aset media')
                 }
                 description={
                   search
-                    ? 'Coba kata kunci lain atau hapus pencarian.'
-                    : 'Pemilik proyek belum mengunggah berkas apa pun.'
+                    ? t('guest.guestProjectView.tryOtherKeyword', 'Coba kata kunci lain atau hapus pencarian.')
+                    : t('guest.guestProjectView.noAssetsBody', 'Pemilik proyek belum mengunggah berkas apa pun.')
                 }
                 action={
                   search ? (

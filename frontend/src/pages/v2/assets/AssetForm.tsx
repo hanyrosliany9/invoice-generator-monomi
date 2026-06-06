@@ -43,11 +43,11 @@ const CONDITION_VALUES = [
   'BROKEN',
 ] as const;
 
-export const assetFormSchema = z
+const makeAssetFormSchema = (t: (key: string, fallback: string) => string) => z
   .object({
     // 01 · Identitas
-    name: z.string().min(1, 'Nama aset wajib diisi').max(120, 'Terlalu panjang'),
-    category: z.string().min(1, 'Kategori wajib dipilih'),
+    name: z.string().min(1, t('assets.validation.nameRequired', 'Asset name is required')).max(120, 'Terlalu panjang'),
+    category: z.string().min(1, t('assets.validation.categoryRequired', 'Category is required')),
     subcategory: z.string().max(120, 'Terlalu panjang').optional().or(z.literal('')),
 
     // 02 · Spesifikasi
@@ -56,7 +56,7 @@ export const assetFormSchema = z
     serialNumber: z.string().max(120, 'Terlalu panjang').optional().or(z.literal('')),
 
     // 03 · Akuisisi
-    purchaseDate: z.date({ message: 'Tanggal pembelian wajib diisi' }),
+    purchaseDate: z.date({ message: t('assets.validation.purchaseDateRequired', 'Purchase date is required') }),
     purchasePrice: z.coerce.number().min(0, 'Min. 0'),
     supplier: z.string().max(160, 'Terlalu panjang').optional().or(z.literal('')),
     invoiceNumber: z.string().max(80, 'Terlalu panjang').optional().or(z.literal('')),
@@ -91,10 +91,12 @@ export const assetFormSchema = z
       v.purchasePrice === undefined ||
       v.residualValue < v.purchasePrice,
     {
-      message: 'Nilai sisa harus lebih kecil dari harga pembelian',
+      message: t('assets.validation.residualValueTooHigh', 'Residual value must be less than purchase price'),
       path: ['residualValue'],
     },
   );
+
+export const assetFormSchema = makeAssetFormSchema((_, fallback) => fallback);
 
 export type AssetFormValues = z.infer<typeof assetFormSchema>;
 
@@ -286,7 +288,7 @@ export const AssetForm = ({
     reset,
     formState: { errors },
   } = useForm<AssetFormValues>({
-    resolver: zodResolver(assetFormSchema),
+    resolver: zodResolver(makeAssetFormSchema(t)),
     defaultValues: { ...emptyAssetFormValues, ...defaultValues },
     mode: 'onBlur',
   });
@@ -627,7 +629,7 @@ export const AssetForm = ({
 
         <FieldShell
           id="af-location"
-          label={t('assets.form.location', 'Lokasi / Penempatan')}
+          label={t('assets.form.location.title', 'Lokasi / Penempatan')}
           hint={t(
             'assets.form.locationHint',
             'Mis. Studio A, Gudang HQ, atau nama tim pengguna.',

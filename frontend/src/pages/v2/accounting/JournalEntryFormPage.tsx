@@ -44,36 +44,36 @@ import { cn } from '@/lib/utils';
 /*  OR credit (not both, not neither); sum debit === sum credit.      */
 /* ------------------------------------------------------------------ */
 
-const lineSchema = z.object({
-  accountCode:   z.string().min(1, 'Pilih akun'),
+const makeLineSchema = (t: (k: string, fb: string) => string) => z.object({
+  accountCode:   z.string().min(1, t('accounting.journalEntryForm.validationSelectAccount', 'Select an account')),
   descriptionId: z.string().optional(),
   debit:         z.coerce.number().min(0, 'Min. 0'),
   credit:        z.coerce.number().min(0, 'Min. 0'),
 }).refine(
   (l) => (l.debit > 0 && l.credit === 0) || (l.credit > 0 && l.debit === 0),
-  { message: 'Isi debit ATAU kredit, tidak keduanya.', path: ['debit'] },
+  { message: t('accounting.journalEntryForm.validationDebitOrCredit', 'Enter debit OR credit, not both.'), path: ['debit'] },
 );
 
-const formSchema = z.object({
-  entryDate:       z.date({ required_error: 'Tanggal wajib diisi' }),
-  transactionType: z.string().min(1, 'Pilih tipe transaksi'),
+const makeFormSchema = (t: (k: string, fb: string) => string) => z.object({
+  entryDate:       z.date({ required_error: t('accounting.journalEntryForm.validationDateRequired', 'Date is required') }),
+  transactionType: z.string().min(1, t('accounting.journalEntryForm.validationSelectTransactionType', 'Select a transaction type')),
   descriptionId:   z.string().min(10, 'Deskripsi minimal 10 karakter'),
   description:     z.string().optional(),
   documentNumber:  z.string().optional(),
   documentDate:    z.date().optional(),
-  lineItems: z.array(lineSchema)
-    .min(2, 'Minimal 2 baris (debit dan kredit).')
+  lineItems: z.array(makeLineSchema(t))
+    .min(2, t('accounting.journalEntryForm.validationMinTwoLines', 'At least 2 lines (debit and credit) are required.'))
     .refine(
       (lines) => {
         const d = lines.reduce((a, l) => a + Number(l.debit || 0), 0);
         const c = lines.reduce((a, l) => a + Number(l.credit || 0), 0);
         return Math.abs(d - c) < 0.01;
       },
-      { message: 'Total debit harus sama dengan total kredit.' },
+      { message: t('accounting.journalEntryForm.validationDebitCreditBalance', 'Total debits must equal total credits.') },
     ),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof makeFormSchema>>;
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -189,7 +189,7 @@ export default function JournalEntryFormPageV2() {
   const {
     register, handleSubmit, control, watch, setValue, reset, formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(makeFormSchema(t)),
     defaultValues,
     mode: 'onBlur',
   });

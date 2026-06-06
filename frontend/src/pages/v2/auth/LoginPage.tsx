@@ -14,12 +14,12 @@ import { Label } from '@/components/ui/label'
 import { authService } from '@/services/auth'
 import { useAuthStore } from '@/store/auth'
 
-const loginSchema = z.object({
-  email: z.string().email('Email tidak valid'),
-  password: z.string().min(1, 'Password wajib diisi'),
+const makeLoginSchema = (t: (key: string, fallback: string) => string) => z.object({
+  email: z.string().email(t('auth.validation.emailInvalid', 'Invalid email')),
+  password: z.string().min(1, t('auth.validation.passwordRequired', 'Password is required')),
 })
 
-type LoginFormData = z.infer<typeof loginSchema>
+type LoginFormData = z.infer<ReturnType<typeof makeLoginSchema>>
 
 export const LoginPage: React.FC = () => {
   const { t } = useTranslation()
@@ -32,7 +32,7 @@ export const LoginPage: React.FC = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(makeLoginSchema(t)),
   })
 
   const loginMutation = useMutation({

@@ -1,3 +1,5 @@
+import i18n from '@/i18n/config'
+
 /**
  * Safe number conversion that prevents NaN
  */
@@ -591,24 +593,24 @@ export const validateIDRAmount = (
 
   // Basic validation
   if (!Number.isFinite(amount)) {
-    errors.push('Jumlah harus berupa angka yang valid')
+    errors.push(i18n.t('utils.currency.errorNotANumber', 'Amount must be a valid number'))
     return { isValid: false, errors, warnings }
   }
 
   if (amount < 0 && !allowNegative) {
-    errors.push('Jumlah tidak boleh negatif')
+    errors.push(i18n.t('utils.currency.errorNegative', 'Amount must not be negative'))
   }
 
   if (amount === 0 && !allowZero) {
-    errors.push('Jumlah harus lebih besar dari nol')
+    errors.push(i18n.t('utils.currency.errorZero', 'Amount must be greater than zero'))
   }
 
   if (amount < min) {
-    errors.push(`Jumlah tidak boleh kurang dari ${formatIDR(min)}`)
+    errors.push(i18n.t('utils.currency.errorBelowMin', 'Amount must not be less than {{min}}', { min: formatIDR(min) }))
   }
 
   if (amount > max) {
-    errors.push(`Jumlah tidak boleh lebih dari ${formatIDR(max)}`)
+    errors.push(i18n.t('utils.currency.errorAboveMax', 'Amount must not exceed {{max}}', { max: formatIDR(max) }))
   }
 
   // Indonesian business warnings
@@ -626,7 +628,7 @@ export const validateIDRAmount = (
 
   if (amount >= 100000000) {
     warnings.push(
-      'Transaksi besar - pertimbangkan untuk menggunakan komunikasi formal'
+      i18n.t('utils.currency.warnLargeTransaction', 'Large transaction — consider using formal communication')
     )
   }
 
@@ -667,7 +669,7 @@ export const getAmountMetadata = (
     riskLevel = 'high'
     recommendedActions.push('Gunakan komunikasi formal')
     recommendedActions.push('Pertimbangkan persetujuan manajemen')
-    recommendedActions.push('Dokumentasikan dengan lengkap')
+    recommendedActions.push(i18n.t('utils.currency.actionDocumentThoroughly', 'Document thoroughly'))
   } else if (numericAmount >= 100000000) {
     riskLevel = 'medium'
     recommendedActions.push('Gunakan komunikasi semi-formal')

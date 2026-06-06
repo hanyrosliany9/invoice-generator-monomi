@@ -11,6 +11,7 @@
 
 import { useAuthStore } from '../store/auth';
 import type { UserRole } from '../types/user';
+import i18n from '@/i18n/config';
 
 // Permission role groups (matches backend constants)
 const SYSTEM_ADMIN_ROLES: UserRole[] = ['SUPER_ADMIN'];
@@ -92,7 +93,7 @@ export const usePermissions = () => {
    */
   const getRoleDisplayNameId = (role?: UserRole): string => {
     const roleToDisplay = role || (user?.role as UserRole | undefined);
-    if (!roleToDisplay) return 'Tidak Diketahui';
+    if (!roleToDisplay) return i18n.t('hooks.usePermissions.roleUnknown', 'Unknown');
 
     const displayNamesId: Record<UserRole, string> = {
       'SUPER_ADMIN': 'Super Admin',
@@ -113,7 +114,7 @@ export const usePermissions = () => {
     const descriptions: Record<UserRole, string> = {
       'SUPER_ADMIN': 'Akses penuh sistem - Pemilik/IT Admin',
       'ADMIN': 'Akses konten - invoice, proyek, klien, akuntansi, media',
-      'VIDEOGRAPHER': 'Akses media-collab saja - upload dan edit aset',
+      'VIDEOGRAPHER': i18n.t('hooks.usePermissions.roleDescVideographer', 'Media-collab access only — upload and edit assets'),
     };
 
     return descriptions[roleToDisplay] || '';

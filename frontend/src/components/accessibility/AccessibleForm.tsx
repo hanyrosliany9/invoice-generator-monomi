@@ -2,6 +2,7 @@
 // WCAG 2.1 AA compliant form components with Indonesian business context
 
 import React, { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Button,
   DatePicker,
@@ -109,6 +110,7 @@ export const AccessibleFormItem: React.FC<AccessibleFormItemProps> = ({
   ariaDescribedBy,
   children,
 }) => {
+  const { t } = useTranslation()
   const { announce, getAccessibleLabel } = useAccessibility()
   const [focused, setFocused] = useState(false)
 
@@ -143,7 +145,7 @@ export const AccessibleFormItem: React.FC<AccessibleFormItemProps> = ({
           <Text strong>
             {accessibleLabel}
             {required && (
-              <span style={{ color: 'red' }} aria-label='wajib diisi'>
+              <span style={{ color: 'red' }} aria-label={t('a11y.accessibleForm.required', 'wajib diisi')}>
                 {' '}
                 *
               </span>
@@ -217,6 +219,7 @@ export const AccessibleInput: React.FC<AccessibleInputProps> = ({
   onChange,
   onBlur,
 }) => {
+  const { t } = useTranslation()
   const { announce } = useAccessibility()
   const [showPassword, setShowPassword] = useState(false)
 
@@ -243,13 +246,13 @@ export const AccessibleInput: React.FC<AccessibleInputProps> = ({
         const pattern = getValidationPattern()
         if (pattern && newValue && !pattern.test(newValue)) {
           const contextMessages = {
-            npwp: 'Format NPWP harus: XX.XXX.XXX.X-XXX.XXX',
-            nik: 'NIK harus 16 digit angka',
+            npwp: t('a11y.accessibleForm.npwpFormat', 'Format NPWP harus: XX.XXX.XXX.X-XXX.XXX'),
+            nik: t('a11y.accessibleForm.nikFormat', 'NIK harus 16 digit angka'),
             phone: 'Nomor telepon harus format Indonesia (+62/62/0)',
-            address: 'Format alamat tidak valid',
+            address: t('a11y.accessibleForm.addressInvalid', 'Format alamat tidak valid'),
           }
           announce(
-            contextMessages[businessContext] || 'Format tidak valid',
+            contextMessages[businessContext] || t('a11y.accessibleForm.invalidFormat', 'Format tidak valid'),
             'assertive'
           )
         }
@@ -330,6 +333,7 @@ export const AccessibleSelect: React.FC<AccessibleSelectProps> = ({
   value,
   onChange,
 }) => {
+  const { t } = useTranslation()
   const { announce } = useAccessibility()
 
   const handleChange = useCallback(
@@ -349,7 +353,7 @@ export const AccessibleSelect: React.FC<AccessibleSelectProps> = ({
         const matchingOptions = options.filter(opt =>
           opt.label.toLowerCase().includes(searchValue.toLowerCase())
         )
-        announce(`${matchingOptions.length} pilihan ditemukan`, 'polite')
+        announce(t('a11y.accessibleForm.optionsFound', '{{count}} pilihan ditemukan', { count: matchingOptions.length }), 'polite')
       }
     },
     [options, indonesianLabels, announce]
@@ -419,6 +423,7 @@ export const AccessibleNumberInput: React.FC<AccessibleNumberInputProps> = ({
   value,
   onChange,
 }) => {
+  const { t } = useTranslation()
   const { announce, announceMonetaryValue, announceMateraiRequirement } =
     useAccessibility()
   const [materaiRequired, setMateraiRequired] = useState(false)
@@ -442,13 +447,13 @@ export const AccessibleNumberInput: React.FC<AccessibleNumberInputProps> = ({
         // Validate range
         if (min !== undefined && newValue < min) {
           announce(
-            `Nilai minimum adalah ${currency ? formatIDR(min) : min}`,
+            t('a11y.accessibleForm.minValue', 'Nilai minimum adalah {{value}}', { value: currency ? formatIDR(min) : min }),
             'assertive'
           )
         }
         if (max !== undefined && newValue > max) {
           announce(
-            `Nilai maksimum adalah ${currency ? formatIDR(max) : max}`,
+            t('a11y.accessibleForm.maxValue', 'Nilai maksimum adalah {{value}}', { value: currency ? formatIDR(max) : max }),
             'assertive'
           )
         }
@@ -473,7 +478,7 @@ export const AccessibleNumberInput: React.FC<AccessibleNumberInputProps> = ({
     if (helpText) helpers.push(helpText)
     if (currency) helpers.push('Nilai dalam Rupiah Indonesia (IDR)')
     if (materaiCalculation && materaiRequired) {
-      helpers.push('Materai diperlukan untuk nilai di atas Rp 5.000.000')
+      helpers.push(t('a11y.accessibleForm.materaiRequired', 'Materai diperlukan untuk nilai di atas Rp 5.000.000'))
     }
     return helpers.join('. ')
   }
@@ -615,12 +620,13 @@ export const AccessibleDatePicker: React.FC<AccessibleDatePickerProps> = ({
   value,
   onChange,
 }) => {
+  const { t } = useTranslation()
   const { announce } = useAccessibility()
 
   const handleChange = useCallback(
     (date: Dayjs | null) => {
       if (date && indonesianLocale) {
-        announce(`Tanggal dipilih: ${date.format('DD MMMM YYYY')}`, 'polite')
+        announce(t('a11y.accessibleForm.dateSelected', 'Tanggal dipilih: {{date}}', { date: date.format('DD MMMM YYYY') }), 'polite')
       }
       onChange?.(date)
     },
@@ -685,8 +691,8 @@ export interface AccessibleFormActionsProps {
 }
 
 export const AccessibleFormActions: React.FC<AccessibleFormActionsProps> = ({
-  submitText = 'Simpan',
-  cancelText = 'Batal',
+  submitText,
+  cancelText,
   resetText = 'Reset',
   loading = false,
   disabled = false,
@@ -695,6 +701,9 @@ export const AccessibleFormActions: React.FC<AccessibleFormActionsProps> = ({
   onReset,
   primaryAction = 'submit',
 }) => {
+  const { t } = useTranslation()
+  const resolvedSubmitText = submitText ?? t('a11y.accessibleForm.save', 'Simpan')
+  const resolvedCancelText = cancelText ?? t('a11y.accessibleForm.cancel', 'Batal')
   return (
     <Row justify='end' style={{ marginTop: 24 }}>
       <Space>
@@ -705,7 +714,7 @@ export const AccessibleFormActions: React.FC<AccessibleFormActionsProps> = ({
         )}
         {onCancel && (
           <Button onClick={onCancel} disabled={disabled}>
-            {cancelText}
+            {resolvedCancelText}
           </Button>
         )}
         {onSubmit && (
@@ -716,7 +725,7 @@ export const AccessibleFormActions: React.FC<AccessibleFormActionsProps> = ({
             disabled={disabled}
             icon={<CheckCircleOutlined />}
           >
-            {submitText}
+            {resolvedSubmitText}
           </Button>
         )}
       </Space>

@@ -333,7 +333,7 @@ const IndonesianShortcuts: React.FC<{
         action: () => {
           // In a real app, this would open the phone app or show phone number
           alert(
-            'Fitur panggilan akan tersedia setelah integrasi dengan sistem telepon'
+            t('nav.mobileNavigation.callFeatureUnavailable', 'Fitur panggilan akan tersedia setelah integrasi dengan sistem telepon')
           )
         },
       },
@@ -352,7 +352,7 @@ const IndonesianShortcuts: React.FC<{
           } else {
             // Fallback to clipboard
             navigator.clipboard.writeText(window.location.href)
-            alert('Link telah disalin ke clipboard')
+            alert(t('nav.mobileNavigation.linkCopied', 'Link telah disalin ke clipboard'))
           }
         },
       },

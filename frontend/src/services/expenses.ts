@@ -1,4 +1,5 @@
 import { apiClient } from '../config/api';
+import i18n from '@/i18n/config';
 import type {
   ApproveExpenseFormData,
   CreateExpenseFormData,
@@ -377,7 +378,7 @@ export const expenseService = {
       breakdown: [
         {
           label: 'Gross Amount',
-          labelId: 'Jumlah Bruto',
+          labelId: i18n.t('services.expenses.labelGrossAmount', 'Gross Amount'),
           amount: grossAmount,
         },
         {
@@ -387,7 +388,7 @@ export const expenseService = {
         },
         {
           label: 'Total Amount',
-          labelId: 'Jumlah Total',
+          labelId: i18n.t('services.expenses.labelTotalAmount', 'Total Amount'),
           amount: totalAmount,
         },
       ],
@@ -435,7 +436,7 @@ export const expenseService = {
       breakdown: [
         {
           label: 'Gross Amount',
-          labelId: 'Jumlah Bruto',
+          labelId: i18n.t('services.expenses.labelGrossAmount', 'Gross Amount'),
           amount: grossAmount,
         },
         {
@@ -445,7 +446,7 @@ export const expenseService = {
         },
         {
           label: 'Net Amount',
-          labelId: 'Jumlah Netto',
+          labelId: i18n.t('services.expenses.labelNetAmount', 'Net Amount'),
           amount: netAmount,
         },
       ],
@@ -638,7 +639,7 @@ export const expenseService = {
       case 'REJECTED':
         return 'Ditolak';
       case 'CANCELLED':
-        return 'Dibatalkan';
+        return i18n.t('services.expenses.statusCancelled', 'Cancelled');
       default:
         return status;
     }
@@ -653,7 +654,7 @@ export const expenseService = {
   getPaymentStatusLabel: (status: ExpensePaymentStatus): string => {
     switch (status) {
       case 'UNPAID':
-        return 'Belum Dibayar';
+        return i18n.t('services.expenses.paymentStatusUnpaid', 'Unpaid');
       case 'PARTIALLY_PAID':
         return 'Dibayar Sebagian';
       case 'PAID':

@@ -38,12 +38,12 @@ import { cn } from '@/lib/utils';
 
 type BucketKey = 'Current' | '1-30 days' | '31-60 days' | '61-90 days' | 'Over 90 days';
 
-const BUCKETS: { key: BucketKey; label: string; tone: 'neutral' | 'warning' | 'danger' }[] = [
-  { key: 'Current',      label: 'Belum J.T.', tone: 'neutral' },
-  { key: '1-30 days',    label: '1–30',       tone: 'neutral' },
-  { key: '31-60 days',   label: '31–60',      tone: 'warning' },
-  { key: '61-90 days',   label: '61–90',      tone: 'warning' },
-  { key: 'Over 90 days', label: '> 90',       tone: 'danger'  },
+const BUCKETS: { key: BucketKey; labelKey: string; labelDefault: string; tone: 'neutral' | 'warning' | 'danger' }[] = [
+  { key: 'Current',      labelKey: 'accounting.arAging.bucketCurrent', labelDefault: 'Not Due', tone: 'neutral' },
+  { key: '1-30 days',    labelKey: 'accounting.arAging.bucket1to30',   labelDefault: '1–30',   tone: 'neutral' },
+  { key: '31-60 days',   labelKey: 'accounting.arAging.bucket31to60',  labelDefault: '31–60',  tone: 'warning' },
+  { key: '61-90 days',   labelKey: 'accounting.arAging.bucket61to90',  labelDefault: '61–90',  tone: 'warning' },
+  { key: 'Over 90 days', labelKey: 'accounting.arAging.bucketOver90',  labelDefault: '> 90',   tone: 'danger'  },
 ];
 
 const TONE_CLASS: Record<'neutral' | 'warning' | 'danger', string> = {
@@ -102,7 +102,7 @@ export default function ARAgingPageV2() {
     const map = new Map<string, ClientAging>();
     for (const r of rows) {
       const id = r.client?.id ?? '__unknown__';
-      const name = r.client?.name ?? 'Klien tidak diketahui';
+      const name = r.client?.name ?? t('accounting.arAging.unknownClient', 'Unknown Client');
       const bucket = (r.agingBucket as BucketKey) ?? 'Current';
       const amt = toNumber(r.amount);
       let entry = map.get(id);
@@ -196,7 +196,7 @@ export default function ARAgingPageV2() {
                 <MonomiDatePicker
                   value={asOfDate}
                   onChange={(d) => d && setAsOfDate(d)}
-                  placeholder="Per tanggal"
+                  placeholder={t('accounting.arAging.asOfDatePlaceholder', 'As of date')}
                 />
               </div>
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
@@ -224,7 +224,7 @@ export default function ARAgingPageV2() {
               : BUCKETS.map((b) => (
                   <StatCard
                     key={b.key}
-                    label={b.label}
+                    label={t(b.labelKey, b.labelDefault)}
                     value={
                       <MoneyDisplay
                         amount={summary[b.key]}
@@ -298,7 +298,7 @@ export default function ARAgingPageV2() {
                             : 'text-text-tertiary',
                         )}
                       >
-                        {b.label}
+                        {t(b.labelKey, b.labelDefault)}
                       </th>
                     ))}
                     <th className="text-right text-[10px] uppercase tracking-[0.14em] font-medium text-text-secondary px-4 py-3">

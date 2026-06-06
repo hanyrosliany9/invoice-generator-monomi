@@ -68,7 +68,11 @@
     "loginSubtitle": "Indonesian Business Management System",
     "invalidCredentials": "Invalid email or password",
     "accountDisabled": "Your account has been disabled",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "validation": {
+      "emailInvalid": "Invalid email",
+      "passwordRequired": "Password is required"
+    }
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -120,7 +124,41 @@
     "milestones": "Milestones",
     "users": "Users",
     "settings": "Settings",
-    "salaries": "Salaries"
+    "salaries": "Salaries",
+    "relationshipPanel": {
+      "noRelationInfo": "No relationship information available"
+    },
+    "businessFlowNavigator": {
+      "prospectDesc": "Initial stage of identifying and approaching prospective clients",
+      "quotationDesc": "Preparing the price proposal and scope of work",
+      "approvedDesc": "Client has approved the proposal and is ready to start the project",
+      "invoicingDesc": "Issuing invoices and managing financial administration",
+      "paymentTitle": "Payment Process",
+      "paymentDesc": "Payment follow-up and receipt confirmation",
+      "paymentFollowUp": "Payment follow-up",
+      "completedDesc": "All deliverables have been completed and paid",
+      "cancelledTitle": "Cancelled",
+      "cancelledDesc": "Project cancelled for various reasons",
+      "prospectTimingDesc": "Avoid meetings on Friday afternoons and times that conflict with prayer schedules",
+      "prospectEtiquetteDesc": "Always bring business cards and present them with both hands",
+      "quotationFormatDesc": "Use official company letterhead and include tax details",
+      "approvedContractDesc": "Prepare contracts in both Indonesian and English if required",
+      "invoicingMateraiDesc": "Invoices above Rp 5 million must use a Rp 10,000 stamp duty (materai)",
+      "paymentFollowUpTitle": "Payment Follow-up",
+      "paymentFollowUpDesc": "Use WhatsApp for more personal payment reminders",
+      "completedFeedbackDesc": "Always conduct a feedback session to maintain long-term relationships",
+      "cancelledRelationshipDesc": "Maintain a positive relationship even when the project is cancelled"
+    },
+    "mobileNavigation": {
+      "callFeatureUnavailable": "Call feature will be available after integration with the phone system",
+      "linkCopied": "Link copied to clipboard"
+    },
+    "enhancedBreadcrumb": {
+      "materaiApplied": "Stamp duty (materai) has been applied",
+      "materaiRequired": "Stamp duty (materai) required — not yet applied",
+      "stagePayment": "Payment",
+      "stageCancelled": "Cancelled"
+    }
   },
   "breadcrumb": {
     "client": "Client",
@@ -468,6 +506,9 @@
     },
     "detail": {
       "send": "Send"
+    },
+    "quotationCreate": {
+      "defaultTerms": "1. Payment Net 30 from invoice date.\n2. Includes 11% VAT.\n3. Maximum 3 revisions.\n4. Materai (stamp duty) required for value > Rp 5,000,000.\n5. Governing law: Republic of Indonesia."
     }
   },
   "invoices": {
@@ -664,7 +705,8 @@
       "sent": "Sent",
       "paid": "Paid",
       "overdue": "Overdue",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "pending": "Pending"
     },
     "col": {
       "number": "Number",
@@ -674,6 +716,15 @@
       "dueDate": "Due Date",
       "status": "Status",
       "actions": "Actions"
+    },
+    "invoiceForm": {
+      "validationDescriptionRequired": "Description is required",
+      "validationClientRequired": "Client is required",
+      "validationProjectRequired": "Project is required",
+      "validationIssuedDateRequired": "Issue date is required",
+      "validationDueDateRequired": "Due date is required",
+      "validationPaymentInfoTooShort": "Payment information is too short",
+      "paymentInfoNoBank": "PAYMENT INFORMATION:\n\nPlease contact {{email}} for payment account details."
     }
   },
   "clients": {
@@ -798,7 +849,8 @@
       "addressPlaceholder": "Jl. Sudirman No. 1, South Jakarta, DKI Jakarta 12190",
       "notesPlaceholder": "Communication preferences, relationship history, important notes to remember…",
       "statusHint": "Inactive clients do not appear in default selection lists.",
-      "editNote": "Changes are saved when you press \"Save\"."
+      "editNote": "Changes are saved when you press \"Save\".",
+      "companyPlaceholder": "PT, CV, or studio name"
     },
     "kpi": {
       "active": "Active Clients",
@@ -824,7 +876,13 @@
       "status": "Status"
     },
     "directoryCount": "{{count}} clients found",
-    "subtitle": "Manage client records, contacts, and business transaction history."
+    "subtitle": "Manage client records, contacts, and business transaction history.",
+    "validation": {
+      "nameRequired": "Client name is required",
+      "npwpInvalid": "Invalid NPWP format (XX.XXX.XXX.X-XXX.XXX)",
+      "emailInvalid": "Invalid email format",
+      "phoneInvalid": "Invalid phone number format"
+    }
   },
   "projects": {
     "title": "Projects",
@@ -1021,7 +1079,18 @@
       "delete": "Delete"
     },
     "confirmDelete": "Delete project {{number}}? This action cannot be undone.",
-    "duplicated": "Project duplicated: {{number}}"
+    "duplicated": "Project duplicated: {{number}}",
+    "projectContentCalendar": {
+      "statusDraft": "Draft",
+      "statusScheduled": "Scheduled",
+      "statusPublished": "Published",
+      "statusFailed": "Failed",
+      "statusArchived": "Archived",
+      "confirmDelete": "Delete this content?"
+    },
+    "projectForm": {
+      "validationPricePositive": "Price must be greater than 0"
+    }
   },
   "currency": {
     "idr": "IDR",
@@ -1587,7 +1656,13 @@
     },
     "subcategory": "Subcategory",
     "supplier": "Supplier",
-    "warranty": "Warranty"
+    "warranty": "Warranty",
+    "validation": {
+      "nameRequired": "Asset name is required",
+      "categoryRequired": "Category is required",
+      "purchaseDateRequired": "Purchase date is required",
+      "residualValueTooHigh": "Residual value must be less than purchase price"
+    }
   },
   "builder": {
     "addSection": "Add Section",
@@ -1693,7 +1768,14 @@
       "desc": "Nothing is scheduled in the next 14 days."
     },
     "upcomingTitle": "Upcoming Events",
-    "subtitle": "A single view of invoice due dates, quotation expiries, project deadlines, and team events."
+    "subtitle": "A single view of invoice due dates, quotation expiries, project deadlines, and team events.",
+    "contentCalendar": {
+      "statusDraft": "Draft",
+      "statusScheduled": "Scheduled",
+      "statusPublished": "Published",
+      "statusFailed": "Failed",
+      "statusArchived": "Archived"
+    }
   },
   "callSheets": {
     "create": {
@@ -2067,7 +2149,10 @@
       "placeholder": "Search by number, vendor, or description..."
     },
     "title": "Expenses",
-    "subtitle": "Record business expenses with PSAK compliance and Indonesian tax calculations."
+    "subtitle": "Record business expenses with PSAK compliance and Indonesian tax calculations.",
+    "expenseCategories": {
+      "descriptionIdPlaceholder": "Stationery and office supplies"
+    }
   },
   "milestones": {
     "analytics": {
@@ -2127,7 +2212,8 @@
       "onTime": "On Time",
       "onTimeSub": "of milestones paid",
       "recognition": "Revenue Recognition",
-      "recognitionSub": "of milestone value"
+      "recognitionSub": "of milestone value",
+      "days": "days"
     },
     "range": {
       "30": "Last 30 days",
@@ -2340,7 +2426,19 @@
       "error": "Failed to update user status."
     },
     "directoryCount": "{{count}} users found",
-    "subtitle": "Manage accounts, roles, and team access to the system."
+    "subtitle": "Manage accounts, roles, and team access to the system.",
+    "validation": {
+      "nameRequired": "Full name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "roleRequired": "Role is required",
+      "passwordRequired": "Password is required",
+      "passwordPolicy": "Min. 8 characters, uppercase, lowercase, and number"
+    },
+    "roles": {
+      "superAdminDesc": "Full system access — users, settings, all data.",
+      "videographerDesc": "Media-collab access only — upload and edit assets."
+    }
   },
   "vendors": {
     "create": {
@@ -2501,7 +2599,8 @@
       "taxAddressHint": "Fill in if different from the operational address.",
       "taxAddressPlaceholder": "Official address as registered for tax documents",
       "vendorTypeHint": "Determines how transactions will be grouped.",
-      "editNote": "Changes are saved when you press \"Save\"."
+      "editNote": "Changes are saved when you press \"Save\".",
+      "npwpHint": "XX.XXX.XXX.X-XXX.XXX or 15 digits"
     },
     "kpi": {
       "active": "Active Vendors",
@@ -2531,7 +2630,17 @@
     "title": "Vendors",
     "directoryCount": "{{count}} vendors found",
     "searchPlaceholder": "Search by name, code, contact, or city…",
-    "subtitle": "Manage suppliers, service providers, and procurement partners."
+    "subtitle": "Manage suppliers, service providers, and procurement partners.",
+    "validation": {
+      "nameRequired": "Vendor name is required",
+      "emailInvalid": "Invalid email format",
+      "phoneInvalid": "Invalid phone number format",
+      "postalCodeInvalid": "Postal code must be 5 digits",
+      "npwpInvalid": "NPWP must be 15 digits or format XX.XXX.XXX.X-XXX.XXX",
+      "paymentTermsRequired": "Payment terms are required",
+      "currencyRequired": "Currency is required",
+      "creditLimitInvalid": "Credit limit must be a non-negative number"
+    }
   },
   "accounting": {
     "chartOfAccounts": {
@@ -2622,7 +2731,14 @@
       "exportPdfFail": "Failed to download PDF",
       "exportPdfSuccess": "PDF report downloaded",
       "panelTitle": "Aging Analysis by Client",
-      "totalReceivable": "Total Receivable"
+      "totalReceivable": "Total Receivable",
+      "bucketCurrent": "Not Due",
+      "bucket1to30": "1–30",
+      "bucket31to60": "31–60",
+      "bucket61to90": "61–90",
+      "bucketOver90": "> 90",
+      "unknownClient": "Unknown Client",
+      "asOfDatePlaceholder": "As of date"
     },
     "apAging": {
       "title": "Accounts Payable Aging",
@@ -2647,7 +2763,14 @@
       "exportPdfFail": "Failed to download PDF",
       "exportPdfSuccess": "PDF report downloaded",
       "panelTitle": "Aging Analysis by Category",
-      "totalPayable": "Total Payable"
+      "totalPayable": "Total Payable",
+      "bucketCurrent": "Not Due",
+      "bucket1to30": "1–30",
+      "bucket31to60": "31–60",
+      "bucket61to90": "61–90",
+      "bucketOver90": "> 90",
+      "unknownCategory": "Unknown Category",
+      "asOfDatePlaceholder": "As of date"
     },
     "journalEntryForm": {
       "newTitle": "New Journal",
@@ -2715,7 +2838,13 @@
       "transactionTypeCapitalContribution": "Capital Contribution",
       "transactionTypeOwnerDrawing": "Owner Drawing",
       "transactionTypeClosing": "Closing Period",
-      "transactionTypeOpening": "Opening Period"
+      "transactionTypeOpening": "Opening Period",
+      "validationSelectAccount": "Select an account",
+      "validationDebitOrCredit": "Enter debit OR credit, not both.",
+      "validationDateRequired": "Date is required",
+      "validationSelectTransactionType": "Select a transaction type",
+      "validationMinTwoLines": "At least 2 lines (debit and credit) are required.",
+      "validationDebitCreditBalance": "Total debits must equal total credits."
     },
     "cashReceipts": {
       "title": "Cash Receipts",
@@ -4045,7 +4174,12 @@
       "email": "Email",
       "timezone": "Timezone",
       "language": "Language",
-      "saveLabel": "Save Profile"
+      "saveLabel": "Save Profile",
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "timezoneRequired": "Timezone is required",
+      "languageRequired": "Language is required"
     },
     "security": {
       "title": "Security",
@@ -4055,7 +4189,13 @@
       "currentPassword": "Current Password",
       "newPassword": "New Password",
       "confirmPassword": "Confirm New Password",
-      "saveLabel": "Change Password"
+      "saveLabel": "Change Password",
+      "currentPasswordRequired": "Current password is required",
+      "mustHaveUppercase": "Must contain an uppercase letter",
+      "mustHaveLowercase": "Must contain a lowercase letter",
+      "mustHaveNumber": "Must contain a number",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordMismatch": "Passwords do not match"
     },
     "company": {
       "title": "Company",
@@ -4069,7 +4209,14 @@
       "email": "Email",
       "website": "Website",
       "currency": "Currency",
-      "saveLabel": "Save Company"
+      "saveLabel": "Save Company",
+      "companyNameRequired": "Company name is required",
+      "npwpRequired": "Tax ID (NPWP) is required",
+      "npwpInvalid": "Invalid NPWP format (XX.XXX.XXX.X-XXX.XXX)",
+      "addressRequired": "Address is required",
+      "phoneRequired": "Phone number is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format"
     },
     "banks": {
       "title": "Bank Accounts",
@@ -4101,7 +4248,12 @@
       "quotationPrefixHint": "Example: QT- becomes QT-2026-001",
       "autoMateraiReminder": "Auto Materai Reminder",
       "autoMateraiReminderHint": "Show a reminder when invoices exceed the threshold.",
-      "saveLabel": "Save Invoicing"
+      "saveLabel": "Save Invoicing",
+      "termsRequired": "Payment terms are required",
+      "mustBeNumber": "Must be a number",
+      "notNegative": "Cannot be negative",
+      "invoicePrefixRequired": "Invoice prefix is required",
+      "quotationPrefixRequired": "Quotation prefix is required"
     },
     "notifications": {
       "title": "Notifications",
@@ -4134,7 +4286,8 @@
       "preparing": "Preparing...",
       "downloadSql": "Download .sql",
       "downloadDesc": "Full database backup as an SQL file.",
-      "saveLabel": "Save Backup Settings"
+      "saveLabel": "Save Backup Settings",
+      "timeFormatInvalid": "Time must be in HH:MM format"
     }
   },
   "cashBankBalance": {
@@ -4571,7 +4724,8 @@
     "editNote": "Changes are saved when you click \"Save\".",
     "saving": "Saving...",
     "save": "Save",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "statusLabel": "Status"
   },
   "projectCreate": {
     "success": "Project \"{{name}}\" created successfully.",
@@ -4652,7 +4806,8 @@
     "paidOn": "Paid on",
     "paymentCount": "Transactions",
     "milestone": "Payment Milestone",
-    "ofTotal": "of total"
+    "ofTotal": "of total",
+    "pdfFailed": "Failed to download PDF"
   },
   "invoiceCreate": {
     "backToList": "Back to Invoices",
@@ -4749,7 +4904,8 @@
       "title": "Monthly Business Report",
       "desc": "Compiled automatically from your live data — revenue, AR, overdue, conversion, top clients & projects. No manual input.",
       "open": "Open →"
-    }
+    },
+    "invalidPdfUrl": "Invalid PDF URL"
   },
   "reportDetail": {
     "subtitle": "Report details, sections, and associated visualizations.",
@@ -4790,7 +4946,8 @@
     "noData": "No data",
     "rows": "rows",
     "metricCardMisconfigured": "metric_card configuration incomplete (valueKey missing).",
-    "noViz": "No visualizations in this section yet."
+    "noViz": "No visualizations in this section yet.",
+    "invalidPdfUrl": "Invalid PDF URL"
   },
   "reportBuilder": {
     "createTitle": "New Report",
@@ -5682,6 +5839,10 @@
       "newClientsSub": "this month",
       "newProjects": "New Projects",
       "newProjectsSub": "this month"
+    },
+    "error": {
+      "title": "Failed to load report data",
+      "description": "One or more data sources could not be fetched. Please try again."
     }
   },
   "assetDetail": {
@@ -5798,5 +5959,244 @@
       "warning": "This invoice requires stamp duty in accordance with Indonesian regulations"
     },
     "required": "Stamp Duty Required"
+  },
+  "downloaders": {
+    "mediaDownloader": {
+      "downloadFailed": "Download failed."
+    }
+  },
+  "forms": {
+    "priceInheritanceFlow": {
+      "amountMustBePositive": "Amount must be greater than zero",
+      "largeDeviationWarning": "A large price deviation can affect profitability and competitiveness",
+      "deviationSuggestedAction": "Consider reviewing the price or document the reason for the deviation",
+      "materaiReason": "Transaction worth {{amount}} requires a stamp duty (materai) per Indonesian regulations",
+      "materaiLegalRef": "In accordance with Law No. 13 of 1985 on Stamp Duty",
+      "culturalNote1": "Provide clear explanations for every price deviation",
+      "culturalNote2": "Include a detailed breakdown to build client trust",
+      "timingMorning": "Morning (09:00–12:00 WIB) – Best time for business discussions",
+      "timingAfternoon": "Afternoon (13:00–16:00 WIB) – Good time for negotiations",
+      "selectSourcePlaceholder": "Select price source",
+      "amountPlaceholder": "Enter amount",
+      "amountAriaLabel": "Price amount",
+      "bestTimingTitle": "Best Time for Price Discussions",
+      "pricingHelpTooltip": "Pricing setup help",
+      "timingDescription": "Best time to discuss pricing with clients"
+    },
+    "priceInheritanceFormField": {
+      "amountRequired": "Price amount is required",
+      "amountMustBePositive": "Amount must be greater than zero",
+      "amountTooLarge": "Amount is too large",
+      "materaiRequired": "Stamp duty (materai) is required for transactions above Rp 5 million"
+    }
+  },
+  "tables": {
+    "smartTable": {
+      "columnAmount": "Amount",
+      "columnDate": "Date",
+      "searchPlaceholder": "Search {{entityType}}...",
+      "dateRangeStart": "Start date",
+      "dateRangeEnd": "End date"
+    }
+  },
+  "mobile": {
+    "mobileOptimizedLayout": {
+      "settings": "Settings",
+      "materaiCalcDesc": "Calculate stamp duty for a transaction",
+      "ppnCalcDesc": "Calculate 11% VAT for an invoice"
+    }
+  },
+  "business": {
+    "businessJourneyTimeline": {
+      "openingWhatsApp": "Opening WhatsApp to share document",
+      "amountAriaLabel": "Amount: {{amount}}",
+      "loadErrorTitle": "Failed to Load Data",
+      "loadErrorDesc": "An error occurred while loading the business journey. Please try again.",
+      "emptyState": "No business activity yet",
+      "searchPlaceholder": "Search activities...",
+      "searchAriaLabel": "Search within business journey",
+      "dateFrom": "From date",
+      "dateTo": "To date"
+    },
+    "businessJourneyUtils": {
+      "whatsAppAmountLine": "with a value of {{amount}}.\n\n",
+      "whatsAppDueDateLine": "Payment due date: {{date}}\n\n",
+      "whatsAppViewDetailLine": "Please click the following link to view the details:\n"
+    }
+  },
+  "guest": {
+    "publicProjectView": {
+      "incompleteLink": "Incomplete Link",
+      "incompleteLinkBody": "This share link appears to be broken or incomplete. Please ask the sender to reshare the link.",
+      "galleryNotFound": "Gallery Not Found",
+      "galleryNotFoundBody": "This public link is invalid or has been disabled by the owner.",
+      "searchPlaceholder": "Search files...",
+      "noFilesMatch": "No matching files",
+      "tryOtherKeyword": "Try a different keyword or clear the search.",
+      "emptyFolder": "No assets or folders at this level yet."
+    },
+    "deckAcceptInvite": {
+      "genericError": "Something went wrong. Please try again.",
+      "invalidInvite": "The invitation is invalid or has expired.",
+      "incompleteLink": "Incomplete Link",
+      "tokenNotFound": "Invitation token not found",
+      "brokenLink": "The invitation link appears to be broken. Please ask the sender to reshare the invitation link.",
+      "successBody": "You have been successfully added as a collaborator.",
+      "failedEyebrow": "Failed to Accept Invitation",
+      "failedTitle": "Invitation could not be processed"
+    },
+    "guestAcceptInvite": {
+      "roleDescViewer": "You can view all project assets.",
+      "roleDescCommenter": "You can view and provide feedback on assets.",
+      "roleDescEditor": "You can view, provide feedback, and edit assets.",
+      "incompleteLink": "Incomplete Link",
+      "tokenNotFound": "Invitation token not found",
+      "brokenLink": "The invitation link appears to be broken or incomplete. Please ask the sender to reshare your invitation link.",
+      "invalidLink": "Invalid Link",
+      "cannotAccept": "This invitation cannot be accepted",
+      "invalidLinkBody": "This link is invalid, has expired, or has been revoked by the project owner. Contact the sender to request a new invitation.",
+      "successBody": "You have been added as a collaborator on the following project."
+    },
+    "publicDeckView": {
+      "incompleteLink": "Incomplete Link",
+      "incompleteLinkBody": "This share link appears to be broken or incomplete. Please ask the sender to reshare the link.",
+      "deckNotFound": "Deck Not Found",
+      "deckNotFoundBody": "This public link is invalid or has been disabled by the owner."
+    },
+    "guestProjectView": {
+      "missingTokenBody": "This link does not include a guest access token. Please ask the project owner to reshare your invitation link.",
+      "accessUnavailable": "Access Unavailable",
+      "accessUnavailableBody": "The access token is invalid or has expired. Please ask the project owner to send a new invitation.",
+      "searchPlaceholder": "Search files...",
+      "noFilesMatch": "No matching files",
+      "noAssets": "No media assets yet",
+      "tryOtherKeyword": "Try a different keyword or clear the search.",
+      "noAssetsBody": "The project owner has not uploaded any files yet."
+    }
+  },
+  "contexts": {
+    "apiConfig": {
+      "accessDenied": "Access denied — you do not have permission."
+    },
+    "accessibility": {
+      "materaiRequired": "Materai required for this transaction",
+      "materaiNotRequired": "Materai not required",
+      "labelClientSelect": "Select client",
+      "labelAmountInput": "Enter amount",
+      "labelMateraiRequired": "Materai required",
+      "labelMateraiNotRequired": "Materai not required",
+      "labelSaveButton": "Save changes",
+      "labelDeleteButton": "Delete item"
+    }
+  },
+  "services": {
+    "priceInheritanceApi": {
+      "errorLoadSources": "Failed to load price sources",
+      "errorPriceValidation": "Price validation failed",
+      "errorCreateConfig": "Failed to create price configuration",
+      "errorUpdateConfig": "Failed to update price configuration",
+      "errorLoadAnalytics": "Failed to load price analytics",
+      "errorCalculateMaterai": "Failed to calculate materai",
+      "errorLoadEtiquette": "Failed to load business etiquette guide",
+      "errorServiceUnavailable": "Service unavailable",
+      "errorBatchValidation": "Batch validation failed"
+    },
+    "expenses": {
+      "labelGrossAmount": "Gross Amount",
+      "labelTotalAmount": "Total Amount",
+      "labelNetAmount": "Net Amount",
+      "statusCancelled": "Cancelled",
+      "paymentStatusUnpaid": "Unpaid"
+    },
+    "invoices": {
+      "statusCancelled": "Cancelled"
+    }
+  },
+  "hooks": {
+    "usePermissions": {
+      "roleUnknown": "Unknown",
+      "roleDescVideographer": "Media-collab access only — upload and edit assets"
+    },
+    "usePerformanceMonitor": {
+      "suggestTableVirtualization": "Consider table virtualization to improve rendering performance",
+      "suggestDebouncing": "Implement debouncing or caching for faster search responses",
+      "suggestQueryBatching": "Use query batching or caching to reduce API calls",
+      "suggestErrorHandling": "Many errors detected — review error handling and input validation",
+      "suggestMateraiCache": "Cache materai calculation results for similar transactions",
+      "suggestCurrencyMemo": "Optimise IDR currency formatting with memoization"
+    },
+    "usePriceInheritance": {
+      "errorLoadSources": "Failed to load price sources",
+      "successSaveConfig": "Price configuration saved successfully",
+      "errorSaveConfig": "Failed to save price configuration",
+      "materaiRequired": "Transaction of {{amount}} IDR requires materai"
+    }
+  },
+  "utils": {
+    "currency": {
+      "errorNotANumber": "Amount must be a valid number",
+      "errorNegative": "Amount must not be negative",
+      "errorZero": "Amount must be greater than zero",
+      "errorBelowMin": "Amount must not be less than {{min}}",
+      "errorAboveMax": "Amount must not exceed {{max}}",
+      "warnLargeTransaction": "Large transaction — consider using formal communication",
+      "actionDocumentThoroughly": "Document thoroughly"
+    },
+    "date": {
+      "daysAgo": "{{count}} days ago"
+    }
+  },
+  "security": {
+    "securityAudit": {
+      "businessDocumentSecurityDesc": "Protect quotation and invoice documents according to Indonesian standards",
+      "xssPreventionDesc": "Validate and sanitize input to prevent XSS attacks",
+      "csrfProtectionDesc": "Implement CSRF tokens for form submission",
+      "xssDescription": "Form input lacks adequate sanitization against script injection",
+      "xssImpact": "An attacker can execute malicious scripts in the user's browser",
+      "xssRecommendation": "Implement input sanitization using DOMPurify and server-side validation",
+      "materaiDescription": "Materai calculation does not comply with Law No. 13 of 1985",
+      "materaiImpact": "Potential violation of Indonesian regulations and tax penalties",
+      "materaiRecommendation": "Update materai algorithm according to latest rates (Rp 10,000 for transactions 5M–1B, Rp 20,000 for >1B)",
+      "privacyDescription": "Personal data is stored without adequate encryption",
+      "privacyRecommendation": "Implement AES-256 encryption for sensitive data such as NIK and NPWP",
+      "sensitiveDataDescription": "NPWP and NIK are exposed in logs or API responses",
+      "sensitiveDataImpact": "Potential identity theft and privacy violation",
+      "sensitiveDataRecommendation": "Mask sensitive data in logs and API responses, implement field-level encryption",
+      "csrfDescription": "Form does not have adequate CSRF token protection",
+      "csrfImpact": "An attacker can perform unauthorized actions on behalf of the user",
+      "docSecurityDescription": "Quotation and invoice documents can be accessed without proper authorization",
+      "docSecurityRecommendation": "Implement role-based access control and audit trail",
+      "noScanMessage": "No scan has been performed yet",
+      "noScanDescription": "Click 'Start Scan' to begin the security audit",
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "a11y": {
+    "accessibilityTester": {
+      "perceivableContext": "Information must be perceivable by users",
+      "operableContext": "Interface components must be operable",
+      "understandableContext": "Information and UI operations must be understandable in the Indonesian context",
+      "robustContext": "Content must be robust for various assistive technologies",
+      "testFailed": "Accessibility testing failed",
+      "issuesFound": "{{count}} accessibility issues found"
+    },
+    "accessibleForm": {
+      "required": "required",
+      "npwpFormat": "NPWP format must be: XX.XXX.XXX.X-XXX.XXX",
+      "nikFormat": "NIK must be 16 digits",
+      "addressInvalid": "Invalid address format",
+      "invalidFormat": "Invalid format",
+      "optionsFound": "{{count}} options found",
+      "minValue": "Minimum value is {{value}}",
+      "maxValue": "Maximum value is {{value}}",
+      "materaiRequired": "Materai is required for values above Rp 5,000,000",
+      "dateSelected": "Date selected: {{date}}",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "styleGuidePage": {
+    "dueDatePlaceholder": "Due date"
   }
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Form from 'antd/es/form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MessageInstance } from 'antd/es/message/interface'
+import i18n from '@/i18n/config'
 
 import {
   PriceInheritanceConfig,
@@ -110,7 +111,7 @@ export const usePriceInheritance = (
   useEffect(() => {
     if (sourcesError) {
       setError((sourcesError as any)?.message || 'Failed to load price sources')
-      messageApi.error('Gagal memuat sumber harga')
+      messageApi.error(i18n.t('hooks.usePriceInheritance.errorLoadSources', 'Failed to load price sources'))
     }
   }, [sourcesError, messageApi])
 
@@ -160,13 +161,13 @@ export const usePriceInheritance = (
         trackUserInteraction: enableUserTesting,
       }),
     onSuccess: result => {
-      messageApi.success('Konfigurasi harga berhasil disimpan')
+      messageApi.success(i18n.t('hooks.usePriceInheritance.successSaveConfig', 'Price configuration saved successfully'))
       queryClient.invalidateQueries({ queryKey: ['priceInheritance'] })
       onConfigChange?.(result.config)
     },
     onError: (error: any) => {
       setError(error.message || 'Failed to save configuration')
-      messageApi.error('Gagal menyimpan konfigurasi harga')
+      messageApi.error(i18n.t('hooks.usePriceInheritance.errorSaveConfig', 'Failed to save price configuration'))
     },
   })
 
@@ -374,7 +375,7 @@ export const usePriceInheritance = (
           materaiCompliance: {
             required: true,
             amount: metadata.materaiAmount,
-            reason: `Transaksi dengan nilai ${currentAmount.toLocaleString('id-ID')} IDR memerlukan materai`,
+            reason: i18n.t('hooks.usePriceInheritance.materaiRequired', 'Transaction of {{amount}} IDR requires materai', { amount: currentAmount.toLocaleString('id-ID') }),
           },
         }),
       }

@@ -12,6 +12,7 @@
  *  4. On success, shows confirmation and links to the shared deck viewer.
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
@@ -42,6 +43,7 @@ const ROLE_LABEL: Record<string, string> = {
 /*  Page                                                                */
 /* ------------------------------------------------------------------ */
 export const DeckAcceptInvitePage = () => {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
 
@@ -68,13 +70,13 @@ export const DeckAcceptInvitePage = () => {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
-        'Terjadi kesalahan. Silakan coba lagi.';
+        t('guest.deckAcceptInvite.genericError', 'Terjadi kesalahan. Silakan coba lagi.');
       setError(
         typeof msg === 'string'
           ? msg
           : Array.isArray(msg)
             ? msg.join(', ')
-            : 'Undangan tidak valid atau sudah kadaluarsa.',
+            : t('guest.deckAcceptInvite.invalidInvite', 'Undangan tidak valid atau sudah kadaluarsa.'),
       );
     } finally {
       setLoading(false);
@@ -112,9 +114,9 @@ export const DeckAcceptInvitePage = () => {
             <StateBlock
               tone="danger"
               icon={<AlertTriangle className="h-5 w-5" />}
-              eyebrow="Tautan Tidak Lengkap"
-              title="Token undangan tidak ditemukan"
-              body="Tautan undangan tampaknya rusak. Silakan minta pengirim untuk membagikan ulang tautan undangan."
+              eyebrow={t('guest.deckAcceptInvite.incompleteLink', 'Tautan Tidak Lengkap')}
+              title={t('guest.deckAcceptInvite.tokenNotFound', 'Token undangan tidak ditemukan')}
+              body={t('guest.deckAcceptInvite.brokenLink', 'Tautan undangan tampaknya rusak. Silakan minta pengirim untuk membagikan ulang tautan undangan.')}
             />
           )}
 
@@ -126,7 +128,7 @@ export const DeckAcceptInvitePage = () => {
                 icon={<CheckCircle2 className="h-5 w-5" />}
                 eyebrow="Undangan Diterima"
                 title="Selamat datang!"
-                body="Anda telah berhasil ditambahkan sebagai kolaborator."
+                body={t('guest.deckAcceptInvite.successBody', 'Anda telah berhasil ditambahkan sebagai kolaborator.')}
               />
 
               {result.deck && (
@@ -172,8 +174,8 @@ export const DeckAcceptInvitePage = () => {
               <StateBlock
                 tone="danger"
                 icon={<AlertTriangle className="h-5 w-5" />}
-                eyebrow="Gagal Menerima Undangan"
-                title="Undangan tidak dapat diproses"
+                eyebrow={t('guest.deckAcceptInvite.failedEyebrow', 'Gagal Menerima Undangan')}
+                title={t('guest.deckAcceptInvite.failedTitle', 'Undangan tidak dapat diproses')}
                 body={error}
               />
             </div>

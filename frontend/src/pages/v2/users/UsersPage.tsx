@@ -338,7 +338,7 @@ export default function UsersPageV2() {
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
             >
               <Plus className="h-4 w-4" />
-              {t('users.create', 'Pengguna Baru')}
+              {t('users.create.title', 'Pengguna Baru')}
             </Button>
           }
         />
@@ -527,7 +527,7 @@ export default function UsersPageV2() {
                       className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                     >
                       <Plus className="h-4 w-4" />
-                      {t('users.create', 'Pengguna Baru')}
+                      {t('users.create.title', 'Pengguna Baru')}
                     </Button>
                   }
                 />

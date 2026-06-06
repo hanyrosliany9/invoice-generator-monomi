@@ -26,6 +26,7 @@ import {
   BusinessJourneyTimelineProps,
 } from './types/businessJourney.types'
 
+import { useTranslation } from 'react-i18next'
 import {
   announceToScreenReader,
   businessJourneyUtils,
@@ -71,6 +72,7 @@ export const BusinessJourneyTimeline: React.FC<
   onFilterChange,
   className,
 }) => {
+  const { t } = useTranslation()
   const { trackInteraction, trackError } = useUXMetrics(
     'BusinessJourneyTimeline'
   )
@@ -224,7 +226,7 @@ export const BusinessJourneyTimeline: React.FC<
         const whatsappUrl = `https://wa.me/?text=${message}`
         window.open(whatsappUrl, '_blank')
 
-        announceToScreenReader('Membuka WhatsApp untuk berbagi dokumen')
+        announceToScreenReader(t('business.businessJourneyTimeline.openingWhatsApp', 'Membuka WhatsApp untuk berbagi dokumen'))
       } catch (error) {
         trackError(error as Error, 'whatsapp_share')
       } finally {
@@ -286,7 +288,7 @@ export const BusinessJourneyTimeline: React.FC<
               {event.amount && userPermissions.canViewFinancials && (
                 <div
                   role='text'
-                  aria-label={`Jumlah: ${formatIDRForScreenReader(event.amount)}`}
+                  aria-label={t('business.businessJourneyTimeline.amountAriaLabel', 'Jumlah: {{amount}}', { amount: formatIDRForScreenReader(event.amount) })}
                   className={styles['eventAmount']}
                 >
                   {formatIDR(event.amount)}
@@ -422,8 +424,8 @@ export const BusinessJourneyTimeline: React.FC<
       <Card {...(className && { className })}>
         <Alert
           type='error'
-          message='Gagal Memuat Data'
-          description='Terjadi kesalahan saat memuat perjalanan bisnis. Silakan coba lagi.'
+          message={t('business.businessJourneyTimeline.loadErrorTitle', 'Gagal Memuat Data')}
+          description={t('business.businessJourneyTimeline.loadErrorDesc', 'Terjadi kesalahan saat memuat perjalanan bisnis. Silakan coba lagi.')}
           action={
             <Button size='small' onClick={() => refetch()}>
               Coba Lagi
@@ -439,7 +441,7 @@ export const BusinessJourneyTimeline: React.FC<
     return (
       <Card {...(className && { className })}>
         <Empty
-          description='Belum ada aktivitas bisnis'
+          description={t('business.businessJourneyTimeline.emptyState', 'Belum ada aktivitas bisnis')}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         >
           <p>
@@ -473,11 +475,11 @@ export const BusinessJourneyTimeline: React.FC<
         >
           <Space wrap>
             <Input.Search
-              placeholder='Cari aktivitas...'
+              placeholder={t('business.businessJourneyTimeline.searchPlaceholder', 'Cari aktivitas...')}
               allowClear
               onChange={e => handleSearchChange(e.target.value)}
               style={{ width: 200 }}
-              aria-label='Cari dalam perjalanan bisnis'
+              aria-label={t('business.businessJourneyTimeline.searchAriaLabel', 'Cari dalam perjalanan bisnis')}
             />
 
             <RangePicker
@@ -497,7 +499,7 @@ export const BusinessJourneyTimeline: React.FC<
                   },
                 })
               }}
-              placeholder={['Dari tanggal', 'Sampai tanggal']}
+              placeholder={[t('business.businessJourneyTimeline.dateFrom', 'Dari tanggal'), t('business.businessJourneyTimeline.dateTo', 'Sampai tanggal')]}
               style={{ width: 240 }}
             />
 

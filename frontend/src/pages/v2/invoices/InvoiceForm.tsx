@@ -36,30 +36,30 @@ import { cn } from '@/lib/utils';
 /*  Schema — shared shape; status & materaiApplied only on edit    */
 /* ============================================================== */
 
-const lineItemSchema = z.object({
-  name:        z.string().min(1, 'Deskripsi wajib diisi'),
+const makeLineItemSchema = (t: (k: string, fb: string) => string) => z.object({
+  name:        z.string().min(1, t('invoices.invoiceForm.validationDescriptionRequired', 'Description is required')),
   description: z.string().optional(),
   quantity:    z.coerce.number().min(0.01, 'Min. 0.01'),
   price:       z.coerce.number().min(0, 'Min. 0'),
 });
 
-const baseSchema = z.object({
-  clientId:        z.string().min(1, 'Klien wajib dipilih'),
-  projectId:       z.string().min(1, 'Proyek wajib dipilih'),
-  issuedDate:      z.date({ required_error: 'Tanggal terbit wajib diisi' }),
-  dueDate:         z.date({ required_error: 'Jatuh tempo wajib diisi' }),
-  items:           z.array(lineItemSchema).min(1, 'Minimal satu baris item diperlukan'),
+const makeBaseSchema = (t: (k: string, fb: string) => string) => z.object({
+  clientId:        z.string().min(1, t('invoices.invoiceForm.validationClientRequired', 'Client is required')),
+  projectId:       z.string().min(1, t('invoices.invoiceForm.validationProjectRequired', 'Project is required')),
+  issuedDate:      z.date({ required_error: t('invoices.invoiceForm.validationIssuedDateRequired', 'Issue date is required') }),
+  dueDate:         z.date({ required_error: t('invoices.invoiceForm.validationDueDateRequired', 'Due date is required') }),
+  items:           z.array(makeLineItemSchema(t)).min(1, 'Minimal satu baris item diperlukan'),
   includeTax:      z.boolean(),
   materaiRequired: z.boolean(),
   scopeOfWork:     z.string().optional(),
-  paymentInfo:     z.string().optional().refine((v) => !v || v.length >= 20, 'Informasi pembayaran terlalu pendek'),
+  paymentInfo:     z.string().optional().refine((v) => !v || v.length >= 20, t('invoices.invoiceForm.validationPaymentInfoTooShort', 'Payment information is too short')),
   terms:           z.string().min(20, 'Syarat & ketentuan terlalu pendek'),
   // edit-only — optional in base
   status:          z.enum(['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']).optional(),
   materaiApplied:  z.boolean().optional(),
 });
 
-export type InvoiceFormValues = z.infer<typeof baseSchema>;
+export type InvoiceFormValues = z.infer<ReturnType<typeof makeBaseSchema>>;
 
 /* ============================================================== */
 /*  Defaults & helpers                                             */
@@ -90,13 +90,10 @@ const toNumber = (v: unknown) => {
 };
 
 /** Build the default payment-info template from company settings. */
-const buildPaymentInfo = (s?: {
-  companyName?: string; email?: string;
-  bankAccountName?: string;
-  bank1Name?: string; bank1Number?: string;
-  bank2Name?: string; bank2Number?: string;
-  bank3Name?: string; bank3Number?: string;
-}) => {
+const buildPaymentInfo = (
+  s: { companyName?: string; email?: string; bankAccountName?: string; bank1Name?: string; bank1Number?: string; bank2Name?: string; bank2Number?: string; bank3Name?: string; bank3Number?: string } | undefined,
+  t: (k: string, fb: string, opts?: Record<string, unknown>) => string,
+) => {
   if (!s) return '';
   const banks: string[] = [];
   if (s.bank1Name && s.bank1Number) banks.push(`${s.bank1Name}: ${s.bank1Number}`);
@@ -104,15 +101,13 @@ const buildPaymentInfo = (s?: {
   if (s.bank3Name && s.bank3Number) banks.push(`${s.bank3Name}: ${s.bank3Number}`);
   const accountName = s.bankAccountName || s.companyName || 'Perusahaan';
   if (banks.length === 0) {
-    return `INFORMASI PEMBAYARAN:\n\nSilakan hubungi ${s.email || 'kami'} untuk informasi rekening pembayaran.`;
+    return t(
+      'invoices.invoiceForm.paymentInfoNoBank',
+      'PAYMENT INFORMATION:\n\nPlease contact {{email}} for payment account details.',
+      { email: s.email || 'us' },
+    );
   }
-  return `INFORMASI PEMBAYARAN:
-
-Bank Transfer
-Rekening atas nama: ${accountName}
-${banks.join('\n')}
-
-Silakan transfer ke salah satu rekening di atas dan kirim bukti pembayaran ke ${s.email || 'email kami'}.`;
+  return `PAYMENT INFORMATION:\n\nBank Transfer\nAccount Name: ${accountName}\n${banks.join('\n')}\n\nPlease transfer to one of the accounts above and send proof of payment to ${s.email || 'our email'}.`;
 };
 
 /* ============================================================== */
@@ -201,7 +196,7 @@ export const InvoiceForm = ({
   const {
     register, handleSubmit, control, watch, setValue, getValues, reset, formState: { errors, isSubmitting },
   } = useForm<InvoiceFormValues>({
-    resolver: zodResolver(baseSchema),
+    resolver: zodResolver(makeBaseSchema(t)),
     defaultValues,
     mode: 'onBlur',
   });
@@ -240,7 +235,7 @@ export const InvoiceForm = ({
     if (!companySettings) return;
     const current = (getValues('paymentInfo') ?? '').trim();
     if (!current) {
-      setValue('paymentInfo', buildPaymentInfo(companySettings), { shouldDirty: false });
+      setValue('paymentInfo', buildPaymentInfo(companySettings, t), { shouldDirty: false });
     }
   }, [companySettings, setValue, getValues]);
 
@@ -693,7 +688,7 @@ export const InvoiceForm = ({
                       variant="ghost"
                       size="xs"
                       onClick={() => {
-                        setValue('paymentInfo', buildPaymentInfo(companySettings), {
+                        setValue('paymentInfo', buildPaymentInfo(companySettings, t), {
                           shouldDirty: true,
                         });
                         toast.success(

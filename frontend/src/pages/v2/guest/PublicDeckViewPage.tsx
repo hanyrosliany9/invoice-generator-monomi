@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, ChevronLeft, ChevronRight, Eye, Layout as LayoutIcon } from 'lucide-react';
@@ -24,6 +25,7 @@ import { safeUrl } from '@/utils/safeUrl';
 /* ------------------------------------------------------------------ */
 
 export const PublicDeckViewPage = () => {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
@@ -61,8 +63,8 @@ export const PublicDeckViewPage = () => {
     return (
       <ShellFrame>
         <ErrorPanel
-          title="Tautan Tidak Lengkap"
-          body="Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan."
+          title={t('guest.publicDeckView.incompleteLink', 'Tautan Tidak Lengkap')}
+          body={t('guest.publicDeckView.incompleteLinkBody', 'Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.')}
         />
       </ShellFrame>
     );
@@ -72,8 +74,8 @@ export const PublicDeckViewPage = () => {
     return (
       <ShellFrame>
         <ErrorPanel
-          title="Deck Tidak Ditemukan"
-          body="Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya."
+          title={t('guest.publicDeckView.deckNotFound', 'Deck Tidak Ditemukan')}
+          body={t('guest.publicDeckView.deckNotFoundBody', 'Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya.')}
         />
       </ShellFrame>
     );

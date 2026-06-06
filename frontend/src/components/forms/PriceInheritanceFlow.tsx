@@ -140,7 +140,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
         id: 'amount-required',
         type: 'pricing',
         severity: 'error',
-        message: 'Jumlah harus lebih besar dari nol',
+        message: t('forms.priceInheritanceFlow.amountMustBePositive', 'Jumlah harus lebih besar dari nol'),
         isBlocking: true,
       })
     }
@@ -153,9 +153,9 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
         severity: 'warning',
         message: `Harga menyimpang ${(config.deviationPercentage || 0).toFixed(1)}% dari sumber`,
         indonesianContext:
-          'Penyimpangan harga yang besar dapat mempengaruhi profitabilitas dan daya saing',
+          t('forms.priceInheritanceFlow.largeDeviationWarning', 'Penyimpangan harga yang besar dapat mempengaruhi profitabilitas dan daya saing'),
         suggestedAction:
-          'Pertimbangkan untuk meninjau kembali harga atau dokumentasikan alasan penyimpangan',
+          t('forms.priceInheritanceFlow.deviationSuggestedAction', 'Pertimbangkan untuk meninjau kembali harga atau dokumentasikan alasan penyimpangan'),
       })
     }
 
@@ -165,7 +165,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
       result.materaiCompliance = {
         required: true,
         amount: materaiAmount,
-        reason: `Transaksi dengan nilai ${formatIDR(config.currentAmount)} memerlukan materai sesuai peraturan Indonesia`,
+        reason: t('forms.priceInheritanceFlow.materaiReason', 'Transaksi dengan nilai {{amount}} memerlukan materai sesuai peraturan Indonesia', { amount: formatIDR(config.currentAmount) }),
       }
 
       result.suggestions.push({
@@ -174,7 +174,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
         severity: 'info',
         message: `Materai Rp ${formatIDR(materaiAmount)} diperlukan`,
         indonesianContext:
-          'Sesuai dengan UU No. 13 Tahun 1985 tentang Bea Materai',
+          t('forms.priceInheritanceFlow.materaiLegalRef', 'Sesuai dengan UU No. 13 Tahun 1985 tentang Bea Materai'),
       })
     }
 
@@ -186,8 +186,8 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
           config.currentAmount > 100000000 ? 'formal' : 'semi-formal',
         culturalNotes: [
           'Dalam budaya Indonesia, transparansi harga sangat dihargai',
-          'Berikan penjelasan yang jelas untuk setiap penyimpangan harga',
-          'Sertakan breakdown detail untuk membangun kepercayaan klien',
+          t('forms.priceInheritanceFlow.culturalNote1', 'Berikan penjelasan yang jelas untuk setiap penyimpangan harga'),
+          t('forms.priceInheritanceFlow.culturalNote2', 'Sertakan breakdown detail untuk membangun kepercayaan klien'),
         ],
       }
     }
@@ -313,9 +313,9 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
   function getBusinessTiming() {
     const hour = dayjs().hour()
     if (hour >= 9 && hour <= 12)
-      return 'Pagi (09:00-12:00 WIB) - Waktu terbaik untuk diskusi bisnis'
+      return t('forms.priceInheritanceFlow.timingMorning', 'Pagi (09:00-12:00 WIB) - Waktu terbaik untuk diskusi bisnis')
     if (hour >= 13 && hour <= 16)
-      return 'Siang (13:00-16:00 WIB) - Waktu yang baik untuk negosiasi'
+      return t('forms.priceInheritanceFlow.timingAfternoon', 'Siang (13:00-16:00 WIB) - Waktu yang baik untuk negosiasi')
     return 'Sore/Malam - Pertimbangkan untuk menunda diskusi harga ke hari kerja'
   }
 
@@ -395,7 +395,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
         value={selectedSource?.id || null}
         onChange={handleSourceChange}
         style={{ width: '100%', marginTop: 8 }}
-        placeholder='Pilih sumber harga'
+        placeholder={t('forms.priceInheritanceFlow.selectSourcePlaceholder', 'Pilih sumber harga')}
       >
         {availableSources.map((source: PriceSource) => (
           <Select.Option key={source.id} value={source.id}>
@@ -448,8 +448,8 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
           min={0}
           max={999999999999}
           precision={0}
-          placeholder='Masukkan jumlah'
-          aria-label={ariaLabel || 'Jumlah harga'}
+          placeholder={t('forms.priceInheritanceFlow.amountPlaceholder', 'Masukkan jumlah')}
+          aria-label={ariaLabel || t('forms.priceInheritanceFlow.amountAriaLabel', 'Jumlah harga')}
           aria-describedby={ariaDescribedBy}
         />
 
@@ -486,7 +486,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
       <Space direction='vertical' style={{ width: '100%' }}>
         <Alert
           type='info'
-          message='Waktu Terbaik untuk Diskusi Harga'
+          message={t('forms.priceInheritanceFlow.bestTimingTitle', 'Waktu Terbaik untuk Diskusi Harga')}
           description={validationResult.businessEtiquette?.suggestedTiming}
           showIcon
         />
@@ -539,7 +539,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
               </Text>
             </div>
             {showVisualIndicators && (
-              <Tooltip title='Bantuan pengaturan harga'>
+              <Tooltip title={t('forms.priceInheritanceFlow.pricingHelpTooltip', 'Bantuan pengaturan harga')}>
                 <Button
                   type='text'
                   icon={<QuestionCircleOutlined />}
@@ -618,7 +618,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
                 <Alert
                   type='info'
                   message={validationResult.businessEtiquette.suggestedTiming}
-                  description='Waktu terbaik untuk diskusi harga dengan klien'
+                  description={t('forms.priceInheritanceFlow.timingDescription', 'Waktu terbaik untuk diskusi harga dengan klien')}
                   showIcon
                 />
                 <Button type='link' onClick={() => setShowEtiquetteGuide(true)}>

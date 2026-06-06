@@ -43,11 +43,11 @@ const postalPattern = /^\d{5}$/;
 const vendorTypeValues = VENDOR_TYPES.map((t) => t.value) as [VendorType, ...VendorType[]];
 const pkpStatusValues = PKP_STATUSES.map((s) => s.value) as [PKPStatus, ...PKPStatus[]];
 
-export const vendorFormSchema = z.object({
+const makeVendorFormSchema = (t: (key: string, fallback: string) => string) => z.object({
   // Identitas
   name: z
     .string()
-    .min(1, 'Nama vendor wajib diisi')
+    .min(1, t('vendors.validation.nameRequired', 'Vendor name is required'))
     .min(2, 'Nama minimal 2 karakter')
     .max(160, 'Nama terlalu panjang'),
   nameId: z.string().max(160, 'Nama Indonesia terlalu panjang').optional().or(z.literal('')),
@@ -63,13 +63,13 @@ export const vendorFormSchema = z.object({
     .or(z.literal(''))
     .refine(
       (v) => !v || z.string().email().safeParse(v).success,
-      'Format email tidak valid',
+      t('vendors.validation.emailInvalid', 'Invalid email format'),
     ),
   phone: z
     .string()
     .optional()
     .or(z.literal(''))
-    .refine((v) => !v || phonePattern.test(v), 'Format nomor telepon tidak valid'),
+    .refine((v) => !v || phonePattern.test(v), t('vendors.validation.phoneInvalid', 'Invalid phone number format')),
 
   // Alamat
   address: z.string().max(500, 'Alamat terlalu panjang').optional().or(z.literal('')),
@@ -79,7 +79,7 @@ export const vendorFormSchema = z.object({
     .string()
     .optional()
     .or(z.literal(''))
-    .refine((v) => !v || postalPattern.test(v), 'Kode pos harus 5 digit'),
+    .refine((v) => !v || postalPattern.test(v), t('vendors.validation.postalCodeInvalid', 'Postal code must be 5 digits')),
   country: z.string().max(80, 'Terlalu panjang').optional().or(z.literal('')),
 
   // Pajak / NPWP
@@ -89,7 +89,7 @@ export const vendorFormSchema = z.object({
     .or(z.literal(''))
     .refine(
       (v) => !v || npwpDottedPattern.test(v) || npwpDigitsPattern.test(v),
-      'NPWP harus 15 digit atau format XX.XXX.XXX.X-XXX.XXX',
+      t('vendors.validation.npwpInvalid', 'NPWP must be 15 digits or format XX.XXX.XXX.X-XXX.XXX'),
     ),
   pkpStatus: z.enum(pkpStatusValues),
   taxAddress: z.string().max(500, 'Alamat pajak terlalu panjang').optional().or(z.literal('')),
@@ -102,17 +102,19 @@ export const vendorFormSchema = z.object({
   swiftCode: z.string().max(20, 'Terlalu panjang').optional().or(z.literal('')),
 
   // Pembayaran
-  paymentTerms: z.string().min(1, 'Termin pembayaran wajib dipilih'),
-  currency: z.string().min(1, 'Mata uang wajib dipilih'),
+  paymentTerms: z.string().min(1, t('vendors.validation.paymentTermsRequired', 'Payment terms are required')),
+  currency: z.string().min(1, t('vendors.validation.currencyRequired', 'Currency is required')),
   creditLimit: z
     .string()
     .optional()
     .or(z.literal(''))
     .refine(
       (v) => !v || (/^\d+(\.\d+)?$/.test(v) && Number(v) >= 0),
-      'Limit kredit harus berupa angka non-negatif',
+      t('vendors.validation.creditLimitInvalid', 'Credit limit must be a non-negative number'),
     ),
 });
+
+export const vendorFormSchema = makeVendorFormSchema((_, fallback) => fallback);
 
 export type VendorFormValues = z.infer<typeof vendorFormSchema>;
 
@@ -259,7 +261,7 @@ export const VendorForm = ({
     reset,
     formState: { errors },
   } = useForm<VendorFormValues>({
-    resolver: zodResolver(vendorFormSchema),
+    resolver: zodResolver(makeVendorFormSchema(t)),
     defaultValues: { ...emptyVendorFormValues, ...defaultValues },
     mode: 'onBlur',
   });
@@ -625,7 +627,7 @@ export const VendorForm = ({
           <FieldShell
             id="vf-npwp"
             label={t('vendors.form.npwp', 'NPWP')}
-            hint="XX.XXX.XXX.X-XXX.XXX atau 15 digit"
+            hint={t('vendors.form.npwpHint', 'XX.XXX.XXX.X-XXX.XXX or 15 digits')}
             error={errors.npwp?.message}
           >
             <Input

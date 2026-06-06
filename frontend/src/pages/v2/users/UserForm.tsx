@@ -34,22 +34,22 @@ import type { UserRole } from '@/types/user';
 const passwordPolicy = (val: string) =>
   val.length >= 8 && /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val);
 
-const baseUserFormSchema = z.object({
+const makeBaseUserFormSchema = (t: (key: string, fallback: string) => string) => z.object({
   // 01 · Identitas
   name: z
     .string()
-    .min(1, 'Nama lengkap wajib diisi')
+    .min(1, t('users.validation.nameRequired', 'Full name is required'))
     .min(2, 'Nama minimal 2 karakter')
     .max(120, 'Nama terlalu panjang'),
   email: z
     .string()
-    .min(1, 'Email wajib diisi')
-    .email('Format email tidak valid')
+    .min(1, t('users.validation.emailRequired', 'Email is required'))
+    .email(t('users.validation.emailInvalid', 'Invalid email format'))
     .max(160, 'Email terlalu panjang'),
 
   // 02 · Akses & Role
   role: z.enum(['SUPER_ADMIN', 'ADMIN', 'VIDEOGRAPHER'], {
-    required_error: 'Peran wajib dipilih',
+    required_error: t('users.validation.roleRequired', 'Role is required'),
   }),
   isActive: z.boolean(),
 
@@ -61,6 +61,7 @@ const baseUserFormSchema = z.object({
     .or(z.literal('')),
 });
 
+const baseUserFormSchema = makeBaseUserFormSchema((_, fallback) => fallback);
 export type UserFormValues = z.infer<typeof baseUserFormSchema>;
 
 export const emptyUserFormValues: UserFormValues = {
@@ -75,15 +76,15 @@ export const emptyUserFormValues: UserFormValues = {
 // the policy. On Edit, password is optional but, if provided, still
 // must satisfy the policy — operator should not be able to weaken
 // security by typing a short one.
-const makeSchema = (mode: 'create' | 'edit') =>
-  baseUserFormSchema.superRefine((val, ctx) => {
+const makeSchema = (mode: 'create' | 'edit', t: (key: string, fallback: string) => string) =>
+  makeBaseUserFormSchema(t).superRefine((val, ctx) => {
     const pw = val.password ?? '';
     if (mode === 'create') {
       if (pw.length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['password'],
-          message: 'Kata sandi wajib diisi',
+          message: t('users.validation.passwordRequired', 'Password is required'),
         });
         return;
       }
@@ -92,7 +93,7 @@ const makeSchema = (mode: 'create' | 'edit') =>
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['password'],
-        message: 'Min. 8 karakter, huruf besar, huruf kecil, dan angka',
+        message: t('users.validation.passwordPolicy', 'Min. 8 characters, uppercase, lowercase, and number'),
       });
     }
   });
@@ -164,15 +165,15 @@ const SectionHeader = ({
 // Role descriptions live next to the field rather than in a separate
 // expander — the operator picking a role NEEDS the description to make
 // the right choice, so we never make them hunt for it.
-const ROLE_OPTIONS: Array<{
+const makeRoleOptions = (t: (key: string, fallback: string) => string): Array<{
   value: UserRole;
   label: string;
   description: string;
-}> = [
+}> => [
   {
     value: 'SUPER_ADMIN',
     label: 'Super Admin',
-    description: 'Akses penuh sistem — pengguna, pengaturan, semua data.',
+    description: t('users.roles.superAdminDesc', 'Full system access — users, settings, all data.'),
   },
   {
     value: 'ADMIN',
@@ -182,7 +183,7 @@ const ROLE_OPTIONS: Array<{
   {
     value: 'VIDEOGRAPHER',
     label: 'Videografer',
-    description: 'Akses media-collab saja — upload dan edit aset.',
+    description: t('users.roles.videographerDesc', 'Media-collab access only — upload and edit assets.'),
   },
 ];
 
@@ -215,6 +216,7 @@ export const UserForm = ({
   selfEmail,
 }: UserFormProps) => {
   const { t } = useTranslation();
+  const ROLE_OPTIONS = makeRoleOptions(t);
 
   const {
     register,
@@ -224,7 +226,7 @@ export const UserForm = ({
     watch,
     formState: { errors },
   } = useForm<UserFormValues>({
-    resolver: zodResolver(makeSchema(mode)),
+    resolver: zodResolver(makeSchema(mode, t)),
     defaultValues: { ...emptyUserFormValues, ...defaultValues },
     mode: 'onBlur',
   });

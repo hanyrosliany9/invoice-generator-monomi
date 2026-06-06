@@ -287,7 +287,7 @@ const SmartTable = <T extends BusinessEntity>({
         ),
       },
       {
-        title: 'Jumlah',
+        title: t('tables.smartTable.columnAmount', 'Jumlah'),
         dataIndex: 'amount',
         key: 'amount',
         width: 150,
@@ -345,7 +345,7 @@ const SmartTable = <T extends BusinessEntity>({
         },
       },
       {
-        title: 'Tanggal',
+        title: t('tables.smartTable.columnDate', 'Tanggal'),
         dataIndex: 'createdAt',
         key: 'createdAt',
         width: 150,
@@ -565,7 +565,7 @@ const SmartTable = <T extends BusinessEntity>({
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
           <Input
-            placeholder={`Cari ${entityType}...`}
+            placeholder={t('tables.smartTable.searchPlaceholder', 'Cari {{entityType}}...', { entityType })}
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={e => handleSearch(e.target.value)}
@@ -594,7 +594,7 @@ const SmartTable = <T extends BusinessEntity>({
                 )}
                 {filter.type === 'dateRange' && (
                   <RangePicker
-                    placeholder={['Tanggal mulai', 'Tanggal akhir']}
+                    placeholder={[t('tables.smartTable.dateRangeStart', 'Tanggal mulai'), t('tables.smartTable.dateRangeEnd', 'Tanggal akhir')]}
                     value={activeFilters[filter.key]}
                     onChange={dates => handleFilterChange(filter.key, dates)}
                   />

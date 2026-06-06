@@ -32,6 +32,7 @@ import {
   WhatsAppOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 
 const { Header, Content, Footer } = Layout
@@ -123,6 +124,7 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
   onNavigationChange,
   onRefresh,
 }) => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -174,7 +176,7 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
       },
       {
         key: 'settings',
-        label: 'Pengaturan',
+        label: t('mobile.mobileOptimizedLayout.settings', 'Pengaturan'),
         icon: <SettingOutlined />,
         path: '/settings',
         indonesianPriority: 'low',
@@ -329,13 +331,13 @@ const MobileOptimizedLayout: React.FC<MobileOptimizedLayoutProps> = ({
     ? [
         {
           title: 'Cek Materai',
-          description: 'Hitung materai untuk transaksi',
+          description: t('mobile.mobileOptimizedLayout.materaiCalcDesc', 'Hitung materai untuk transaksi'),
           icon: <SearchOutlined />,
           onClick: () => onQuickAction?.('materai_calculator'),
         },
         {
           title: 'Kalkulator PPN',
-          description: 'Hitung PPN 11% untuk invoice',
+          description: t('mobile.mobileOptimizedLayout.ppnCalcDesc', 'Hitung PPN 11% untuk invoice'),
           icon: <DollarOutlined />,
           onClick: () => onQuickAction?.('ppn_calculator'),
         },

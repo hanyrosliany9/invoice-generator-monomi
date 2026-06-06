@@ -10,6 +10,7 @@ import React, {
   useState,
 } from 'react'
 import { now } from '../utils/date'
+import i18n from '@/i18n/config'
 
 // WCAG 2.1 AA Compliance levels
 export type AccessibilityLevel = 'A' | 'AA' | 'AAA'
@@ -452,9 +453,9 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
           'assertive'
         )
       } else if (required) {
-        announce('Materai diperlukan untuk transaksi ini', 'assertive')
+        announce(i18n.t('contexts.accessibility.materaiRequired', 'Materai required for this transaction'), 'assertive')
       } else {
-        announce('Materai tidak diperlukan', 'polite')
+        announce(i18n.t('contexts.accessibility.materaiNotRequired', 'Materai not required'), 'polite')
       }
     },
     [announce, state.settings.materaiAccessibilityAlerts]
@@ -479,13 +480,13 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     const labels: Record<string, string> = {
       'quotation.create': 'Buat quotation baru',
       'invoice.create': 'Buat invoice baru',
-      'client.select': 'Pilih klien',
-      'amount.input': 'Masukkan jumlah',
-      'materai.required': 'Materai diperlukan',
-      'materai.not-required': 'Materai tidak diperlukan',
-      'save.button': 'Simpan perubahan',
+      'client.select': i18n.t('contexts.accessibility.labelClientSelect', 'Select client'),
+      'amount.input': i18n.t('contexts.accessibility.labelAmountInput', 'Enter amount'),
+      'materai.required': i18n.t('contexts.accessibility.labelMateraiRequired', 'Materai required'),
+      'materai.not-required': i18n.t('contexts.accessibility.labelMateraiNotRequired', 'Materai not required'),
+      'save.button': i18n.t('contexts.accessibility.labelSaveButton', 'Save changes'),
       'cancel.button': 'Batalkan',
-      'delete.button': 'Hapus item',
+      'delete.button': i18n.t('contexts.accessibility.labelDeleteButton', 'Delete item'),
     }
 
     let label = labels[key] || key

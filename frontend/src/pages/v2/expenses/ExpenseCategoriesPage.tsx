@@ -501,7 +501,7 @@ export default function ExpenseCategoriesPageV2() {
                   <Input
                     value={form.descriptionId}
                     onChange={(e) => setForm({ ...form, descriptionId: e.target.value })}
-                    placeholder="Alat tulis dan material kantor"
+                    placeholder={t('expenses.expenseCategories.descriptionIdPlaceholder', 'Stationery and office supplies')}
                     className="bg-bg-sunken border-border-subtle text-text-primary"
                   />
                 </FormField>

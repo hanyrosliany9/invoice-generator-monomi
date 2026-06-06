@@ -60,7 +60,10 @@ export default function QuotationCreatePageV2() {
       ],
       scopeOfWork: '',
       terms:
-        '1. Pembayaran Net 30 dari tanggal invoice.\n2. Termasuk PPN 11%.\n3. Revisi maksimal 3 kali.\n4. Materai diperlukan untuk nilai > Rp 5.000.000.\n5. Hukum yang berlaku: Republik Indonesia.',
+        t(
+          'quotations.quotationCreate.defaultTerms',
+          '1. Payment Net 30 from invoice date.\n2. Includes 11% VAT.\n3. Maximum 3 revisions.\n4. Materai (stamp duty) required for value > Rp 5,000,000.\n5. Governing law: Republic of Indonesia.',
+        ),
       paymentType: 'FULL_PAYMENT' as const,
       milestones: [],
     }),

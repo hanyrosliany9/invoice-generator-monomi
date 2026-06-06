@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { toast } from 'sonner'
 import { useAuthStore } from '../store/auth'
+import i18n from '@/i18n/config'
 
 // API Configuration
 // Dynamically determine backend URL based on environment
@@ -156,7 +157,7 @@ apiClient.interceptors.response.use(
 
     // Handle 403 Forbidden — show toast and reject without retry or redirect
     if (error.response?.status === 403) {
-      toast.error('Akses ditolak — Anda tidak memiliki izin.');
+      toast.error(i18n.t('contexts.apiConfig.accessDenied', 'Access denied — you do not have permission.'));
       return Promise.reject(error);
     }
 

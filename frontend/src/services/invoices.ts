@@ -1,6 +1,7 @@
 import { apiClient } from '../config/api'
 import { InvoiceStatus } from '../types/invoice'
 import { now } from '../utils/date'
+import i18n from '@/i18n/config'
 
 export interface Invoice {
   id: string
@@ -351,7 +352,7 @@ export const invoiceService = {
       case InvoiceStatus.OVERDUE:
         return 'Jatuh Tempo'
       case InvoiceStatus.CANCELLED:
-        return 'Dibatalkan'
+        return i18n.t('services.invoices.statusCancelled', 'Cancelled')
       default:
         return status
     }

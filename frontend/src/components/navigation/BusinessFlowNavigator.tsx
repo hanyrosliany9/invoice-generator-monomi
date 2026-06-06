@@ -26,6 +26,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n/config'
 
 import {
   BusinessFlowNavigatorProps,
@@ -56,7 +57,7 @@ const stageConfig: Record<
 > = {
   prospect: {
     title: 'Prospek Klien',
-    description: 'Tahap awal identifikasi dan pendekatan calon klien',
+    description: i18n.t('nav.businessFlowNavigator.prospectDesc', 'Tahap awal identifikasi dan pendekatan calon klien'),
     icon: '👋',
     color: '#1890ff',
     expectedDuration: '1-2 hari',
@@ -68,7 +69,7 @@ const stageConfig: Record<
   },
   quotation: {
     title: 'Pembuatan Quotation',
-    description: 'Penyusunan penawaran harga dan scope kerja',
+    description: i18n.t('nav.businessFlowNavigator.quotationDesc', 'Penyusunan penawaran harga dan scope kerja'),
     icon: '📋',
     color: '#faad14',
     expectedDuration: '2-3 hari',
@@ -80,7 +81,7 @@ const stageConfig: Record<
   },
   approved: {
     title: 'Quotation Disetujui',
-    description: 'Klien menyetujui penawaran dan siap memulai proyek',
+    description: i18n.t('nav.businessFlowNavigator.approvedDesc', 'Klien menyetujui penawaran dan siap memulai proyek'),
     icon: '✅',
     color: '#52c41a',
     expectedDuration: '1 hari',
@@ -92,35 +93,35 @@ const stageConfig: Record<
   },
   invoicing: {
     title: 'Pembuatan Invoice',
-    description: 'Penerbitan tagihan dan administrasi keuangan',
+    description: i18n.t('nav.businessFlowNavigator.invoicingDesc', 'Penerbitan tagihan dan administrasi keuangan'),
     icon: '📄',
     color: '#722ed1',
     expectedDuration: '1 hari',
     keyActivities: ['Generate invoice', 'Cek materai', 'Kirim ke klien'],
   },
   payment: {
-    title: 'Proses Pembayaran',
-    description: 'Follow-up pembayaran dan konfirmasi penerimaan',
+    title: i18n.t('nav.businessFlowNavigator.paymentTitle', 'Proses Pembayaran'),
+    description: i18n.t('nav.businessFlowNavigator.paymentDesc', 'Follow-up pembayaran dan konfirmasi penerimaan'),
     icon: '💰',
     color: '#13c2c2',
     expectedDuration: '7-30 hari',
     keyActivities: [
-      'Follow-up pembayaran',
+      i18n.t('nav.businessFlowNavigator.paymentFollowUp', 'Follow-up pembayaran'),
       'Konfirmasi transfer',
       'Update status',
     ],
   },
   completed: {
     title: 'Proyek Selesai',
-    description: 'Semua deliverable sudah diselesaikan dan dibayar',
+    description: i18n.t('nav.businessFlowNavigator.completedDesc', 'Semua deliverable sudah diselesaikan dan dibayar'),
     icon: '🎉',
     color: '#52c41a',
     expectedDuration: '-',
     keyActivities: ['Delivery final', 'Dokumentasi', 'Feedback klien'],
   },
   cancelled: {
-    title: 'Dibatalkan',
-    description: 'Proyek dibatalkan karena berbagai alasan',
+    title: i18n.t('nav.businessFlowNavigator.cancelledTitle', 'Dibatalkan'),
+    description: i18n.t('nav.businessFlowNavigator.cancelledDesc', 'Proyek dibatalkan karena berbagai alasan'),
     icon: '❌',
     color: '#ff4d4f',
     expectedDuration: '-',
@@ -136,14 +137,14 @@ const culturalNotes: Record<BusinessStage, CulturalNote[]> = {
       category: 'timing',
       title: 'Waktu Pertemuan',
       description:
-        'Hindari meeting pada hari Jumat sore dan jadwal yang bertentangan dengan sholat',
+        i18n.t('nav.businessFlowNavigator.prospectTimingDesc', 'Hindari meeting pada hari Jumat sore dan jadwal yang bertentangan dengan sholat'),
       examples: ['Meeting pagi (09:00-11:00)', 'Meeting siang (13:30-15:30)'],
     },
     {
       id: 'prospect-etiquette',
       category: 'etiquette',
       title: 'Etika Pertemuan',
-      description: 'Selalu bawa kartu nama dan berikan dengan kedua tangan',
+      description: i18n.t('nav.businessFlowNavigator.prospectEtiquetteDesc', 'Selalu bawa kartu nama dan berikan dengan kedua tangan'),
       examples: ['Gunakan bahasa formal', 'Tanyakan preferensi bahasa'],
     },
   ],
@@ -152,7 +153,7 @@ const culturalNotes: Record<BusinessStage, CulturalNote[]> = {
       id: 'quotation-format',
       category: 'documentation',
       title: 'Format Quotation',
-      description: 'Gunakan kop surat resmi dan sertakan detail pajak',
+      description: i18n.t('nav.businessFlowNavigator.quotationFormatDesc', 'Gunakan kop surat resmi dan sertakan detail pajak'),
       examples: ['Include PPN 11%', 'Cantumkan NPWP', 'Detail breakdown biaya'],
     },
   ],
@@ -162,7 +163,7 @@ const culturalNotes: Record<BusinessStage, CulturalNote[]> = {
       category: 'documentation',
       title: 'Kontrak Kerja',
       description:
-        'Siapkan kontrak dalam Bahasa Indonesia dan Inggris jika diperlukan',
+        i18n.t('nav.businessFlowNavigator.approvedContractDesc', 'Siapkan kontrak dalam Bahasa Indonesia dan Inggris jika diperlukan'),
       examples: ['Review klausul hukum Indonesia', 'Tandatangan bermaterai'],
     },
   ],
@@ -171,7 +172,7 @@ const culturalNotes: Record<BusinessStage, CulturalNote[]> = {
       id: 'invoicing-materai',
       category: 'documentation',
       title: 'Persyaratan Materai',
-      description: 'Invoice > Rp 5 juta harus menggunakan materai Rp 10.000',
+      description: i18n.t('nav.businessFlowNavigator.invoicingMateraiDesc', 'Invoice > Rp 5 juta harus menggunakan materai Rp 10.000'),
       examples: ['Cek nominal invoice', 'Pasang materai sebelum kirim'],
     },
   ],
@@ -179,8 +180,8 @@ const culturalNotes: Record<BusinessStage, CulturalNote[]> = {
     {
       id: 'payment-followup',
       category: 'communication',
-      title: 'Follow-up Pembayaran',
-      description: 'Gunakan WhatsApp untuk reminder yang lebih personal',
+      title: i18n.t('nav.businessFlowNavigator.paymentFollowUpTitle', 'Follow-up Pembayaran'),
+      description: i18n.t('nav.businessFlowNavigator.paymentFollowUpDesc', 'Gunakan WhatsApp untuk reminder yang lebih personal'),
       examples: [
         'Reminder H-3 jatuh tempo',
         'Follow-up sopan setelah jatuh tempo',
@@ -193,7 +194,7 @@ const culturalNotes: Record<BusinessStage, CulturalNote[]> = {
       category: 'etiquette',
       title: 'Feedback Session',
       description:
-        'Selalu lakukan feedback session untuk menjaga hubungan jangka panjang',
+        i18n.t('nav.businessFlowNavigator.completedFeedbackDesc', 'Selalu lakukan feedback session untuk menjaga hubungan jangka panjang'),
       examples: ['Survey kepuasan', 'Testimonial', 'Referral program'],
     },
   ],
@@ -202,7 +203,7 @@ const culturalNotes: Record<BusinessStage, CulturalNote[]> = {
       id: 'cancelled-relationship',
       category: 'etiquette',
       title: 'Menjaga Hubungan',
-      description: 'Tetap jaga hubungan baik meskipun proyek dibatalkan',
+      description: i18n.t('nav.businessFlowNavigator.cancelledRelationshipDesc', 'Tetap jaga hubungan baik meskipun proyek dibatalkan'),
       examples: ['Ucapan terima kasih', 'Buka peluang masa depan'],
     },
   ],

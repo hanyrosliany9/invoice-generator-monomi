@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, Users, Folder, CreditCard, Settings,
   Plus, MoreHorizontal,
@@ -31,6 +32,7 @@ import {
 import { toast, Toaster } from 'sonner';
 
 export default function StyleGuidePage() {
+  const { t } = useTranslation();
   const [date, setDate] = useState<Date | undefined>(new Date());
 
   return (
@@ -116,7 +118,7 @@ export default function StyleGuidePage() {
             <h2 className="text-lg font-display font-semibold text-text-primary mb-4">Form Controls</h2>
             <GlassPanel className="space-y-4 max-w-md">
               <Input placeholder="Search invoices…" />
-              <MonomiDatePicker value={date} onChange={setDate} placeholder="Tanggal jatuh tempo" />
+              <MonomiDatePicker value={date} onChange={setDate} placeholder={t('styleGuidePage.dueDatePlaceholder', 'Tanggal jatuh tempo')} />
               <div className="flex gap-2 flex-wrap">
                 <Badge>Default</Badge>
                 <Badge variant="secondary">Secondary</Badge>

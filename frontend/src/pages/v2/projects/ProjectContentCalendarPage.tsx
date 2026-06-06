@@ -68,12 +68,19 @@ import { cn } from '@/lib/utils';
 type ContentStatus = ContentCalendarItem['status'];
 type Platform = ContentCalendarItem['platforms'][number];
 
-const STATUS_LABEL: Record<ContentStatus, string> = {
-  DRAFT:     'Draf',
-  SCHEDULED: 'Terjadwal',
-  PUBLISHED: 'Terbit',
-  FAILED:    'Gagal',
-  ARCHIVED:  'Arsip',
+const STATUS_LABEL_KEY: Record<ContentStatus, string> = {
+  DRAFT:     'projects.projectContentCalendar.statusDraft',
+  SCHEDULED: 'projects.projectContentCalendar.statusScheduled',
+  PUBLISHED: 'projects.projectContentCalendar.statusPublished',
+  FAILED:    'projects.projectContentCalendar.statusFailed',
+  ARCHIVED:  'projects.projectContentCalendar.statusArchived',
+};
+const STATUS_LABEL_DEFAULT: Record<ContentStatus, string> = {
+  DRAFT:     'Draft',
+  SCHEDULED: 'Scheduled',
+  PUBLISHED: 'Published',
+  FAILED:    'Failed',
+  ARCHIVED:  'Archived',
 };
 
 const statusChipClass = (s?: ContentStatus | string) => {
@@ -473,8 +480,8 @@ export default function ProjectContentCalendarPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('projectContentCalendar.filter.allStatuses', 'All Statuses')}</SelectItem>
-                  {(Object.keys(STATUS_LABEL) as ContentStatus[]).map((s) => (
-                    <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                  {(Object.keys(STATUS_LABEL_KEY) as ContentStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>{t(STATUS_LABEL_KEY[s], STATUS_LABEL_DEFAULT[s])}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -588,7 +595,7 @@ export default function ProjectContentCalendarPage() {
         onArchive={(id) => archiveMutation.mutate(id)}
         idLocale={idLocale}
         onDelete={(id) => {
-          if (confirm('Hapus konten ini?')) deleteMutation.mutate(id);
+          if (confirm(t('projects.projectContentCalendar.confirmDelete', 'Delete this content?'))) deleteMutation.mutate(id);
         }}
       />
 
@@ -801,7 +808,7 @@ function ListView({
                     statusChipClass(it.status),
                   )}
                 >
-                  {STATUS_LABEL[it.status]}
+                  {t(STATUS_LABEL_KEY[it.status], STATUS_LABEL_DEFAULT[it.status])}
                 </Badge>
               </div>
 
@@ -862,6 +869,7 @@ function ListView({
 /* ------------------------------------------------------------------ */
 
 function DraftCard({ item, onSelect }: { item: ContentCalendarItem; onSelect: () => void }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -874,7 +882,7 @@ function DraftCard({ item, onSelect }: { item: ContentCalendarItem; onSelect: ()
       <div className="flex items-center gap-1.5 mb-2">
         <span className={cn('h-1.5 w-1.5 rounded-full', statusDotClass(item.status))} />
         <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
-          {STATUS_LABEL[item.status]}
+          {t(STATUS_LABEL_KEY[item.status], STATUS_LABEL_DEFAULT[item.status])}
         </span>
       </div>
       <p className="text-xs text-text-primary line-clamp-3 leading-relaxed">
@@ -930,7 +938,7 @@ function DetailSheet({
                     statusChipClass(item.status),
                   )}
                 >
-                  {STATUS_LABEL[item.status]}
+                  {t(STATUS_LABEL_KEY[item.status], STATUS_LABEL_DEFAULT[item.status])}
                 </Badge>
                 {item.scheduledAt && (
                   <span className="text-xs text-text-tertiary inline-flex items-center gap-1">

@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 // to RHF/Zod English defaults on a Bahasa surface.
 // ──────────────────────────────────────────────────────────────
 
-const productItemSchema = z.object({
+const makeProductItemSchema = (t: (k: string, fb: string) => string) => z.object({
   name: z.string().min(1, 'Item name is required'),
   // Optional — it's a "short description (printed on document)". Requiring it
   // silently blocked saving any project whose line items had no description.
@@ -39,10 +39,10 @@ const productItemSchema = z.object({
   // Backend requires a positive price (@IsPositive) — and the estimated budget
   // (sum of prices) must be > 0. Enforce it here so the user gets an inline
   // hint instead of an opaque 400 on save.
-  price: z.coerce.number().positive('Harga harus lebih dari 0'),
+  price: z.coerce.number().positive(t('projects.projectForm.validationPricePositive', 'Price must be greater than 0')),
 });
 
-export const projectFormSchema = z
+const makeProjectFormSchema = (t: (k: string, fb: string) => string) => z
   .object({
     // Identitas
     description: z
@@ -63,7 +63,7 @@ export const projectFormSchema = z
 
     // Rincian
     products: z
-      .array(productItemSchema)
+      .array(makeProductItemSchema(t))
       .min(1, 'At least one product/service is required'),
 
     // Status — edit only; controller still hides it on create
@@ -76,7 +76,9 @@ export const projectFormSchema = z
     { message: 'End date must be after start date', path: ['endDate'] },
   );
 
-export type ProjectFormValues = z.infer<typeof projectFormSchema>;
+export type ProjectFormValues = z.infer<ReturnType<typeof makeProjectFormSchema>>;
+// Keep exported schema for external type consumers (uses English fallbacks)
+export const projectFormSchema = makeProjectFormSchema((_, fb) => fb);
 
 export const emptyProjectFormValues: ProjectFormValues = {
   description: '',
@@ -253,7 +255,7 @@ export const ProjectForm = ({
     reset,
     formState: { errors },
   } = useForm<ProjectFormValues>({
-    resolver: zodResolver(projectFormSchema),
+    resolver: zodResolver(makeProjectFormSchema(t)),
     defaultValues: { ...emptyProjectFormValues, ...defaultValues },
     mode: 'onBlur',
   });
@@ -501,7 +503,7 @@ export const ProjectForm = ({
           {mode === 'edit' && (
             <FieldShell
               id="pf-status"
-              label={t('projectForm.status', 'Status')}
+              label={t('projectForm.statusLabel', 'Status')}
               hint={t('projectForm.statusHint', 'Status affects invoice visibility and workflow.')}
               error={errors.status?.message}
               className="md:col-span-2"

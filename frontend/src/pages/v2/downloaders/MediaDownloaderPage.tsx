@@ -216,7 +216,7 @@ export default function MediaDownloaderPageV2() {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? (err as Error)?.message
-        ?? 'Unduhan gagal.';
+        ?? t('downloaders.mediaDownloader.downloadFailed', 'Download failed.');
       toast.error(message);
       const entry: DownloadEntry = {
         id: crypto.randomUUID(),

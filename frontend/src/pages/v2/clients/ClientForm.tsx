@@ -29,11 +29,11 @@ import { cn } from '@/lib/utils';
 const npwpPattern = /^\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}$/;
 const phonePattern = /^[+]?[\d\s\-()]+$/;
 
-export const clientFormSchema = z.object({
+const makeClientFormSchema = (t: (key: string, fallback: string) => string) => z.object({
   // Identitas
   name: z
     .string()
-    .min(1, 'Nama klien wajib diisi')
+    .min(1, t('clients.validation.nameRequired', 'Client name is required'))
     .min(2, 'Nama minimal 2 karakter')
     .max(120, 'Nama terlalu panjang'),
   company: z.string().max(160, 'Nama perusahaan terlalu panjang').optional().or(z.literal('')),
@@ -45,7 +45,7 @@ export const clientFormSchema = z.object({
     .or(z.literal(''))
     .refine(
       (v) => !v || npwpPattern.test(v),
-      'Format NPWP tidak valid (XX.XXX.XXX.X-XXX.XXX)',
+      t('clients.validation.npwpInvalid', 'Invalid NPWP format (XX.XXX.XXX.X-XXX.XXX)'),
     ),
 
   // Kontak
@@ -56,7 +56,7 @@ export const clientFormSchema = z.object({
     .or(z.literal(''))
     .refine(
       (v) => !v || z.string().email().safeParse(v).success,
-      'Format email tidak valid',
+      t('clients.validation.emailInvalid', 'Invalid email format'),
     ),
   phone: z
     .string()
@@ -64,7 +64,7 @@ export const clientFormSchema = z.object({
     .or(z.literal(''))
     .refine(
       (v) => !v || phonePattern.test(v),
-      'Format nomor telepon tidak valid',
+      t('clients.validation.phoneInvalid', 'Invalid phone number format'),
     ),
   bankAccount: z.string().max(255, 'Terlalu panjang').optional().or(z.literal('')),
 
@@ -74,6 +74,8 @@ export const clientFormSchema = z.object({
   // Catatan
   notes: z.string().max(2000, 'Catatan terlalu panjang').optional().or(z.literal('')),
 });
+
+export const clientFormSchema = makeClientFormSchema((_, fallback) => fallback);
 
 export type ClientFormValues = z.infer<typeof clientFormSchema>;
 
@@ -235,7 +237,7 @@ export const ClientForm = ({
     reset,
     formState: { errors },
   } = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
+    resolver: zodResolver(makeClientFormSchema(t)),
     defaultValues: { ...emptyClientFormValues, ...defaultValues },
     mode: 'onBlur',
   });
@@ -296,7 +298,7 @@ export const ClientForm = ({
           >
             <Input
               id="cf-company"
-              placeholder="PT, CV, atau nama studio"
+              placeholder={t('clients.form.companyPlaceholder', 'PT, CV, or studio name')}
               autoComplete="off"
               aria-invalid={!!errors.company}
               className={cn(fieldInputClass, errors.company && fieldInvalidClass)}

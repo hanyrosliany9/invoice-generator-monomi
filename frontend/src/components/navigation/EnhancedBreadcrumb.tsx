@@ -97,14 +97,15 @@ const MateraiIndicator: React.FC<{ required?: boolean; applied?: boolean }> = ({
   required,
   applied,
 }) => {
+  const { t } = useTranslation()
   if (!required) return null
 
   return (
     <Tooltip
       title={
         applied
-          ? 'Materai telah diterapkan'
-          : 'Materai diperlukan - belum diterapkan'
+          ? t('nav.enhancedBreadcrumb.materaiApplied', 'Materai telah diterapkan')
+          : t('nav.enhancedBreadcrumb.materaiRequired', 'Materai diperlukan - belum diterapkan')
       }
       placement='top'
     >
@@ -273,9 +274,9 @@ const BusinessStageIndicator: React.FC<{ stage: BusinessStage }> = ({
     quotation: { color: 'orange', icon: '📋', text: 'Quotation' },
     approved: { color: 'green', icon: '✅', text: 'Disetujui' },
     invoicing: { color: 'purple', icon: '📄', text: 'Invoice' },
-    payment: { color: 'cyan', icon: '💰', text: 'Pembayaran' },
+    payment: { color: 'cyan', icon: '💰', text: t('nav.enhancedBreadcrumb.stagePayment', 'Pembayaran') },
     completed: { color: 'green', icon: '🎉', text: 'Selesai' },
-    cancelled: { color: 'red', icon: '❌', text: 'Dibatalkan' },
+    cancelled: { color: 'red', icon: '❌', text: t('nav.enhancedBreadcrumb.stageCancelled', 'Dibatalkan') },
   }
 
   const config = stageConfig[stage]

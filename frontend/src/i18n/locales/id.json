@@ -93,7 +93,41 @@
     "milestones": "Milestone",
     "users": "Pengguna",
     "settings": "Pengaturan",
-    "salaries": "Gaji"
+    "salaries": "Gaji",
+    "relationshipPanel": {
+      "noRelationInfo": "Tidak ada informasi relasi tersedia"
+    },
+    "businessFlowNavigator": {
+      "prospectDesc": "Tahap awal identifikasi dan pendekatan calon klien",
+      "quotationDesc": "Penyusunan penawaran harga dan scope kerja",
+      "approvedDesc": "Klien menyetujui penawaran dan siap memulai proyek",
+      "invoicingDesc": "Penerbitan tagihan dan administrasi keuangan",
+      "paymentTitle": "Proses Pembayaran",
+      "paymentDesc": "Follow-up pembayaran dan konfirmasi penerimaan",
+      "paymentFollowUp": "Follow-up pembayaran",
+      "completedDesc": "Semua deliverable sudah diselesaikan dan dibayar",
+      "cancelledTitle": "Dibatalkan",
+      "cancelledDesc": "Proyek dibatalkan karena berbagai alasan",
+      "prospectTimingDesc": "Hindari meeting pada hari Jumat sore dan jadwal yang bertentangan dengan sholat",
+      "prospectEtiquetteDesc": "Selalu bawa kartu nama dan berikan dengan kedua tangan",
+      "quotationFormatDesc": "Gunakan kop surat resmi dan sertakan detail pajak",
+      "approvedContractDesc": "Siapkan kontrak dalam Bahasa Indonesia dan Inggris jika diperlukan",
+      "invoicingMateraiDesc": "Invoice > Rp 5 juta harus menggunakan materai Rp 10.000",
+      "paymentFollowUpTitle": "Follow-up Pembayaran",
+      "paymentFollowUpDesc": "Gunakan WhatsApp untuk reminder yang lebih personal",
+      "completedFeedbackDesc": "Selalu lakukan feedback session untuk menjaga hubungan jangka panjang",
+      "cancelledRelationshipDesc": "Tetap jaga hubungan baik meskipun proyek dibatalkan"
+    },
+    "mobileNavigation": {
+      "callFeatureUnavailable": "Fitur panggilan akan tersedia setelah integrasi dengan sistem telepon",
+      "linkCopied": "Link telah disalin ke clipboard"
+    },
+    "enhancedBreadcrumb": {
+      "materaiApplied": "Materai telah diterapkan",
+      "materaiRequired": "Materai diperlukan - belum diterapkan",
+      "stagePayment": "Pembayaran",
+      "stageCancelled": "Dibatalkan"
+    }
   },
   "auth": {
     "login": "Masuk",
@@ -108,7 +142,11 @@
     "loginSubtitle": "Sistem Manajemen Bisnis Indonesia",
     "invalidCredentials": "Email atau kata sandi salah",
     "accountDisabled": "Akun Anda telah dinonaktifkan",
-    "signIn": "Masuk"
+    "signIn": "Masuk",
+    "validation": {
+      "emailInvalid": "Email tidak valid",
+      "passwordRequired": "Password wajib diisi"
+    }
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -559,6 +597,9 @@
     },
     "detail": {
       "send": "Kirim"
+    },
+    "quotationCreate": {
+      "defaultTerms": "1. Pembayaran Net 30 dari tanggal invoice.\n2. Termasuk PPN 11%.\n3. Revisi maksimal 3 kali.\n4. Materai diperlukan untuk nilai > Rp 5.000.000.\n5. Hukum yang berlaku: Republik Indonesia."
     }
   },
   "invoices": {
@@ -755,7 +796,8 @@
       "sent": "Terkirim",
       "paid": "Lunas",
       "overdue": "Jatuh Tempo",
-      "cancelled": "Dibatalkan"
+      "cancelled": "Dibatalkan",
+      "pending": "Tertunda"
     },
     "col": {
       "number": "Nomor",
@@ -765,6 +807,15 @@
       "dueDate": "Jatuh Tempo",
       "status": "Status",
       "actions": "Aksi"
+    },
+    "invoiceForm": {
+      "validationDescriptionRequired": "Deskripsi wajib diisi",
+      "validationClientRequired": "Klien wajib dipilih",
+      "validationProjectRequired": "Proyek wajib dipilih",
+      "validationIssuedDateRequired": "Tanggal terbit wajib diisi",
+      "validationDueDateRequired": "Jatuh tempo wajib diisi",
+      "validationPaymentInfoTooShort": "Informasi pembayaran terlalu pendek",
+      "paymentInfoNoBank": "INFORMASI PEMBAYARAN:\n\nSilakan hubungi {{email}} untuk informasi rekening pembayaran."
     }
   },
   "clients": {
@@ -889,7 +940,8 @@
       "addressPlaceholder": "Jl. Sudirman No. 1, Jakarta Selatan, DKI Jakarta 12190",
       "notesPlaceholder": "Preferensi komunikasi, sejarah hubungan, hal-hal yang perlu diingat…",
       "statusHint": "Klien nonaktif tidak muncul di pemilih default.",
-      "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\"."
+      "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\".",
+      "companyPlaceholder": "PT, CV, atau nama studio"
     },
     "kpi": {
       "active": "Klien Aktif",
@@ -915,7 +967,13 @@
       "status": "Status"
     },
     "directoryCount": "{{count}} klien ditemukan",
-    "subtitle": "Kelola data klien, kontak, dan riwayat transaksi bisnis Anda."
+    "subtitle": "Kelola data klien, kontak, dan riwayat transaksi bisnis Anda.",
+    "validation": {
+      "nameRequired": "Nama klien wajib diisi",
+      "npwpInvalid": "Format NPWP tidak valid (XX.XXX.XXX.X-XXX.XXX)",
+      "emailInvalid": "Format email tidak valid",
+      "phoneInvalid": "Format nomor telepon tidak valid"
+    }
   },
   "projects": {
     "title": "Proyek",
@@ -1112,7 +1170,18 @@
       "delete": "Hapus"
     },
     "confirmDelete": "Hapus proyek {{number}}? Tindakan ini tidak dapat dibatalkan.",
-    "duplicated": "Proyek berhasil diduplikasi: {{number}}"
+    "duplicated": "Proyek berhasil diduplikasi: {{number}}",
+    "projectContentCalendar": {
+      "statusDraft": "Draf",
+      "statusScheduled": "Terjadwal",
+      "statusPublished": "Terbit",
+      "statusFailed": "Gagal",
+      "statusArchived": "Arsip",
+      "confirmDelete": "Hapus konten ini?"
+    },
+    "projectForm": {
+      "validationPricePositive": "Harga harus lebih dari 0"
+    }
   },
   "assets": {
     "title": "Manajemen Aset",
@@ -1365,7 +1434,13 @@
     "search": {
       "placeholder": "Cari kode, nama, model, atau serial…"
     },
-    "subtitle": "Inventaris peralatan operasional, nilai, dan status perawatan."
+    "subtitle": "Inventaris peralatan operasional, nilai, dan status perawatan.",
+    "validation": {
+      "nameRequired": "Nama aset wajib diisi",
+      "categoryRequired": "Kategori wajib dipilih",
+      "purchaseDateRequired": "Tanggal pembelian wajib diisi",
+      "residualValueTooHigh": "Nilai sisa harus lebih kecil dari harga pembelian"
+    }
   },
   "currency": {
     "idr": "Rp",
@@ -1784,7 +1859,14 @@
       "desc": "Tidak ada yang dijadwalkan dalam 14 hari ke depan."
     },
     "upcomingTitle": "Agenda Mendatang",
-    "subtitle": "Satu pandangan untuk jatuh tempo tagihan, masa berlaku penawaran, tenggat proyek, dan acara tim."
+    "subtitle": "Satu pandangan untuk jatuh tempo tagihan, masa berlaku penawaran, tenggat proyek, dan acara tim.",
+    "contentCalendar": {
+      "statusDraft": "Draf",
+      "statusScheduled": "Terjadwal",
+      "statusPublished": "Terbit",
+      "statusFailed": "Gagal",
+      "statusArchived": "Arsip"
+    }
   },
   "callSheets": {
     "create": {
@@ -2158,7 +2240,10 @@
       "placeholder": "Cari nomor, vendor, atau deskripsi..."
     },
     "title": "Biaya",
-    "subtitle": "Catat pengeluaran usaha dengan kepatuhan PSAK & pajak Indonesia."
+    "subtitle": "Catat pengeluaran usaha dengan kepatuhan PSAK & pajak Indonesia.",
+    "expenseCategories": {
+      "descriptionIdPlaceholder": "Alat tulis dan material kantor"
+    }
   },
   "milestones": {
     "analytics": {
@@ -2218,7 +2303,8 @@
       "onTime": "Tepat Waktu",
       "onTimeSub": "dari milestone dibayar",
       "recognition": "Pengakuan Pendapatan",
-      "recognitionSub": "dari nilai milestone"
+      "recognitionSub": "dari nilai milestone",
+      "days": "hari"
     },
     "range": {
       "30": "30 hari terakhir",
@@ -2431,7 +2517,19 @@
       "error": "Gagal mengubah status pengguna."
     },
     "directoryCount": "{{count}} pengguna ditemukan",
-    "subtitle": "Kelola akun, peran, dan akses tim ke sistem."
+    "subtitle": "Kelola akun, peran, dan akses tim ke sistem.",
+    "validation": {
+      "nameRequired": "Nama lengkap wajib diisi",
+      "emailRequired": "Email wajib diisi",
+      "emailInvalid": "Format email tidak valid",
+      "roleRequired": "Peran wajib dipilih",
+      "passwordRequired": "Kata sandi wajib diisi",
+      "passwordPolicy": "Min. 8 karakter, huruf besar, huruf kecil, dan angka"
+    },
+    "roles": {
+      "superAdminDesc": "Akses penuh sistem — pengguna, pengaturan, semua data.",
+      "videographerDesc": "Akses media-collab saja — upload dan edit aset."
+    }
   },
   "vendors": {
     "create": {
@@ -2592,7 +2690,8 @@
       "taxAddressHint": "Isi jika berbeda dengan alamat operasional.",
       "taxAddressPlaceholder": "Alamat resmi sesuai NPWP untuk dokumen perpajakan",
       "vendorTypeHint": "Menentukan bagaimana transaksi akan dikelompokkan.",
-      "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\"."
+      "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\".",
+      "npwpHint": "XX.XXX.XXX.X-XXX.XXX atau 15 digit"
     },
     "kpi": {
       "active": "Vendor Aktif",
@@ -2622,7 +2721,17 @@
     "title": "Vendor",
     "directoryCount": "{{count}} vendor ditemukan",
     "searchPlaceholder": "Cari nama, kode, kontak, atau kota…",
-    "subtitle": "Kelola supplier, penyedia jasa, dan mitra procurement Anda."
+    "subtitle": "Kelola supplier, penyedia jasa, dan mitra procurement Anda.",
+    "validation": {
+      "nameRequired": "Nama vendor wajib diisi",
+      "emailInvalid": "Format email tidak valid",
+      "phoneInvalid": "Format nomor telepon tidak valid",
+      "postalCodeInvalid": "Kode pos harus 5 digit",
+      "npwpInvalid": "NPWP harus 15 digit atau format XX.XXX.XXX.X-XXX.XXX",
+      "paymentTermsRequired": "Termin pembayaran wajib dipilih",
+      "currencyRequired": "Mata uang wajib dipilih",
+      "creditLimitInvalid": "Limit kredit harus berupa angka non-negatif"
+    }
   },
   "accounting": {
     "chartOfAccounts": {
@@ -2713,7 +2822,14 @@
       "exportPdfFail": "Gagal mengunduh PDF",
       "exportPdfSuccess": "Laporan PDF diunduh",
       "panelTitle": "Analisis Umur per Klien",
-      "totalReceivable": "Total Piutang"
+      "totalReceivable": "Total Piutang",
+      "bucketCurrent": "Belum J.T.",
+      "bucket1to30": "1–30",
+      "bucket31to60": "31–60",
+      "bucket61to90": "61–90",
+      "bucketOver90": "> 90",
+      "unknownClient": "Klien tidak diketahui",
+      "asOfDatePlaceholder": "Per tanggal"
     },
     "apAging": {
       "title": "Aging Hutang",
@@ -2738,7 +2854,14 @@
       "exportPdfFail": "Gagal mengunduh PDF",
       "exportPdfSuccess": "Laporan PDF diunduh",
       "panelTitle": "Analisis Umur per Kategori",
-      "totalPayable": "Total Utang"
+      "totalPayable": "Total Utang",
+      "bucketCurrent": "Belum J.T.",
+      "bucket1to30": "1–30",
+      "bucket31to60": "31–60",
+      "bucket61to90": "61–90",
+      "bucketOver90": "> 90",
+      "unknownCategory": "Kategori tidak diketahui",
+      "asOfDatePlaceholder": "Per tanggal"
     },
     "journalEntryForm": {
       "newTitle": "Jurnal Baru",
@@ -2806,7 +2929,13 @@
       "transactionTypeCapitalContribution": "Setoran Modal",
       "transactionTypeOwnerDrawing": "Penarikan Pemilik",
       "transactionTypeClosing": "Penutupan Periode",
-      "transactionTypeOpening": "Pembukaan Periode"
+      "transactionTypeOpening": "Pembukaan Periode",
+      "validationSelectAccount": "Pilih akun",
+      "validationDebitOrCredit": "Isi debit ATAU kredit, tidak keduanya.",
+      "validationDateRequired": "Tanggal wajib diisi",
+      "validationSelectTransactionType": "Pilih tipe transaksi",
+      "validationMinTwoLines": "Minimal 2 baris (debit dan kredit).",
+      "validationDebitCreditBalance": "Total debit harus sama dengan total kredit."
     },
     "cashReceipts": {
       "title": "Penerimaan Kas",
@@ -4136,7 +4265,12 @@
       "email": "Email",
       "timezone": "Zona Waktu",
       "language": "Bahasa",
-      "saveLabel": "Simpan Profil"
+      "saveLabel": "Simpan Profil",
+      "nameRequired": "Nama wajib diisi",
+      "emailRequired": "Email wajib diisi",
+      "emailInvalid": "Format email tidak valid",
+      "timezoneRequired": "Zona waktu wajib dipilih",
+      "languageRequired": "Bahasa wajib dipilih"
     },
     "security": {
       "title": "Keamanan",
@@ -4146,7 +4280,13 @@
       "currentPassword": "Kata Sandi Saat Ini",
       "newPassword": "Kata Sandi Baru",
       "confirmPassword": "Konfirmasi Kata Sandi Baru",
-      "saveLabel": "Ubah Kata Sandi"
+      "saveLabel": "Ubah Kata Sandi",
+      "currentPasswordRequired": "Kata sandi saat ini wajib diisi",
+      "mustHaveUppercase": "Harus mengandung huruf besar",
+      "mustHaveLowercase": "Harus mengandung huruf kecil",
+      "mustHaveNumber": "Harus mengandung angka",
+      "confirmPasswordRequired": "Konfirmasi kata sandi wajib diisi",
+      "passwordMismatch": "Konfirmasi kata sandi tidak cocok"
     },
     "company": {
       "title": "Perusahaan",
@@ -4160,7 +4300,14 @@
       "email": "Email",
       "website": "Website",
       "currency": "Mata Uang",
-      "saveLabel": "Simpan Perusahaan"
+      "saveLabel": "Simpan Perusahaan",
+      "companyNameRequired": "Nama perusahaan wajib diisi",
+      "npwpRequired": "NPWP wajib diisi",
+      "npwpInvalid": "Format NPWP tidak valid (XX.XXX.XXX.X-XXX.XXX)",
+      "addressRequired": "Alamat wajib diisi",
+      "phoneRequired": "Telepon wajib diisi",
+      "emailRequired": "Email wajib diisi",
+      "emailInvalid": "Format email tidak valid"
     },
     "banks": {
       "title": "Rekening Bank",
@@ -4192,7 +4339,12 @@
       "quotationPrefixHint": "Contoh: QT- menjadi QT-2026-001",
       "autoMateraiReminder": "Pengingat Materai Otomatis",
       "autoMateraiReminderHint": "Tampilkan pengingat saat invoice melebihi ambang batas.",
-      "saveLabel": "Simpan Faktur"
+      "saveLabel": "Simpan Faktur",
+      "termsRequired": "Termin wajib dipilih",
+      "mustBeNumber": "Harus berupa angka",
+      "notNegative": "Tidak boleh negatif",
+      "invoicePrefixRequired": "Prefix invoice wajib diisi",
+      "quotationPrefixRequired": "Prefix penawaran wajib diisi"
     },
     "notifications": {
       "title": "Notifikasi",
@@ -4225,7 +4377,8 @@
       "preparing": "Menyiapkan…",
       "downloadSql": "Unduh .sql",
       "downloadDesc": "Cadangan lengkap basis data sebagai berkas SQL.",
-      "saveLabel": "Simpan Cadangan"
+      "saveLabel": "Simpan Cadangan",
+      "timeFormatInvalid": "Format waktu harus HH:MM"
     }
   },
   "cashBankBalance": {
@@ -4662,7 +4815,8 @@
     "editNote": "Perubahan disimpan saat Anda klik \"Simpan\".",
     "saving": "Menyimpan...",
     "save": "Simpan",
-    "loading": "Memuat..."
+    "loading": "Memuat...",
+    "statusLabel": "Status"
   },
   "projectCreate": {
     "success": "Proyek \"{{name}}\" berhasil dibuat.",
@@ -4743,7 +4897,8 @@
     "paidOn": "Dibayar pada",
     "paymentCount": "Transaksi",
     "milestone": "Tonggak Pembayaran",
-    "ofTotal": "dari total"
+    "ofTotal": "dari total",
+    "pdfFailed": "Gagal mengunduh PDF"
   },
   "invoiceCreate": {
     "backToList": "Kembali ke Tagihan",
@@ -4840,7 +4995,8 @@
       "title": "Laporan Bisnis Bulanan",
       "desc": "Disusun otomatis dari data langsung Anda — pendapatan, piutang, jatuh tempo, konversi, klien & proyek teratas. Tanpa input manual.",
       "open": "Buka →"
-    }
+    },
+    "invalidPdfUrl": "URL PDF tidak valid"
   },
   "reportDetail": {
     "subtitle": "Detail laporan, bagian, dan visualisasi terkait.",
@@ -4881,7 +5037,8 @@
     "noData": "Tidak ada data",
     "rows": "baris",
     "metricCardMisconfigured": "Konfigurasi metric_card tidak lengkap (valueKey tidak ada).",
-    "noViz": "Belum ada visualisasi di bagian ini."
+    "noViz": "Belum ada visualisasi di bagian ini.",
+    "invalidPdfUrl": "URL PDF tidak valid"
   },
   "reportBuilder": {
     "createTitle": "Laporan Baru",
@@ -5773,6 +5930,10 @@
       "newClientsSub": "bulan ini",
       "newProjects": "Proyek Baru",
       "newProjectsSub": "bulan ini"
+    },
+    "error": {
+      "title": "Gagal memuat data laporan",
+      "description": "Satu atau beberapa sumber data gagal dimuat. Silakan coba lagi."
     }
   },
   "assetDetail": {
@@ -5798,5 +5959,244 @@
       "status": "Status",
       "value": "Nilai"
     }
+  },
+  "downloaders": {
+    "mediaDownloader": {
+      "downloadFailed": "Unduhan gagal."
+    }
+  },
+  "forms": {
+    "priceInheritanceFlow": {
+      "amountMustBePositive": "Jumlah harus lebih besar dari nol",
+      "largeDeviationWarning": "Penyimpangan harga yang besar dapat mempengaruhi profitabilitas dan daya saing",
+      "deviationSuggestedAction": "Pertimbangkan untuk meninjau kembali harga atau dokumentasikan alasan penyimpangan",
+      "materaiReason": "Transaksi dengan nilai {{amount}} memerlukan materai sesuai peraturan Indonesia",
+      "materaiLegalRef": "Sesuai dengan UU No. 13 Tahun 1985 tentang Bea Materai",
+      "culturalNote1": "Berikan penjelasan yang jelas untuk setiap penyimpangan harga",
+      "culturalNote2": "Sertakan breakdown detail untuk membangun kepercayaan klien",
+      "timingMorning": "Pagi (09:00-12:00 WIB) - Waktu terbaik untuk diskusi bisnis",
+      "timingAfternoon": "Siang (13:00-16:00 WIB) - Waktu yang baik untuk negosiasi",
+      "selectSourcePlaceholder": "Pilih sumber harga",
+      "amountPlaceholder": "Masukkan jumlah",
+      "amountAriaLabel": "Jumlah harga",
+      "bestTimingTitle": "Waktu Terbaik untuk Diskusi Harga",
+      "pricingHelpTooltip": "Bantuan pengaturan harga",
+      "timingDescription": "Waktu terbaik untuk diskusi harga dengan klien"
+    },
+    "priceInheritanceFormField": {
+      "amountRequired": "Jumlah harga harus diisi",
+      "amountMustBePositive": "Jumlah harus lebih besar dari nol",
+      "amountTooLarge": "Jumlah terlalu besar",
+      "materaiRequired": "Materai diperlukan untuk transaksi di atas Rp 5 juta"
+    }
+  },
+  "tables": {
+    "smartTable": {
+      "columnAmount": "Jumlah",
+      "columnDate": "Tanggal",
+      "searchPlaceholder": "Cari {{entityType}}...",
+      "dateRangeStart": "Tanggal mulai",
+      "dateRangeEnd": "Tanggal akhir"
+    }
+  },
+  "mobile": {
+    "mobileOptimizedLayout": {
+      "settings": "Pengaturan",
+      "materaiCalcDesc": "Hitung materai untuk transaksi",
+      "ppnCalcDesc": "Hitung PPN 11% untuk invoice"
+    }
+  },
+  "business": {
+    "businessJourneyTimeline": {
+      "openingWhatsApp": "Membuka WhatsApp untuk berbagi dokumen",
+      "amountAriaLabel": "Jumlah: {{amount}}",
+      "loadErrorTitle": "Gagal Memuat Data",
+      "loadErrorDesc": "Terjadi kesalahan saat memuat perjalanan bisnis. Silakan coba lagi.",
+      "emptyState": "Belum ada aktivitas bisnis",
+      "searchPlaceholder": "Cari aktivitas...",
+      "searchAriaLabel": "Cari dalam perjalanan bisnis",
+      "dateFrom": "Dari tanggal",
+      "dateTo": "Sampai tanggal"
+    },
+    "businessJourneyUtils": {
+      "whatsAppAmountLine": "dengan nilai {{amount}}.\n\n",
+      "whatsAppDueDateLine": "Jatuh tempo pembayaran: {{date}}\n\n",
+      "whatsAppViewDetailLine": "Silakan klik link berikut untuk melihat detail:\n"
+    }
+  },
+  "guest": {
+    "publicProjectView": {
+      "incompleteLink": "Tautan Tidak Lengkap",
+      "incompleteLinkBody": "Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.",
+      "galleryNotFound": "Galeri Tidak Ditemukan",
+      "galleryNotFoundBody": "Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya.",
+      "searchPlaceholder": "Cari berkas...",
+      "noFilesMatch": "Tidak ada berkas yang cocok",
+      "tryOtherKeyword": "Coba kata kunci lain atau hapus pencarian.",
+      "emptyFolder": "Belum ada aset atau folder di tingkat ini."
+    },
+    "deckAcceptInvite": {
+      "genericError": "Terjadi kesalahan. Silakan coba lagi.",
+      "invalidInvite": "Undangan tidak valid atau sudah kadaluarsa.",
+      "incompleteLink": "Tautan Tidak Lengkap",
+      "tokenNotFound": "Token undangan tidak ditemukan",
+      "brokenLink": "Tautan undangan tampaknya rusak. Silakan minta pengirim untuk membagikan ulang tautan undangan.",
+      "successBody": "Anda telah berhasil ditambahkan sebagai kolaborator.",
+      "failedEyebrow": "Gagal Menerima Undangan",
+      "failedTitle": "Undangan tidak dapat diproses"
+    },
+    "guestAcceptInvite": {
+      "roleDescViewer": "Anda dapat melihat seluruh aset proyek.",
+      "roleDescCommenter": "Anda dapat melihat dan memberikan umpan balik pada aset.",
+      "roleDescEditor": "Anda dapat melihat, memberi umpan balik, dan mengubah aset.",
+      "incompleteLink": "Tautan Tidak Lengkap",
+      "tokenNotFound": "Token undangan tidak ditemukan",
+      "brokenLink": "Tautan undangan tampaknya rusak atau tidak lengkap. Silakan minta pengirim untuk membagikan ulang tautan undangan Anda.",
+      "invalidLink": "Tautan Tidak Berlaku",
+      "cannotAccept": "Undangan ini tidak dapat diterima",
+      "invalidLinkBody": "Tautan ini tidak valid, sudah kedaluwarsa, atau telah dicabut oleh pemilik proyek. Hubungi pengirim untuk meminta undangan baru.",
+      "successBody": "Anda telah ditambahkan sebagai kolaborator pada proyek berikut."
+    },
+    "publicDeckView": {
+      "incompleteLink": "Tautan Tidak Lengkap",
+      "incompleteLinkBody": "Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.",
+      "deckNotFound": "Deck Tidak Ditemukan",
+      "deckNotFoundBody": "Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya."
+    },
+    "guestProjectView": {
+      "missingTokenBody": "Tautan tidak menyertakan token akses tamu. Mintalah pemilik proyek untuk membagikan ulang tautan undangan Anda.",
+      "accessUnavailable": "Akses Tidak Tersedia",
+      "accessUnavailableBody": "Token akses tidak valid atau sudah kedaluwarsa. Mintalah pemilik proyek untuk mengirim undangan baru.",
+      "searchPlaceholder": "Cari berkas...",
+      "noFilesMatch": "Tidak ada berkas yang cocok",
+      "noAssets": "Belum ada aset media",
+      "tryOtherKeyword": "Coba kata kunci lain atau hapus pencarian.",
+      "noAssetsBody": "Pemilik proyek belum mengunggah berkas apa pun."
+    }
+  },
+  "contexts": {
+    "apiConfig": {
+      "accessDenied": "Akses ditolak — Anda tidak memiliki izin."
+    },
+    "accessibility": {
+      "materaiRequired": "Materai diperlukan untuk transaksi ini",
+      "materaiNotRequired": "Materai tidak diperlukan",
+      "labelClientSelect": "Pilih klien",
+      "labelAmountInput": "Masukkan jumlah",
+      "labelMateraiRequired": "Materai diperlukan",
+      "labelMateraiNotRequired": "Materai tidak diperlukan",
+      "labelSaveButton": "Simpan perubahan",
+      "labelDeleteButton": "Hapus item"
+    }
+  },
+  "services": {
+    "priceInheritanceApi": {
+      "errorLoadSources": "Gagal memuat sumber harga",
+      "errorPriceValidation": "Validasi harga gagal",
+      "errorCreateConfig": "Gagal membuat konfigurasi harga",
+      "errorUpdateConfig": "Gagal memperbarui konfigurasi harga",
+      "errorLoadAnalytics": "Gagal memuat analytics harga",
+      "errorCalculateMaterai": "Gagal menghitung materai",
+      "errorLoadEtiquette": "Gagal memuat panduan etika bisnis",
+      "errorServiceUnavailable": "Service tidak tersedia",
+      "errorBatchValidation": "Validasi batch gagal"
+    },
+    "expenses": {
+      "labelGrossAmount": "Jumlah Bruto",
+      "labelTotalAmount": "Jumlah Total",
+      "labelNetAmount": "Jumlah Netto",
+      "statusCancelled": "Dibatalkan",
+      "paymentStatusUnpaid": "Belum Dibayar"
+    },
+    "invoices": {
+      "statusCancelled": "Dibatalkan"
+    }
+  },
+  "hooks": {
+    "usePermissions": {
+      "roleUnknown": "Tidak Diketahui",
+      "roleDescVideographer": "Akses media-collab saja - upload dan edit aset"
+    },
+    "usePerformanceMonitor": {
+      "suggestTableVirtualization": "Pertimbangkan virtualisasi tabel untuk meningkatkan performa rendering",
+      "suggestDebouncing": "Implementasikan debouncing atau caching untuk pencarian yang lebih cepat",
+      "suggestQueryBatching": "Gunakan query batching atau caching untuk mengurangi API calls",
+      "suggestErrorHandling": "Banyak error terdeteksi, periksa error handling dan validasi input",
+      "suggestMateraiCache": "Cache hasil kalkulasi materai untuk transaksi serupa",
+      "suggestCurrencyMemo": "Optimalisasi formatting mata uang IDR dengan memoization"
+    },
+    "usePriceInheritance": {
+      "errorLoadSources": "Gagal memuat sumber harga",
+      "successSaveConfig": "Konfigurasi harga berhasil disimpan",
+      "errorSaveConfig": "Gagal menyimpan konfigurasi harga",
+      "materaiRequired": "Transaksi dengan nilai {{amount}} IDR memerlukan materai"
+    }
+  },
+  "utils": {
+    "currency": {
+      "errorNotANumber": "Jumlah harus berupa angka yang valid",
+      "errorNegative": "Jumlah tidak boleh negatif",
+      "errorZero": "Jumlah harus lebih besar dari nol",
+      "errorBelowMin": "Jumlah tidak boleh kurang dari {{min}}",
+      "errorAboveMax": "Jumlah tidak boleh lebih dari {{max}}",
+      "warnLargeTransaction": "Transaksi besar - pertimbangkan untuk menggunakan komunikasi formal",
+      "actionDocumentThoroughly": "Dokumentasikan dengan lengkap"
+    },
+    "date": {
+      "daysAgo": "{{count}} hari yang lalu"
+    }
+  },
+  "security": {
+    "securityAudit": {
+      "businessDocumentSecurityDesc": "Proteksi dokumen quotation dan invoice sesuai standar Indonesia",
+      "xssPreventionDesc": "Validasi dan sanitasi input untuk mencegah XSS attacks",
+      "csrfProtectionDesc": "Implementasi CSRF tokens untuk form submission",
+      "xssDescription": "Input form tidak memiliki sanitasi yang memadai terhadap script injection",
+      "xssImpact": "Penyerang dapat menjalankan script berbahaya di browser pengguna",
+      "xssRecommendation": "Implementasikan sanitasi input menggunakan DOMPurify dan validasi server-side",
+      "materaiDescription": "Perhitungan materai tidak sesuai dengan UU No. 13 Tahun 1985",
+      "materaiImpact": "Potensi pelanggaran regulasi Indonesia dan denda pajak",
+      "materaiRecommendation": "Update algoritma materai sesuai dengan tarif terbaru (Rp 10.000 untuk transaksi 5-1M, Rp 20.000 untuk >1M)",
+      "privacyDescription": "Data pribadi disimpan tanpa enkripsi yang memadai",
+      "privacyRecommendation": "Implementasikan enkripsi AES-256 untuk data sensitif seperti NIK, NPWP",
+      "sensitiveDataDescription": "NPWP dan NIK terpapar dalam log atau response API",
+      "sensitiveDataImpact": "Potensi pencurian identitas dan pelanggaran privasi",
+      "sensitiveDataRecommendation": "Masking data sensitif dalam log dan API response, implementasikan field-level encryption",
+      "csrfDescription": "Form tidak memiliki CSRF token yang memadai",
+      "csrfImpact": "Penyerang dapat melakukan aksi tidak sah atas nama pengguna",
+      "docSecurityDescription": "Dokumen quotation dan invoice dapat diakses tanpa otorisasi proper",
+      "docSecurityRecommendation": "Implementasikan access control berbasis role dan audit trail",
+      "noScanMessage": "Belum ada scan yang dilakukan",
+      "noScanDescription": "Klik 'Mulai Scan' untuk memulai audit keamanan",
+      "yes": "Ya",
+      "no": "Tidak"
+    }
+  },
+  "a11y": {
+    "accessibilityTester": {
+      "perceivableContext": "Informasi harus dapat dipersepsikan pengguna Indonesia",
+      "operableContext": "Komponen antarmuka harus dapat dioperasikan",
+      "understandableContext": "Informasi dan operasi UI harus dapat dipahami dalam konteks Indonesia",
+      "robustContext": "Konten harus robust untuk berbagai teknologi assistif",
+      "testFailed": "Pengujian aksesibilitas gagal",
+      "issuesFound": "${issues.length} masalah aksesibilitas ditemukan"
+    },
+    "accessibleForm": {
+      "required": "wajib diisi",
+      "npwpFormat": "Format NPWP harus: XX.XXX.XXX.X-XXX.XXX",
+      "nikFormat": "NIK harus 16 digit angka",
+      "addressInvalid": "Format alamat tidak valid",
+      "invalidFormat": "Format tidak valid",
+      "optionsFound": "${matchingOptions.length} pilihan ditemukan",
+      "minValue": "Nilai minimum adalah {{value}}",
+      "maxValue": "Nilai maksimum adalah {{value}}",
+      "materaiRequired": "Materai diperlukan untuk nilai di atas Rp 5.000.000",
+      "dateSelected": "Tanggal dipilih: {{date}}",
+      "save": "Simpan",
+      "cancel": "Batal"
+    }
+  },
+  "styleGuidePage": {
+    "dueDatePlaceholder": "Tanggal jatuh tempo"
   }
 }

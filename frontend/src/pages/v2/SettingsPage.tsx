@@ -3,6 +3,7 @@ import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -204,17 +205,18 @@ const SectionFooter = ({
 // 01 · Profile section
 // ──────────────────────────────────────────────────────────────
 
-const profileSchema = z.object({
-  name: z.string().min(1, 'Nama wajib diisi').max(120, 'Nama terlalu panjang'),
-  email: z.string().min(1, 'Email wajib diisi').email('Format email tidak valid'),
-  timezone: z.string().min(1, 'Zona waktu wajib dipilih'),
-  language: z.string().min(1, 'Bahasa wajib dipilih'),
+const makeProfileSchema = (t: TFunction) => z.object({
+  name: z.string().min(1, t('settingsPage.profile.nameRequired', 'Nama wajib diisi')).max(120, 'Nama terlalu panjang'),
+  email: z.string().min(1, t('settingsPage.profile.emailRequired', 'Email wajib diisi')).email(t('settingsPage.profile.emailInvalid', 'Format email tidak valid')),
+  timezone: z.string().min(1, t('settingsPage.profile.timezoneRequired', 'Zona waktu wajib dipilih')),
+  language: z.string().min(1, t('settingsPage.profile.languageRequired', 'Bahasa wajib dipilih')),
 });
-type ProfileFormValues = z.infer<typeof profileSchema>;
+type ProfileFormValues = z.infer<ReturnType<typeof makeProfileSchema>>;
 
 const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const profileSchema = useMemo(() => makeProfileSchema(t), [t]);
 
   const {
     register,
@@ -336,25 +338,27 @@ const ProfileSection = ({ data }: { data: UserSettings | undefined }) => {
 // fetched default; it always starts blank.
 // ──────────────────────────────────────────────────────────────
 
-const securitySchema = z
-  .object({
-    currentPassword: z.string().min(1, 'Kata sandi saat ini wajib diisi'),
-    newPassword: z
-      .string()
-      .min(8, 'Kata sandi baru minimal 8 karakter')
-      .refine((v) => /[A-Z]/.test(v), 'Harus mengandung huruf besar')
-      .refine((v) => /[a-z]/.test(v), 'Harus mengandung huruf kecil')
-      .refine((v) => /[0-9]/.test(v), 'Harus mengandung angka'),
-    confirmPassword: z.string().min(1, 'Konfirmasi kata sandi wajib diisi'),
-  })
-  .refine((v) => v.newPassword === v.confirmPassword, {
-    path: ['confirmPassword'],
-    message: 'Konfirmasi kata sandi tidak cocok',
-  });
-type SecurityFormValues = z.infer<typeof securitySchema>;
+const makeSecuritySchema = (t: TFunction) =>
+  z
+    .object({
+      currentPassword: z.string().min(1, t('settingsPage.security.currentPasswordRequired', 'Kata sandi saat ini wajib diisi')),
+      newPassword: z
+        .string()
+        .min(8, 'Kata sandi baru minimal 8 karakter')
+        .refine((v) => /[A-Z]/.test(v), t('settingsPage.security.mustHaveUppercase', 'Harus mengandung huruf besar'))
+        .refine((v) => /[a-z]/.test(v), t('settingsPage.security.mustHaveLowercase', 'Harus mengandung huruf kecil'))
+        .refine((v) => /[0-9]/.test(v), t('settingsPage.security.mustHaveNumber', 'Harus mengandung angka')),
+      confirmPassword: z.string().min(1, t('settingsPage.security.confirmPasswordRequired', 'Konfirmasi kata sandi wajib diisi')),
+    })
+    .refine((v) => v.newPassword === v.confirmPassword, {
+      path: ['confirmPassword'],
+      message: t('settingsPage.security.passwordMismatch', 'Konfirmasi kata sandi tidak cocok'),
+    });
+type SecurityFormValues = z.infer<ReturnType<typeof makeSecuritySchema>>;
 
 const SecuritySection = () => {
   const { t } = useTranslation();
+  const securitySchema = useMemo(() => makeSecuritySchema(t), [t]);
   const {
     register,
     handleSubmit,
@@ -453,15 +457,15 @@ const SecuritySection = () => {
 
 const npwpPattern = /^\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}$/;
 
-const companySchema = z.object({
-  companyName: z.string().min(1, 'Nama perusahaan wajib diisi').max(160),
+const makeCompanySchema = (t: TFunction) => z.object({
+  companyName: z.string().min(1, t('settingsPage.company.companyNameRequired', 'Nama perusahaan wajib diisi')).max(160),
   taxNumber: z
     .string()
-    .min(1, 'NPWP wajib diisi')
-    .refine((v) => npwpPattern.test(v), 'Format NPWP tidak valid (XX.XXX.XXX.X-XXX.XXX)'),
-  address: z.string().min(1, 'Alamat wajib diisi').max(500),
-  phone: z.string().min(1, 'Telepon wajib diisi').max(40),
-  email: z.string().min(1, 'Email wajib diisi').email('Format email tidak valid'),
+    .min(1, t('settingsPage.company.npwpRequired', 'NPWP wajib diisi'))
+    .refine((v) => npwpPattern.test(v), t('settingsPage.company.npwpInvalid', 'Format NPWP tidak valid (XX.XXX.XXX.X-XXX.XXX)')),
+  address: z.string().min(1, t('settingsPage.company.addressRequired', 'Alamat wajib diisi')).max(500),
+  phone: z.string().min(1, t('settingsPage.company.phoneRequired', 'Telepon wajib diisi')).max(40),
+  email: z.string().min(1, t('settingsPage.company.emailRequired', 'Email wajib diisi')).email(t('settingsPage.company.emailInvalid', 'Format email tidak valid')),
   website: z
     .string()
     .optional()
@@ -472,11 +476,12 @@ const companySchema = z.object({
     ),
   currency: z.string().min(1),
 });
-type CompanyFormValues = z.infer<typeof companySchema>;
+type CompanyFormValues = z.infer<ReturnType<typeof makeCompanySchema>>;
 
 const CompanySection = ({ data }: { data: CompanySettings | undefined }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const companySchema = useMemo(() => makeCompanySchema(t), [t]);
 
   const {
     register,
@@ -813,26 +818,27 @@ const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
 // 05 · Invoicing — penomoran, termin, Materai
 // ──────────────────────────────────────────────────────────────
 
-const invoicingSchema = z.object({
-  defaultPaymentTerms: z.string().min(1, 'Termin wajib dipilih'),
+const makeInvoicingSchema = (t: TFunction) => z.object({
+  defaultPaymentTerms: z.string().min(1, t('settingsPage.invoicing.termsRequired', 'Termin wajib dipilih')),
   materaiThreshold: z.coerce
-    .number({ invalid_type_error: 'Harus berupa angka' })
-    .min(0, 'Tidak boleh negatif'),
+    .number({ invalid_type_error: t('settingsPage.invoicing.mustBeNumber', 'Harus berupa angka') })
+    .min(0, t('settingsPage.invoicing.notNegative', 'Tidak boleh negatif')),
   invoicePrefix: z
     .string()
-    .min(1, 'Prefix invoice wajib diisi')
+    .min(1, t('settingsPage.invoicing.invoicePrefixRequired', 'Prefix invoice wajib diisi'))
     .max(10, 'Maks. 10 karakter'),
   quotationPrefix: z
     .string()
-    .min(1, 'Prefix penawaran wajib diisi')
+    .min(1, t('settingsPage.invoicing.quotationPrefixRequired', 'Prefix penawaran wajib diisi'))
     .max(10, 'Maks. 10 karakter'),
   autoMateraiReminder: z.boolean(),
 });
-type InvoicingFormValues = z.infer<typeof invoicingSchema>;
+type InvoicingFormValues = z.infer<ReturnType<typeof makeInvoicingSchema>>;
 
 const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const invoicingSchema = useMemo(() => makeInvoicingSchema(t), [t]);
 
   const {
     register,
@@ -1131,18 +1137,19 @@ const NotificationsSection = ({ data }: { data: UserSettings | undefined }) => {
 // lives here because it's the same mental model: data preservation.
 // ──────────────────────────────────────────────────────────────
 
-const backupSchema = z.object({
+const makeBackupSchema = (t: TFunction) => z.object({
   autoBackup: z.boolean(),
   backupFrequency: z.enum(['daily', 'weekly', 'monthly']),
   backupTime: z
     .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Format waktu harus HH:MM'),
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, t('settingsPage.backup.timeFormatInvalid', 'Format waktu harus HH:MM')),
 });
-type BackupFormValues = z.infer<typeof backupSchema>;
+type BackupFormValues = z.infer<ReturnType<typeof makeBackupSchema>>;
 
 const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const backupSchema = useMemo(() => makeBackupSchema(t), [t]);
 
   const {
     register,

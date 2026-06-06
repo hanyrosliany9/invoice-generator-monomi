@@ -37,12 +37,12 @@ import { cn } from '@/lib/utils';
 
 type BucketKey = 'Current' | '1-30 days' | '31-60 days' | '61-90 days' | 'Over 90 days';
 
-const BUCKETS: { key: BucketKey; label: string; tone: 'neutral' | 'warning' | 'danger' }[] = [
-  { key: 'Current',      label: 'Belum J.T.', tone: 'neutral' },
-  { key: '1-30 days',    label: '1–30',       tone: 'neutral' },
-  { key: '31-60 days',   label: '31–60',      tone: 'warning' },
-  { key: '61-90 days',   label: '61–90',      tone: 'warning' },
-  { key: 'Over 90 days', label: '> 90',       tone: 'danger'  },
+const BUCKETS: { key: BucketKey; labelKey: string; labelDefault: string; tone: 'neutral' | 'warning' | 'danger' }[] = [
+  { key: 'Current',      labelKey: 'accounting.apAging.bucketCurrent', labelDefault: 'Not Due', tone: 'neutral' },
+  { key: '1-30 days',    labelKey: 'accounting.apAging.bucket1to30',   labelDefault: '1–30',   tone: 'neutral' },
+  { key: '31-60 days',   labelKey: 'accounting.apAging.bucket31to60',  labelDefault: '31–60',  tone: 'warning' },
+  { key: '61-90 days',   labelKey: 'accounting.apAging.bucket61to90',  labelDefault: '61–90',  tone: 'warning' },
+  { key: 'Over 90 days', labelKey: 'accounting.apAging.bucketOver90',  labelDefault: '> 90',   tone: 'danger'  },
 ];
 
 const TONE_CLASS: Record<'neutral' | 'warning' | 'danger', string> = {
@@ -100,7 +100,7 @@ export default function APAgingPageV2() {
     const map = new Map<string, CategoryAging>();
     for (const r of rows) {
       const code = r.category?.code ?? '__unknown__';
-      const name = r.category?.nameId || r.category?.name || 'Kategori tidak diketahui';
+      const name = r.category?.nameId || r.category?.name || t('accounting.apAging.unknownCategory', 'Unknown Category');
       const bucket = (r.agingBucket as BucketKey) ?? 'Current';
       const amt = toNumber(r.amount);
       let entry = map.get(code);
@@ -194,7 +194,7 @@ export default function APAgingPageV2() {
                 <MonomiDatePicker
                   value={asOfDate}
                   onChange={(d) => d && setAsOfDate(d)}
-                  placeholder="Per tanggal"
+                  placeholder={t('accounting.apAging.asOfDatePlaceholder', 'As of date')}
                 />
               </div>
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
@@ -218,7 +218,7 @@ export default function APAgingPageV2() {
               : BUCKETS.map((b) => (
                   <StatCard
                     key={b.key}
-                    label={b.label}
+                    label={t(b.labelKey, b.labelDefault)}
                     value={
                       <MoneyDisplay
                         amount={summary[b.key]}
@@ -288,7 +288,7 @@ export default function APAgingPageV2() {
                             : 'text-text-tertiary',
                         )}
                       >
-                        {b.label}
+                        {t(b.labelKey, b.labelDefault)}
                       </th>
                     ))}
                     <th className="text-right text-[10px] uppercase tracking-[0.14em] font-medium text-text-secondary px-4 py-3">

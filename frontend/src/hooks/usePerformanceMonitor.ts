@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Metric, onCLS, onFCP, onFID, onLCP, onTTFB } from 'web-vitals'
 import { now } from '../utils/date'
+import i18n from '@/i18n/config'
 
 export interface PerformanceThresholds {
   // Core Web Vitals (optimized for Indonesian conditions)
@@ -536,7 +537,7 @@ export const usePerformanceMonitor = (
     const slowTableRenders = tableMetrics.filter(m => m.duration > 200)
     if (slowTableRenders.length > 5) {
       suggestions.push(
-        'Pertimbangkan virtualisasi tabel untuk meningkatkan performa rendering'
+        i18n.t('hooks.usePerformanceMonitor.suggestTableVirtualization', 'Consider table virtualization to improve rendering performance')
       )
     }
 
@@ -544,7 +545,7 @@ export const usePerformanceMonitor = (
     const avgSearchTime = getAverageTime('search')
     if (avgSearchTime > 150) {
       suggestions.push(
-        'Implementasikan debouncing atau caching untuk pencarian yang lebih cepat'
+        i18n.t('hooks.usePerformanceMonitor.suggestDebouncing', 'Implement debouncing or caching for faster search responses')
       )
     }
 
@@ -554,7 +555,7 @@ export const usePerformanceMonitor = (
     )
     if (apiMetrics.length > 50) {
       suggestions.push(
-        'Gunakan query batching atau caching untuk mengurangi API calls'
+        i18n.t('hooks.usePerformanceMonitor.suggestQueryBatching', 'Use query batching or caching to reduce API calls')
       )
     }
 
@@ -562,18 +563,18 @@ export const usePerformanceMonitor = (
     const errorMetrics = metrics.filter(m => m.metadata?.['isError'])
     if (errorMetrics.length > 10) {
       suggestions.push(
-        'Banyak error terdeteksi, periksa error handling dan validasi input'
+        i18n.t('hooks.usePerformanceMonitor.suggestErrorHandling', 'Many errors detected — review error handling and input validation')
       )
     }
 
     // Indonesian business specific suggestions
     if (metrics.some(m => m.name.includes('materai') && m.duration > 100)) {
-      suggestions.push('Cache hasil kalkulasi materai untuk transaksi serupa')
+      suggestions.push(i18n.t('hooks.usePerformanceMonitor.suggestMateraiCache', 'Cache materai calculation results for similar transactions'))
     }
 
     if (metrics.some(m => m.name.includes('currency') && m.duration > 50)) {
       suggestions.push(
-        'Optimalisasi formatting mata uang IDR dengan memoization'
+        i18n.t('hooks.usePerformanceMonitor.suggestCurrencyMemo', 'Optimise IDR currency formatting with memoization')
       )
     }
 

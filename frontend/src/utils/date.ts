@@ -1,5 +1,6 @@
 // Date utility functions with synchronized time support
 import { getCurrentDateTime, isDateTimeSynced, formatIndonesianDateTime } from '../services/dateTimeSync'
+import i18n from '@/i18n/config'
 
 /**
  * Get current date/time (synchronized with time server)
@@ -204,5 +205,5 @@ export const getRelativeTime = (date: Date | string): string => {
   if (days === 1) return 'Besok'
   if (days === -1) return 'Kemarin'
   if (days > 0) return `${days} hari lagi`
-  return `${Math.abs(days)} hari yang lalu`
+  return i18n.t('utils.date.daysAgo', '{{count}} days ago', { count: Math.abs(days) })
 }

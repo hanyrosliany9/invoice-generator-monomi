@@ -2,6 +2,7 @@
 // Form integration wrapper for price inheritance with seamless Ant Design Form integration
 
 import React, { useCallback, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Form, FormItemProps } from 'antd'
 import { useWatch } from 'antd/es/form/Form'
 import { MessageInstance } from 'antd/es/message/interface'
@@ -78,6 +79,7 @@ export const PriceInheritanceFormField: React.FC<
   required = true,
   ...formItemProps
 }) => {
+  const { t } = useTranslation()
   const internalForm = Form.useFormInstance()
   const form = externalForm || internalForm
 
@@ -180,7 +182,7 @@ export const PriceInheritanceFormField: React.FC<
     if (required) {
       rules.push({
         required: true,
-        message: 'Jumlah harga harus diisi',
+        message: t('forms.priceInheritanceFormField.amountRequired', 'Jumlah harga harus diisi'),
       })
     }
 
@@ -188,13 +190,13 @@ export const PriceInheritanceFormField: React.FC<
     rules.push({
       type: 'number',
       min: 0,
-      message: 'Jumlah harus lebih besar dari nol',
+      message: t('forms.priceInheritanceFormField.amountMustBePositive', 'Jumlah harus lebih besar dari nol'),
     })
 
     rules.push({
       type: 'number',
       max: 999999999999,
-      message: 'Jumlah terlalu besar',
+      message: t('forms.priceInheritanceFormField.amountTooLarge', 'Jumlah terlalu besar'),
     })
 
     // Indonesian business validation
@@ -206,7 +208,7 @@ export const PriceInheritanceFormField: React.FC<
             !state.validationResult?.materaiCompliance?.required
           ) {
             return Promise.reject(
-              new Error('Materai diperlukan untuk transaksi di atas Rp 5 juta')
+              new Error(t('forms.priceInheritanceFormField.materaiRequired', 'Materai diperlukan untuk transaksi di atas Rp 5 juta'))
             )
           }
           return Promise.resolve()

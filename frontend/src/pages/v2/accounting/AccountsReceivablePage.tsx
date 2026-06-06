@@ -46,12 +46,19 @@ import { cn } from '@/lib/utils';
 /*  them in Bahasa with editorial badge variants.                      */
 /* ------------------------------------------------------------------ */
 
-const BUCKET_ID: Record<string, string> = {
-  'Current':     'Belum Jatuh Tempo',
-  '1-30 days':   '1–30 Hari',
-  '31-60 days':  '31–60 Hari',
-  '61-90 days':  '61–90 Hari',
-  'Over 90 days':'> 90 Hari',
+const BUCKET_ID_KEY: Record<string, string> = {
+  'Current':     'accounting.accountsReceivable.bucketCurrent',
+  '1-30 days':   'accounting.accountsReceivable.bucket1to30',
+  '31-60 days':  'accounting.accountsReceivable.bucket31to60',
+  '61-90 days':  'accounting.accountsReceivable.bucket61to90',
+  'Over 90 days':'accounting.accountsReceivable.bucketOver90',
+};
+const BUCKET_ID_DEFAULT: Record<string, string> = {
+  'Current':     'Not Yet Due',
+  '1-30 days':   '1–30 Days',
+  '31-60 days':  '31–60 Days',
+  '61-90 days':  '61–90 Days',
+  'Over 90 days':'> 90 Days',
 };
 
 const BUCKET_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
@@ -309,8 +316,8 @@ export default function AccountsReceivablePageV2() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('accounting.accountsReceivable.filterAllAging', 'All Ages')}</SelectItem>
-                  {Object.entries(BUCKET_ID).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  {Object.entries(BUCKET_ID_KEY).map(([k, tKey]) => (
+                    <SelectItem key={k} value={k}>{t(tKey, BUCKET_ID_DEFAULT[k])}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -453,7 +460,7 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
               const b = row.original.agingBucket ?? 'Current';
               return (
                 <Badge variant={BUCKET_VARIANT[b] ?? 'secondary'}>
-                  {BUCKET_ID[b] ?? b}
+                  {BUCKET_ID_KEY[b] ? t(BUCKET_ID_KEY[b], BUCKET_ID_DEFAULT[b]) : b}
                 </Badge>
               );
             },

@@ -3,6 +3,7 @@
 
 import dayjs from 'dayjs'
 import DOMPurify from 'dompurify'
+import i18n from '../../../i18n/config'
 import {
   BusinessJourneyEvent,
   BusinessJourneyEventStatus,
@@ -258,13 +259,13 @@ export const generateWhatsAppMessage = (
 
   let message = `Selamat ${getTimeGreeting()},\n\n`
   message += `Bersama ini kami kirimkan ${docTypeIndonesian} ${documentNumber} `
-  message += `dengan nilai ${formattedAmount}.\n\n`
+  message += i18n.t('business.businessJourneyUtils.whatsAppAmountLine', 'dengan nilai {{amount}}.\n\n', { amount: formattedAmount })
 
   if (documentType === 'invoice' && dueDate) {
-    message += `Jatuh tempo pembayaran: ${dayjs(dueDate).format('DD MMMM YYYY')}\n\n`
+    message += i18n.t('business.businessJourneyUtils.whatsAppDueDateLine', 'Jatuh tempo pembayaran: {{date}}\n\n', { date: dayjs(dueDate).format('DD MMMM YYYY') })
   }
 
-  message += `Silakan klik link berikut untuk melihat detail:\n`
+  message += i18n.t('business.businessJourneyUtils.whatsAppViewDetailLine', 'Silakan klik link berikut untuk melihat detail:\n')
   message += `${window.location.origin}/${documentType}s/${documentNumber}\n\n`
   message += `Terima kasih atas kepercayaan Anda.\n\n`
   message += `Hormat kami,\n`

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -23,11 +24,11 @@ const ROLE_LABEL: Record<string, string> = {
   EDITOR:    'Kolaborator',
 };
 
-const ROLE_DESCRIPTION: Record<string, string> = {
-  VIEWER:    'Anda dapat melihat seluruh aset proyek.',
-  COMMENTER: 'Anda dapat melihat dan memberikan umpan balik pada aset.',
-  EDITOR:    'Anda dapat melihat, memberi umpan balik, dan mengubah aset.',
-};
+const getRoleDescription = (t: (key: string, fallback: string) => string): Record<string, string> => ({
+  VIEWER:    t('guest.guestAcceptInvite.roleDescViewer', 'Anda dapat melihat seluruh aset proyek.'),
+  COMMENTER: t('guest.guestAcceptInvite.roleDescCommenter', 'Anda dapat melihat dan memberikan umpan balik pada aset.'),
+  EDITOR:    t('guest.guestAcceptInvite.roleDescEditor', 'Anda dapat melihat, memberi umpan balik, dan mengubah aset.'),
+});
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                                */
@@ -40,9 +41,11 @@ const ROLE_DESCRIPTION: Record<string, string> = {
 /* ------------------------------------------------------------------ */
 
 export const GuestAcceptInvitePage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
+  const ROLE_DESCRIPTION = getRoleDescription(t);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['guest-accept', token],
@@ -87,9 +90,9 @@ export const GuestAcceptInvitePage = () => {
             <StateBlock
               tone="danger"
               icon={<AlertTriangle className="h-5 w-5" />}
-              eyebrow="Tautan Tidak Lengkap"
-              title="Token undangan tidak ditemukan"
-              body="Tautan undangan tampaknya rusak atau tidak lengkap. Silakan minta pengirim untuk membagikan ulang tautan undangan Anda."
+              eyebrow={t('guest.guestAcceptInvite.incompleteLink', 'Tautan Tidak Lengkap')}
+              title={t('guest.guestAcceptInvite.tokenNotFound', 'Token undangan tidak ditemukan')}
+              body={t('guest.guestAcceptInvite.brokenLink', 'Tautan undangan tampaknya rusak atau tidak lengkap. Silakan minta pengirim untuk membagikan ulang tautan undangan Anda.')}
             />
           )}
 
@@ -110,9 +113,9 @@ export const GuestAcceptInvitePage = () => {
             <StateBlock
               tone="danger"
               icon={<AlertTriangle className="h-5 w-5" />}
-              eyebrow="Tautan Tidak Berlaku"
-              title="Undangan ini tidak dapat diterima"
-              body="Tautan ini tidak valid, sudah kedaluwarsa, atau telah dicabut oleh pemilik proyek. Hubungi pengirim untuk meminta undangan baru."
+              eyebrow={t('guest.guestAcceptInvite.invalidLink', 'Tautan Tidak Berlaku')}
+              title={t('guest.guestAcceptInvite.cannotAccept', 'Undangan ini tidak dapat diterima')}
+              body={t('guest.guestAcceptInvite.invalidLinkBody', 'Tautan ini tidak valid, sudah kedaluwarsa, atau telah dicabut oleh pemilik proyek. Hubungi pengirim untuk meminta undangan baru.')}
             />
           )}
 
@@ -124,7 +127,7 @@ export const GuestAcceptInvitePage = () => {
                 icon={<CheckCircle2 className="h-5 w-5" />}
                 eyebrow="Undangan Diterima"
                 title={`Selamat datang, ${invite.guestName ?? 'tamu'}.`}
-                body="Anda telah ditambahkan sebagai kolaborator pada proyek berikut."
+                body={t('guest.guestAcceptInvite.successBody', 'Anda telah ditambahkan sebagai kolaborator pada proyek berikut.')}
               />
 
               {/* Project card — quiet sunken well to separate it from the

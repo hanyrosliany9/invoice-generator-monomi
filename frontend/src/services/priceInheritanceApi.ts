@@ -3,6 +3,7 @@
 
 import { apiClient } from '../config/api'
 import { now } from '../utils/date'
+import i18n from '@/i18n/config'
 import {
   PriceInheritanceConfig,
   PriceInheritanceMode,
@@ -98,7 +99,7 @@ class PriceInheritanceApiService {
       }))
     } catch (error) {
       console.error('Failed to get price sources:', error)
-      throw new Error('Gagal memuat sumber harga')
+      throw new Error(i18n.t('services.priceInheritanceApi.errorLoadSources', 'Failed to load price sources'))
     }
   }
 
@@ -122,7 +123,7 @@ class PriceInheritanceApiService {
       }
     } catch (error) {
       console.error('Price validation failed:', error)
-      throw new Error('Validasi harga gagal')
+      throw new Error(i18n.t('services.priceInheritanceApi.errorPriceValidation', 'Price validation failed'))
     }
   }
 
@@ -150,7 +151,7 @@ class PriceInheritanceApiService {
 
       // Extract error message from response
       const errorMessage =
-        error.response?.data?.message || 'Gagal membuat konfigurasi harga'
+        error.response?.data?.message || i18n.t('services.priceInheritanceApi.errorCreateConfig', 'Failed to create price configuration')
       const validationErrors = error.response?.data?.errors || []
 
       if (validationErrors.length > 0) {
@@ -187,7 +188,7 @@ class PriceInheritanceApiService {
       console.error('Failed to update price inheritance:', error)
 
       const errorMessage =
-        error.response?.data?.message || 'Gagal memperbarui konfigurasi harga'
+        error.response?.data?.message || i18n.t('services.priceInheritanceApi.errorUpdateConfig', 'Failed to update price configuration')
       throw new Error(errorMessage)
     }
   }
@@ -213,7 +214,7 @@ class PriceInheritanceApiService {
       return response.data as PriceInheritanceAnalytics
     } catch (error) {
       console.error('Failed to get price inheritance analytics:', error)
-      throw new Error('Gagal memuat analytics harga')
+      throw new Error(i18n.t('services.priceInheritanceApi.errorLoadAnalytics', 'Failed to load price analytics'))
     }
   }
 
@@ -232,7 +233,7 @@ class PriceInheritanceApiService {
       return response.data as MateraiCalculationResponse
     } catch (error) {
       console.error('Failed to calculate materai:', error)
-      throw new Error('Gagal menghitung materai')
+      throw new Error(i18n.t('services.priceInheritanceApi.errorCalculateMaterai', 'Failed to calculate materai'))
     }
   }
 
@@ -250,7 +251,7 @@ class PriceInheritanceApiService {
       return response.data as BusinessEtiquetteResponse
     } catch (error) {
       console.error('Failed to get business etiquette:', error)
-      throw new Error('Gagal memuat panduan etika bisnis')
+      throw new Error(i18n.t('services.priceInheritanceApi.errorLoadEtiquette', 'Failed to load business etiquette guide'))
     }
   }
 
@@ -273,7 +274,7 @@ class PriceInheritanceApiService {
       return response.data as any
     } catch (error) {
       console.error('Price inheritance service health check failed:', error)
-      throw new Error('Service tidak tersedia')
+      throw new Error(i18n.t('services.priceInheritanceApi.errorServiceUnavailable', 'Service unavailable'))
     }
   }
 
@@ -305,7 +306,7 @@ class PriceInheritanceApiService {
                 id: 'batch-error',
                 type: 'pricing',
                 severity: 'error' as const,
-                message: 'Validasi batch gagal',
+                message: i18n.t('services.priceInheritanceApi.errorBatchValidation', 'Batch validation failed'),
                 isBlocking: true,
               },
             ],
@@ -317,7 +318,7 @@ class PriceInheritanceApiService {
       })
     } catch (error) {
       console.error('Batch validation failed:', error)
-      throw new Error('Validasi batch gagal')
+      throw new Error(i18n.t('services.priceInheritanceApi.errorBatchValidation', 'Batch validation failed'))
     }
   }
 }
