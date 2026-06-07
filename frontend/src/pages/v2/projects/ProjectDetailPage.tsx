@@ -916,23 +916,33 @@ export default function ProjectDetailPageV2() {
         </section>
       ) : null}
 
-      {/* Profitability — gross & net margin bars (backend-tracked) */}
-      {project.profitCalculatedAt || project.grossMarginPercent != null || project.netMarginPercent != null ? (
+      {/* Profitability — projected (from estimated expenses) vs actual margins */}
+      {project.profitCalculatedAt != null ||
+      project.grossMarginPercent != null ||
+      project.netMarginPercent != null ||
+      project.projectedNetMargin != null ||
+      project.projectedGrossMargin != null ? (
         (() => {
+          const pgm = toNumber(project.projectedGrossMargin);
+          const pnm = toNumber(project.projectedNetMargin);
+          const pp = toNumber(project.projectedProfit);
           const gm = toNumber(project.grossMarginPercent);
           const nm = toNumber(project.netMarginPercent);
           const np = toNumber(project.netProfit);
+          const hasProjected =
+            project.projectedNetMargin != null || project.projectedGrossMargin != null;
+          const hasActual = project.profitCalculatedAt != null;
           const toneText = (m: number) =>
             m >= 20 ? 'text-success' : m >= 10 ? 'text-brand-cream' : m >= 0 ? 'text-warning' : 'text-danger';
           const toneBar = (m: number) =>
             m >= 20 ? 'bg-success' : m >= 10 ? 'bg-brand-cream' : m >= 0 ? 'bg-warning' : 'bg-danger';
-          const status =
-            nm >= 20 ? t('projectDetail.profitExcellent', 'Excellent')
-            : nm >= 10 ? t('projectDetail.profitGood', 'Good')
-            : nm >= 0 ? t('projectDetail.profitBreakEven', 'Break-even')
+          const statusOf = (m: number) =>
+            m >= 20 ? t('projectDetail.profitExcellent', 'Excellent')
+            : m >= 10 ? t('projectDetail.profitGood', 'Good')
+            : m >= 0 ? t('projectDetail.profitBreakEven', 'Break-even')
             : t('projectDetail.profitLoss', 'Loss');
           const MarginBar = ({ label, pct }: { label: string; pct: number }) => (
-            <div className="mb-4 last:mb-0">
+            <div className="mb-4">
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary">{label}</span>
                 <span className={cn('text-sm font-medium tabular-nums', toneText(pct))}>{pct.toFixed(1)}%</span>
@@ -942,28 +952,67 @@ export default function ProjectDetailPageV2() {
               </div>
             </div>
           );
+          const Group = ({ eyebrow, g, n, profit, profitLabel }: { eyebrow: string; g: number; n: number; profit: number; profitLabel: string }) => (
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">{eyebrow}</div>
+              <MarginBar label={t('projectDetail.grossMargin', 'Gross Margin')} pct={g} />
+              <MarginBar label={t('projectDetail.netMargin', 'Net Margin')} pct={n} />
+              <div className="mt-1 flex items-baseline justify-between pt-3 border-t border-border-subtle">
+                <span className="text-xs text-text-tertiary">{profitLabel}</span>
+                <span className="text-right">
+                  <MoneyDisplay amount={profit} className={cn('text-base font-display font-semibold', profit >= 0 ? 'text-text-primary' : 'text-danger')} />
+                  <span className={cn('block text-[11px]', toneText(n))}>{statusOf(n)}</span>
+                </span>
+              </div>
+            </div>
+          );
           return (
             <section className="mb-10">
               <GlassPanel surface="glass" padding="lg">
                 <SectionHeader
                   title={t('projectDetail.profitability', 'Profitability')}
-                  sublabel={
-                    project.profitCalculatedAt
-                      ? t('projectDetail.profitStatusSub', 'Revenue vs. cost margins')
-                      : t('projectDetail.profitNotCalc', 'Awaiting invoices/expenses')
-                  }
+                  sublabel={t('projectDetail.profitStatusSub', 'Projected (from estimate) vs. actual margins')}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <MarginBar label={t('projectDetail.grossMargin', 'Gross Margin')} pct={gm} />
-                    <MarginBar label={t('projectDetail.netMargin', 'Net Margin')} pct={nm} />
+                    {hasProjected ? (
+                      <Group
+                        eyebrow={t('projectDetail.profitProjected', 'Projected (from estimate)')}
+                        g={pgm}
+                        n={pnm}
+                        profit={pp}
+                        profitLabel={t('projectDetail.projectedNetProfit', 'Projected Net Profit')}
+                      />
+                    ) : (
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">
+                          {t('projectDetail.profitProjected', 'Projected (from estimate)')}
+                        </div>
+                        <p className="text-xs text-text-tertiary">
+                          {t('projectDetail.noEstimateForProjection', 'Add estimated expenses to the project to see a projected margin.')}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <div className="md:text-right md:pl-6 md:border-l md:border-border-subtle">
-                    <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                      {t('projectDetail.netProfit', 'Net Profit')}
-                    </div>
-                    <MoneyDisplay amount={np} className={cn('text-xl font-display font-semibold', np >= 0 ? 'text-text-primary' : 'text-danger')} />
-                    <div className={cn('mt-1 text-xs', toneText(nm))}>{status}</div>
+                  <div className="md:pl-6 md:border-l md:border-border-subtle">
+                    {hasActual ? (
+                      <Group
+                        eyebrow={t('projectDetail.profitActual', 'Actual (realized)')}
+                        g={gm}
+                        n={nm}
+                        profit={np}
+                        profitLabel={t('projectDetail.netProfit', 'Net Profit')}
+                      />
+                    ) : (
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary mb-3">
+                          {t('projectDetail.profitActual', 'Actual (realized)')}
+                        </div>
+                        <p className="text-xs text-text-tertiary">
+                          {t('projectDetail.profitNotCalc', 'Awaiting invoices/expenses')}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </GlassPanel>

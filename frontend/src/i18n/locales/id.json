@@ -4899,7 +4899,7 @@
     "noCostBudget": "Belum ada estimasi anggaran biaya untuk proyek ini.",
     "setBudget": "Atur Anggaran",
     "profitability": "Profitabilitas",
-    "profitStatusSub": "Margin pendapatan vs. biaya",
+    "profitStatusSub": "Proyeksi (dari estimasi) vs. margin aktual",
     "profitNotCalc": "Menunggu faktur/pengeluaran",
     "grossMargin": "Margin Kotor",
     "netMargin": "Margin Bersih",
@@ -4907,7 +4907,11 @@
     "profitExcellent": "Sangat Baik",
     "profitGood": "Baik",
     "profitBreakEven": "Impas",
-    "profitLoss": "Rugi"
+    "profitLoss": "Rugi",
+    "profitProjected": "Proyeksi (dari estimasi)",
+    "profitActual": "Aktual (terealisasi)",
+    "projectedNetProfit": "Proyeksi Laba Bersih",
+    "noEstimateForProjection": "Tambahkan estimasi biaya pada proyek untuk melihat proyeksi margin."
   },
   "projectForm": {
     "identity": {

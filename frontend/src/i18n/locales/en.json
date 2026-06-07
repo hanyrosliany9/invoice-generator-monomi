@@ -4808,7 +4808,7 @@
     "noCostBudget": "No estimated cost budget set for this project yet.",
     "setBudget": "Set Budget",
     "profitability": "Profitability",
-    "profitStatusSub": "Revenue vs. cost margins",
+    "profitStatusSub": "Projected (from estimate) vs. actual margins",
     "profitNotCalc": "Awaiting invoices/expenses",
     "grossMargin": "Gross Margin",
     "netMargin": "Net Margin",
@@ -4816,7 +4816,11 @@
     "profitExcellent": "Excellent",
     "profitGood": "Good",
     "profitBreakEven": "Break-even",
-    "profitLoss": "Loss"
+    "profitLoss": "Loss",
+    "profitProjected": "Projected (from estimate)",
+    "profitActual": "Actual (realized)",
+    "projectedNetProfit": "Projected Net Profit",
+    "noEstimateForProjection": "Add estimated expenses to the project to see a projected margin."
   },
   "projectForm": {
     "identity": {
