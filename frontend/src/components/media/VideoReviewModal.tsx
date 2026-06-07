@@ -168,7 +168,7 @@ export function VideoReviewModal({
 
     const drawingMarkers: TimelineMarker[] = drawings.map((d) => ({
       id: d.id,
-      timecode: d.frameId ? 0 : 0, // We don't have timecode from drawing directly
+      timecode: d.timecode ?? 0,
       type: 'drawing' as const,
     }));
 

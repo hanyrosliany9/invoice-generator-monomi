@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray } from "class-validator";
+import { IsString, IsNotEmpty, IsOptional, IsArray, IsObject } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreateCollectionDto {
@@ -27,4 +27,12 @@ export class CreateCollectionDto {
   @IsArray()
   @IsString({ each: true })
   assetIds?: string[];
+
+  @ApiPropertyOptional({
+    description: "Smart-collection criteria (auto-membership rules)",
+    example: { minStarRating: 4, status: "APPROVED", mediaType: "IMAGE" },
+  })
+  @IsOptional()
+  @IsObject()
+  filters?: Record<string, unknown>;
 }

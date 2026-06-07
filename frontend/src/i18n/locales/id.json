@@ -6815,7 +6815,8 @@
     "minRatingHint": "Tampilkan semua aset dengan rating ≥ nilai ini.",
     "statusLabel": "Status Aset",
     "unresolvedLabel": "Tampilkan aset yang memiliki komentar frame belum diselesaikan.",
-    "autoUpdateNote": "Koleksi cerdas diperbarui otomatis setiap kali Anda menekan \"Jalankan Kueri\". Kriteria belum disimpan ke server — fitur persistensi sedang dalam pengembangan."
+    "autoUpdateNote": "Koleksi cerdas diperbarui otomatis setiap kali Anda menekan \"Jalankan Kueri\". Kriteria belum disimpan ke server — fitur persistensi sedang dalam pengembangan.",
+    "criteriasSaved": "Kriteria berhasil disimpan."
   },
   "mediaCompare": {
     "title": "Bandingkan Aset",

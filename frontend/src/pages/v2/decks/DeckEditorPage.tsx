@@ -53,9 +53,12 @@ import {
 import { PresentationView } from '@/components/deck/presentation/PresentationView';
 import { useDeckCanvasStore } from '@/stores/deckCanvasStore';
 import { usePresentationStore } from '@/stores/presentationStore';
+import { useCollaborationStore } from '@/stores/collaborationStore';
 import { useDeckKeyboardShortcuts } from '@/hooks/useDeckKeyboardShortcuts';
 import { useSlideTemplates } from '@/hooks/useSlideTemplates';
 import type { SlideTemplateType } from '@/templates/templateTypes';
+import { PresenceIndicator } from '@/components/deck/collaboration/PresenceIndicator';
+import { CollaboratorCursors } from '@/components/deck/collaboration/CollaboratorCursors';
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                           */
@@ -124,6 +127,15 @@ export default function DeckEditorPage() {
   const { canvas } = useDeckCanvasStore();
   const { isPresenting, startPresentation, endPresentation } = usePresentationStore();
   const { applyTemplate } = useSlideTemplates();
+
+  /* ---------- collaboration ---------- */
+  useEffect(() => {
+    if (!id || !user?.id) return;
+    useCollaborationStore.getState().connect(id, user.id);
+    return () => {
+      useCollaborationStore.getState().disconnect();
+    };
+  }, [id, user?.id]);
 
   /* ---------- keyboard shortcuts ---------- */
   const handleSave = useCallback(() => {
@@ -326,6 +338,10 @@ export default function DeckEditorPage() {
 
           {/* Right: actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Presence: show collaborators in the toolbar */}
+            <div className="hidden sm:flex items-center mr-1">
+              <PresenceIndicator />
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -449,7 +465,7 @@ export default function DeckEditorPage() {
             ) : activeSlide ? (
               <>
                 {/* Slide canvas */}
-                <div className="shadow-2xl">
+                <div className="shadow-2xl relative">
                   <CanvasContextMenu canvas={canvas ?? null}>
                     <SlideCanvas
                       slide={activeSlide}
@@ -460,6 +476,8 @@ export default function DeckEditorPage() {
                       onElementCreate={createElement}
                     />
                   </CanvasContextMenu>
+                  {/* Collaborator cursors — pointer-events-none overlay */}
+                  <CollaboratorCursors currentSlideId={activeSlide.id} />
                 </div>
 
                 {/* Slide nav dots */}

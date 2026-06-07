@@ -18,7 +18,7 @@
  *
  * All chrome is pure black + navy ACCENT. No raw hex, no AntD.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -88,6 +88,7 @@ import {
   mediaCollabService,
   type MediaAsset,
   type MediaCollection,
+  type UpdateCollectionDto,
 } from '@/services/media-collab';
 import { useMediaToken } from '@/hooks/useMediaToken';
 import { getProxyUrl } from '@/utils/mediaProxy';
@@ -99,13 +100,10 @@ import { getProxyUrl } from '@/utils/mediaProxy';
 /**
  * Criteria that drive which backend smart-endpoint is called.
  *
- * NOTE: The backend UpdateCollectionDto only persists name/description.
- * The `filters` JSON column exists in the DB schema but the current
- * service layer does not expose it through the PUT endpoint.
- * Criteria are therefore used exclusively to drive which smart query
- * endpoint is called when the user presses "Apply & Run" — the live
- * result set updates the displayed member list for the session.
- * Persistence of criteria is deferred (noted in UI).
+ * Criteria drive which smart endpoint is called when the user presses "Apply & Save".
+ * They are now persisted via the `filters` JSON column on the backend.
+ * On load the criteria controls are initialised from `collection.filters` so
+ * the operator's last saved rules survive a page reload.
  */
 type SmartMode = 'rating' | 'status' | 'unresolved';
 
@@ -213,12 +211,29 @@ export default function CollectionDetailPageV2() {
     enabled: !!collection?.projectId && addOpen,
   });
 
+  // Initialize smart criteria from persisted filters when collection loads
+  useEffect(() => {
+    if (!collection?.filters) return;
+    const f = collection.filters as Record<string, unknown>;
+    setCriteria((prev) => ({
+      mode: (f.mode as SmartMode) ?? prev.mode,
+      minRating: typeof f.minRating === 'number' ? f.minRating : prev.minRating,
+      status: (f.status as MediaAsset['status']) ?? prev.status,
+      hasUnresolved: typeof f.hasUnresolved === 'boolean' ? f.hasUnresolved : prev.hasUnresolved,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collection?.id, collection?.filters]);
+
   /* ----- mutations ----- */
   const updateMutation = useMutation({
-    mutationFn: (data: { name: string; description?: string }) =>
+    mutationFn: (data: UpdateCollectionDto) =>
       mediaCollabService.updateCollection(collectionId!, data),
-    onSuccess: () => {
-      toast.success(t('collections.detail.updated', 'Koleksi berhasil diperbarui.'));
+    onSuccess: (_data, variables) => {
+      if (variables.filters !== undefined) {
+        toast.success(t('smartCollection.criteriasSaved', 'Kriteria berhasil disimpan.'));
+      } else {
+        toast.success(t('collections.detail.updated', 'Koleksi berhasil diperbarui.'));
+      }
       queryClient.invalidateQueries({ queryKey: ['collection', collectionId] });
       queryClient.invalidateQueries({ queryKey: ['media-collections', collection?.projectId] });
       setEditOpen(false);
@@ -302,9 +317,16 @@ export default function CollectionDetailPageV2() {
   );
 
   const handleApplyCriteria = async () => {
-    // Run the smart query so the member list refreshes.
-    // Criteria persistence is deferred (UpdateCollectionDto doesn't expose
-    // the filters JSON column yet).
+    // 1. Persist the criteria to the backend (filters JSON column is now live).
+    updateMutation.mutate({
+      filters: {
+        mode: criteria.mode,
+        minRating: criteria.minRating,
+        status: criteria.status,
+        hasUnresolved: criteria.hasUnresolved,
+      },
+    });
+    // 2. Run the smart query so the member list refreshes immediately.
     await runSmartQuery(criteria);
     setCriteriaOpen(false);
   };
@@ -347,7 +369,7 @@ export default function CollectionDetailPageV2() {
     updateMutation.mutate({
       name: trimmed,
       description: editDescription.trim() || undefined,
-    });
+    } satisfies UpdateCollectionDto);
   };
 
   const handleDelete = () => {
@@ -812,9 +834,8 @@ export default function CollectionDetailPageV2() {
               - rating     → minimum star rating (1-5)
               - status     → asset review status enum
               - unresolved → assets with open frame comments
-            Criteria drive which smart endpoint is called on "Apply & Run".
-            Persistence is deferred — UpdateCollectionDto doesn't expose
-            the filters JSON column yet (noted in UI).
+            Criteria drive which smart endpoint is called on "Apply & Save"
+            and are persisted to the `filters` JSON column on the backend.
            ──────────────────────────────────────────────────────── */}
         <Dialog open={criteriaOpen} onOpenChange={setCriteriaOpen}>
           <DialogContent className="bg-bg-raised border-border-subtle">
@@ -949,7 +970,7 @@ export default function CollectionDetailPageV2() {
               <p className="text-[11px] text-text-tertiary leading-relaxed border-t border-border-subtle pt-3">
                 {t(
                   'smartCollection.autoUpdateNote',
-                  'Koleksi cerdas diperbarui otomatis setiap kali Anda menekan "Jalankan Kueri". Kriteria belum disimpan ke server — fitur persistensi sedang dalam pengembangan.',
+                  'Kriteria disimpan ke server saat Anda menekan "Terapkan & Simpan". Anggota koleksi diperbarui setiap kali Anda menjalankan kueri.',
                 )}
               </p>
             </div>
@@ -965,7 +986,7 @@ export default function CollectionDetailPageV2() {
               >
                 {smartRunning
                   ? t('smartCollection.applying', 'Menjalankan…')
-                  : t('smartCollection.apply', 'Terapkan & Jalankan')}
+                  : t('smartCollection.apply', 'Terapkan & Simpan')}
               </Button>
             </DialogFooter>
           </DialogContent>

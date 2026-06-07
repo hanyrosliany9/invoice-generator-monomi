@@ -6815,7 +6815,8 @@
     "minRatingHint": "Show all assets with rating ≥ this value.",
     "statusLabel": "Asset Status",
     "unresolvedLabel": "Show assets that have unresolved frame comments.",
-    "autoUpdateNote": "Smart collections auto-update each time you press \"Run Query\". Criteria persistence is not yet saved to the server — this feature is under development."
+    "autoUpdateNote": "Smart collections auto-update each time you press \"Run Query\". Criteria persistence is not yet saved to the server — this feature is under development.",
+    "criteriasSaved": "Criteria saved successfully."
   },
   "mediaCompare": {
     "title": "Compare Assets",

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { CreateCollectionDto } from "../dto/create-collection.dto";
 import { UpdateCollectionDto } from "../dto/update-collection.dto";
@@ -50,6 +51,10 @@ export class CollectionsService {
         description: createDto.description,
         projectId,
         createdBy: userId,
+        // Smart-collection criteria (a collection with filters is "smart").
+        ...(createDto.filters !== undefined
+          ? { filters: createDto.filters as Prisma.InputJsonValue }
+          : {}),
       },
     });
 
@@ -135,6 +140,9 @@ export class CollectionsService {
       data: {
         name: updateDto.name,
         description: updateDto.description,
+        ...(updateDto.filters !== undefined
+          ? { filters: updateDto.filters as Prisma.InputJsonValue }
+          : {}),
       },
     });
   }

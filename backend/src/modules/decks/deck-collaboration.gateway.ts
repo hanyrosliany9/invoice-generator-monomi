@@ -21,7 +21,14 @@ interface CollaboratorInfo {
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.SOCKET_IO_CORS_ORIGIN || "http://localhost:3001",
+    // Mirror the app's frontend origin; fall back to reflecting any origin in
+    // dev so the hybrid frontend (:3000 / the dev tunnel) can connect.
+    origin:
+      process.env.SOCKET_IO_CORS_ORIGIN ||
+      process.env.FRONTEND_URL ||
+      process.env.PUBLIC_URL ||
+      true,
+    credentials: true,
   },
   namespace: "/decks",
 })

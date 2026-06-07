@@ -587,7 +587,7 @@ class MediaCollabService {
 
   async updateCollection(
     collectionId: string,
-    data: Partial<CreateCollectionDto>,
+    data: UpdateCollectionDto,
   ): Promise<MediaCollection> {
     const response = await apiClient.put(`/media-collab/collections/${collectionId}`, data);
     return response.data.data;
@@ -647,20 +647,33 @@ class MediaCollabService {
   }
 
   async createDrawing(data: CreateFrameDrawingDto): Promise<MediaFrameDrawing> {
-    const response = await apiClient.post('/media-collab/frames/drawings', data);
-    return response.data.data;
+    // Backend DTO requires { assetId, timecode (int), drawingData (object) }.
+    // Pack the rich frontend fields into drawingData so the canvas round-trips.
+    const payload = {
+      assetId: data.assetId,
+      timecode: Math.round(data.timestamp ?? 0),
+      drawingData: {
+        drawingType: data.drawingType,
+        coordinates: data.coordinates,
+        color: data.color,
+        strokeWidth: data.strokeWidth,
+        text: data.text,
+      },
+    };
+    const response = await apiClient.post('/media-collab/frames/drawings', payload);
+    return mapDrawing(response.data.data);
   }
 
   async getDrawingsByAsset(assetId: string): Promise<MediaFrameDrawing[]> {
     const response = await apiClient.get(`/media-collab/frames/drawings/asset/${assetId}`);
-    return response.data.data;
+    return (response.data.data ?? []).map(mapDrawing);
   }
 
   async getDrawingsAtTimecode(assetId: string, timecode: number): Promise<MediaFrameDrawing[]> {
     const response = await apiClient.get(
       `/media-collab/frames/drawings/timecode/${assetId}/${timecode}`,
     );
-    return response.data.data;
+    return (response.data.data ?? []).map(mapDrawing);
   }
 
   async updateDrawing(drawingId: string, data: UpdateFrameDrawingDto): Promise<MediaFrameDrawing> {
@@ -936,6 +949,8 @@ export interface MediaCollection {
   type: 'MANUAL' | 'SMART';
   isSmartCollection?: boolean;
   criteria?: Record<string, unknown>;
+  /** Persisted filter rules for smart collections (JSON column on the backend). */
+  filters?: Record<string, unknown> | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -948,6 +963,15 @@ export interface CreateCollectionDto {
   name: string;
   type: 'MANUAL' | 'SMART';
   criteria?: Record<string, unknown>;
+  /** Persisted filter rules — backend stores in the `filters` JSON column. */
+  filters?: Record<string, unknown>;
+}
+
+export interface UpdateCollectionDto {
+  name?: string;
+  description?: string;
+  /** Persisted filter rules — backend stores in the `filters` JSON column. */
+  filters?: Record<string, unknown>;
 }
 
 export interface MediaAssetFilters {
@@ -1040,12 +1064,31 @@ export interface MediaFrameDrawing {
   color?: string;
   strokeWidth?: number;
   text?: string;
+  /** Video timecode (seconds) the drawing belongs to (from the parent frame). */
+  timecode?: number;
   createdAt: string;
   updatedAt: string;
-  author: {
+  author?: {
     id: string;
     name: string;
     email: string;
+  };
+}
+
+/**
+ * Map the backend FrameDrawing shape ({ type, data:{...}, frame:{timestamp} })
+ * onto the rich frontend MediaFrameDrawing the canvas expects.
+ */
+function mapDrawing(d: any): MediaFrameDrawing {
+  const data = (d?.data ?? {}) as Record<string, unknown>;
+  return {
+    ...d,
+    drawingType: (data.drawingType as MediaFrameDrawing['drawingType']) ?? d?.type ?? 'FREEHAND',
+    coordinates: (data.coordinates as Record<string, unknown>) ?? data ?? {},
+    color: data.color as string | undefined,
+    strokeWidth: data.strokeWidth as number | undefined,
+    text: data.text as string | undefined,
+    timecode: d?.frame?.timestamp ?? d?.timecode,
   };
 }
 
