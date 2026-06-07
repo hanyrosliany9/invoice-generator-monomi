@@ -25,6 +25,8 @@ import { Combobox } from '@/components/ui/combobox';
 import { clientService } from '@/services/clients';
 import { projectTypesApi, type ProjectType } from '@/services/project-types';
 import { cn } from '@/lib/utils';
+import { ExpenseEstimator } from '@/components/projects/ExpenseEstimator';
+import type { EstimatedExpense } from '@/services/projects';
 
 // ──────────────────────────────────────────────────────────────
 // Schema — shared shape; status is edit-only and optional in base.
@@ -42,6 +44,15 @@ const makeProductItemSchema = (t: (k: string, fb: string) => string) => z.object
   // (sum of prices) must be > 0. Enforce it here so the user gets an inline
   // hint instead of an opaque 400 on save.
   price: z.coerce.number().positive(t('projects.projectForm.validationPricePositive', 'Price must be greater than 0')),
+});
+
+const estimatedExpenseSchema = z.object({
+  categoryId: z.string(),
+  categoryName: z.string().optional(),
+  categoryNameId: z.string().optional(),
+  amount: z.coerce.number().min(0),
+  notes: z.string().optional(),
+  costType: z.enum(['direct', 'indirect']),
 });
 
 const makeProjectFormSchema = (t: (k: string, fb: string) => string) => z
@@ -72,6 +83,9 @@ const makeProjectFormSchema = (t: (k: string, fb: string) => string) => z
     status: z
       .enum(['PLANNING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'])
       .optional(),
+
+    // Estimasi Anggaran Biaya
+    estimatedExpenses: z.array(estimatedExpenseSchema).optional().default([]),
   })
   .refine(
     (v) => !v.startDate || !v.endDate || v.endDate.getTime() >= v.startDate.getTime(),
@@ -92,6 +106,7 @@ export const emptyProjectFormValues: ProjectFormValues = {
   endDate: null,
   products: [{ name: '', description: '', quantity: 1, price: 0 }],
   status: 'PLANNING',
+  estimatedExpenses: [],
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -788,6 +803,37 @@ export const ProjectForm = ({
         <p className="mt-3 text-[11px] text-text-tertiary leading-relaxed">
           {t('projectForm.budgetNote', 'Project budget estimate is calculated from the subtotals above and saved when the project is created.')}
         </p>
+      </GlassPanel>
+
+      {/* ─────────────────────────────────────────────────────
+          05 · Estimasi Anggaran Biaya / Budget Estimate —
+          Optional expense rows broken out by category and
+          direct / indirect cost type. Stored in
+          project.estimatedExpenses (JSON). Separate from the
+          products grid so billable revenue and internal cost
+          estimation don't bleed together.
+      ───────────────────────────────────────────────────── */}
+      <GlassPanel surface="glass" padding="lg">
+        <SectionHeader
+          index={5}
+          title={t('projectForm.estimator.sectionTitle', 'Budget Estimate')}
+          description={t(
+            'projectForm.estimator.sectionDesc',
+            'Estimasi biaya langsung dan tidak langsung sebelum proyek dimulai. Disimpan sebagai referensi internal.',
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="estimatedExpenses"
+          render={({ field }) => (
+            <ExpenseEstimator
+              value={(field.value ?? []) as EstimatedExpense[]}
+              onChange={field.onChange}
+              disabled={isSubmitting}
+            />
+          )}
+        />
       </GlassPanel>
 
       {/* Footer hint + duplicate submit — long forms shouldn't force

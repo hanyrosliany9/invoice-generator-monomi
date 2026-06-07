@@ -4888,7 +4888,16 @@
     "newShotList": "Shot List Baru",
     "newCallSheet": "Call Sheet Baru",
     "newDeck": "Deck Baru",
-    "newContentItem": "Konten Baru"
+    "newContentItem": "Konten Baru",
+    "costBudget": "Anggaran Biaya",
+    "costBudgetSub": "Estimasi biaya vs. pengeluaran aktual",
+    "estimatedCost": "Estimasi",
+    "actualCost": "Aktual",
+    "remainingCost": "Sisa",
+    "budgetUsed": "{{pct}}% anggaran terpakai",
+    "overBudget": "melebihi anggaran",
+    "noCostBudget": "Belum ada estimasi anggaran biaya untuk proyek ini.",
+    "setBudget": "Atur Anggaran"
   },
   "projectForm": {
     "identity": {
@@ -4951,7 +4960,28 @@
     "save": "Simpan",
     "loading": "Memuat...",
     "statusLabel": "Status",
-    "clientSearch": "Cari berdasarkan nama atau perusahaan…"
+    "clientSearch": "Cari berdasarkan nama atau perusahaan…",
+    "estimator": {
+      "sectionTitle": "Estimasi Anggaran Biaya",
+      "sectionDesc": "Estimasi biaya langsung dan tidak langsung sebelum proyek dimulai. Disimpan sebagai referensi internal.",
+      "colCategory": "Kategori Biaya",
+      "colCostType": "Tipe Biaya",
+      "colAmount": "Estimasi Biaya",
+      "colNotes": "Catatan",
+      "categoryPh": "Pilih kategori",
+      "categorySearch": "Cari berdasarkan nama atau kode…",
+      "categoryEmpty": "Kategori tidak ditemukan.",
+      "direct": "Langsung",
+      "indirect": "Tidak Langsung",
+      "notesPh": "Catatan opsional",
+      "removeRow": "Hapus baris",
+      "addRow": "Tambah Baris Biaya",
+      "directTotal": "Langsung",
+      "indirectTotal": "Tidak Langsung",
+      "grandTotal": "Total Estimasi Biaya",
+      "empty": "Belum ada estimasi biaya.",
+      "emptyHint": "Tambah baris di bawah untuk mengisi estimasi biaya langsung dan tidak langsung."
+    }
   },
   "projectCreate": {
     "success": "Proyek \"{{name}}\" berhasil dibuat.",
@@ -6424,7 +6454,10 @@
     "openFull": "Buka formulir lengkap",
     "cancel": "Batal",
     "saving": "Menyimpan...",
-    "save": "Simpan Pengeluaran"
+    "save": "Simpan Pengeluaran",
+    "savedAddAnother": "Pengeluaran {{n}} tersimpan — tambah lagi.",
+    "saveAddAnother": "Simpan & tambah lagi",
+    "saveAddAnotherHint": "Simpan dan biarkan formulir terbuka untuk pengeluaran berikutnya"
   },
   "recordPayment": {
     "title": "Catat Pembayaran",

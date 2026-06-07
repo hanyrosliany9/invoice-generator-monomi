@@ -103,6 +103,10 @@ export default function ProjectCreatePageV2() {
       endDate: values.endDate ? values.endDate.toISOString() : undefined,
       estimatedBudget,
       products,
+      estimatedExpenses:
+        values.estimatedExpenses && values.estimatedExpenses.length > 0
+          ? values.estimatedExpenses
+          : undefined,
     };
     createMutation.mutate(payload);
   };

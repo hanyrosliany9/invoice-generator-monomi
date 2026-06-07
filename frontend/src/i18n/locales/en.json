@@ -4797,7 +4797,16 @@
     "newShotList": "New Shot List",
     "newCallSheet": "New Call Sheet",
     "newDeck": "New Deck",
-    "newContentItem": "New Content Item"
+    "newContentItem": "New Content Item",
+    "costBudget": "Cost Budget",
+    "costBudgetSub": "Estimated cost vs. actual spending",
+    "estimatedCost": "Estimated",
+    "actualCost": "Actual",
+    "remainingCost": "Remaining",
+    "budgetUsed": "{{pct}}% of budget used",
+    "overBudget": "over budget",
+    "noCostBudget": "No estimated cost budget set for this project yet.",
+    "setBudget": "Set Budget"
   },
   "projectForm": {
     "identity": {
@@ -4860,7 +4869,28 @@
     "save": "Save",
     "loading": "Loading...",
     "statusLabel": "Status",
-    "clientSearch": "Search by name or company…"
+    "clientSearch": "Search by name or company…",
+    "estimator": {
+      "sectionTitle": "Budget Estimate",
+      "sectionDesc": "Estimate direct and indirect costs before the project starts. Stored as internal reference.",
+      "colCategory": "Expense Category",
+      "colCostType": "Cost Type",
+      "colAmount": "Estimated Amount",
+      "colNotes": "Notes",
+      "categoryPh": "Select category",
+      "categorySearch": "Search by name or code…",
+      "categoryEmpty": "No categories found.",
+      "direct": "Direct",
+      "indirect": "Indirect",
+      "notesPh": "Optional note",
+      "removeRow": "Remove row",
+      "addRow": "Add Expense Row",
+      "directTotal": "Direct",
+      "indirectTotal": "Indirect",
+      "grandTotal": "Total Cost Estimate",
+      "empty": "No estimated expenses yet.",
+      "emptyHint": "Add rows below to estimate direct and indirect costs."
+    }
   },
   "projectCreate": {
     "success": "Project \"{{name}}\" created successfully.",
@@ -6424,7 +6454,10 @@
     "openFull": "Open full form",
     "cancel": "Cancel",
     "saving": "Saving...",
-    "save": "Save Expense"
+    "save": "Save Expense",
+    "savedAddAnother": "Expense {{n}} saved — add another.",
+    "saveAddAnother": "Save & add another",
+    "saveAddAnotherHint": "Save and keep this form open for the next expense"
   },
   "recordPayment": {
     "title": "Record Payment",

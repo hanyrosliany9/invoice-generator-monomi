@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -45,6 +45,10 @@ export function QuickExpenseSheet({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Remount key to reset the form for the next entry; intent flag set by the
+  // "Save & add another" button before the form submits.
+  const [formKey, setFormKey] = useState(0);
+  const addAnotherRef = useRef(false);
 
   const backTo = `/projects/${projectId}`;
 
@@ -53,6 +57,17 @@ export function QuickExpenseSheet({
     submitted: boolean,
   ) => {
     queryClient.invalidateQueries({ queryKey: ['expenses'] });
+
+    if (addAnotherRef.current) {
+      // Keep the sheet open and reset for rapid multi-expense entry.
+      addAnotherRef.current = false;
+      setFormKey((k) => k + 1);
+      toast.success(
+        t('quickExpense.savedAddAnother', 'Expense {{n}} saved — add another.', { n: created.expenseNumber || '' }),
+      );
+      return;
+    }
+
     onOpenChange(false);
     toast.success(
       submitted
@@ -133,6 +148,7 @@ export function QuickExpenseSheet({
 
         <div className="flex-1 overflow-y-auto p-4">
           <ExpenseForm
+            key={formKey}
             mode="create"
             formId={FORM_ID}
             lockedProjectId={projectId}
@@ -166,8 +182,20 @@ export function QuickExpenseSheet({
             <Button
               type="submit"
               form={FORM_ID}
+              variant="outline"
+              size="sm"
+              disabled={isSubmitting}
+              onClick={() => { addAnotherRef.current = true; }}
+              title={t('quickExpense.saveAddAnotherHint', 'Save and keep this form open for the next expense')}
+            >
+              {t('quickExpense.saveAddAnother', 'Save & add another')}
+            </Button>
+            <Button
+              type="submit"
+              form={FORM_ID}
               disabled={isSubmitting}
               size="sm"
+              onClick={() => { addAnotherRef.current = false; }}
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[110px]"
             >
               {isSubmitting ? (

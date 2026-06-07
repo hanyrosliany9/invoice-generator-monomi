@@ -283,7 +283,14 @@ export default function ProjectDetailPageV2() {
     const budget = toNumber(project?.estimatedBudget);
     const profit = paid - totalExpenses;
     const margin = paid > 0 ? (profit / paid) * 100 : 0;
-    return { invoiced, paid, totalExpenses, budget, profit, margin };
+    // Estimated cost budget = sum of the project's planned (estimated) expenses.
+    const estArr = Array.isArray((project as { estimatedExpenses?: unknown })?.estimatedExpenses)
+      ? ((project as { estimatedExpenses?: Array<{ amount?: number | string }> }).estimatedExpenses ?? [])
+      : [];
+    const estimatedCost = estArr.reduce((acc, e) => acc + toNumber(e?.amount), 0);
+    const costRemaining = estimatedCost - totalExpenses;
+    const costUsedPct = estimatedCost > 0 ? (totalExpenses / estimatedCost) * 100 : 0;
+    return { invoiced, paid, totalExpenses, budget, profit, margin, estimatedCost, costRemaining, costUsedPct };
   }, [project, invoices, expenses]);
 
   /* ---------- loading ---------- */
@@ -839,6 +846,75 @@ export default function ProjectDetailPageV2() {
           )}
         </GlassPanel>
       </section>
+
+      {/* Cost budget — estimated (planned) cost vs actual spending */}
+      {totals.estimatedCost > 0 ? (
+        <section className="mb-10">
+          <GlassPanel surface="glass" padding="lg">
+            <SectionHeader
+              title={t('projectDetail.costBudget', 'Cost Budget')}
+              sublabel={t('projectDetail.costBudgetSub', 'Estimated cost vs. actual spending')}
+            />
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                  {t('projectDetail.estimatedCost', 'Estimated')}
+                </div>
+                <MoneyDisplay amount={totals.estimatedCost} className="text-text-primary" />
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                  {t('projectDetail.actualCost', 'Actual')}
+                </div>
+                <MoneyDisplay amount={totals.totalExpenses} className="text-text-primary" />
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                  {t('projectDetail.remainingCost', 'Remaining')}
+                </div>
+                <MoneyDisplay
+                  amount={totals.costRemaining}
+                  className={totals.costRemaining < 0 ? 'text-danger' : 'text-success'}
+                />
+              </div>
+            </div>
+            <div className="h-2 rounded-full bg-bg-sunken overflow-hidden">
+              <div
+                className={cn(
+                  'h-full transition-all',
+                  totals.costUsedPct > 100 ? 'bg-danger' : totals.costUsedPct > 80 ? 'bg-warning' : 'bg-brand-cream',
+                )}
+                style={{ width: `${Math.min(totals.costUsedPct, 100)}%` }}
+              />
+            </div>
+            <div className="mt-2 text-xs text-text-tertiary">
+              {t('projectDetail.budgetUsed', '{{pct}}% of budget used', { pct: totals.costUsedPct.toFixed(0) })}
+              {totals.costRemaining < 0 && (
+                <span className="text-danger"> · {t('projectDetail.overBudget', 'over budget')}</span>
+              )}
+            </div>
+          </GlassPanel>
+        </section>
+      ) : canAddExpense ? (
+        <section className="mb-10">
+          <GlassPanel surface="subtle" padding="lg">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
+                  {t('projectDetail.costBudget', 'Cost Budget')}
+                </h2>
+                <p className="mt-0.5 text-xs text-text-tertiary">
+                  {t('projectDetail.noCostBudget', 'No estimated cost budget set for this project yet.')}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/projects/${id}/edit`)}>
+                <Plus className="h-4 w-4" />
+                {t('projectDetail.setBudget', 'Set Budget')}
+              </Button>
+            </div>
+          </GlassPanel>
+        </section>
+      ) : null}
 
       {/* Expenses */}
       <section className="mb-10">

@@ -29,6 +29,7 @@ import {
   projectService,
   type ProductItem,
   type UpdateProjectRequest,
+  type EstimatedExpense,
 } from '@/services/projects';
 
 import {
@@ -38,6 +39,31 @@ import {
 } from './ProjectForm';
 
 const FORM_ID = 'project-edit-form';
+
+// Parse estimatedExpenses from the project JSON field — it may be stored
+// as a raw JSON value (string or array) by the backend.
+const parseEstimatedExpenses = (raw: unknown): EstimatedExpense[] => {
+  if (!raw) return [];
+  let data: unknown = raw;
+  if (typeof raw === 'string') {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(data)) return [];
+  return (data as any[])
+    .map((item: any) => ({
+      categoryId: typeof item?.categoryId === 'string' ? item.categoryId : '',
+      categoryName: item?.categoryName ?? '',
+      categoryNameId: item?.categoryNameId ?? '',
+      amount: Number(item?.amount) || 0,
+      notes: item?.notes ?? '',
+      costType: item?.costType === 'indirect' ? ('indirect' as const) : ('direct' as const),
+    }))
+    .filter((e) => e.categoryId);
+};
 
 // Backend stores products under `priceBreakdown.products` as a JSON
 // blob (legacy shape; see classic ProjectEditPage). Decode defensively —
@@ -115,6 +141,8 @@ export default function ProjectEditPageV2() {
         }))
       : emptyProjectFormValues.products;
 
+    const estimatedExpenses = parseEstimatedExpenses(project.estimatedExpenses);
+
     return {
       ...emptyProjectFormValues,
       description: project.description ?? '',
@@ -126,6 +154,7 @@ export default function ProjectEditPageV2() {
       endDate: project.endDate ? new Date(project.endDate) : null,
       status: project.status ?? 'PLANNING',
       products,
+      estimatedExpenses,
     };
   }, [project]);
 
@@ -180,6 +209,7 @@ export default function ProjectEditPageV2() {
       estimatedBudget,
       products,
       status: values.status,
+      estimatedExpenses: values.estimatedExpenses ?? [],
     };
     updateMutation.mutate({ id, data: payload });
   };
