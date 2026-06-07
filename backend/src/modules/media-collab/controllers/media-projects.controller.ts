@@ -89,8 +89,13 @@ export class MediaProjectsController {
   async enablePublicSharing(
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest,
+    @Body() body?: { expiresAt?: string | null },
   ) {
-    return this.mediaProjectsService.enablePublicSharing(id, req.user.id);
+    return this.mediaProjectsService.enablePublicSharing(
+      id,
+      req.user.id,
+      body?.expiresAt,
+    );
   }
 
   @Post(":id/disable-public-sharing")

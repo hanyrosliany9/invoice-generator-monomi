@@ -1344,7 +1344,20 @@
       "performedBy": "Dilakukan Oleh",
       "cost": "Biaya",
       "description": "Deskripsi",
-      "nextDate": "Maintenance Berikutnya"
+      "nextDate": "Maintenance Berikutnya",
+      "dialogTitle": "Catat Perawatan",
+      "dialogDesc": "Catat peristiwa perawatan atau servis untuk aset ini.",
+      "typeLabel": "Jenis Perawatan",
+      "performedDateLabel": "Tanggal Dilaksanakan",
+      "descriptionLabel": "Deskripsi",
+      "descriptionPh": "Apa yang dilakukan? misalnya bersihkan sensor, ganti baterai…",
+      "performedByLabel": "Dilaksanakan Oleh",
+      "performedByPh": "Nama teknisi atau vendor",
+      "costLabel": "Biaya (IDR)",
+      "nextDateLabel": "Tanggal Perawatan Berikutnya",
+      "submitBtn": "Simpan Catatan Perawatan",
+      "success": "Catatan perawatan berhasil disimpan.",
+      "error": "Gagal menyimpan catatan perawatan."
     },
     "messages": {
       "checkOutSuccess": "Aset berhasil di-checkout",
@@ -5875,7 +5888,13 @@
     "accessLevelViewOnly": "Tautan hanya lihat",
     "accessLevelDownload": "Lihat + Unduh",
     "accessLevelComment": "Lihat + Komentar",
-    "accessLevelNote": "Siapa pun dengan tautan ini bisa melihat tanpa masuk."
+    "accessLevelNote": "Siapa pun dengan tautan ini bisa melihat tanpa masuk.",
+    "expiryLabel": "Kedaluwarsa tautan",
+    "expiresOn": "Kedaluwarsa pada",
+    "noExpiry": "Tanpa kedaluwarsa — tautan tetap aktif sampai dinonaktifkan.",
+    "setExpiry": "Atur tanggal kedaluwarsa",
+    "applyExpiry": "Terapkan",
+    "clearExpiry": "Hapus"
   },
   "salaries": {
     "pageTitle": "Gaji Karyawan",
@@ -6078,7 +6097,8 @@
     "error": {
       "title": "Gagal memuat data laporan",
       "description": "Satu atau beberapa sumber data gagal dimuat. Silakan coba lagi."
-    }
+    },
+    "printTitle": "Laporan Bisnis Bulanan"
   },
   "assetDetail": {
     "col": {
@@ -6398,5 +6418,23 @@
     "submit": "Buat Klien",
     "success": "Klien dibuat.",
     "error": "Gagal membuat klien."
+  },
+  "commandPalette": {
+    "title": "Palet Perintah",
+    "placeholder": "Cari atau lompat ke…",
+    "empty": "Tidak ada hasil ditemukan",
+    "groupActions": "Aksi Cepat",
+    "groupClients": "Klien",
+    "groupProjects": "Proyek",
+    "groupQuotations": "Penawaran",
+    "groupInvoices": "Faktur",
+    "groupUsers": "Pengguna",
+    "newQuotation": "Penawaran Baru",
+    "newInvoice": "Faktur Baru",
+    "newClient": "Klien Baru",
+    "newProject": "Proyek Baru",
+    "hintNavigate": "navigasi",
+    "hintSelect": "pilih",
+    "hintClose": "tutup"
   }
 }

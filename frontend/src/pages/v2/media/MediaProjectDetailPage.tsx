@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
+import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { PageContainer } from '@/components/monomi/PageContainer';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -97,6 +98,7 @@ export default function MediaProjectDetailPageV2() {
 
   /* ---------- local ui state ---------- */
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
+  const [shareExpiry, setShareExpiry] = useState<Date | undefined>(undefined);
   const [mediaTypeFilter, setMediaTypeFilter] =
     useState<'all' | 'IMAGE' | 'VIDEO'>('all');
   // Cap how many tiles render at once — a 440-asset project would otherwise
@@ -178,7 +180,8 @@ export default function MediaProjectDetailPageV2() {
   });
 
   const enableShareMutation = useMutation({
-    mutationFn: () => mediaCollabService.enablePublicSharing(projectId!),
+    mutationFn: (expiresAt?: string | null) =>
+      mediaCollabService.enablePublicSharing(projectId!, expiresAt),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['media-project', projectId] });
       toast.success(t('mediaCollab.shareEnabled', 'Tautan publik diaktifkan.'));
@@ -943,7 +946,7 @@ export default function MediaProjectDetailPageV2() {
               ) : (
                 <Button
                   size="sm"
-                  onClick={() => enableShareMutation.mutate()}
+                  onClick={() => enableShareMutation.mutate(shareExpiry ? shareExpiry.toISOString() : undefined)}
                   disabled={enableShareMutation.isPending}
                 >
                   <Globe className="h-3.5 w-3.5" /> {t('mediaCollab.enable', 'Aktifkan')}
@@ -996,10 +999,49 @@ export default function MediaProjectDetailPageV2() {
                   </div>
                 )}
 
-                {/* NOTE: Link expiry is not yet supported by the backend token.
-                    The publicSharedAt field is recorded but there is no expiresAt
-                    on the share token. Expiry date picker is deferred until the
-                    backend adds a tokenExpiresAt field to MediaProject. */}
+                {/* Link expiry */}
+                <div className="rounded-md border border-border-subtle bg-bg-sunken/60 p-3 space-y-2">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
+                    {t('mediaCollab.expiryLabel', 'Link expiry')}
+                  </div>
+                  {project.publicShareExpiresAt ? (
+                    <p className="text-xs text-text-secondary">
+                      {t('mediaCollab.expiresOn', 'Expires on')}{' '}
+                      <DateDisplay date={project.publicShareExpiresAt} className="text-text-primary" />
+                    </p>
+                  ) : (
+                    <p className="text-xs text-text-tertiary">
+                      {t('mediaCollab.noExpiry', 'No expiry — the link stays active until disabled.')}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <MonomiDatePicker
+                      value={shareExpiry}
+                      onChange={(d) => setShareExpiry(d)}
+                      placeholder={t('mediaCollab.setExpiry', 'Set expiry date')}
+                      className="bg-bg-base border-border-subtle text-text-primary"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!shareExpiry || enableShareMutation.isPending}
+                      onClick={() => enableShareMutation.mutate(shareExpiry ? shareExpiry.toISOString() : null)}
+                    >
+                      {t('mediaCollab.applyExpiry', 'Apply')}
+                    </Button>
+                    {project.publicShareExpiresAt && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-text-tertiary hover:text-text-primary"
+                        disabled={enableShareMutation.isPending}
+                        onClick={() => { setShareExpiry(undefined); enableShareMutation.mutate(null); }}
+                      >
+                        {t('mediaCollab.clearExpiry', 'Clear')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>

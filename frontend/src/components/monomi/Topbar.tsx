@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -39,6 +39,19 @@ export const Topbar = ({ left, center, right, className, onMenuClick }: TopbarPr
     </div>
     {center && <div className="flex items-center">{center}</div>}
     <div className="flex items-center gap-3">
+      {/* ⌘K affordance hint — subtle button that reminds users of the
+       * global command palette shortcut. Clicking it fires Ctrl-K so the
+       * palette's own keydown handler picks it up. */}
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))}
+        aria-label="Open command palette (Ctrl+K)"
+        className="hidden sm:flex items-center gap-1.5 rounded-md border border-border-subtle bg-bg-raised/60 px-2.5 py-1 text-xs text-text-tertiary hover:text-text-secondary hover:bg-bg-raised transition-colors"
+      >
+        <Search className="h-3 w-3" />
+        <span className="hidden md:inline">Search…</span>
+        <kbd className="ml-1 font-mono opacity-60">⌘K</kbd>
+      </button>
       {/* Global LanguageSwitcher — appears on every v2 page automatically so
        * we don't have to wire it into 88 page-level topbar props. Persists
        * choice to localStorage via i18next-browser-languagedetector. */}

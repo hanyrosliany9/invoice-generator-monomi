@@ -4016,6 +4016,7 @@ model MediaProject {
   publicShareUrl    String? // Full URL for sharing
   publicViewCount   Int               @default(0) // Track how many times viewed
   publicSharedAt    DateTime? // When sharing was enabled
+  publicShareExpiresAt DateTime? // Optional expiry; after this the public link is rejected
   publicAccessLevel PublicAccessLevel @default(VIEW_ONLY) // Future: allow downloads, comments
 
   // Relations

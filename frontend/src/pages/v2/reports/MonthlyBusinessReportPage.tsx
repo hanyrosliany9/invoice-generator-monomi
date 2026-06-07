@@ -193,7 +193,11 @@ export default function MonthlyBusinessReportPageV2() {
             />
           </GlassPanel>
         ) : (
-          <>
+          <div className="print-region">
+            {/* Print-only heading (the on-screen chrome is hidden when printing) */}
+            <h1 className="hidden print:block text-xl font-semibold mb-4">
+              {t('monthlyReport.printTitle', 'Monthly Business Report')} — {months[month - 1]} {year}
+            </h1>
             {/* Headline KPIs */}
             <section className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <StatCard
@@ -305,7 +309,7 @@ export default function MonthlyBusinessReportPageV2() {
                 />
               </div>
             </GlassPanel>
-          </>
+          </div>
         )}
       </PageContainer>
     </AppShell>

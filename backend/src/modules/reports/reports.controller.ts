@@ -52,21 +52,38 @@ export class ReportsController {
   @Get("clients")
   @ApiOperation({ summary: "Get client analytics" })
   @ApiQuery({ name: "limit", required: false, type: "number" })
-  async getClientAnalytics(@Query("limit") limit?: number) {
-    return this.reportsService.getClientAnalytics(limit);
+  @ApiQuery({ name: "startDate", required: false, type: "string" })
+  @ApiQuery({ name: "endDate", required: false, type: "string" })
+  async getClientAnalytics(
+    @Query("limit") limit?: number,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.reportsService.getClientAnalytics(limit, startDate, endDate);
   }
 
   @Get("projects")
   @ApiOperation({ summary: "Get project analytics" })
   @ApiQuery({ name: "limit", required: false, type: "number" })
-  async getProjectAnalytics(@Query("limit") limit?: number) {
-    return this.reportsService.getProjectAnalytics(limit);
+  @ApiQuery({ name: "startDate", required: false, type: "string" })
+  @ApiQuery({ name: "endDate", required: false, type: "string" })
+  async getProjectAnalytics(
+    @Query("limit") limit?: number,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.reportsService.getProjectAnalytics(limit, startDate, endDate);
   }
 
   @Get("payments")
   @ApiOperation({ summary: "Get payment analytics" })
-  async getPaymentAnalytics() {
-    return this.reportsService.getPaymentAnalytics();
+  @ApiQuery({ name: "startDate", required: false, type: "string" })
+  @ApiQuery({ name: "endDate", required: false, type: "string" })
+  async getPaymentAnalytics(
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.reportsService.getPaymentAnalytics(startDate, endDate);
   }
 
   @Get("overview")

@@ -14,6 +14,7 @@ import { AssetsService } from "./assets.service";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
 import { DisposeAssetDto } from "./dto/dispose-asset.dto";
+import { CreateMaintenanceDto } from "./dto/create-maintenance.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { AssetStatus } from "@prisma/client";
@@ -97,6 +98,14 @@ export class AssetsController {
     @Req() req: any,
   ) {
     return this.assetsService.dispose(id, dto, req.user.id);
+  }
+
+  @Post(":id/maintenance")
+  addMaintenance(
+    @Param("id") id: string,
+    @Body() dto: CreateMaintenanceDto,
+  ) {
+    return this.assetsService.addMaintenance(id, dto);
   }
 
   @Post(":id/reserve")

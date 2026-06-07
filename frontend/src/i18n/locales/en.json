@@ -1636,7 +1636,20 @@
       "performedDate": "Date Performed",
       "schedule": "Maintenance Schedule",
       "title": "Maintenance",
-      "type": "Maintenance Type"
+      "type": "Maintenance Type",
+      "dialogTitle": "Log Maintenance",
+      "dialogDesc": "Record a maintenance or service event for this asset.",
+      "typeLabel": "Maintenance Type",
+      "performedDateLabel": "Date Performed",
+      "descriptionLabel": "Description",
+      "descriptionPh": "What was done? e.g. cleaned sensor, replaced battery…",
+      "performedByLabel": "Performed By",
+      "performedByPh": "Technician or vendor name",
+      "costLabel": "Cost (IDR)",
+      "nextDateLabel": "Next Maintenance Date",
+      "submitBtn": "Save Maintenance Log",
+      "success": "Maintenance record saved.",
+      "error": "Failed to save maintenance record."
     },
     "manufacturer": "Manufacturer",
     "messages": {
@@ -5784,7 +5797,13 @@
     "accessLevelViewOnly": "View-only link",
     "accessLevelDownload": "View + Download",
     "accessLevelComment": "View + Comment",
-    "accessLevelNote": "Anyone with this link can view without signing in."
+    "accessLevelNote": "Anyone with this link can view without signing in.",
+    "expiryLabel": "Link expiry",
+    "expiresOn": "Expires on",
+    "noExpiry": "No expiry — the link stays active until disabled.",
+    "setExpiry": "Set expiry date",
+    "applyExpiry": "Apply",
+    "clearExpiry": "Clear"
   },
   "salaries": {
     "pageTitle": "Staff Salaries",
@@ -5987,7 +6006,8 @@
     "error": {
       "title": "Failed to load report data",
       "description": "One or more data sources could not be fetched. Please try again."
-    }
+    },
+    "printTitle": "Monthly Business Report"
   },
   "assetDetail": {
     "col": {
@@ -6398,5 +6418,23 @@
     "submit": "Create Client",
     "success": "Client created.",
     "error": "Failed to create client."
+  },
+  "commandPalette": {
+    "title": "Command Palette",
+    "placeholder": "Search or jump to…",
+    "empty": "No results found",
+    "groupActions": "Quick Actions",
+    "groupClients": "Clients",
+    "groupProjects": "Projects",
+    "groupQuotations": "Quotations",
+    "groupInvoices": "Invoices",
+    "groupUsers": "Users",
+    "newQuotation": "New Quotation",
+    "newInvoice": "New Invoice",
+    "newClient": "New Client",
+    "newProject": "New Project",
+    "hintNavigate": "navigate",
+    "hintSelect": "select",
+    "hintClose": "close"
   }
 }

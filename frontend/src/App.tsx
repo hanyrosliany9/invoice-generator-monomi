@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { App as AntApp, Layout, Spin } from 'antd'
-import { lazy, Suspense, useEffect, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { Toaster } from 'sonner'
 import { useAuthStore } from './store/auth'
 import { usePermissions } from './hooks/usePermissions'
@@ -9,6 +9,7 @@ import { dateTimeSync } from './services/dateTimeSync'
 import { tokenRefreshService } from './services/token-refresh.service'
 import ErrorBoundary from './components/ErrorBoundary'
 import { scheduleIdlePrefetch } from './lib/routePrefetch'
+import { CommandPalette, useCommandPaletteShortcut } from './components/monomi/CommandPalette'
 
 // v2 is now the entire app. Pages are lazy-loaded for performance.
 const StyleGuidePage = lazy(() =>
@@ -164,6 +165,19 @@ function StripV2Redirect() {
   return <Navigate to={`${target}${location.search}`} replace />
 }
 
+/**
+ * Thin wrapper rendered only when the user is authenticated.
+ * Mounts the global CommandPalette once so it's available on every page
+ * without each page needing to wire it up individually.
+ */
+function AuthenticatedCommandPalette() {
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  useCommandPaletteShortcut(() => setPaletteOpen(true))
+  return (
+    <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+  )
+}
+
 function App() {
   const { isAuthenticated } = useAuthStore()
   const { token: mediaToken, fetchToken } = useMediaTokenStore()
@@ -241,6 +255,8 @@ function App() {
             element={
               isAuthenticated ? (
                 <ErrorBoundary level='page'>
+                  {/* Global command palette — available on every authenticated page */}
+                  <AuthenticatedCommandPalette />
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
                       <Route path='/' element={<RootLanding />} />

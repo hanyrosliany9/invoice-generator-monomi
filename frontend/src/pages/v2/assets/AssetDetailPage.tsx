@@ -41,7 +41,8 @@ import {
 
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
-import { assetService, type Asset, type DepreciationPeriodRow } from '@/services/assets';
+import { assetService, type Asset, type DepreciationPeriodRow, type CreateMaintenanceRequest } from '@/services/assets';
+import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { usersService } from '@/services/users';
 import { projectService } from '@/services/projects';
 
@@ -611,6 +612,248 @@ function ChangeStatusDialog({
 }
 
 /* ------------------------------------------------------------------ */
+/*  LogMaintenanceDialog                                                */
+/* ------------------------------------------------------------------ */
+
+interface LogMaintenanceDialogProps {
+  assetId: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSuccess: () => void;
+}
+
+const MAINTENANCE_TYPES = [
+  'Preventive',
+  'Corrective',
+  'Inspection',
+  'Calibration',
+  'Cleaning',
+  'Repair',
+  'Replacement',
+  'Other',
+] as const;
+
+function LogMaintenanceDialog({
+  assetId,
+  open,
+  onOpenChange,
+  onSuccess,
+}: LogMaintenanceDialogProps) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const [maintenanceType, setMaintenanceType] = useState<string>('Preventive');
+  const [performedDate, setPerformedDate] = useState<Date>(new Date());
+  const [description, setDescription] = useState('');
+  const [performedBy, setPerformedBy] = useState('');
+  const [cost, setCost] = useState('');
+  const [nextMaintenanceDate, setNextMaintenanceDate] = useState<Date | undefined>(undefined);
+
+  // Reset form when dialog opens
+  const [openKey, setOpenKey] = useState<boolean | null>(null);
+  if (open !== openKey) {
+    setOpenKey(open);
+    if (open) {
+      setMaintenanceType('Preventive');
+      setPerformedDate(new Date());
+      setDescription('');
+      setPerformedBy('');
+      setCost('');
+      setNextMaintenanceDate(undefined);
+    }
+  }
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      const payload: CreateMaintenanceRequest = {
+        maintenanceType,
+        performedDate: performedDate.toISOString().slice(0, 10),
+        description: description.trim(),
+        performedBy: performedBy.trim() || undefined,
+        cost: cost ? Number(cost) : undefined,
+        nextMaintenanceDate: nextMaintenanceDate
+          ? nextMaintenanceDate.toISOString().slice(0, 10)
+          : undefined,
+      };
+      return assetService.addMaintenance(assetId, payload);
+    },
+    onSuccess: () => {
+      toast.success(t('assets.maintenance.success', 'Maintenance record saved.'));
+      queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+      onOpenChange(false);
+      onSuccess();
+    },
+    onError: (err: any) => {
+      toast.error(
+        err?.response?.data?.message ??
+          t('assets.maintenance.error', 'Failed to save maintenance record.'),
+      );
+    },
+  });
+
+  const isValid = maintenanceType.trim() !== '' && description.trim() !== '';
+
+  const typeLabels: Record<string, string> = {
+    Preventive: t('assets.maintenance.type.preventive', 'Preventive'),
+    Corrective: t('assets.maintenance.type.corrective', 'Corrective'),
+    Inspection: t('assets.maintenance.type.inspection', 'Inspection'),
+    Calibration: t('assets.maintenance.type.calibration', 'Calibration'),
+    Cleaning: t('assets.maintenance.type.cleaning', 'Cleaning'),
+    Repair: t('assets.maintenance.type.repair', 'Repair'),
+    Replacement: t('assets.maintenance.type.replacement', 'Replacement'),
+    Other: t('assets.maintenance.type.other', 'Other'),
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-bg-raised border-border-subtle sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-text-primary font-display">
+            {t('assets.maintenance.dialogTitle', 'Log Maintenance')}
+          </DialogTitle>
+          <DialogDescription className="text-text-tertiary">
+            {t(
+              'assets.maintenance.dialogDesc',
+              'Record a maintenance or service event for this asset.',
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          {/* Type + Performed Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <DlgLabel htmlFor="lm-type">
+                {t('assets.maintenance.typeLabel', 'Maintenance Type')}
+              </DlgLabel>
+              <Select value={maintenanceType} onValueChange={setMaintenanceType}>
+                <SelectTrigger id="lm-type" className={cn('w-full', dlgInputCls)}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-bg-raised border-border-subtle">
+                  {MAINTENANCE_TYPES.map((mt) => (
+                    <SelectItem key={mt} value={mt}>
+                      {typeLabels[mt] ?? mt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <DlgLabel>
+                {t('assets.maintenance.performedDateLabel', 'Date Performed')}
+              </DlgLabel>
+              <MonomiDatePicker
+                value={performedDate}
+                onChange={(d) => setPerformedDate(d ?? new Date())}
+                className={cn(dlgInputCls)}
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <DlgLabel htmlFor="lm-desc">
+              {t('assets.maintenance.descriptionLabel', 'Description')}
+            </DlgLabel>
+            <Input
+              id="lm-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t(
+                'assets.maintenance.descriptionPh',
+                'What was done? e.g. cleaned sensor, replaced battery…',
+              )}
+              className={dlgInputCls}
+            />
+          </div>
+
+          {/* Performed By + Cost */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <DlgLabel htmlFor="lm-by">
+                {t('assets.maintenance.performedByLabel', 'Performed By')}{' '}
+                <span className="normal-case text-text-tertiary">
+                  ({t('common.optional', 'opsional')})
+                </span>
+              </DlgLabel>
+              <Input
+                id="lm-by"
+                value={performedBy}
+                onChange={(e) => setPerformedBy(e.target.value)}
+                placeholder={t('assets.maintenance.performedByPh', 'Technician or vendor name')}
+                className={dlgInputCls}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <DlgLabel htmlFor="lm-cost">
+                {t('assets.maintenance.costLabel', 'Cost (IDR)')}{' '}
+                <span className="normal-case text-text-tertiary">
+                  ({t('common.optional', 'opsional')})
+                </span>
+              </DlgLabel>
+              <Input
+                id="lm-cost"
+                type="number"
+                min={0}
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                placeholder="0"
+                className={cn(dlgInputCls, 'text-right font-mono tabular-nums')}
+              />
+            </div>
+          </div>
+
+          {/* Next Maintenance Date */}
+          <div className="space-y-1.5">
+            <DlgLabel>
+              {t('assets.maintenance.nextDateLabel', 'Next Maintenance Date')}{' '}
+              <span className="normal-case text-text-tertiary">
+                ({t('common.optional', 'opsional')})
+              </span>
+            </DlgLabel>
+            <MonomiDatePicker
+              value={nextMaintenanceDate}
+              onChange={(d) => setNextMaintenanceDate(d ?? undefined)}
+              className={cn(dlgInputCls)}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={mutation.isPending}
+            className="text-text-secondary hover:text-text-primary"
+          >
+            {t('common.cancel', 'Batal')}
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => mutation.mutate()}
+            disabled={!isValid || mutation.isPending}
+            className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[140px]"
+          >
+            {mutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t('common.saving', 'Menyimpan…')}
+              </>
+            ) : (
+              t('assets.maintenance.submitBtn', 'Save Maintenance Log')
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Shell — hoisted to module scope to prevent focus-loss remounts     */
 /* ------------------------------------------------------------------ */
 
@@ -683,6 +926,7 @@ export default function AssetDetailPageV2() {
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [disposeOpen, setDisposeOpen] = useState(false);
   const [changeStatusOpen, setChangeStatusOpen] = useState(false);
+  const [logMaintenanceOpen, setLogMaintenanceOpen] = useState(false);
 
   const invalidateAsset = () => {
     queryClient.invalidateQueries({ queryKey: ['asset', id] });
@@ -1398,15 +1642,7 @@ export default function AssetDetailPageV2() {
                 size="sm"
                 variant="outline"
                 className="text-text-secondary border-border-subtle hover:text-text-primary"
-                title={t('assets.detail.maintenance.addComingSoon', 'Endpoint POST /assets/:id/maintenance belum tersedia di backend')}
-                onClick={() =>
-                  toast.info(
-                    t(
-                      'assets.detail.maintenance.addNotAvailable',
-                      'Pencatatan perawatan belum tersedia. Gunakan menu Edit untuk memperbarui status aset.',
-                    ),
-                  )
-                }
+                onClick={() => setLogMaintenanceOpen(true)}
               >
                 <Plus className="h-3.5 w-3.5" />
                 {t('assets.detail.maintenance.addBtn', 'Catat Perawatan')}
@@ -1426,14 +1662,7 @@ export default function AssetDetailPageV2() {
                   size="sm"
                   variant="outline"
                   className="text-text-secondary border-border-subtle hover:text-text-primary"
-                  onClick={() =>
-                    toast.info(
-                      t(
-                        'assets.detail.maintenance.addNotAvailable',
-                        'Pencatatan perawatan belum tersedia. Gunakan menu Edit untuk memperbarui status aset.',
-                      ),
-                    )
-                  }
+                  onClick={() => setLogMaintenanceOpen(true)}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   {t('assets.detail.maintenance.addBtn', 'Catat Perawatan')}
@@ -1524,6 +1753,12 @@ export default function AssetDetailPageV2() {
         currentCondition={asset.condition}
         open={changeStatusOpen}
         onOpenChange={setChangeStatusOpen}
+        onSuccess={invalidateAsset}
+      />
+      <LogMaintenanceDialog
+        assetId={id!}
+        open={logMaintenanceOpen}
+        onOpenChange={setLogMaintenanceOpen}
         onSuccess={invalidateAsset}
       />
     </PageShell>

@@ -101,6 +101,7 @@ export interface MediaProject {
   publicShareUrl?: string;
   publicViewCount?: number;
   publicSharedAt?: string;
+  publicShareExpiresAt?: string | null;
   publicAccessLevel?: 'VIEW_ONLY' | 'DOWNLOAD' | 'COMMENT';
   // Relations
   client?: Client;
@@ -741,8 +742,11 @@ class MediaCollabService {
   // PUBLIC SHARING
   // ============================================
 
-  async enablePublicSharing(projectId: string): Promise<MediaProject> {
-    const response = await apiClient.post(`/media-collab/projects/${projectId}/enable-public-sharing`);
+  async enablePublicSharing(projectId: string, expiresAt?: string | null): Promise<MediaProject> {
+    const response = await apiClient.post(
+      `/media-collab/projects/${projectId}/enable-public-sharing`,
+      expiresAt !== undefined ? { expiresAt } : {},
+    );
     return response.data.data;
   }
 

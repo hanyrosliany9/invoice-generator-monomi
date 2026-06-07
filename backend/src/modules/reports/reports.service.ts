@@ -49,12 +49,28 @@ export class ReportsService {
     };
   }
 
-  async getClientAnalytics(limit?: number) {
+  async getClientAnalytics(
+    limit?: number,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    // Build date filter on invoice issue date (creationDate)
+    const dateWhere =
+      startDate || endDate
+        ? {
+            creationDate: {
+              ...(startDate ? { gte: new Date(startDate) } : {}),
+              ...(endDate ? { lte: new Date(endDate) } : {}),
+            },
+          }
+        : {};
+
     // Get top clients by revenue
     const clientRevenue = await this.prisma.invoice.groupBy({
       by: ["clientId"],
       where: {
         status: "PAID",
+        ...dateWhere,
       },
       _sum: {
         totalAmount: true,
@@ -105,12 +121,28 @@ export class ReportsService {
     };
   }
 
-  async getProjectAnalytics(limit?: number) {
+  async getProjectAnalytics(
+    limit?: number,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    // Build date filter on invoice issue date (creationDate)
+    const dateWhere =
+      startDate || endDate
+        ? {
+            creationDate: {
+              ...(startDate ? { gte: new Date(startDate) } : {}),
+              ...(endDate ? { lte: new Date(endDate) } : {}),
+            },
+          }
+        : {};
+
     // Get project revenue
     const projectRevenue = await this.prisma.invoice.groupBy({
       by: ["projectId"],
       where: {
         status: "PAID",
+        ...dateWhere,
       },
       _sum: {
         totalAmount: true,
@@ -177,10 +209,35 @@ export class ReportsService {
     };
   }
 
-  async getPaymentAnalytics() {
-    // Invoice status distribution
+  async getPaymentAnalytics(startDate?: string, endDate?: string) {
+    // Build date filter on payment date (markedPaidAt) for paid invoices,
+    // and on creationDate for the general status distribution.
+    const creationDateWhere =
+      startDate || endDate
+        ? {
+            creationDate: {
+              ...(startDate ? { gte: new Date(startDate) } : {}),
+              ...(endDate ? { lte: new Date(endDate) } : {}),
+            },
+          }
+        : {};
+
+    const paidDateWhere =
+      startDate || endDate
+        ? {
+            markedPaidAt: {
+              ...(startDate ? { gte: new Date(startDate) } : {}),
+              ...(endDate ? { lte: new Date(endDate) } : {}),
+            },
+          }
+        : {};
+
+    // Invoice status distribution (scoped by invoice issue date)
     const invoicesByStatus = await this.prisma.invoice.groupBy({
       by: ["status"],
+      where: {
+        ...creationDateWhere,
+      },
       _count: {
         id: true,
       },
@@ -201,10 +258,11 @@ export class ReportsService {
     const overdueInvoices = await this.prisma.invoice.findMany({
       where: {
         OR: [
-          { status: "OVERDUE" },
+          { status: "OVERDUE", ...creationDateWhere },
           {
             status: "SENT",
             dueDate: { lt: new Date() },
+            ...creationDateWhere,
           },
         ],
       },
@@ -222,10 +280,11 @@ export class ReportsService {
       },
     });
 
-    // Payment trends (paid invoices by month)
+    // Payment trends (paid invoices by month) — scoped by payment date
     const paidInvoices = await this.prisma.invoice.findMany({
       where: {
         status: "PAID",
+        ...paidDateWhere,
       },
       select: {
         totalAmount: true,

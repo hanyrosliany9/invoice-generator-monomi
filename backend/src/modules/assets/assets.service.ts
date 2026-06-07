@@ -13,6 +13,7 @@ import { DepreciationService } from "../accounting/services/depreciation.service
 import { accountForSource } from "../accounting/cash-accounts.util";
 import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
+import { CreateMaintenanceDto } from "./dto/create-maintenance.dto";
 import {
   AssetStatus,
   AssetCondition,
@@ -571,6 +572,30 @@ export class AssetsService {
         },
       }),
     ]);
+  }
+
+  async addMaintenance(assetId: string, dto: CreateMaintenanceDto) {
+    // Verify the asset exists (throws NotFoundException if not found)
+    await this.findOne(assetId);
+
+    const record = await this.prisma.maintenanceRecord.create({
+      data: {
+        assetId,
+        maintenanceType: dto.maintenanceType,
+        performedDate: new Date(dto.performedDate),
+        description: dto.description,
+        performedBy: dto.performedBy,
+        cost: dto.cost !== undefined ? new Prisma.Decimal(dto.cost) : undefined,
+        nextMaintenanceDate: dto.nextMaintenanceDate
+          ? new Date(dto.nextMaintenanceDate)
+          : undefined,
+      },
+    });
+
+    return {
+      ...record,
+      cost: record.cost ? Number(record.cost) : null,
+    };
   }
 
   async getAssetStats() {

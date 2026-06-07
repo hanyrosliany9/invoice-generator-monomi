@@ -78,6 +78,28 @@ export interface Asset {
   maintenanceSchedules?: any[]
 }
 
+export interface CreateMaintenanceRequest {
+  maintenanceType: string
+  performedDate: string   // ISO date string
+  description: string
+  performedBy?: string
+  cost?: number
+  nextMaintenanceDate?: string  // ISO date string
+}
+
+export interface MaintenanceRecord {
+  id: string
+  assetId: string
+  maintenanceType: string
+  performedDate: string
+  performedBy?: string | null
+  cost?: number | null
+  description: string
+  nextMaintenanceDate?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface CreateAssetRequest {
   name: string
   category: string
@@ -187,6 +209,11 @@ export const assetService = {
   getAssetStats: async () => {
     const response = await apiClient.get('/assets/stats')
     return response?.data?.data || {}
+  },
+
+  addMaintenance: async (id: string, data: CreateMaintenanceRequest): Promise<MaintenanceRecord> => {
+    const response = await apiClient.post(`/assets/${id}/maintenance`, data)
+    return response.data.data
   },
 
   /**

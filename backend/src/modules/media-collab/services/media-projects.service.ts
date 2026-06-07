@@ -478,7 +478,11 @@ export class MediaProjectsService {
   /**
    * Enable public sharing for a project
    */
-  async enablePublicSharing(projectId: string, userId: string) {
+  async enablePublicSharing(
+    projectId: string,
+    userId: string,
+    expiresAt?: string | null,
+  ) {
     // Verify user is owner
     const project = await this.prisma.mediaProject.findUnique({
       where: { id: projectId },
@@ -506,6 +510,10 @@ export class MediaProjectsService {
         publicShareToken,
         publicShareUrl,
         publicSharedAt: project.publicSharedAt || new Date(),
+        // `expiresAt` omitted → leave existing; explicit null → clear (never expires).
+        ...(expiresAt !== undefined
+          ? { publicShareExpiresAt: expiresAt ? new Date(expiresAt) : null }
+          : {}),
       },
     });
   }
@@ -581,6 +589,7 @@ export class MediaProjectsService {
         isPublic: true,
         publicAccessLevel: true,
         publicViewCount: true,
+        publicShareExpiresAt: true,
         createdAt: true,
         updatedAt: true,
         // createdBy is kept internally for authorId usage but NOT exposed in the return shape
@@ -609,6 +618,13 @@ export class MediaProjectsService {
       throw new NotFoundException("Public share link not found or disabled");
     }
 
+    if (
+      project.publicShareExpiresAt &&
+      project.publicShareExpiresAt.getTime() < Date.now()
+    ) {
+      throw new NotFoundException("This public share link has expired");
+    }
+
     // Increment view count
     await this.prisma.mediaProject.update({
       where: { id: project.id },
@@ -634,6 +650,13 @@ export class MediaProjectsService {
 
     if (!project || !project.isPublic) {
       throw new NotFoundException("Public share link not found or disabled");
+    }
+
+    if (
+      project.publicShareExpiresAt &&
+      project.publicShareExpiresAt.getTime() < Date.now()
+    ) {
+      throw new NotFoundException("This public share link has expired");
     }
 
     return this.prisma.mediaAsset.findMany({

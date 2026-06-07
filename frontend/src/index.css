@@ -259,3 +259,27 @@ h4 {
 .report-table-no-pagination .ant-pagination {
   display: none !important;
 }
+/* ──────────────────────────────────────────────────────────────
+   Print: isolate a `.print-region` so reports print clean (no app
+   chrome, light background) instead of the dark dashboard shell.
+   ────────────────────────────────────────────────────────────── */
+@media print {
+  body { background: #fff !important; }
+  /* Hide everything, then reveal only the print region + its children. */
+  body * { visibility: hidden !important; }
+  .print-region, .print-region * { visibility: visible !important; }
+  .print-region {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 1rem;
+  }
+  /* Flatten the dark theme to ink-on-paper. */
+  .print-region, .print-region * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: #d4d4d4 !important;
+  }
+}
