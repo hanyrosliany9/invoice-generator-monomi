@@ -173,7 +173,9 @@ export default function ShotListEditorPageV2() {
   // stray implicit form-submit is suppressed.
   const handleRowKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, idx: number) => {
     if (e.key !== 'Enter' || e.shiftKey) return;
-    if ((e.target as HTMLElement).tagName === 'TEXTAREA') return;
+    const tag = (e.target as HTMLElement).tagName;
+    // Textareas keep newlines; buttons keep their own activation.
+    if (tag === 'TEXTAREA' || tag === 'BUTTON') return;
     e.preventDefault();
     if (idx === fields.length - 1) addRow();
     else document.querySelector<HTMLInputElement>(`[data-shot-row="${idx + 1}"]`)?.focus();
@@ -191,7 +193,10 @@ export default function ShotListEditorPageV2() {
      Shot lists are project-scoped, so the natural "back" is the project the
      list belongs to (or an explicit ?from= origin), never the global list. */
   const backProjectId = shotList?.project?.id ?? shotList?.projectId;
-  const backTarget = fromParam || (backProjectId ? `/projects/${backProjectId}` : '/shot-lists');
+  // Only honour an in-app, non-protocol-relative ?from= (guards against
+  // navigate() being pointed off-site via a crafted/bookmarked URL).
+  const safeFrom = fromParam && fromParam.startsWith('/') && !fromParam.startsWith('//') ? fromParam : null;
+  const backTarget = safeFrom || (backProjectId ? `/projects/${backProjectId}` : '/shot-lists');
   const backIsProject = backTarget.startsWith('/projects/');
   const backLabel = backIsProject
     ? t('shotListEditor.backToProject', 'Back to Project')
@@ -235,11 +240,17 @@ export default function ShotListEditorPageV2() {
         await shotListsApi.deleteShot(sid);
       }
 
+      // Order is meaningful PER SCENE (the backend sorts shots within each
+      // scene), so number each scene's shots 0..n-1 by their relative position
+      // rather than using the global flattened index (which would collide
+      // across scenes).
+      const orderByScene: Record<string, number> = {};
       for (let i = 0; i < values.shots.length; i++) {
         const s = values.shots[i];
         // Use the shot's own sceneId (set when the form was populated from the
         // server). New shots with no sceneId fall back to the first scene.
-        const targetSceneId = s.sceneId ?? fallbackSceneId;
+        const targetSceneId = s.sceneId ?? fallbackSceneId!;
+        const order = (orderByScene[targetSceneId] = (orderByScene[targetSceneId] ?? -1) + 1);
         const createPayload = {
           sceneId:        targetSceneId,
           shotNumber:     s.shotNumber,
@@ -247,9 +258,11 @@ export default function ShotListEditorPageV2() {
           shotType:       s.shotType || undefined,
           cameraMovement: s.cameraMovement || undefined,
           camera:         s.camera || undefined,
-          estimatedTime:  s.estimatedTime ?? undefined,
+          // backend validates estimatedTime as an integer; round + drop NaN
+          // (empty number input) so a stray decimal can't 400 the whole batch.
+          estimatedTime:  Number.isFinite(s.estimatedTime) ? Math.round(s.estimatedTime as number) : undefined,
           notes:          s.notes || undefined,
-          order:          i,
+          order,
         };
         if (s.id && originalIds.has(s.id)) {
           // UpdateShotDto omits sceneId (OmitType) — strip it to avoid

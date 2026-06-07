@@ -100,13 +100,18 @@ export class MediaFramesService {
       userId,
     );
 
-    // Create drawing
+    // Create drawing — include frame timestamp + creator so the response
+    // carries the same shape the read endpoints do (timecode + author).
     return this.prisma.frameDrawing.create({
       data: {
         frameId: frame.id,
         type: "FREEHAND", // Default type, can be overridden
         data: createDto.drawingData,
         createdBy: userId,
+      },
+      include: {
+        frame: { select: { timestamp: true } },
+        creator: { select: { id: true, name: true, email: true } },
       },
     });
   }
@@ -209,6 +214,9 @@ export class MediaFramesService {
         frameId: frame.id,
       },
       include: {
+        frame: {
+          select: { timestamp: true },
+        },
         creator: {
           select: { id: true, name: true, email: true },
         },

@@ -1081,6 +1081,9 @@ export interface MediaFrameDrawing {
  */
 function mapDrawing(d: any): MediaFrameDrawing {
   const data = (d?.data ?? {}) as Record<string, unknown>;
+  // frame.timestamp is a Prisma Decimal → serialized as a STRING over JSON, so
+  // coerce to a real number (seek/compare consumers expect a number).
+  const ts = d?.frame?.timestamp ?? d?.timecode;
   return {
     ...d,
     drawingType: (data.drawingType as MediaFrameDrawing['drawingType']) ?? d?.type ?? 'FREEHAND',
@@ -1088,7 +1091,9 @@ function mapDrawing(d: any): MediaFrameDrawing {
     color: data.color as string | undefined,
     strokeWidth: data.strokeWidth as number | undefined,
     text: data.text as string | undefined,
-    timecode: d?.frame?.timestamp ?? d?.timecode,
+    timecode: ts != null ? Number(ts) : undefined,
+    // backend includes the relation as `creator`; the UI expects `author`.
+    author: d?.author ?? d?.creator,
   };
 }
 

@@ -112,6 +112,18 @@ export const useCollaborationStore = create<CollaborationState>((set, get) => ({
       console.log('Disconnected from collaboration server');
     });
 
+    // Seed the existing roster the gateway sends on join, so a late-joiner
+    // sees peers (and their cursors) who were already in the room.
+    socket.on('collaborators:list', (list: Collaborator[]) => {
+      (list ?? []).forEach((collaborator) => {
+        get().addCollaborator({
+          ...collaborator,
+          color: generateUserColor(),
+          lastActive: new Date(),
+        });
+      });
+    });
+
     // Handle collaborator events
     socket.on('collaborator:join', (collaborator: Collaborator) => {
       get().addCollaborator({
