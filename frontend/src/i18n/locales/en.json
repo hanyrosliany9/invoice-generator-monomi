@@ -45,7 +45,8 @@
     "unknownError": "An error occurred",
     "errorOccurred": "An error occurred",
     "close": "Close",
-    "noDescription": "No description"
+    "noDescription": "No description",
+    "confirmDiscard": "You have unsaved changes. Leave without saving?"
   },
   "table": {
     "number": "Number",
@@ -4062,7 +4063,10 @@
     "newShotList": "New Shot List",
     "selectProject": "Select a project",
     "searchProject": "Search by name or number…",
-    "noProjectsFound": "No projects found"
+    "noProjectsFound": "No projects found",
+    "colShots": "Shots",
+    "colScenes": "Scenes",
+    "actionsLabel": "Actions"
   },
   "projectCalendar": {
     "title": "Project Calendar",
@@ -4839,7 +4843,11 @@
     "profitProjected": "Projected (from estimate)",
     "profitActual": "Actual (realized)",
     "projectedNetProfit": "Projected Net Profit",
-    "noEstimateForProjection": "Add estimated expenses to the project to see a projected margin."
+    "noEstimateForProjection": "Add estimated expenses to the project to see a projected margin.",
+    "shotListsSection": "Shot Lists",
+    "noShotLists": "No shot lists yet",
+    "noShotListsDesc": "Plan your shoot by creating a shot list for this project.",
+    "shotCount": "{{count}} shots"
   },
   "projectForm": {
     "identity": {
@@ -5589,7 +5597,7 @@
     "colNotes": "Notes",
     "removeShot": "Remove shot",
     "addShot": "Add Shot",
-    "footnote": "Changes auto-save on blur. Click “Save” to persist identity fields.",
+    "footnote": "Tip: press Enter to add the next shot, use the arrows to reorder, and the copy icon to duplicate a row. Scene grouping (INT/EXT, Day/Night, location), storyboard uploads, and shot status (planned/shot/wrapped) are managed in the classic view.",
     "downloadPdf": "Download PDF",
     "pdfDownloaded": "PDF downloaded",
     "pdfFailed": "Failed to generate PDF",
@@ -5601,7 +5609,13 @@
     "notesPlaceholder": "Crew / props / lens notes",
     "shotNumberPlaceholder": "1A",
     "shotTypePlaceholder": "WS / CU",
-    "title": "Shot List Editor"
+    "title": "Shot List Editor",
+    "backToProject": "Back to Project",
+    "colActions": "Actions",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "duplicateShot": "Duplicate shot",
+    "addShotHint": "Tip: press Enter in a row to add the next shot."
   },
   "callSheetEditor": {
     "openInV1": "Open in v1 (PDF / auto-fill)",

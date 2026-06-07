@@ -77,6 +77,8 @@ export default function ShotListsPageV2() {
   const user = useAuthStore((s) => s.user);
   const [searchParams] = useSearchParams();
   const prefillProjectId = searchParams.get('projectId') ?? '';
+  // Preserve the originating context so the editor can return to it.
+  const fromParam = searchParams.get('from');
 
   const [searchText, setSearchText] = useState('');
   const [projectFilter, setProjectFilter] = useState<string>('all');
@@ -120,7 +122,7 @@ export default function ShotListsPageV2() {
       queryClient.invalidateQueries({ queryKey: ['shot-lists'] });
       toast.success(t('shotLists.createSuccess', 'Shot list created'));
       setCreateOpen(false);
-      navigate(`/shot-lists/${created.id}`);
+      navigate(`/shot-lists/${created.id}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`);
     },
     onError: (err: Error) => {
       toast.error(err.message || t('shotLists.createFailed', 'Failed to create shot list'));
@@ -310,7 +312,7 @@ export default function ShotListsPageV2() {
                   {
                     id: 'shots',
                     accessorFn: (row) => totalShots(row),
-                    header: () => <span className="block text-right">Shot</span>,
+                    header: () => <span className="block text-right">{t('shotLists.colShots', 'Shots')}</span>,
                     cell: ({ row }) => {
                       const n = totalShots(row.original);
                       return (
@@ -323,7 +325,7 @@ export default function ShotListsPageV2() {
                   {
                     id: 'scenes',
                     accessorFn: (row) => row.scenes?.length ?? 0,
-                    header: () => <span className="block text-right">Scene</span>,
+                    header: () => <span className="block text-right">{t('shotLists.colScenes', 'Scenes')}</span>,
                     cell: ({ row }) => {
                       const n = row.original.scenes?.length ?? 0;
                       return (
@@ -344,7 +346,7 @@ export default function ShotListsPageV2() {
                   },
                   {
                     id: 'actions',
-                    header: () => <span className="sr-only">Aksi</span>,
+                    header: () => <span className="sr-only">{t('shotLists.actionsLabel', 'Actions')}</span>,
                     cell: ({ row }) => (
                       <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>

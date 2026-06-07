@@ -45,7 +45,8 @@
     "error": "Terjadi kesalahan",
     "unknownError": "Terjadi suatu kesalahan",
     "errorOccurred": "Terjadi suatu kesalahan",
-    "noDescription": "Tidak ada deskripsi"
+    "noDescription": "Tidak ada deskripsi",
+    "confirmDiscard": "Ada perubahan yang belum disimpan. Tinggalkan tanpa menyimpan?"
   },
   "table": {
     "number": "Nomor",
@@ -4153,7 +4154,10 @@
     "newShotList": "Shot List Baru",
     "selectProject": "Pilih proyek",
     "searchProject": "Cari berdasarkan nama atau nomor…",
-    "noProjectsFound": "Proyek tidak ditemukan"
+    "noProjectsFound": "Proyek tidak ditemukan",
+    "colShots": "Shot",
+    "colScenes": "Scene",
+    "actionsLabel": "Aksi"
   },
   "projectCalendar": {
     "title": "Kalender Proyek",
@@ -4930,7 +4934,11 @@
     "profitProjected": "Proyeksi (dari estimasi)",
     "profitActual": "Aktual (terealisasi)",
     "projectedNetProfit": "Proyeksi Laba Bersih",
-    "noEstimateForProjection": "Tambahkan estimasi biaya pada proyek untuk melihat proyeksi margin."
+    "noEstimateForProjection": "Tambahkan estimasi biaya pada proyek untuk melihat proyeksi margin.",
+    "shotListsSection": "Daftar Shot",
+    "noShotLists": "Belum ada daftar shot",
+    "noShotListsDesc": "Rencanakan pengambilan gambar dengan membuat daftar shot untuk proyek ini.",
+    "shotCount": "{{count}} shot"
   },
   "projectForm": {
     "identity": {
@@ -5680,7 +5688,7 @@
     "colNotes": "Catatan",
     "removeShot": "Hapus shot",
     "addShot": "Tambah Shot",
-    "footnote": "Perubahan tersimpan otomatis saat blur. Klik “Simpan” untuk menyimpan field identitas.",
+    "footnote": "Tips: tekan Enter untuk menambah shot berikutnya, gunakan panah untuk mengurutkan ulang, dan ikon salin untuk menduplikasi baris. Pengelompokan scene (INT/EXT, Siang/Malam, lokasi), unggah storyboard, dan status shot (planned/shot/wrapped) dikelola di tampilan klasik.",
     "downloadPdf": "Unduh PDF",
     "pdfDownloaded": "PDF berhasil diunduh",
     "pdfFailed": "Gagal membuat PDF",
@@ -5692,7 +5700,13 @@
     "notesPlaceholder": "Catatan kru / properti / lensa",
     "shotNumberPlaceholder": "1A",
     "shotTypePlaceholder": "LS / CU",
-    "title": "Editor Shot List"
+    "title": "Editor Shot List",
+    "backToProject": "Kembali ke Proyek",
+    "colActions": "Aksi",
+    "moveUp": "Naik",
+    "moveDown": "Turun",
+    "duplicateShot": "Duplikat shot",
+    "addShotHint": "Tips: tekan Enter di baris untuk menambah shot berikutnya."
   },
   "callSheetEditor": {
     "openInV1": "Buka di v1 (PDF / auto-fill)",

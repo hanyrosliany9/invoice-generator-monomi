@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm, type SubmitHandler } from 'react-hook-form';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
-  ArrowLeft, Plus, Save, Trash2, Loader2, Film, Download,
+  ArrowLeft, Plus, Save, Trash2, Loader2, Film, Download, Copy, ChevronUp, ChevronDown,
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
@@ -114,7 +114,7 @@ export default function ShotListEditorPageV2() {
   }, [shotList]);
 
   const {
-    register, handleSubmit, control, reset, formState: { errors, isDirty, isSubmitting },
+    register, handleSubmit, control, reset, getValues, formState: { errors, isDirty, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
@@ -123,7 +123,82 @@ export default function ShotListEditorPageV2() {
 
   useEffect(() => { reset(defaultValues); }, [defaultValues, reset]);
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'shots' });
+  const { fields, append, remove, insert, move } = useFieldArray({ control, name: 'shots' });
+
+  /* ---------- row helpers: add / duplicate / reorder ----------
+     Save is a batch diff that writes `order: i` from the array position, so
+     reorder + duplicate are pure client-side field-array ops — no extra API
+     round-trips, persisted on the next Save. */
+  const [searchParams] = useSearchParams();
+  const fromParam = searchParams.get('from');
+
+  // After adding/duplicating a row, focus its shot-number input.
+  const focusRowRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (focusRowRef.current === null) return;
+    const el = document.querySelector<HTMLInputElement>(`[data-shot-row="${focusRowRef.current}"]`);
+    el?.focus();
+    focusRowRef.current = null;
+  }, [fields.length]);
+
+  const addRow = () => {
+    focusRowRef.current = fields.length; // index of the row about to be appended
+    append({
+      id:             undefined,
+      sceneId:        undefined, // new shots fall back to fallbackSceneId on save
+      shotNumber:     String(fields.length + 1),
+      description:    '',
+      shotType:       '',
+      cameraMovement: '',
+      camera:         '',
+      estimatedTime:  undefined,
+      notes:          '',
+    });
+  };
+
+  const duplicateRow = (idx: number) => {
+    const row = getValues(`shots.${idx}`);
+    insert(idx + 1, { ...row, id: undefined }); // copy persisted as a new shot on save
+    focusRowRef.current = idx + 1;
+  };
+
+  const moveRow = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= fields.length) return;
+    move(idx, target);
+  };
+
+  // Enter advances to the next row (or appends one from the last row) for fast
+  // keyboard entry; textareas keep their normal newline behaviour, and the
+  // stray implicit form-submit is suppressed.
+  const handleRowKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, idx: number) => {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    if ((e.target as HTMLElement).tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    if (idx === fields.length - 1) addRow();
+    else document.querySelector<HTMLInputElement>(`[data-shot-row="${idx + 1}"]`)?.focus();
+  };
+
+  /* ---------- unsaved-changes guard ---------- */
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
+  /* ---------- back navigation: prefer the originating project ----------
+     Shot lists are project-scoped, so the natural "back" is the project the
+     list belongs to (or an explicit ?from= origin), never the global list. */
+  const backProjectId = shotList?.project?.id ?? shotList?.projectId;
+  const backTarget = fromParam || (backProjectId ? `/projects/${backProjectId}` : '/shot-lists');
+  const backIsProject = backTarget.startsWith('/projects/');
+  const backLabel = backIsProject
+    ? t('shotListEditor.backToProject', 'Back to Project')
+    : t('shotListEditor.backToShotLists', 'Back to Shot Lists');
+  const confirmLeave = () =>
+    !isDirty || window.confirm(t('common.confirmDiscard', 'You have unsaved changes. Leave without saving?'));
+  const handleBack = () => { if (confirmLeave()) navigate(backTarget); };
 
   /* ---------- save ---------- */
   const saveMutation = useMutation({
@@ -250,9 +325,9 @@ export default function ShotListEditorPageV2() {
             }
             action={
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate('/shot-lists')}>
+                <Button variant="outline" size="sm" onClick={handleBack}>
                   <ArrowLeft className="h-4 w-4" />
-                  {t('shotListEditor.backToShotLists', 'Back to Shot Lists')}
+                  {backLabel}
                 </Button>
                 <Button size="sm" onClick={() => refetch()}>{t('shotLists.retry', 'Try Again')}</Button>
               </div>
@@ -271,13 +346,14 @@ export default function ShotListEditorPageV2() {
     <Shell user={user}>
       <PageContainer>
         <div className="mb-4">
-          <Link
-            to="/shot-lists"
+          <button
+            type="button"
+            onClick={handleBack}
             className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            {t('shotListEditor.backToShotLists', 'Back to Shot Lists')}
-          </Link>
+            {backLabel}
+          </button>
         </div>
 
         <PageHeader
@@ -359,25 +435,27 @@ export default function ShotListEditorPageV2() {
             ) : (
               <>
                 {/* Header — desktop only */}
-                <div className="hidden lg:grid grid-cols-[60px_1fr_100px_140px_90px_1fr_32px] gap-3 px-1 pb-2 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
+                <div className="hidden lg:grid grid-cols-[60px_1fr_100px_140px_90px_1fr_132px] gap-3 px-1 pb-2 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
                   <div>{t('shotListEditor.colNumber', '#')}</div>
                   <div>{t('shotListEditor.colDescription', 'Description')}</div>
                   <div>{t('shotListEditor.colType', 'Type')}</div>
                   <div>{t('shotListEditor.colCameraMove', 'Camera / Move')}</div>
                   <div className="text-right">{t('shotListEditor.colDuration', 'Duration')}</div>
                   <div>{t('shotListEditor.colNotes', 'Notes')}</div>
-                  <div />
+                  <div className="text-right">{t('shotListEditor.colActions', 'Actions')}</div>
                 </div>
 
                 <div className="divide-y divide-border-subtle">
                   {fields.map((field, idx) => (
                     <div
                       key={field.id}
-                      className="grid grid-cols-1 lg:grid-cols-[60px_1fr_100px_140px_90px_1fr_32px] gap-3 py-3 items-start"
+                      onKeyDown={(e) => handleRowKeyDown(e, idx)}
+                      className="grid grid-cols-1 lg:grid-cols-[60px_1fr_100px_140px_90px_1fr_132px] gap-3 py-3 items-start"
                     >
                       {/* shot number */}
                       <div className="space-y-1">
                         <Input
+                          data-shot-row={idx}
                           placeholder={t('shotListEditor.shotNumberPlaceholder', '1A')}
                           {...register(`shots.${idx}.shotNumber` as const)}
                           className="bg-bg-sunken border-border-subtle text-text-primary text-sm font-mono tabular-nums"
@@ -441,8 +519,40 @@ export default function ShotListEditorPageV2() {
                         />
                       </div>
 
-                      {/* remove */}
-                      <div className="flex items-center justify-end pt-1">
+                      {/* row actions: reorder / duplicate / remove */}
+                      <div className="flex items-center justify-end gap-0.5 pt-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => moveRow(idx, -1)}
+                          disabled={idx === 0}
+                          className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
+                          aria-label={t('shotListEditor.moveUp', 'Move up')}
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => moveRow(idx, 1)}
+                          disabled={idx === fields.length - 1}
+                          className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
+                          aria-label={t('shotListEditor.moveDown', 'Move down')}
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => duplicateRow(idx)}
+                          className="text-text-tertiary hover:text-text-primary"
+                          aria-label={t('shotListEditor.duplicateShot', 'Duplicate shot')}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
                         <Button
                           type="button"
                           variant="ghost"
@@ -465,24 +575,15 @@ export default function ShotListEditorPageV2() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  append({
-                    id:             undefined,
-                    sceneId:        undefined, // new shots fall back to fallbackSceneId on save
-                    shotNumber:     String(fields.length + 1),
-                    description:    '',
-                    shotType:       '',
-                    cameraMovement: '',
-                    camera:         '',
-                    estimatedTime:  undefined,
-                    notes:          '',
-                  })
-                }
+                onClick={addRow}
                 className="border-border-subtle text-text-secondary hover:text-text-primary"
               >
                 <Plus className="h-3.5 w-3.5" />
                 {t('shotListEditor.addShot', 'Add Shot')}
               </Button>
+              <span className="ml-3 text-[11px] text-text-tertiary">
+                {t('shotListEditor.addShotHint', 'Tip: press Enter in a row to add the next shot.')}
+              </span>
             </div>
           </FormSection>
 
@@ -513,7 +614,7 @@ export default function ShotListEditorPageV2() {
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={() => navigate('/shot-lists')}
+                  onClick={handleBack}
                   disabled={isPending}
                   className="text-text-secondary hover:text-text-primary"
                 >
@@ -543,7 +644,7 @@ export default function ShotListEditorPageV2() {
 
         {/* Deferred-feature callout — keeps expectations honest. */}
         <p className="mt-6 text-[11px] text-text-tertiary leading-relaxed">
-          {t('shotListEditor.footnote', 'Note: Scene grouping (INT/EXT, Day/Night, location), storyboard uploads, shot status (planned/shot/wrapped), and drag-to-reorder are still available in the classic view. The v2 view focuses on structured shot CRUD in a single scene. Use the Download PDF button above to export this shot list.')}
+          {t('shotListEditor.footnote', 'Tip: press Enter to add the next shot, use the arrows to reorder, and the copy icon to duplicate a row. Scene grouping (INT/EXT, Day/Night, location), storyboard uploads, and shot status (planned/shot/wrapped) are managed in the classic view.')}
         </p>
       </PageContainer>
     </Shell>
