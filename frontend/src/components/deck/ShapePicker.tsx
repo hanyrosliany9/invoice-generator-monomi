@@ -16,6 +16,23 @@ interface ShapePickerProps {
   disabled?: boolean;
 }
 
+// Map shape picker ids to the `shapeType` understood by the element
+// (de)serializer in deckCanvasUtils so shapes round-trip through the DB.
+const SHAPE_ID_TO_TYPE: Record<string, string> = {
+  rect: 'RECT',
+  circle: 'CIRCLE',
+  triangle: 'TRIANGLE',
+  ellipse: 'ELLIPSE',
+  line: 'LINE',
+  star: 'STAR',
+  arrow: 'ARROW',
+  'double-arrow': 'ARROW',
+  'callout-rect': 'CALLOUT',
+  'callout-cloud': 'CALLOUT',
+  diamond: 'TRIANGLE',
+  parallelogram: 'RECT',
+};
+
 const categoryIcons: Record<ShapeCategory, React.ReactNode> = {
   basic: <BorderOutlined />,
   arrows: <RightOutlined />,
@@ -43,7 +60,10 @@ export default function ShapePicker({ canvas, onShapeAdd, disabled }: ShapePicke
     });
 
     obj.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-    obj.set('elementType', 'shape');
+    // Uppercase 'SHAPE' so fabricObjectToElement serializes it; shapeType drives
+    // how elementToFabricObject reconstructs it on reload.
+    obj.set('elementType', 'SHAPE');
+    obj.set('shapeType', SHAPE_ID_TO_TYPE[shapeId] || 'RECT');
     obj.set('shapeId', shapeId);
 
     canvas.add(obj);

@@ -7,6 +7,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { MediaService } from "../../media/media.service";
 import { CreateElementDto } from "../dto/create-element.dto";
 import { UpdateElementDto } from "../dto/update-element.dto";
+import { BulkSaveElementsDto } from "../dto/bulk-save-elements.dto";
 
 @Injectable()
 export class DeckElementsService {
@@ -38,6 +39,50 @@ export class DeckElementsService {
         isLocked: dto.isLocked ?? false,
       },
     });
+  }
+
+  /**
+   * Atomically replace ALL elements for a slide. Deletes the slide's existing
+   * elements and re-creates the incoming desired set in one transaction,
+   * assigning zIndex by array order. Returns the slide with its new elements.
+   */
+  async bulkReplaceForSlide(
+    slideId: string,
+    userId: string,
+    dto: BulkSaveElementsDto,
+  ) {
+    await this.verifySlideAccess(slideId, userId, ["OWNER", "EDITOR"]);
+
+    const elements = dto.elements ?? [];
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.deckSlideElement.deleteMany({ where: { slideId } });
+
+        if (elements.length > 0) {
+          await tx.deckSlideElement.createMany({
+            data: elements.map((el, idx) => ({
+              slideId,
+              type: el.type,
+              x: el.x ?? 0,
+              y: el.y ?? 0,
+              width: el.width ?? 100,
+              height: el.height ?? 100,
+              rotation: el.rotation ?? 0,
+              zIndex: el.zIndex ?? idx,
+              content: el.content ?? {},
+              isLocked: el.isLocked ?? false,
+            })),
+          });
+        }
+
+        return tx.deckSlide.findUnique({
+          where: { id: slideId },
+          include: { elements: { orderBy: { zIndex: "asc" } } },
+        });
+      },
+      { timeout: 20000 },
+    );
   }
 
   async update(elementId: string, userId: string, dto: UpdateElementDto) {

@@ -18,7 +18,7 @@
  *
  * All chrome is pure black + navy ACCENT. No raw hex, no AntD.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -166,6 +166,9 @@ export default function CollectionDetailPageV2() {
   const [editDescription, setEditDescription] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [selectedAddIds, setSelectedAddIds] = useState<string[]>([]);
+  // Styled confirm dialogs (replace native window.confirm for destructive ops).
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [removeAsset, setRemoveAsset] = useState<MediaAsset | null>(null);
 
   // Smart-collection criteria editor
   const [criteriaOpen, setCriteriaOpen] = useState(false);
@@ -316,6 +319,27 @@ export default function CollectionDetailPageV2() {
     [collection?.projectId, t],
   );
 
+  // Auto-run the saved smart query once on mount when persisted filters exist,
+  // so smart collections show their members immediately instead of an empty
+  // "click Run" callout. Keyed by collection id so switching collections re-runs.
+  const autoRanRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!collection?.id) return;
+    const smart = !!collection.isSmartCollection || collection.type === 'SMART';
+    if (!smart) return;
+    if (!collection.filters) return; // nothing saved yet — leave the callout
+    if (autoRanRef.current === collection.id) return;
+    autoRanRef.current = collection.id;
+    const f = collection.filters as Record<string, unknown>;
+    runSmartQuery({
+      mode: (f.mode as SmartMode) ?? DEFAULT_CRITERIA.mode,
+      minRating: typeof f.minRating === 'number' ? f.minRating : DEFAULT_CRITERIA.minRating,
+      status: (f.status as MediaAsset['status']) ?? DEFAULT_CRITERIA.status,
+      hasUnresolved:
+        typeof f.hasUnresolved === 'boolean' ? f.hasUnresolved : DEFAULT_CRITERIA.hasUnresolved,
+    });
+  }, [collection?.id, collection?.filters, collection?.isSmartCollection, collection?.type, runSmartQuery]);
+
   const handleApplyCriteria = async () => {
     // 1. Persist the criteria to the backend (filters JSON column is now live).
     updateMutation.mutate({
@@ -374,25 +398,11 @@ export default function CollectionDetailPageV2() {
 
   const handleDelete = () => {
     if (!collection) return;
-    const ok = window.confirm(
-      t(
-        'collections.detail.confirmDelete',
-        'Hapus koleksi "{{name}}"? Tindakan ini tidak bisa dibatalkan.',
-        { name: collection.name },
-      ),
-    );
-    if (ok) deleteMutation.mutate();
+    setDeleteOpen(true);
   };
 
   const handleRemoveAsset = (asset: MediaAsset) => {
-    const ok = window.confirm(
-      t(
-        'collections.detail.confirmRemove',
-        'Hapus "{{name}}" dari koleksi? Aset tidak akan terhapus dari proyek.',
-        { name: asset.originalName || asset.filename },
-      ),
-    );
-    if (ok) removeAssetsMutation.mutate([asset.id]);
+    setRemoveAsset(asset);
   };
 
   const handleCopyShare = () => {
@@ -400,7 +410,7 @@ export default function CollectionDetailPageV2() {
     // Lightweight share: copies the deep link to clipboard. The classic page
     // had no real "publish" endpoint for collections, so this is the most
     // honest action we can offer without lying about persistence.
-    const url = `${window.location.origin}/v2/collections/${collection.id}`;
+    const url = `${window.location.origin}/collections/${collection.id}`;
     navigator.clipboard
       .writeText(url)
       .then(() => toast.success(t('collections.detail.linkCopied', 'Tautan koleksi disalin.')))
@@ -423,7 +433,7 @@ export default function CollectionDetailPageV2() {
           <PageHeader
             title={t('collections.detail.notFoundTitle', 'Koleksi tidak ditemukan')}
             breadcrumbs={[
-              { label: t('collections.title', 'Koleksi'), href: '/media' },
+              { label: t('collections.title', 'Koleksi'), href: '/media-collab' },
               { label: t('collections.detail.notFound', 'Tidak ditemukan') },
             ]}
           />
@@ -465,7 +475,7 @@ export default function CollectionDetailPageV2() {
           <PageHeader
             title={t('common.loading', 'Memuat…')}
             breadcrumbs={[
-              { label: t('collections.title', 'Koleksi'), href: '/media' },
+              { label: t('collections.title', 'Koleksi'), href: '/media-collab' },
               { label: '…' },
             ]}
           />
@@ -492,10 +502,10 @@ export default function CollectionDetailPageV2() {
         <PageHeader
           title={collection.name}
           breadcrumbs={[
-            { label: t('collections.media', 'Media'), href: '/media' },
+            { label: t('collections.media', 'Media'), href: '/media-collab' },
             {
               label: t('collections.project', 'Proyek'),
-              href: `/media/project/${collection.projectId}`,
+              href: `/media-collab/projects/${collection.projectId}`,
             },
             { label: collection.name },
           ]}
@@ -635,7 +645,7 @@ export default function CollectionDetailPageV2() {
                   label={t('collections.detail.parentProject', 'Proyek Induk')}
                   value={
                     <a
-                      href={`/media/project/${collection.projectId}`}
+                      href={`/media-collab/projects/${collection.projectId}`}
                       className="text-text-primary hover:text-brand-cream transition-colors truncate inline-flex items-center gap-1"
                     >
                       {collection.projectId.slice(0, 8)}
@@ -1164,6 +1174,80 @@ export default function CollectionDetailPageV2() {
                   : t('collections.detail.addCount', 'Tambahkan ({{count}})', {
                       count: selectedAddIds.length,
                     })}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ────────────────────────────────────────────────────────
+            Delete-collection confirm — styled in place of window.confirm.
+           ──────────────────────────────────────────────────────── */}
+        <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <DialogContent className="bg-bg-raised border-border-subtle max-w-sm">
+            <DialogHeader>
+              <DialogTitle>
+                {t('collections.detail.confirmDeleteTitle', 'Hapus koleksi?')}
+              </DialogTitle>
+              <DialogDescription>
+                {t(
+                  'collections.detail.confirmDelete',
+                  'Hapus koleksi "{{name}}"? Tindakan ini tidak bisa dibatalkan.',
+                  { name: collection.name },
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                {t('common.cancel', 'Batal')}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setDeleteOpen(false);
+                  deleteMutation.mutate();
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending
+                  ? t('common.deleting', 'Menghapus…')
+                  : t('common.delete', 'Hapus')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ────────────────────────────────────────────────────────
+            Remove-asset-from-collection confirm.
+           ──────────────────────────────────────────────────────── */}
+        <Dialog open={!!removeAsset} onOpenChange={(open) => !open && setRemoveAsset(null)}>
+          <DialogContent className="bg-bg-raised border-border-subtle max-w-sm">
+            <DialogHeader>
+              <DialogTitle>
+                {t('collections.detail.confirmRemoveTitle', 'Hapus dari koleksi?')}
+              </DialogTitle>
+              <DialogDescription>
+                {t(
+                  'collections.detail.confirmRemove',
+                  'Hapus "{{name}}" dari koleksi? Aset tidak akan terhapus dari proyek.',
+                  { name: removeAsset?.originalName || removeAsset?.filename || '' },
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRemoveAsset(null)}>
+                {t('common.cancel', 'Batal')}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (removeAsset) removeAssetsMutation.mutate([removeAsset.id]);
+                  setRemoveAsset(null);
+                }}
+                disabled={removeAssetsMutation.isPending}
+              >
+                {removeAssetsMutation.isPending
+                  ? t('common.removing', 'Menghapus…')
+                  : t('common.remove', 'Hapus')}
               </Button>
             </DialogFooter>
           </DialogContent>

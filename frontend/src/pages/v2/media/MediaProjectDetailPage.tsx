@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,6 +7,7 @@ import {
   ArrowLeft, Upload, Image as ImageIcon, Film, Play, Trash2,
   MoreHorizontal, Share2, Copy, Link as LinkIcon, MessageCircle,
   CheckCircle2, X, Loader2, Eye, Globe, FolderOpen, ZoomIn, Plus,
+  ChevronLeft, ChevronRight, Users, UserPlus, Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -32,14 +33,23 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { useMediaToken } from '@/hooks/useMediaToken';
 import { getProxyUrl } from '@/utils/mediaProxy';
 import {
   mediaCollabService,
+  CollaboratorRole,
   type MediaAsset,
   type MediaCollection,
+  type MediaCollaborator,
   type MediaFolder,
 } from '@/services/media-collab';
 import { StarRating } from '@/components/media/StarRating';
@@ -131,6 +141,9 @@ export default function MediaProjectDetailPageV2() {
 
   /* ---------- video review state ---------- */
   const [videoReviewAsset, setVideoReviewAsset] = useState<MediaAsset | null>(null);
+
+  /* ---------- delete-asset confirm ---------- */
+  const [deleteAssetTarget, setDeleteAssetTarget] = useState<MediaAsset | null>(null);
 
   /* ---------- comparison state ---------- */
   const [compareOpen, setCompareOpen] = useState(false);
@@ -301,6 +314,41 @@ export default function MediaProjectDetailPageV2() {
     onError: () => toast.error(t('mediaCollab.shareDisableFailed', 'Gagal menonaktifkan tautan publik.')),
   });
 
+  /* ---------- collaborators / guest invites ---------- */
+  const {
+    data: collaborators = [],
+    isLoading: collaboratorsLoading,
+  } = useQuery({
+    queryKey: ['media-collaborators', projectId],
+    queryFn: () => mediaCollabService.getProjectCollaborators(projectId!),
+    enabled: !!projectId && shareSheetOpen,
+  });
+
+  const invalidateCollaborators = () =>
+    queryClient.invalidateQueries({ queryKey: ['media-collaborators', projectId] });
+
+  const inviteGuestMutation = useMutation({
+    mutationFn: (data: { email: string; name: string; role: 'VIEWER' | 'COMMENTER' | 'EDITOR' }) =>
+      mediaCollabService.inviteGuest(projectId!, data),
+    onSuccess: () => {
+      invalidateCollaborators();
+      toast.success(t('mediaCollab.inviteSent', 'Undangan terkirim.'));
+    },
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.message || t('mediaCollab.inviteFailed', 'Gagal mengirim undangan.')),
+  });
+
+  const revokeCollaboratorMutation = useMutation({
+    mutationFn: (collaboratorId: string) =>
+      mediaCollabService.revokeGuestAccess(projectId!, collaboratorId),
+    onSuccess: () => {
+      invalidateCollaborators();
+      toast.success(t('mediaCollab.accessRevoked', 'Akses dicabut.'));
+    },
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.message || t('mediaCollab.revokeFailed', 'Gagal mencabut akses.')),
+  });
+
   const addCommentMutation = useMutation({
     mutationFn: (text: string) =>
       mediaCollabService.createComment({
@@ -362,17 +410,17 @@ export default function MediaProjectDetailPageV2() {
     onError: () => toast.error(t('mediaReview.bulkDeleteFailed', 'Failed to delete assets.')),
   });
 
-  /* ---------- selection helpers ---------- */
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  /* ---------- selection helpers ----------
+     `toggleSelect` is defined after `filteredAssets` (further down) because
+     shift-range selection needs to read the current filtered list. */
+  // Index (within filteredAssets) of the last tile the user toggled — anchor
+  // for shift-click range selection, mirroring file-manager behaviour.
+  const lastSelectedIndexRef = useRef<number | null>(null);
 
-  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    lastSelectedIndexRef.current = null;
+  }, []);
 
   /* ---------- breadcrumb helpers ---------- */
   const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
@@ -452,6 +500,71 @@ export default function MediaProjectDetailPageV2() {
 
     return result;
   }, [assets, filters]);
+
+  const toggleSelect = useCallback(
+    (id: string, index: number, shiftKey: boolean) => {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        const anchor = lastSelectedIndexRef.current;
+        if (shiftKey && anchor !== null && anchor !== index) {
+          // Select the contiguous range between the anchor and this tile.
+          const [from, to] = anchor < index ? [anchor, index] : [index, anchor];
+          for (let i = from; i <= to; i += 1) {
+            const a = filteredAssets[i];
+            if (a) next.add(a.id);
+          }
+        } else if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return next;
+      });
+      lastSelectedIndexRef.current = index;
+    },
+    [filteredAssets],
+  );
+
+  /* ---------- asset detail prev/next navigation ----------
+     Walks the visible (filtered) list. Skips VIDEO assets because those
+     open in the dedicated VideoReviewModal, not this image sheet. */
+  const gotoAdjacentAsset = useCallback(
+    (dir: 1 | -1) => {
+      if (!selectedAsset) return;
+      const idx = filteredAssets.findIndex((a) => a.id === selectedAsset.id);
+      if (idx === -1) return;
+      const candidates =
+        dir === 1
+          ? filteredAssets.slice(idx + 1)
+          : filteredAssets.slice(0, idx).reverse();
+      const target = candidates.find((a) => a.mediaType !== 'VIDEO');
+      if (target) setSelectedAsset(target);
+    },
+    [selectedAsset, filteredAssets],
+  );
+
+  const adjacency = useMemo(() => {
+    if (!selectedAsset) return { hasPrev: false, hasNext: false };
+    const idx = filteredAssets.findIndex((a) => a.id === selectedAsset.id);
+    if (idx === -1) return { hasPrev: false, hasNext: false };
+    const hasPrev = filteredAssets.slice(0, idx).some((a) => a.mediaType !== 'VIDEO');
+    const hasNext = filteredAssets.slice(idx + 1).some((a) => a.mediaType !== 'VIDEO');
+    return { hasPrev, hasNext };
+  }, [selectedAsset, filteredAssets]);
+
+  // Keyboard nav for the asset detail sheet (left/right arrows).
+  useEffect(() => {
+    if (!selectedAsset) return;
+    const handler = (e: KeyboardEvent) => {
+      // Don't hijack arrows while typing in the comment composer / inputs.
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); gotoAdjacentAsset(-1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); gotoAdjacentAsset(1); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedAsset, gotoAdjacentAsset]);
 
   const kpis = useMemo(() => {
     const total = assets.length;
@@ -899,13 +1012,13 @@ export default function MediaProjectDetailPageV2() {
           ) : (
             <>
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                {filteredAssets.slice(0, visibleCount).map((asset) => (
+                {filteredAssets.slice(0, visibleCount).map((asset, index) => (
                   <AssetTile
                     key={asset.id}
                     asset={asset}
                     mediaToken={mediaToken}
                     isSelected={selectedIds.has(asset.id)}
-                    onSelect={() => toggleSelect(asset.id)}
+                    onSelect={(shiftKey) => toggleSelect(asset.id, index, shiftKey)}
                     onClick={() => {
                       if (asset.mediaType === 'VIDEO') {
                         setVideoReviewAsset(asset);
@@ -979,7 +1092,11 @@ export default function MediaProjectDetailPageV2() {
           ) : (
             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {collections.map((c) => (
-                <CollectionRow key={c.id} collection={c} />
+                <CollectionRow
+                  key={c.id}
+                  collection={c}
+                  onOpen={() => navigate(`/collections/${c.id}`)}
+                />
               ))}
             </ul>
           )}
@@ -1003,6 +1120,31 @@ export default function MediaProjectDetailPageV2() {
           {selectedAsset && (
             <>
               <SheetHeader className="border-b border-border-subtle p-5">
+                {/* Prev/next navigation across the filtered list */}
+                <div className="flex items-center gap-1 mb-2">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-text-tertiary hover:text-text-primary"
+                    onClick={() => gotoAdjacentAsset(-1)}
+                    disabled={!adjacency.hasPrev}
+                    aria-label={t('mediaReview.prevAsset', 'Previous asset')}
+                    title={t('mediaReview.prevAsset', 'Previous asset')}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-text-tertiary hover:text-text-primary"
+                    onClick={() => gotoAdjacentAsset(1)}
+                    disabled={!adjacency.hasNext}
+                    aria-label={t('mediaReview.nextAsset', 'Next asset')}
+                    title={t('mediaReview.nextAsset', 'Next asset')}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
                 <SheetTitle className="text-text-primary text-base font-display font-semibold truncate pr-8">
                   {selectedAsset.originalName}
                 </SheetTitle>
@@ -1157,11 +1299,7 @@ export default function MediaProjectDetailPageV2() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => {
-                          if (confirm(t('mediaCollab.confirmDeleteAsset', 'Hapus "{{name}}"?', { name: selectedAsset.originalName }))) {
-                            deleteAssetMutation.mutate(selectedAsset.id);
-                          }
-                        }}
+                        onClick={() => setDeleteAssetTarget(selectedAsset)}
                         className="text-danger focus:text-danger"
                       >
                         <Trash2 className="h-3.5 w-3.5" /> {t('mediaCollab.delete', 'Hapus')}
@@ -1334,6 +1472,16 @@ export default function MediaProjectDetailPageV2() {
                 </div>
               </div>
             )}
+
+            {/* Collaborators / invite client */}
+            <CollaboratorsSection
+              collaborators={collaborators}
+              loading={collaboratorsLoading}
+              onInvite={(data) => inviteGuestMutation.mutateAsync(data)}
+              onRevoke={(id) => revokeCollaboratorMutation.mutateAsync(id)}
+              inviting={inviteGuestMutation.isPending}
+              revokingId={revokeCollaboratorMutation.isPending ? revokeCollaboratorMutation.variables : null}
+            />
           </div>
         </SheetContent>
       </Sheet>
@@ -1420,6 +1568,42 @@ export default function MediaProjectDetailPageV2() {
           onClose={() => setCompareOpen(false)}
         />
       )}
+
+      {/* Delete-asset confirm — styled in place of window.confirm */}
+      <Dialog
+        open={!!deleteAssetTarget}
+        onOpenChange={(open) => !open && setDeleteAssetTarget(null)}
+      >
+        <DialogContent className="bg-bg-base border-border-default text-text-primary max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-text-primary font-display">
+              {t('mediaCollab.confirmDeleteAssetTitle', 'Hapus aset?')}
+            </DialogTitle>
+            <DialogDescription className="text-text-tertiary text-sm">
+              {t('mediaCollab.confirmDeleteAsset', 'Hapus "{{name}}"?', {
+                name: deleteAssetTarget?.originalName ?? '',
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setDeleteAssetTarget(null)}>
+              {t('common.cancel', 'Batal')}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (deleteAssetTarget) deleteAssetMutation.mutate(deleteAssetTarget.id);
+                setDeleteAssetTarget(null);
+              }}
+              disabled={deleteAssetMutation.isPending}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {t('mediaCollab.delete', 'Hapus')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }
@@ -1432,7 +1616,7 @@ interface AssetTileProps {
   asset: MediaAsset;
   mediaToken: string | null;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (shiftKey: boolean) => void;
   onClick: () => void;
   onStarChange: (rating: number) => void;
 }
@@ -1501,7 +1685,7 @@ function AssetTile({
       >
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onSelect(); }}
+          onClick={(e) => { e.stopPropagation(); onSelect(e.shiftKey); }}
           className={cn(
             'h-5 w-5 rounded border-2 flex items-center justify-center transition-colors',
             isSelected
@@ -1509,6 +1693,7 @@ function AssetTile({
               : 'bg-bg-base/80 border-border-default backdrop-blur-sm text-transparent',
           )}
           aria-label={isSelected ? t('mediaReview.deselect', 'Deselect') : t('mediaReview.select', 'Select')}
+          title={t('mediaReview.shiftClickHint', 'Shift-click to select a range')}
         >
           {isSelected && (
             <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
@@ -1576,12 +1761,28 @@ function UploadZone({ onPick }: { onPick: () => void }) {
   );
 }
 
-function CollectionRow({ collection }: { collection: MediaCollection }) {
+function CollectionRow({ collection, onOpen }: { collection: MediaCollection; onOpen: () => void }) {
   const { t } = useTranslation();
   return (
-    <li className="flex items-start gap-3 p-3 rounded-md bg-bg-sunken/40 border border-border-subtle">
+    <li
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={t('mediaCollab.openCollection', 'Open collection "{{name}}"', { name: collection.name })}
+      className={cn(
+        'group flex items-start gap-3 p-3 rounded-md bg-bg-sunken/40 border border-border-subtle',
+        'hover:bg-bg-sunken hover:border-border-default transition-colors cursor-pointer',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-navy/40',
+      )}
+    >
       <div className="shrink-0 mt-0.5 h-8 w-8 rounded-md bg-bg-raised border border-border-subtle flex items-center justify-center">
-        <Folder className="h-4 w-4 text-text-tertiary" />
+        <Folder className="h-4 w-4 text-text-tertiary group-hover:text-text-secondary transition-colors" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
@@ -1602,6 +1803,169 @@ function CollectionRow({ collection }: { collection: MediaCollection }) {
         </div>
       </div>
     </li>
+  );
+}
+
+type InviteRole = 'VIEWER' | 'COMMENTER' | 'EDITOR';
+
+function CollaboratorsSection({
+  collaborators,
+  loading,
+  onInvite,
+  onRevoke,
+  inviting,
+  revokingId,
+}: {
+  collaborators: MediaCollaborator[];
+  loading: boolean;
+  onInvite: (data: { email: string; name: string; role: InviteRole }) => Promise<unknown>;
+  onRevoke: (collaboratorId: string) => Promise<unknown>;
+  inviting: boolean;
+  revokingId: string | null;
+}) {
+  const { t } = useTranslation();
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState<InviteRole>('VIEWER');
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+    if (!trimmedEmail) {
+      toast.error(t('mediaCollab.inviteEmailRequired', 'Email wajib diisi.'));
+      return;
+    }
+    try {
+      await onInvite({
+        email: trimmedEmail,
+        name: trimmedName || trimmedEmail,
+        role,
+      });
+      setEmail('');
+      setName('');
+      setRole('VIEWER');
+    } catch {
+      /* error toast handled by mutation */
+    }
+  };
+
+  return (
+    <div className="space-y-3 border-t border-border-subtle pt-5">
+      <div className="flex items-center gap-2 text-text-secondary">
+        <Users className="h-4 w-4" />
+        <h3 className="text-sm font-medium">
+          {t('mediaCollab.collaborators', 'Kolaborator')}
+          {!loading && (
+            <span className="text-text-tertiary font-normal ml-1.5">
+              ({collaborators.length})
+            </span>
+          )}
+        </h3>
+      </div>
+
+      {/* Existing collaborators */}
+      {loading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-12 rounded-md" />
+          <Skeleton className="h-12 rounded-md" />
+        </div>
+      ) : collaborators.length === 0 ? (
+        <p className="text-xs text-text-tertiary">
+          {t('mediaCollab.noCollaborators', 'Belum ada kolaborator. Undang klien atau anggota tim di bawah ini.')}
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {collaborators.map((c) => (
+            <li
+              key={c.id}
+              className="flex items-center gap-3 p-3 rounded-md bg-bg-sunken border border-border-subtle"
+            >
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarFallback className="bg-accent-navy-wash text-text-primary text-[10px] font-medium">
+                  {initialsOf(c.user?.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium text-text-primary truncate">
+                  {c.user?.name || c.user?.email || t('mediaCollab.unknownUser', 'Tidak diketahui')}
+                </div>
+                {c.user?.email && (
+                  <div className="text-[11px] text-text-tertiary truncate">{c.user.email}</div>
+                )}
+              </div>
+              <Badge
+                variant="outline"
+                className="border-transparent bg-accent-navy-wash text-text-secondary px-1.5 py-0 text-[9px] font-medium uppercase tracking-wider shrink-0"
+              >
+                {c.role}
+              </Badge>
+              {c.role !== CollaboratorRole.OWNER && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-text-tertiary hover:text-danger shrink-0"
+                  onClick={() => onRevoke(c.id)}
+                  disabled={revokingId === c.id}
+                  aria-label={t('mediaCollab.revokeAccess', 'Cabut akses')}
+                  title={t('mediaCollab.revokeAccess', 'Cabut akses')}
+                >
+                  {revokingId === c.id
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <X className="h-3.5 w-3.5" />}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Invite form */}
+      <form
+        onSubmit={handleInvite}
+        className="space-y-2.5 rounded-md border border-border-subtle bg-bg-sunken/60 p-3"
+      >
+        <div className="flex items-center gap-2 text-text-secondary">
+          <UserPlus className="h-3.5 w-3.5" />
+          <span className="text-xs font-medium">
+            {t('mediaCollab.inviteClient', 'Undang klien / kolaborator')}
+          </span>
+        </div>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-tertiary pointer-events-none" />
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t('mediaCollab.inviteEmailPlaceholder', 'email@klien.com')}
+            className="pl-8 bg-bg-base border-border-subtle text-text-primary placeholder:text-text-tertiary text-xs"
+          />
+        </div>
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('mediaCollab.inviteNamePlaceholder', 'Nama (opsional)')}
+          className="bg-bg-base border-border-subtle text-text-primary placeholder:text-text-tertiary text-xs"
+        />
+        <div className="flex items-center gap-2">
+          <Select value={role} onValueChange={(v) => setRole(v as InviteRole)}>
+            <SelectTrigger className="bg-bg-base border-border-subtle text-text-primary text-xs flex-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-bg-raised border-border-subtle">
+              <SelectItem value="VIEWER">{t('mediaCollab.roleViewer', 'Penonton')}</SelectItem>
+              <SelectItem value="COMMENTER">{t('mediaCollab.roleCommenter', 'Pengomentar')}</SelectItem>
+              <SelectItem value="EDITOR">{t('mediaCollab.roleEditor', 'Editor')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button type="submit" size="sm" disabled={inviting || !email.trim()}>
+            {inviting
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <><UserPlus className="h-3.5 w-3.5" /> {t('mediaCollab.invite', 'Undang')}</>}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }
 

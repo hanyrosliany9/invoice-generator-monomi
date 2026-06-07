@@ -5,6 +5,7 @@ import type { MenuProps } from 'antd';
 import { LineOutlined } from '@ant-design/icons';
 import { Canvas as FabricCanvas, Line, Triangle } from 'fabric';
 import { useDeckCanvasStore } from '../../stores/deckCanvasStore';
+import { createLineObject, generateElementId } from '../../utils/deckCanvasUtils';
 
 type LineStyle = 'solid' | 'dashed' | 'dotted';
 type ArrowStyle = 'none' | 'start' | 'end' | 'both';
@@ -35,7 +36,7 @@ export default function LineTool({ canvas, disabled }: LineToolProps) {
   };
 
   const createArrowHead = (x: number, y: number, angle: number): Triangle => {
-    return new Triangle({
+    const head = new Triangle({
       left: x,
       top: y,
       width: 15,
@@ -47,6 +48,11 @@ export default function LineTool({ canvas, disabled }: LineToolProps) {
       selectable: false,
       evented: false,
     });
+    // Persist arrow heads as SHAPE/TRIANGLE so they survive a reload.
+    head.set('id', generateElementId());
+    head.set('elementType', 'SHAPE');
+    head.set('shapeType', 'TRIANGLE');
+    return head;
   };
 
   const enableDrawMode = useCallback(() => {
@@ -91,8 +97,9 @@ export default function LineTool({ canvas, disabled }: LineToolProps) {
       // Remove temp line
       canvas.remove(tempLine);
 
-      // Create final line
-      const line = new Line(
+      // Create final line — createLineObject sets id + elementType 'SHAPE' +
+      // shapeType 'LINE' so it serializes and round-trips through the DB.
+      const line = createLineObject(
         [startPoint.x, startPoint.y, pointer.x, pointer.y],
         {
           stroke: strokeColor,
@@ -101,7 +108,6 @@ export default function LineTool({ canvas, disabled }: LineToolProps) {
         }
       );
 
-      (line as any).elementType = 'line';
       canvas.add(line);
 
       // Add arrow heads if needed

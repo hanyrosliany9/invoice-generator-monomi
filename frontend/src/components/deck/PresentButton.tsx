@@ -6,9 +6,15 @@ import { usePresentationStore, type TransitionType } from '../../stores/presenta
 
 interface PresentButtonProps {
   disabled?: boolean;
+  /**
+   * Called right before entering presentation mode (while the editor canvas is
+   * still mounted) so any unsaved edits can be flushed to the DB — present mode
+   * renders from the saved slide content/elements.
+   */
+  onBeforePresent?: () => Promise<void> | void;
 }
 
-export const PresentButton: React.FC<PresentButtonProps> = ({ disabled }) => {
+export const PresentButton: React.FC<PresentButtonProps> = ({ disabled, onBeforePresent }) => {
   const {
     startPresentation,
     transition,
@@ -17,17 +23,22 @@ export const PresentButton: React.FC<PresentButtonProps> = ({ disabled }) => {
     currentSlideIndex,
   } = usePresentationStore();
 
-  const handlePresent = () => {
+  const enter = async (before?: () => void) => {
+    await onBeforePresent?.();
+    before?.();
     startPresentation();
+  };
+
+  const handlePresent = () => {
+    void enter();
   };
 
   const handlePresentFromStart = () => {
-    setCurrentSlide(0);
-    startPresentation();
+    void enter(() => setCurrentSlide(0));
   };
 
   const handlePresentFromCurrent = () => {
-    startPresentation();
+    void enter();
   };
 
   const transitionItems: MenuProps['items'] = [

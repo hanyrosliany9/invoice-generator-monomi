@@ -25,7 +25,7 @@ export default function SlideCanvas({
   onElementUpdate,
   onElementCreate,
 }: SlideCanvasProps) {
-  const { canvas } = useDeckCanvasStore();
+  const { canvas, setIsLoadingElements, setIsDirty } = useDeckCanvasStore();
   const [isLoading, setIsLoading] = useState(true);
 
   const canvasWidth = deckWidth * scale;
@@ -40,6 +40,8 @@ export default function SlideCanvas({
 
     const loadElements = async () => {
       setIsLoading(true);
+      // Suppress autosave while we tear down + rebuild the canvas for this slide.
+      setIsLoadingElements(true);
       console.log('[SlideCanvas] Loading elements for slide:', slide.id);
       console.log('[SlideCanvas] Slide has', slide.elements?.length || 0, 'elements:', slide.elements);
 
@@ -67,10 +69,15 @@ export default function SlideCanvas({
       canvas.renderAll();
       console.log('[SlideCanvas] Finished loading elements. Canvas has', canvas.getObjects().length, 'objects');
       setIsLoading(false);
+      // Programmatic load is complete: clear the dirty flag set by load-time
+      // history pushes, then re-enable autosave on the next tick so the
+      // object:added events fired during load have already been ignored.
+      setIsDirty(false);
+      setTimeout(() => setIsLoadingElements(false), 0);
     };
 
     loadElements();
-  }, [canvas, slide?.id, slide?.elements, canvasWidth, canvasHeight]);
+  }, [canvas, slide?.id, slide?.elements, canvasWidth, canvasHeight, setIsLoadingElements, setIsDirty]);
 
   // Handle object modification
   const handleObjectModified = useCallback(

@@ -13,6 +13,7 @@ import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { DeckElementsService } from "../services/deck-elements.service";
 import { CreateElementDto } from "../dto/create-element.dto";
 import { UpdateElementDto } from "../dto/update-element.dto";
+import { BulkSaveElementsDto } from "../dto/bulk-save-elements.dto";
 
 @ApiTags("Deck Elements")
 @ApiBearerAuth()
@@ -25,6 +26,18 @@ export class DeckElementsController {
   @ApiOperation({ summary: "Create a new element" })
   create(@Request() req: any, @Body() dto: CreateElementDto) {
     return this.elementsService.create(req.user.id, dto);
+  }
+
+  @Put("slide/:slideId/bulk")
+  @ApiOperation({
+    summary: "Atomically replace all elements for a slide",
+  })
+  bulkReplaceForSlide(
+    @Request() req: any,
+    @Param("slideId") slideId: string,
+    @Body() dto: BulkSaveElementsDto,
+  ) {
+    return this.elementsService.bulkReplaceForSlide(slideId, req.user.id, dto);
   }
 
   @Put(":id")

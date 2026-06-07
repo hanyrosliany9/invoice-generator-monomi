@@ -108,6 +108,19 @@ export const elementsApi = {
     await apiClient.delete(`/deck-elements/${id}`);
   },
 
+  // Atomically replace ALL elements for a slide (bulk save). Returns the slide
+  // with its persisted elements.
+  bulkSaveForSlide: async (
+    slideId: string,
+    elements: Partial<DeckSlideElement>[],
+  ): Promise<DeckSlide> => {
+    const response = await apiClient.put(
+      `/deck-elements/slide/${slideId}/bulk`,
+      { elements },
+    );
+    return response.data.data;
+  },
+
   bringToFront: async (id: string): Promise<DeckSlideElement> => {
     const response = await apiClient.post(`/deck-elements/${id}/bring-to-front`);
     return response.data.data;

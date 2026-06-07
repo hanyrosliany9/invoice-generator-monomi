@@ -10,7 +10,7 @@ import { safeUrl } from '@/utils/safeUrl';
 import {
   FileText,
   ArrowLeft, Save, Loader2, ChevronLeft, ChevronRight, Plus, Trash2,
-  Copy, Settings, Maximize2,
+  Copy, Settings, Maximize2, Check, CircleDashed,
 } from 'lucide-react';
 import type { Canvas as FabricCanvas } from 'fabric';
 import { App as AntdApp } from 'antd';
@@ -32,6 +32,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { useAuthStore } from '@/store/auth';
 import { decksApi, slidesApi, elementsApi } from '@/services/decks';
 import { projectService } from '@/services/projects';
+import { fabricObjectToElement } from '@/utils/deckCanvasUtils';
 import type { Deck, DeckSlide, DeckSlideElement, DeckStatus, SlideTemplate } from '@/types/deck';
 
 import {
@@ -122,11 +123,21 @@ export default function DeckEditorPage() {
   }, [deck]);
 
   const activeSlide = slides[activeSlideIndex] ?? null;
+  useEffect(() => { activeSlideIdRef.current = activeSlide?.id ?? null; }, [activeSlide?.id]);
 
   /* ---------- stores ---------- */
-  const { canvas } = useDeckCanvasStore();
+  const canvas = useDeckCanvasStore((s) => s.canvas);
+  const isDirty = useDeckCanvasStore((s) => s.isDirty);
+  const setIsDirty = useDeckCanvasStore((s) => s.setIsDirty);
   const { isPresenting, startPresentation, endPresentation } = usePresentationStore();
   const { applyTemplate } = useSlideTemplates();
+
+  /* ---------- save state ---------- */
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  // Keep the active slide id in a ref so the debounced autosave always targets
+  // the slide currently on the canvas (avoids stale closures).
+  const activeSlideIdRef = useRef<string | null>(null);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ---------- collaboration ---------- */
   useEffect(() => {
@@ -137,13 +148,101 @@ export default function DeckEditorPage() {
     };
   }, [id, user?.id]);
 
-  /* ---------- keyboard shortcuts ---------- */
-  const handleSave = useCallback(() => {
-    if (id) {
-      queryClient.invalidateQueries({ queryKey: ['deck', id] });
-      toast.success(t('deckEditor.saveSuccess', 'Deck changes saved'));
+  /* ---------- real save (bulk-replace the active slide's elements) ---------- */
+  const deckWidth = deck?.slideWidth || CANVAS_WIDTH;
+  const deckHeight = deck?.slideHeight || CANVAS_HEIGHT;
+
+  // Serialize every persistable object on the canvas and bulk-save it to the
+  // active slide. Mirrors the dimensions SlideCanvas uses so percentages match.
+  const saveSlide = useCallback(async (opts?: { silent?: boolean }) => {
+    const slideId = activeSlideIdRef.current;
+    if (!id || !slideId || !canvas) return;
+
+    const scale = getCanvasScale(deckWidth);
+    const canvasWidth = deckWidth * scale;
+    const canvasHeight = deckHeight * scale;
+
+    const elements: Partial<DeckSlideElement>[] = canvas
+      .getObjects()
+      .map((obj) => fabricObjectToElement(obj, slideId, canvasWidth, canvasHeight))
+      // Only keep objects that serialized to a known element type — skip stray
+      // helpers (temp lines, untyped objects) that have no `type`.
+      .filter((el) => !!el.type);
+
+    setSaveState('saving');
+    try {
+      await elementsApi.bulkSaveForSlide(slideId, elements);
+      setIsDirty(false);
+      setSaveState('saved');
+      // Refresh the cached deck so reload/present/export see the saved elements,
+      // but only after a manual save — autosave avoids churning the canvas.
+      if (!opts?.silent) {
+        queryClient.invalidateQueries({ queryKey: ['deck', id] });
+      }
+    } catch (err) {
+      setSaveState('error');
+      if (!opts?.silent) {
+        toast.error(err instanceof Error ? err.message : t('deckEditor.saveError', 'Failed to save deck'));
+      }
     }
-  }, [id, queryClient, t]);
+  }, [id, canvas, deckWidth, deckHeight, queryClient, setIsDirty, t]);
+
+  const handleSave = useCallback(() => {
+    void saveSlide();
+  }, [saveSlide]);
+
+  // Flush any pending/unsaved edits to the DB (used before entering present mode
+  // and on slide switches). Cancels the debounce and saves synchronously.
+  const flushSave = useCallback(async () => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    if (useDeckCanvasStore.getState().isDirty) {
+      await saveSlide();
+    }
+  }, [saveSlide]);
+
+  /* ---------- debounced autosave on canvas changes ---------- */
+  useEffect(() => {
+    if (!canvas) return;
+
+    const scheduleAutosave = () => {
+      // Skip while SlideCanvas is (re)loading elements — those programmatic
+      // add/remove events must not trigger a save of the slide being loaded.
+      if (useDeckCanvasStore.getState().isLoadingElements) return;
+      setIsDirty(true);
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = setTimeout(() => {
+        void saveSlide({ silent: true });
+      }, 1200);
+    };
+
+    canvas.on('object:added', scheduleAutosave);
+    canvas.on('object:modified', scheduleAutosave);
+    canvas.on('object:removed', scheduleAutosave);
+    canvas.on('text:editing:exited', scheduleAutosave);
+
+    return () => {
+      canvas.off('object:added', scheduleAutosave);
+      canvas.off('object:modified', scheduleAutosave);
+      canvas.off('object:removed', scheduleAutosave);
+      canvas.off('text:editing:exited', scheduleAutosave);
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [canvas, saveSlide, setIsDirty]);
+
+  /* ---------- warn before leaving with unsaved changes ---------- */
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (useDeckCanvasStore.getState().isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   const handleDelete = useCallback(() => {
     if (!canvas) return;
@@ -158,6 +257,16 @@ export default function DeckEditorPage() {
     onSave: handleSave,
     onDelete: handleDelete,
   });
+
+  // Switch the active slide, but first flush any pending/unsaved edits so the
+  // current slide's changes aren't lost when SlideCanvas reloads the next slide
+  // from the (possibly stale) cached deck.
+  const selectSlide = useCallback((next: number | ((i: number) => number)) => {
+    void (async () => {
+      await flushSave();
+      setActiveSlideIndex(next);
+    })();
+  }, [flushSave]);
 
   /* ---------- meta form ---------- */
   const defaultMeta = useMemo<MetaValues>(() => ({
@@ -338,6 +447,25 @@ export default function DeckEditorPage() {
 
           {/* Right: actions */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Save state indicator */}
+            <SaveStateIndicator
+              saveState={saveState}
+              isDirty={isDirty}
+              t={t}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSave}
+              disabled={saveState === 'saving'}
+              className="hidden sm:inline-flex"
+              title={t('deckEditor.saveTooltip', 'Save slide (Ctrl+S)')}
+            >
+              {saveState === 'saving'
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <Save className="h-3.5 w-3.5" />}
+              {t('common.save', 'Save')}
+            </Button>
             {/* Presence: show collaborators in the toolbar */}
             <div className="hidden sm:flex items-center mr-1">
               <PresenceIndicator />
@@ -352,7 +480,7 @@ export default function DeckEditorPage() {
               ?
             </Button>
             <ExportButton deckId={id!} currentSlideIndex={activeSlideIndex} />
-            <PresentButton />
+            <PresentButton onBeforePresent={flushSave} />
           </div>
         </div>
 
@@ -444,7 +572,7 @@ export default function DeckEditorPage() {
             activeIndex={activeSlideIndex}
             deckWidth={deck.slideWidth || CANVAS_WIDTH}
             deckHeight={deck.slideHeight || CANVAS_HEIGHT}
-            onSelectSlide={setActiveSlideIndex}
+            onSelectSlide={selectSlide}
             onAddSlide={(templateType) => addSlideMutation.mutate(templateType)}
             onDuplicateSlide={(slideId) => duplicateSlideMutation.mutate(slideId)}
             onDeleteSlide={(slideId) => deleteSlideMutation.mutate(slideId)}
@@ -483,7 +611,7 @@ export default function DeckEditorPage() {
                 {/* Slide nav dots */}
                 <div className="flex items-center gap-2 mt-4">
                   <button
-                    onClick={() => setActiveSlideIndex((i) => Math.max(0, i - 1))}
+                    onClick={() => selectSlide((i) => Math.max(0, i - 1))}
                     disabled={activeSlideIndex === 0}
                     className="p-1 text-text-tertiary hover:text-text-primary disabled:opacity-30 transition-colors"
                   >
@@ -493,7 +621,7 @@ export default function DeckEditorPage() {
                     {activeSlideIndex + 1} / {slides.length}
                   </span>
                   <button
-                    onClick={() => setActiveSlideIndex((i) => Math.min(slides.length - 1, i + 1))}
+                    onClick={() => selectSlide((i) => Math.min(slides.length - 1, i + 1))}
                     disabled={activeSlideIndex === slides.length - 1}
                     className="p-1 text-text-tertiary hover:text-text-primary disabled:opacity-30 transition-colors"
                   >
@@ -620,6 +748,51 @@ function getCanvasScale(deckWidth: number): number {
     1200,
   );
   return Math.min(1, maxW / deckWidth);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Save-state indicator                                               */
+/* ------------------------------------------------------------------ */
+
+function SaveStateIndicator({
+  saveState, isDirty, t,
+}: {
+  saveState: 'idle' | 'saving' | 'saved' | 'error';
+  isDirty: boolean;
+  t: (key: string, fallback: string) => string;
+}) {
+  let icon: React.ReactNode;
+  let label: string;
+  let color: string;
+
+  if (saveState === 'saving') {
+    icon = <Loader2 className="h-3 w-3 animate-spin" />;
+    label = t('deckEditor.saving', 'Saving…');
+    color = 'text-text-tertiary';
+  } else if (saveState === 'error') {
+    icon = <CircleDashed className="h-3 w-3" />;
+    label = t('deckEditor.saveFailed', 'Save failed');
+    color = 'text-danger';
+  } else if (isDirty) {
+    icon = <CircleDashed className="h-3 w-3" />;
+    label = t('deckEditor.unsaved', 'Unsaved changes');
+    color = 'text-text-tertiary';
+  } else if (saveState === 'saved') {
+    icon = <Check className="h-3 w-3" />;
+    label = t('deckEditor.saved', 'Saved');
+    color = 'text-success';
+  } else {
+    icon = <Check className="h-3 w-3" />;
+    label = t('deckEditor.saved', 'Saved');
+    color = 'text-text-tertiary';
+  }
+
+  return (
+    <span className={`hidden md:inline-flex items-center gap-1.5 text-xs ${color}`}>
+      {icon}
+      {label}
+    </span>
+  );
 }
 
 /* ------------------------------------------------------------------ */

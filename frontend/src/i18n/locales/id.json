@@ -46,7 +46,9 @@
     "unknownError": "Terjadi suatu kesalahan",
     "errorOccurred": "Terjadi suatu kesalahan",
     "noDescription": "Tidak ada deskripsi",
-    "confirmDiscard": "Ada perubahan yang belum disimpan. Tinggalkan tanpa menyimpan?"
+    "confirmDiscard": "Ada perubahan yang belum disimpan. Tinggalkan tanpa menyimpan?",
+    "removing": "Menghapus…",
+    "remove": "Hapus"
   },
   "table": {
     "number": "Nomor",
@@ -2132,7 +2134,9 @@
       "namePlaceholder": "mis. Final Deliverables",
       "notFoundDesc": "Koleksi yang Anda cari tidak ada atau telah dihapus.",
       "selectAtLeastOne": "Pilih minimal satu aset.",
-      "smartSub": "Koleksi cerdas — diperbarui otomatis berdasarkan kriteria."
+      "smartSub": "Koleksi cerdas — diperbarui otomatis berdasarkan kriteria.",
+      "confirmDeleteTitle": "Hapus koleksi?",
+      "confirmRemoveTitle": "Hapus dari koleksi?"
     },
     "media": "Media",
     "project": "Proyek",
@@ -5659,7 +5663,12 @@
     "slideDuplicated": "Slide diduplikasi",
     "editMeta": "Edit detail deck",
     "shortcuts": "Pintasan keyboard",
-    "addFirstSlide": "Tambah slide pertama"
+    "addFirstSlide": "Tambah slide pertama",
+    "saving": "Menyimpan…",
+    "saved": "Tersimpan",
+    "unsaved": "Perubahan belum disimpan",
+    "saveError": "Gagal menyimpan deck",
+    "saveTooltip": "Simpan slide (Ctrl+S)"
   },
   "shotListEditor": {
     "saveSuccess": "Shot list tersimpan",
@@ -5980,7 +5989,24 @@
     "setExpiry": "Atur tanggal kedaluwarsa",
     "applyExpiry": "Terapkan",
     "clearExpiry": "Hapus",
-    "openVideoReview": "Buka Ulasan Video"
+    "openVideoReview": "Buka Ulasan Video",
+    "openCollection": "Buka koleksi \"{{name}}\"",
+    "noCollaborators": "Belum ada kolaborator. Undang klien atau anggota tim di bawah ini.",
+    "unknownUser": "Tidak diketahui",
+    "inviteClient": "Undang klien / kolaborator",
+    "inviteEmailPlaceholder": "email@klien.com",
+    "inviteNamePlaceholder": "Nama (opsional)",
+    "invite": "Undang",
+    "inviteSent": "Undangan terkirim.",
+    "inviteFailed": "Gagal mengirim undangan.",
+    "inviteEmailRequired": "Email wajib diisi.",
+    "accessRevoked": "Akses dicabut.",
+    "revokeFailed": "Gagal mencabut akses.",
+    "revokeAccess": "Cabut akses",
+    "roleViewer": "Penonton",
+    "roleCommenter": "Pengomentar",
+    "roleEditor": "Editor",
+    "confirmDeleteAssetTitle": "Hapus aset?"
   },
   "salaries": {
     "pageTitle": "Gaji Karyawan",
@@ -6733,7 +6759,8 @@
       "download": "Unduh",
       "close": "Tutup (Esc)",
       "hint": "+/− zoom · R putar · 0 reset · Esc tutup"
-    }
+    },
+    "shiftClickHint": "Shift-klik untuk memilih rentang"
   },
   "guestReview": {
     "feedbackHeader": "Tinggalkan Masukan",

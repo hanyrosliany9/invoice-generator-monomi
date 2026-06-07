@@ -35,6 +35,11 @@ interface DeckCanvasState {
   // Dirty state (unsaved changes)
   isDirty: boolean;
   setIsDirty: (dirty: boolean) => void;
+
+  // True while SlideCanvas is programmatically (re)loading elements. Used to
+  // suppress autosave so loading a slide doesn't trigger a save of itself.
+  isLoadingElements: boolean;
+  setIsLoadingElements: (loading: boolean) => void;
 }
 
 export const useDeckCanvasStore = create<DeckCanvasState>((set, get) => ({
@@ -100,4 +105,8 @@ export const useDeckCanvasStore = create<DeckCanvasState>((set, get) => ({
   // Dirty
   isDirty: false,
   setIsDirty: (dirty) => set({ isDirty: dirty }),
+
+  // Loading guard
+  isLoadingElements: false,
+  setIsLoadingElements: (loading) => set({ isLoadingElements: loading }),
 }));

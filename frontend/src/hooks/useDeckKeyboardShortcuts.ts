@@ -1,6 +1,12 @@
 import { useEffect, useCallback } from 'react';
 import { Canvas as FabricCanvas, FabricObject } from 'fabric';
 import { useDeckCanvasStore } from '../stores/deckCanvasStore';
+import {
+  createRectObject,
+  createCircleObject,
+  createTextObject,
+  createLineObject,
+} from '../utils/deckCanvasUtils';
 
 interface UseKeyboardShortcutsOptions {
   canvas: FabricCanvas | null;
@@ -192,6 +198,17 @@ export function useDeckKeyboardShortcuts({
   }, [canvas, pushHistory]);
 
   useEffect(() => {
+    // Add a freshly-created object to the canvas, select it, push history and
+    // mark dirty so autosave picks it up. Objects must already carry their
+    // `id` + `elementType` (the deckCanvasUtils create* helpers do this).
+    const addAndPersist = (obj: FabricObject) => {
+      if (!canvas) return;
+      canvas.add(obj);
+      canvas.setActiveObject(obj);
+      canvas.renderAll();
+      pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in input/textarea
       if (
@@ -307,101 +324,65 @@ export function useDeckKeyboardShortcuts({
       }
 
       // R - Add rectangle (when not in text editing or ctrl shortcuts)
-      if (key === 'r' && !ctrl) {
-        const { Rect } = require('fabric');
-        const center = canvas?.getCenter();
-        if (center) {
-          const rect = new Rect({
-            left: center.left,
-            top: center.top,
-            width: 150,
-            height: 100,
-            fill: '#3b82f6',
-            stroke: '#1e40af',
-            strokeWidth: 2,
-            rx: 8,
-            ry: 8,
-            originX: 'center',
-            originY: 'center',
-          });
-          rect.set('elementType', 'shape');
-          rect.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-          canvas?.add(rect);
-          canvas?.setActiveObject(rect);
-          canvas?.renderAll();
-          pushHistory(JSON.stringify((canvas as any)?.toJSON(['id', 'elementId', 'elementType'])));
-        }
+      if (key === 'r' && !ctrl && canvas) {
+        const center = canvas.getCenter();
+        const rect = createRectObject({
+          left: center.left,
+          top: center.top,
+          width: 150,
+          height: 100,
+          fill: '#3b82f6',
+          stroke: '#1e40af',
+          strokeWidth: 2,
+          rx: 8,
+          ry: 8,
+          originX: 'center',
+          originY: 'center',
+        });
+        addAndPersist(rect);
         return;
       }
 
       // C - Add circle (when not in text editing or Ctrl+C for copy)
-      if (key === 'c' && !ctrl) {
-        const { Circle } = require('fabric');
-        const center = canvas?.getCenter();
-        if (center) {
-          const circle = new Circle({
-            left: center.left,
-            top: center.top,
-            radius: 50,
-            fill: '#10b981',
-            stroke: '#047857',
-            strokeWidth: 2,
-            originX: 'center',
-            originY: 'center',
-          });
-          circle.set('elementType', 'shape');
-          circle.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-          canvas?.add(circle);
-          canvas?.setActiveObject(circle);
-          canvas?.renderAll();
-          pushHistory(JSON.stringify((canvas as any)?.toJSON(['id', 'elementId', 'elementType'])));
-        }
+      if (key === 'c' && !ctrl && canvas) {
+        const center = canvas.getCenter();
+        const circle = createCircleObject({
+          left: center.left,
+          top: center.top,
+          radius: 50,
+          fill: '#10b981',
+          stroke: '#047857',
+          strokeWidth: 2,
+          originX: 'center',
+          originY: 'center',
+        });
+        addAndPersist(circle);
         return;
       }
 
       // T - Add text (when not in text editing or ctrl shortcuts)
-      if (key === 't' && !ctrl) {
-        const { IText } = require('fabric');
-        const center = canvas?.getCenter();
-        if (center) {
-          const text = new IText('Double click to edit', {
-            left: center.left,
-            top: center.top,
-            fontSize: 24,
-            fontFamily: 'Inter, sans-serif',
-            fill: '#1f2937',
-            originX: 'center',
-            originY: 'center',
-          });
-          text.set('elementType', 'text');
-          text.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-          canvas?.add(text);
-          canvas?.setActiveObject(text);
-          canvas?.renderAll();
-          pushHistory(JSON.stringify((canvas as any)?.toJSON(['id', 'elementId', 'elementType'])));
-        }
+      if (key === 't' && !ctrl && canvas) {
+        const center = canvas.getCenter();
+        const text = createTextObject('Double click to edit', {
+          left: center.left,
+          top: center.top,
+          fontSize: 24,
+          fill: '#1f2937',
+          originX: 'center',
+          originY: 'center',
+        });
+        addAndPersist(text);
         return;
       }
 
       // L - Add line (when not in text editing or ctrl shortcuts)
-      if (key === 'l' && !ctrl) {
-        const { Line } = require('fabric');
-        const center = canvas?.getCenter();
-        if (center) {
-          const line = new Line(
-            [center.left - 75, center.top, center.left + 75, center.top],
-            {
-              stroke: '#374151',
-              strokeWidth: 2,
-            }
-          );
-          line.set('elementType', 'line');
-          line.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-          canvas?.add(line);
-          canvas?.setActiveObject(line);
-          canvas?.renderAll();
-          pushHistory(JSON.stringify((canvas as any)?.toJSON(['id', 'elementId', 'elementType'])));
-        }
+      if (key === 'l' && !ctrl && canvas) {
+        const center = canvas.getCenter();
+        const line = createLineObject(
+          [center.left - 75, center.top, center.left + 75, center.top],
+          { stroke: '#374151', strokeWidth: 2 },
+        );
+        addAndPersist(line);
         return;
       }
     };

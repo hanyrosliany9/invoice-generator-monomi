@@ -46,7 +46,9 @@
     "errorOccurred": "An error occurred",
     "close": "Close",
     "noDescription": "No description",
-    "confirmDiscard": "You have unsaved changes. Leave without saving?"
+    "confirmDiscard": "You have unsaved changes. Leave without saving?",
+    "removing": "Removing…",
+    "remove": "Remove"
   },
   "table": {
     "number": "Number",
@@ -2041,7 +2043,9 @@
       "namePlaceholder": "E.g. Final Deliverables",
       "notFoundDesc": "The collection you're looking for does not exist or has been deleted.",
       "selectAtLeastOne": "Select at least one asset.",
-      "smartSub": "Smart collection — updated automatically based on criteria."
+      "smartSub": "Smart collection — updated automatically based on criteria.",
+      "confirmDeleteTitle": "Delete collection?",
+      "confirmRemoveTitle": "Remove from collection?"
     },
     "media": "Media",
     "project": "Project",
@@ -5568,7 +5572,12 @@
     "slideDuplicated": "Slide duplicated",
     "editMeta": "Edit deck details",
     "shortcuts": "Keyboard shortcuts",
-    "addFirstSlide": "Add first slide"
+    "addFirstSlide": "Add first slide",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "unsaved": "Unsaved changes",
+    "saveError": "Failed to save deck",
+    "saveTooltip": "Save slide (Ctrl+S)"
   },
   "shotListEditor": {
     "saveSuccess": "Shot list saved",
@@ -5889,7 +5898,24 @@
     "setExpiry": "Set expiry date",
     "applyExpiry": "Apply",
     "clearExpiry": "Clear",
-    "openVideoReview": "Open Video Review"
+    "openVideoReview": "Open Video Review",
+    "openCollection": "Open collection \"{{name}}\"",
+    "noCollaborators": "No collaborators yet. Invite a client or teammate below.",
+    "unknownUser": "Unknown",
+    "inviteClient": "Invite client / collaborator",
+    "inviteEmailPlaceholder": "email@client.com",
+    "inviteNamePlaceholder": "Name (optional)",
+    "invite": "Invite",
+    "inviteSent": "Invitation sent.",
+    "inviteFailed": "Failed to send invitation.",
+    "inviteEmailRequired": "Email is required.",
+    "accessRevoked": "Access revoked.",
+    "revokeFailed": "Failed to revoke access.",
+    "revokeAccess": "Revoke access",
+    "roleViewer": "Viewer",
+    "roleCommenter": "Commenter",
+    "roleEditor": "Editor",
+    "confirmDeleteAssetTitle": "Delete asset?"
   },
   "salaries": {
     "pageTitle": "Staff Salaries",
@@ -6733,7 +6759,8 @@
       "download": "Download",
       "close": "Close (Esc)",
       "hint": "+/− zoom · R rotate · 0 reset · Esc close"
-    }
+    },
+    "shiftClickHint": "Shift-click to select a range"
   },
   "guestReview": {
     "feedbackHeader": "Leave Feedback",
