@@ -49,12 +49,14 @@ import {
   type FilterState,
 } from '@/components/media/FilterSortBar';
 import { BulkActionBar } from '@/components/media/BulkActionBar';
+import { ComparisonView } from '@/components/media/ComparisonView';
 import { MetadataPanel } from '@/components/media/MetadataPanel';
 import { LightboxOverlay } from '@/components/media/LightboxOverlay';
 import { FolderSidebar } from '@/components/media/FolderSidebar';
 import { FolderBreadcrumb, type BreadcrumbSegment } from '@/components/media/FolderBreadcrumb';
 import { MoveToFolderDialog } from '@/components/media/MoveToFolderDialog';
 import { NewCollectionDialog } from '@/components/media/NewCollectionDialog';
+import { VideoReviewModal } from '@/components/media/VideoReviewModal';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — same shape as every v2 page.                             */
@@ -126,6 +128,12 @@ export default function MediaProjectDetailPageV2() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lightboxAsset, setLightboxAsset] = useState<MediaAsset | null>(null);
+
+  /* ---------- video review state ---------- */
+  const [videoReviewAsset, setVideoReviewAsset] = useState<MediaAsset | null>(null);
+
+  /* ---------- comparison state ---------- */
+  const [compareOpen, setCompareOpen] = useState(false);
 
   /* ---------- folder + collection state ---------- */
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
@@ -898,7 +906,13 @@ export default function MediaProjectDetailPageV2() {
                     mediaToken={mediaToken}
                     isSelected={selectedIds.has(asset.id)}
                     onSelect={() => toggleSelect(asset.id)}
-                    onClick={() => setSelectedAsset(asset)}
+                    onClick={() => {
+                      if (asset.mediaType === 'VIDEO') {
+                        setVideoReviewAsset(asset);
+                      } else {
+                        setSelectedAsset(asset);
+                      }
+                    }}
                     onStarChange={(rating) =>
                       starRatingMutation.mutate({ assetId: asset.id, rating })
                     }
@@ -1005,10 +1019,16 @@ export default function MediaProjectDetailPageV2() {
                 {/* Preview */}
                 <div className="rounded-md bg-bg-sunken border border-border-subtle overflow-hidden relative group/preview">
                   {selectedAsset.mediaType === 'VIDEO' ? (
-                    <div className="aspect-video flex flex-col items-center justify-center gap-2 text-text-tertiary">
-                      <Play className="h-10 w-10 stroke-1" />
-                      <span className="text-xs">{t('mediaCollab.videoPreview', 'Pratinjau video')}</span>
-                    </div>
+                    <button
+                      type="button"
+                      className="aspect-video flex flex-col items-center justify-center gap-2 text-text-tertiary w-full hover:bg-bg-sunken/80 transition-colors"
+                      onClick={() => { setVideoReviewAsset(selectedAsset); setSelectedAsset(null); }}
+                    >
+                      <div className="rounded-full bg-bg-base/80 p-4 border border-border-subtle">
+                        <Play className="h-8 w-8 fill-text-primary text-text-primary" />
+                      </div>
+                      <span className="text-xs">{t('mediaCollab.openVideoReview', 'Open Video Review')}</span>
+                    </button>
                   ) : selectedAsset.thumbnailUrl || selectedAsset.url ? (
                     <>
                       <img
@@ -1331,6 +1351,7 @@ export default function MediaProjectDetailPageV2() {
           await bulkDeleteMutation.mutateAsync(Array.from(selectedIds));
         }}
         onMoveToFolder={() => setMoveDialogOpen(true)}
+        onCompare={() => setCompareOpen(true)}
         isRating={bulkRateMutation.isPending}
         isDownloading={bulkDownloadMutation.isPending}
         isDeleting={bulkDeleteMutation.isPending}
@@ -1366,6 +1387,37 @@ export default function MediaProjectDetailPageV2() {
           alt={lightboxAsset.originalName}
           downloadUrl={getProxyUrl(lightboxAsset.url, mediaToken)}
           onClose={() => setLightboxAsset(null)}
+        />
+      )}
+
+      {/* Video review modal */}
+      {videoReviewAsset && (
+        <VideoReviewModal
+          asset={videoReviewAsset}
+          mediaToken={mediaToken}
+          onClose={() => setVideoReviewAsset(null)}
+          onPrev={() => {
+            const idx = filteredAssets.findIndex((a) => a.id === videoReviewAsset.id);
+            const prev = filteredAssets.slice(0, idx).reverse().find((a) => a.mediaType === 'VIDEO');
+            if (prev) setVideoReviewAsset(prev);
+          }}
+          onNext={() => {
+            const idx = filteredAssets.findIndex((a) => a.id === videoReviewAsset.id);
+            const next = filteredAssets.slice(idx + 1).find((a) => a.mediaType === 'VIDEO');
+            if (next) setVideoReviewAsset(next);
+          }}
+          onStarChange={(assetId, rating) =>
+            starRatingMutation.mutate({ assetId, rating })
+          }
+        />
+      )}
+
+      {/* Comparison overlay */}
+      {compareOpen && selectedIds.size >= 2 && selectedIds.size <= 4 && (
+        <ComparisonView
+          assets={assets.filter((a) => selectedIds.has(a.id))}
+          mediaToken={mediaToken}
+          onClose={() => setCompareOpen(false)}
         />
       )}
     </Shell>

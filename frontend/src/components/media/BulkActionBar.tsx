@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, Star, Trash2, X, Check, Loader2, FolderOpen } from 'lucide-react';
+import { Columns, Download, Star, Trash2, X, Check, Loader2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,6 +25,7 @@ interface BulkActionBarProps {
   onBulkDownload: () => Promise<void>;
   onBulkDelete: () => Promise<void>;
   onMoveToFolder?: () => void;
+  onCompare?: () => void;
   isRating: boolean;
   isDownloading: boolean;
   isDeleting: boolean;
@@ -37,6 +38,7 @@ export function BulkActionBar({
   onBulkDownload,
   onBulkDelete,
   onMoveToFolder,
+  onCompare,
   isRating,
   isDownloading,
   isDeleting,
@@ -76,6 +78,20 @@ export function BulkActionBar({
           >
             <FolderOpen className="h-3.5 w-3.5" />
             {t('mediaFolders.moveTo', 'Move to…')}
+          </Button>
+        )}
+
+        {/* Compare — only when 2–4 assets are selected */}
+        {onCompare && selectedCount >= 2 && selectedCount <= 4 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs border-border-subtle"
+            disabled={busy}
+            onClick={onCompare}
+          >
+            <Columns className="h-3.5 w-3.5" />
+            {t('mediaCompare.compareButton', 'Compare')}
           </Button>
         )}
 
