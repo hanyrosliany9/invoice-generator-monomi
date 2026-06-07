@@ -158,7 +158,12 @@ export default function ShotListEditorPageV2() {
 
   const duplicateRow = (idx: number) => {
     const row = getValues(`shots.${idx}`);
-    insert(idx + 1, { ...row, id: undefined }); // copy persisted as a new shot on save
+    insert(idx + 1, {
+      ...row,
+      id: undefined, // copy persisted as a new shot on save
+      // suffix so the copy doesn't silently share the source's shot number
+      shotNumber: row.shotNumber ? `${row.shotNumber}-copy` : '',
+    });
     focusRowRef.current = idx + 1;
   };
 
@@ -205,74 +210,30 @@ export default function ShotListEditorPageV2() {
     !isDirty || window.confirm(t('common.confirmDiscard', 'You have unsaved changes. Leave without saving?'));
   const handleBack = () => { if (confirmLeave()) navigate(backTarget); };
 
-  /* ---------- save ---------- */
+  /* ---------- save ----------
+     One atomic request: the backend diffs the desired set against what's
+     stored (delete missing / update existing / create new) inside a single
+     transaction, and numbers order per-scene. No partial-save risk. */
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      if (!id || !shotList) return;
-
-      // 1. shot list meta
-      await shotListsApi.update(id, {
+      if (!id) return;
+      await shotListsApi.bulkSaveShots(id, {
         name:        values.name,
         description: values.description || undefined,
-      });
-
-      // 2. Ensure at least one scene exists. This is only the fallback for
-      //    genuinely new shots that carry no sceneId (e.g. shots added before
-      //    the list had any scenes, which shouldn't normally happen).
-      //    We do NOT blindly reassign all shots to scenes[0] — each shot
-      //    carries its original sceneId from the form row.
-      let fallbackSceneId = shotList.scenes?.[0]?.id;
-      if (!fallbackSceneId) {
-        const created = await shotListsApi.createScene({
-          shotListId:  id,
-          name:        'Scene 1',
-          sceneNumber: '1',
-          order:       0,
-        });
-        fallbackSceneId = created.id;
-      }
-
-      // 3. shot diff against the flattened original set
-      const originalIds = new Set(flattenShots(shotList.scenes).map((s) => s.id));
-      const keptIds     = new Set(values.shots.map((s) => s.id).filter(Boolean) as string[]);
-      const toDelete    = [...originalIds].filter((sid) => !keptIds.has(sid));
-      for (const sid of toDelete) {
-        await shotListsApi.deleteShot(sid);
-      }
-
-      // Order is meaningful PER SCENE (the backend sorts shots within each
-      // scene), so number each scene's shots 0..n-1 by their relative position
-      // rather than using the global flattened index (which would collide
-      // across scenes).
-      const orderByScene: Record<string, number> = {};
-      for (let i = 0; i < values.shots.length; i++) {
-        const s = values.shots[i];
-        // Use the shot's own sceneId (set when the form was populated from the
-        // server). New shots with no sceneId fall back to the first scene.
-        const targetSceneId = s.sceneId ?? fallbackSceneId!;
-        const order = (orderByScene[targetSceneId] = (orderByScene[targetSceneId] ?? -1) + 1);
-        const createPayload = {
-          sceneId:        targetSceneId,
+        shots: values.shots.map((s) => ({
+          id:             s.id,
+          sceneId:        s.sceneId,
           shotNumber:     s.shotNumber,
           description:    s.description || undefined,
           shotType:       s.shotType || undefined,
           cameraMovement: s.cameraMovement || undefined,
           camera:         s.camera || undefined,
           // backend validates estimatedTime as an integer; round + drop NaN
-          // (empty number input) so a stray decimal can't 400 the whole batch.
+          // (empty number input) so a stray decimal can't reject the save.
           estimatedTime:  Number.isFinite(s.estimatedTime) ? Math.round(s.estimatedTime as number) : undefined,
           notes:          s.notes || undefined,
-          order,
-        };
-        if (s.id && originalIds.has(s.id)) {
-          // UpdateShotDto omits sceneId (OmitType) — strip it to avoid
-          // forbidNonWhitelisted 400.
-          const { sceneId: _sceneId, ...updatePayload } = createPayload;
-          await shotListsApi.updateShot(s.id, updatePayload);
-        } else {
-          await shotListsApi.createShot(createPayload);
-        }
-      }
+        })),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shot-list', id] });

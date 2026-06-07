@@ -15,6 +15,7 @@ import { Response } from "express";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ShotListsService } from "./shot-lists.service";
 import { CreateShotListDto } from "./dto/create-shot-list.dto";
+import { BulkSaveShotsDto } from "./dto/bulk-save-shots.dto";
 
 @Controller("shot-lists")
 @UseGuards(JwtAuthGuard)
@@ -42,6 +43,14 @@ export class ShotListsController {
     @Body() dto: Partial<CreateShotListDto>,
   ) {
     return this.service.update(id, dto);
+  }
+
+  @Put(":id/shots")
+  async bulkSaveShots(
+    @Param("id") id: string,
+    @Body() dto: BulkSaveShotsDto,
+  ) {
+    return this.service.bulkSaveShots(id, dto);
   }
 
   @Delete(":id")

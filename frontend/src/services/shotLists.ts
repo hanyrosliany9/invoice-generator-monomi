@@ -27,6 +27,21 @@ export const shotListsApi = {
     await apiClient.delete(`/shot-lists/${id}`);
   },
 
+  // Atomic bulk save — replaces the list's shots (and optionally name/
+  // description) in one transactional request. Order is computed server-side
+  // per scene, so callers send shots in display order only.
+  bulkSaveShots: async (
+    id: string,
+    payload: {
+      name?: string;
+      description?: string;
+      shots: Array<Partial<Shot> & { shotNumber: string }>;
+    },
+  ): Promise<ShotList> => {
+    const res = await apiClient.put(`/shot-lists/${id}/shots`, payload);
+    return res.data.data;
+  },
+
   // Scenes
   createScene: async (data: Partial<ShotListScene>): Promise<ShotListScene> => {
     const res = await apiClient.post('/shot-list-scenes', data);

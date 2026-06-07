@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import * as puppeteer from "puppeteer";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateShotListDto } from "./dto/create-shot-list.dto";
+import { BulkSaveShotsDto } from "./dto/bulk-save-shots.dto";
 
 @Injectable()
 export class ShotListsService {
@@ -66,6 +67,114 @@ export class ShotListsService {
   async remove(id: string) {
     await this.prisma.shotList.delete({ where: { id } });
     return { success: true };
+  }
+
+  /**
+   * Atomically replace a shot list's shots (and optionally its name/description).
+   * The whole desired set is diffed and applied inside a single transaction, so
+   * a mid-way failure can never leave the list half-written. Order is numbered
+   * per-scene by array position.
+   */
+  async bulkSaveShots(id: string, dto: BulkSaveShotsDto) {
+    const existing = await this.prisma.shotList.findUnique({
+      where: { id },
+      include: { scenes: { select: { id: true } } },
+    });
+    if (!existing) throw new NotFoundException("Shot list not found");
+
+    await this.prisma.$transaction(
+      async (tx) => {
+        // 1. shot list meta
+        if (dto.name !== undefined || dto.description !== undefined) {
+          await tx.shotList.update({
+            where: { id },
+            data: {
+              ...(dto.name !== undefined ? { name: dto.name } : {}),
+              ...(dto.description !== undefined
+                ? { description: dto.description }
+                : {}),
+            },
+          });
+        }
+
+        // 2. ensure at least one scene exists to hold shots
+        const sceneIds = new Set(existing.scenes.map((s) => s.id));
+        let fallbackSceneId = existing.scenes[0]?.id;
+        if (!fallbackSceneId) {
+          const scene = await tx.shotListScene.create({
+            data: {
+              shotListId: id,
+              name: "Scene 1",
+              sceneNumber: "1",
+              order: 0,
+            },
+          });
+          fallbackSceneId = scene.id;
+          sceneIds.add(scene.id);
+        }
+
+        // 3. delete shots no longer present in the desired set
+        const currentShots = await tx.shot.findMany({
+          where: { scene: { shotListId: id } },
+          select: { id: true },
+        });
+        const incomingIds = new Set(
+          dto.shots
+            .map((s) => s.id)
+            .filter((x): x is string => typeof x === "string" && x.length > 0),
+        );
+        const toDelete = currentShots
+          .map((s) => s.id)
+          .filter((sid) => !incomingIds.has(sid));
+        if (toDelete.length > 0) {
+          await tx.shot.deleteMany({ where: { id: { in: toDelete } } });
+        }
+        const existingIds = new Set(currentShots.map((s) => s.id));
+
+        // 4. upsert each shot; order is numbered PER SCENE by array position
+        const orderByScene: Record<string, number> = {};
+        for (const s of dto.shots) {
+          const targetSceneId =
+            s.sceneId && sceneIds.has(s.sceneId) ? s.sceneId : fallbackSceneId!;
+          const order = (orderByScene[targetSceneId] =
+            (orderByScene[targetSceneId] ?? -1) + 1);
+
+          const fields = {
+            shotNumber: s.shotNumber,
+            order,
+            shotSize: s.shotSize,
+            shotType: s.shotType,
+            cameraAngle: s.cameraAngle,
+            cameraMovement: s.cameraMovement,
+            lens: s.lens,
+            frameRate: s.frameRate,
+            camera: s.camera,
+            description: s.description,
+            action: s.action,
+            dialogue: s.dialogue,
+            notes: s.notes,
+            setupNumber: s.setupNumber,
+            estimatedTime: s.estimatedTime,
+            vfx: s.vfx,
+            sfx: s.sfx,
+          };
+
+          if (s.id && existingIds.has(s.id)) {
+            await tx.shot.update({
+              where: { id: s.id },
+              data: { ...fields, sceneId: targetSceneId },
+            });
+          } else {
+            await tx.shot.create({
+              data: { ...fields, sceneId: targetSceneId },
+            });
+          }
+        }
+      },
+      { timeout: 20000 },
+    );
+
+    return this.findOne(id);
   }
 
   async generatePdf(id: string): Promise<Buffer> {

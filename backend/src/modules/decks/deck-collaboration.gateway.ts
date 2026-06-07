@@ -21,13 +21,15 @@ interface CollaboratorInfo {
 
 @WebSocketGateway({
   cors: {
-    // Mirror the app's frontend origin; fall back to reflecting any origin in
-    // dev so the hybrid frontend (:3000 / the dev tunnel) can connect.
+    // Mirror the app's frontend origin. In dev we reflect any origin so the
+    // hybrid frontend (:3000 / the dev tunnel) can connect; in production we do
+    // NOT fall back to reflecting all origins — set SOCKET_IO_CORS_ORIGIN /
+    // FRONTEND_URL / PUBLIC_URL (same-origin deploys behind nginx need no CORS).
     origin:
       process.env.SOCKET_IO_CORS_ORIGIN ||
       process.env.FRONTEND_URL ||
       process.env.PUBLIC_URL ||
-      true,
+      (process.env.NODE_ENV === "production" ? false : true),
     credentials: true,
   },
   namespace: "/decks",
