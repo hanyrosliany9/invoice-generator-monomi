@@ -4806,7 +4806,17 @@
     "budgetUsed": "{{pct}}% of budget used",
     "overBudget": "over budget",
     "noCostBudget": "No estimated cost budget set for this project yet.",
-    "setBudget": "Set Budget"
+    "setBudget": "Set Budget",
+    "profitability": "Profitability",
+    "profitStatusSub": "Revenue vs. cost margins",
+    "profitNotCalc": "Awaiting invoices/expenses",
+    "grossMargin": "Gross Margin",
+    "netMargin": "Net Margin",
+    "netProfit": "Net Profit",
+    "profitExcellent": "Excellent",
+    "profitGood": "Good",
+    "profitBreakEven": "Break-even",
+    "profitLoss": "Loss"
   },
   "projectForm": {
     "identity": {

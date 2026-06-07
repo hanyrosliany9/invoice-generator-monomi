@@ -916,6 +916,62 @@ export default function ProjectDetailPageV2() {
         </section>
       ) : null}
 
+      {/* Profitability — gross & net margin bars (backend-tracked) */}
+      {project.profitCalculatedAt || project.grossMarginPercent != null || project.netMarginPercent != null ? (
+        (() => {
+          const gm = toNumber(project.grossMarginPercent);
+          const nm = toNumber(project.netMarginPercent);
+          const np = toNumber(project.netProfit);
+          const toneText = (m: number) =>
+            m >= 20 ? 'text-success' : m >= 10 ? 'text-brand-cream' : m >= 0 ? 'text-warning' : 'text-danger';
+          const toneBar = (m: number) =>
+            m >= 20 ? 'bg-success' : m >= 10 ? 'bg-brand-cream' : m >= 0 ? 'bg-warning' : 'bg-danger';
+          const status =
+            nm >= 20 ? t('projectDetail.profitExcellent', 'Excellent')
+            : nm >= 10 ? t('projectDetail.profitGood', 'Good')
+            : nm >= 0 ? t('projectDetail.profitBreakEven', 'Break-even')
+            : t('projectDetail.profitLoss', 'Loss');
+          const MarginBar = ({ label, pct }: { label: string; pct: number }) => (
+            <div className="mb-4 last:mb-0">
+              <div className="flex items-baseline justify-between mb-1.5">
+                <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary">{label}</span>
+                <span className={cn('text-sm font-medium tabular-nums', toneText(pct))}>{pct.toFixed(1)}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-bg-sunken overflow-hidden">
+                <div className={cn('h-full transition-all', toneBar(pct))} style={{ width: `${Math.min(Math.max(pct, 0), 100)}%` }} />
+              </div>
+            </div>
+          );
+          return (
+            <section className="mb-10">
+              <GlassPanel surface="glass" padding="lg">
+                <SectionHeader
+                  title={t('projectDetail.profitability', 'Profitability')}
+                  sublabel={
+                    project.profitCalculatedAt
+                      ? t('projectDetail.profitStatusSub', 'Revenue vs. cost margins')
+                      : t('projectDetail.profitNotCalc', 'Awaiting invoices/expenses')
+                  }
+                />
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
+                  <div>
+                    <MarginBar label={t('projectDetail.grossMargin', 'Gross Margin')} pct={gm} />
+                    <MarginBar label={t('projectDetail.netMargin', 'Net Margin')} pct={nm} />
+                  </div>
+                  <div className="md:text-right md:pl-6 md:border-l md:border-border-subtle">
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                      {t('projectDetail.netProfit', 'Net Profit')}
+                    </div>
+                    <MoneyDisplay amount={np} className={cn('text-xl font-display font-semibold', np >= 0 ? 'text-text-primary' : 'text-danger')} />
+                    <div className={cn('mt-1 text-xs', toneText(nm))}>{status}</div>
+                  </div>
+                </div>
+              </GlassPanel>
+            </section>
+          );
+        })()
+      ) : null}
+
       {/* Expenses */}
       <section className="mb-10">
         <GlassPanel surface="glass" padding="lg">

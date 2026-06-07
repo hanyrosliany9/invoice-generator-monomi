@@ -4897,7 +4897,17 @@
     "budgetUsed": "{{pct}}% anggaran terpakai",
     "overBudget": "melebihi anggaran",
     "noCostBudget": "Belum ada estimasi anggaran biaya untuk proyek ini.",
-    "setBudget": "Atur Anggaran"
+    "setBudget": "Atur Anggaran",
+    "profitability": "Profitabilitas",
+    "profitStatusSub": "Margin pendapatan vs. biaya",
+    "profitNotCalc": "Menunggu faktur/pengeluaran",
+    "grossMargin": "Margin Kotor",
+    "netMargin": "Margin Bersih",
+    "netProfit": "Laba Bersih",
+    "profitExcellent": "Sangat Baik",
+    "profitGood": "Baik",
+    "profitBreakEven": "Impas",
+    "profitLoss": "Rugi"
   },
   "projectForm": {
     "identity": {
