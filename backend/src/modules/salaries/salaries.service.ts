@@ -356,8 +356,66 @@ export class SalariesService {
     return this.prisma.salaryPayment.delete({ where: { id } });
   }
 
-  async markPaymentPaid(id: string, userId = "system") {
+  /**
+   * Create DRAFT salary payments for every active staff member who doesn't yet
+   * have a payment for the given period. Lets the user run a whole month's
+   * payroll in one click, then review + mark each paid. Idempotent: re-running
+   * skips staff that already have a payment that month.
+   */
+  async bulkGeneratePayroll(year: number, month: number) {
+    if (!year || !month || month < 1 || month > 12) {
+      throw new BadRequestException("Valid year and month (1-12) are required");
+    }
+    const MONTH_NAMES_ID = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+    ];
+    const period = `${MONTH_NAMES_ID[month - 1]} ${year}`;
+
+    const activeStaff = await this.prisma.staff.findMany({
+      where: { isActive: true },
+    });
+    const existing = await this.prisma.salaryPayment.findMany({
+      where: { year, month },
+      select: { staffId: true },
+    });
+    const existingIds = new Set(existing.map((e) => e.staffId));
+    const toCreate = activeStaff.filter((s) => !existingIds.has(s.id));
+
+    if (toCreate.length > 0) {
+      await this.prisma.salaryPayment.createMany({
+        data: toCreate.map((s) => ({
+          staffId: s.id,
+          period,
+          year,
+          month,
+          baseSalary: s.baseSalary,
+          allowances: 0,
+          deductions: 0,
+          netPay: s.baseSalary,
+          status: SalaryPaymentStatus.DRAFT,
+        })),
+      });
+    }
+
+    return {
+      period,
+      created: toCreate.length,
+      skipped: existingIds.size,
+      activeStaff: activeStaff.length,
+    };
+  }
+
+  async markPaymentPaid(
+    id: string,
+    userId = "system",
+    opts?: { paidAt?: string; paymentMethod?: string; notes?: string },
+  ) {
     await this.findOnePayment(id); // validate existence
+
+    // Use the actual payment date the user entered (drives the GL journal date
+    // via postSalaryJournal's `entryDate: payment.paidAt`), defaulting to now.
+    const paidAt = opts?.paidAt ? new Date(opts.paidAt) : new Date();
 
     // FIX 1: use a transaction so the status update and journal post are atomic.
     // If postSalaryJournal throws (and it now rethrows), the prisma update is
@@ -367,7 +425,9 @@ export class SalariesService {
         where: { id },
         data: {
           status: SalaryPaymentStatus.PAID,
-          paidAt: new Date(),
+          paidAt,
+          ...(opts?.paymentMethod ? { paymentMethod: opts.paymentMethod } : {}),
+          ...(opts?.notes !== undefined ? { notes: opts.notes } : {}),
         },
         include: { staff: true },
       });

@@ -10,7 +10,9 @@ import {
   HttpCode,
   HttpStatus,
   Request,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import {
   ApiTags,
   ApiOperation,
@@ -28,13 +30,17 @@ import {
 } from "./dto";
 import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { SalaryPaymentStatus } from "@prisma/client";
+import { PdfService } from "../pdf/pdf.service";
 
 @ApiTags("salaries")
 @ApiBearerAuth()
 @RequireAdmin()
 @Controller("salaries")
 export class SalariesController {
-  constructor(private readonly salariesService: SalariesService) {}
+  constructor(
+    private readonly salariesService: SalariesService,
+    private readonly pdfService: PdfService,
+  ) {}
 
   // ============================================================================
   // STATS
@@ -165,8 +171,43 @@ export class SalariesController {
   @ApiParam({ name: "id", description: "Payment ID" })
   @ApiResponse({ status: 200, description: "Payment marked as PAID" })
   @ApiResponse({ status: 404, description: "Payment not found" })
-  async markPaid(@Param("id") id: string, @Request() req: any) {
-    return this.salariesService.markPaymentPaid(id, req.user?.userId ?? "system");
+  async markPaid(
+    @Param("id") id: string,
+    @Request() req: any,
+    @Body() body?: { paidAt?: string; paymentMethod?: string; notes?: string },
+  ) {
+    return this.salariesService.markPaymentPaid(
+      id,
+      req.user?.userId ?? "system",
+      body,
+    );
+  }
+
+  @Post("payments/bulk-generate")
+  @ApiOperation({ summary: "Generate DRAFT payroll for all active staff for a month" })
+  @ApiResponse({ status: 201, description: "Payroll drafts generated" })
+  async bulkGeneratePayroll(@Body() body: { year: number; month: number }) {
+    return this.salariesService.bulkGeneratePayroll(
+      Number(body?.year),
+      Number(body?.month),
+    );
+  }
+
+  @Get("payments/:id/payslip")
+  @ApiOperation({ summary: "Download a salary payslip PDF" })
+  @ApiParam({ name: "id", description: "Payment ID" })
+  async payslip(@Param("id") id: string, @Res() res: Response) {
+    const payment = await this.salariesService.findOnePayment(id);
+    const pdf = await this.pdfService.generatePayslipPDF(payment);
+    const staffName = ((payment as any).staff?.name ?? "staff").replace(/[^a-zA-Z0-9]+/g, "-");
+    const period = ((payment as any).period ?? "").replace(/[^a-zA-Z0-9]+/g, "-");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="Payslip-${staffName}-${period}.pdf"`,
+    );
+    res.setHeader("Content-Length", pdf.length);
+    res.send(pdf);
   }
 
   @Delete("payments/:id")

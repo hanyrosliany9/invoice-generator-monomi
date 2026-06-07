@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   Wallet, Users, Plus, Search, MoreHorizontal, Eye, Pencil,
-  Trash2, CheckCircle, X,
+  Trash2, CheckCircle, X, Download, Loader2,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -27,11 +27,16 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth';
 import { salaryService, type SalaryPayment, type Staff } from '@/services/salaries';
+import { RecordSalaryPaymentModal } from './RecordSalaryPaymentModal';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -80,6 +85,15 @@ export default function SalariesPage() {
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  // Record salary payment modal
+  const [recordPaymentTarget, setRecordPaymentTarget] = useState<SalaryPayment | null>(null);
+
+  // Bulk generate payroll dialog
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const currentDate = new Date();
+  const [bulkMonth, setBulkMonth] = useState<string>(String(currentDate.getMonth() + 1));
+  const [bulkYear, setBulkYear] = useState<string>(String(currentDate.getFullYear()));
+
   /* ----- data ----- */
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['salary-stats'],
@@ -107,11 +121,30 @@ export default function SalariesPage() {
     },
   });
 
-  const markPaidMutation = useMutation({
-    mutationFn: (id: string) => salaryService.markPaid(id),
-    onSuccess: () => {
+  const bulkGenerateMutation = useMutation({
+    mutationFn: () =>
+      salaryService.bulkGeneratePayroll(
+        parseInt(bulkYear, 10),
+        parseInt(bulkMonth, 10),
+      ),
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['salary-payments'] });
       queryClient.invalidateQueries({ queryKey: ['salary-stats'] });
+      toast.success(
+        t(
+          'salaries.bulkGenerate.success',
+          'Payroll generated: {{created}} created, {{skipped}} skipped.',
+          { created: data.created, skipped: data.skipped },
+        ),
+      );
+      setBulkOpen(false);
+    },
+    onError: (err: unknown) => {
+      const resp = (err as { response?: { data?: { message?: string } } })?.response?.data;
+      toast.error(
+        resp?.message ||
+          (err instanceof Error ? err.message : t('salaries.bulkGenerate.error', 'Failed to generate payroll.')),
+      );
     },
   });
 
@@ -341,9 +374,29 @@ export default function SalariesPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {p.status === 'DRAFT' && (
-                <DropdownMenuItem onClick={() => markPaidMutation.mutate(p.id)}>
+                <DropdownMenuItem onClick={() => setRecordPaymentTarget(p)}>
                   <CheckCircle className="h-4 w-4 mr-2" />
                   {t('salaries.markPaid', 'Mark as Paid')}
+                </DropdownMenuItem>
+              )}
+              {p.status === 'PAID' && (
+                <DropdownMenuItem
+                  onClick={async () => {
+                    try {
+                      const blob = await salaryService.getPayslipPdf(p.id);
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `payslip-${p.period.replace(/\s+/g, '-')}.pdf`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      toast.error(t('salaries.payslip.error', 'Failed to download payslip.'));
+                    }
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {t('salaries.payslip.download', 'Download Payslip')}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => navigate(`/salaries/payments/${p.id}/edit`)}>
@@ -449,29 +502,42 @@ export default function SalariesPage() {
       {/* Tabs + table */}
       <GlassPanel surface="glass" padding="none" className="overflow-hidden">
         {/* Tab bar */}
-        <div className="flex items-center gap-0 border-b border-border-subtle px-4">
-          <button
-            onClick={() => setTab('staff')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              tab === 'staff'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-tertiary hover:text-text-secondary'
-            }`}
-          >
-            <Users className="inline h-4 w-4 mr-1.5 -mt-0.5" />
-            {t('salaries.tabs.staff', 'Staff')}
-          </button>
-          <button
-            onClick={() => setTab('payments')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              tab === 'payments'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-tertiary hover:text-text-secondary'
-            }`}
-          >
-            <Wallet className="inline h-4 w-4 mr-1.5 -mt-0.5" />
-            {t('salaries.tabs.payments', 'Payments')}
-          </button>
+        <div className="flex items-center justify-between border-b border-border-subtle px-4">
+          <div className="flex items-center gap-0">
+            <button
+              onClick={() => setTab('staff')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                tab === 'staff'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              <Users className="inline h-4 w-4 mr-1.5 -mt-0.5" />
+              {t('salaries.tabs.staff', 'Staff')}
+            </button>
+            <button
+              onClick={() => setTab('payments')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                tab === 'payments'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              <Wallet className="inline h-4 w-4 mr-1.5 -mt-0.5" />
+              {t('salaries.tabs.payments', 'Payments')}
+            </button>
+          </div>
+          {tab === 'payments' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkOpen(true)}
+              className="my-1.5"
+            >
+              <Plus className="h-4 w-4" />
+              {t('salaries.bulkGenerate.button', 'Generate Payroll')}
+            </Button>
+          )}
         </div>
 
         {/* Filter strip */}
@@ -562,6 +628,90 @@ export default function SalariesPage() {
           )}
         </div>
       </GlassPanel>
+      <RecordSalaryPaymentModal
+        payment={recordPaymentTarget}
+        open={Boolean(recordPaymentTarget)}
+        onOpenChange={(open) => {
+          if (!open) setRecordPaymentTarget(null);
+        }}
+      />
+
+      {/* Bulk Generate Payroll dialog */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="bg-bg-raised border-border-subtle sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-text-primary font-display">
+              {t('salaries.bulkGenerate.title', 'Generate Payroll')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-1">
+            <p className="text-sm text-text-tertiary">
+              {t(
+                'salaries.bulkGenerate.description',
+                'Creates DRAFT payments for all active staff members who are missing a payment for the selected period.',
+              )}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
+                  {t('salaries.payment.monthLabel', 'Month')}
+                </Label>
+                <Select value={bulkMonth} onValueChange={setBulkMonth}>
+                  <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'].map((m, i) => (
+                      <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-[0.12em] font-medium text-text-secondary">
+                  {t('salaries.payment.yearLabel', 'Year')}
+                </Label>
+                <Select value={bulkYear} onValueChange={setBulkYear}>
+                  <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map((y) => (
+                      <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setBulkOpen(false)}
+              disabled={bulkGenerateMutation.isPending}
+              className="text-text-secondary hover:text-text-primary"
+            >
+              {t('salaries.cancel', 'Cancel')}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => bulkGenerateMutation.mutate()}
+              disabled={bulkGenerateMutation.isPending}
+              className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[130px]"
+            >
+              {bulkGenerateMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t('salaries.bulkGenerate.generating', 'Generating...')}
+                </>
+              ) : (
+                t('salaries.bulkGenerate.submit', 'Generate')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }

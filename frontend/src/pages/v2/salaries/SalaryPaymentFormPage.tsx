@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useAuthStore } from '@/store/auth';
 import { salaryService, type CreateSalaryPaymentData } from '@/services/salaries';
 
@@ -43,8 +44,12 @@ export default function SalaryPaymentFormPage() {
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
+  const [searchParams] = useSearchParams();
+  const prefillStaffId = searchParams.get('staffId') ?? undefined;
+
   const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
+      staffId: prefillStaffId,
       yearStr: String(currentYear),
       monthStr: String(new Date().getMonth() + 1),
       allowances: 0,
@@ -175,18 +180,33 @@ export default function SalaryPaymentFormPage() {
                   {/* Staff selection */}
                   <div className="space-y-1.5">
                     <Label htmlFor="staffId">{t('salaries.payment.staffLabel', 'Staff Member')} *</Label>
-                    <select
-                      id="staffId"
-                      {...register('staffId', { required: t('salaries.payment.staffRequired', 'Select a staff member') })}
-                      className="w-full h-10 rounded-md border border-border-subtle bg-bg-sunken px-3 text-sm text-text-primary"
-                    >
-                      <option value="">{t('salaries.payment.staffSelect', 'Select staff...')}</option>
-                      {staffList.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} — {s.position}
-                        </option>
-                      ))}
-                    </select>
+                    <Controller
+                      name="staffId"
+                      control={control}
+                      rules={{ required: t('salaries.payment.staffRequired', 'Select a staff member') }}
+                      render={({ field }) => (
+                        <Combobox
+                          id="staffId"
+                          options={staffList.map((s) => ({
+                            value: s.id,
+                            label: s.name,
+                            keywords: [s.name, s.position],
+                            node: (
+                              <span className="flex flex-col">
+                                <span>{s.name}</span>
+                                <span className="text-xs text-text-tertiary">{s.position}</span>
+                              </span>
+                            ),
+                          }))}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder={t('salaries.payment.staffSelect', 'Select staff...')}
+                          searchPlaceholder={t('salaries.payment.staffSearch', 'Search by name or position...')}
+                          className="bg-bg-sunken border-border-subtle text-text-primary"
+                          aria-invalid={Boolean(errors.staffId)}
+                        />
+                      )}
+                    />
                     {errors.staffId && <p className="text-xs text-destructive">{errors.staffId.message}</p>}
                   </div>
 

@@ -143,8 +143,31 @@ export const salaryService = {
     return res.data.data;
   },
 
-  markPaid: async (id: string): Promise<SalaryPayment> => {
-    const res = await apiClient.post(`/salaries/payments/${id}/mark-paid`);
+  markPaid: async (
+    id: string,
+    opts?: { paidAt?: string; paymentMethod?: string; notes?: string },
+  ): Promise<SalaryPayment> => {
+    const res = await apiClient.post(`/salaries/payments/${id}/mark-paid`, opts ?? {});
+    return res.data.data;
+  },
+
+  bulkGeneratePayroll: async (
+    year: number,
+    month: number,
+  ): Promise<{ period: string; created: number; skipped: number; activeStaff: number }> => {
+    const res = await apiClient.post('/salaries/payments/bulk-generate', { year, month });
+    return res.data.data;
+  },
+
+  getPayslipPdf: async (id: string): Promise<Blob> => {
+    const res = await apiClient.get(`/salaries/payments/${id}/payslip`, {
+      responseType: 'blob',
+    });
+    return res.data as Blob;
+  },
+
+  getPaymentsByStaff: async (staffId: string): Promise<SalaryPayment[]> => {
+    const res = await apiClient.get('/salaries/payments', { params: { staffId } });
     return res.data.data;
   },
 

@@ -107,6 +107,7 @@ const V2MediaDownloaderPage = lazy(() => import('./pages/v2/downloaders/MediaDow
 const V2PinterestDownloaderPage = lazy(() => import('./pages/v2/downloaders/PinterestDownloaderPage'))
 const V2SalariesPage = lazy(() => import('./pages/v2/salaries/SalariesPage'))
 const V2StaffFormPage = lazy(() => import('./pages/v2/salaries/StaffFormPage'))
+const V2StaffDetailPage = lazy(() => import('./pages/v2/salaries/StaffDetailPage'))
 const V2SalaryPaymentFormPage = lazy(() => import('./pages/v2/salaries/SalaryPaymentFormPage'))
 const V2PublicDeckViewPage = lazy(() => import('./pages/v2/guest/PublicDeckViewPage'))
 const V2DeckAcceptInvitePage = lazy(() => import('./pages/v2/guest/DeckAcceptInvitePage'))
@@ -306,6 +307,7 @@ function App() {
                       {/* Salaries */}
                       <Route path='/salaries' element={<AdminRoute><V2SalariesPage /></AdminRoute>} />
                       <Route path='/salaries/staff/new' element={<AdminRoute><V2StaffFormPage /></AdminRoute>} />
+                      <Route path='/salaries/staff/:id' element={<AdminRoute><V2StaffDetailPage /></AdminRoute>} />
                       <Route path='/salaries/staff/:id/edit' element={<AdminRoute><V2StaffFormPage /></AdminRoute>} />
                       <Route path='/salaries/payments/new' element={<AdminRoute><V2SalaryPaymentFormPage /></AdminRoute>} />
                       <Route path='/salaries/payments/:id/edit' element={<AdminRoute><V2SalaryPaymentFormPage /></AdminRoute>} />

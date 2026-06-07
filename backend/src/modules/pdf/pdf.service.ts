@@ -312,6 +312,70 @@ export class PdfService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * Salary payslip — a compact A4 document for a single SalaryPayment.
+   * Self-contained HTML (no external template) rendered via the shared browser.
+   */
+  async generatePayslipPDF(payment: any): Promise<Buffer> {
+    const { page, release } = await this.acquirePage();
+    try {
+      const idr = (v: any) =>
+        "Rp " +
+        Math.round(Number(v) || 0).toLocaleString("id-ID", {
+          maximumFractionDigits: 0,
+        });
+      const staff = payment.staff ?? {};
+      const dateStr = payment.paidAt
+        ? new Date(payment.paidAt).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          })
+        : "-";
+      const row = (label: string, value: string, strong = false) =>
+        `<tr><td style="padding:6px 0;color:#444">${label}</td><td style="padding:6px 0;text-align:right;${strong ? "font-weight:700;" : ""}">${value}</td></tr>`;
+      const html = `<!doctype html><html><head><meta charset="utf-8"/>
+        <style>
+          *{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+          body{margin:0;padding:32px;color:#111}
+          .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:20px}
+          h1{font-size:20px;margin:0}
+          .muted{color:#666;font-size:12px}
+          table{width:100%;border-collapse:collapse;font-size:13px}
+          .total{border-top:2px solid #111;margin-top:8px}
+          .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:18px}
+          .box{border:1px solid #ddd;border-radius:6px;padding:12px}
+        </style></head><body>
+        <div class="head">
+          <div><h1>Slip Gaji</h1><div class="muted">Payslip — ${payment.period ?? ""}</div></div>
+          <div class="muted" style="text-align:right">Tanggal bayar<br/><strong>${dateStr}</strong></div>
+        </div>
+        <div class="grid">
+          <div class="box"><div class="muted">Karyawan</div><div style="font-weight:700">${staff.name ?? "-"}</div><div class="muted">${staff.position ?? ""}</div></div>
+          <div class="box"><div class="muted">Pembayaran</div><div>${payment.paymentMethod ?? "—"}</div><div class="muted">${staff.bankName ?? ""} ${staff.bankAccount ?? ""}</div></div>
+        </div>
+        <table>
+          ${row("Gaji Pokok", idr(payment.baseSalary))}
+          ${row("Tunjangan", idr(payment.allowances))}
+          ${row("Potongan", "- " + idr(payment.deductions))}
+        </table>
+        <table class="total">${row("Gaji Bersih (Net Pay)", idr(payment.netPay), true)}</table>
+        ${payment.notes ? `<p class="muted" style="margin-top:18px">Catatan: ${payment.notes}</p>` : ""}
+        <p class="muted" style="margin-top:32px">Dokumen ini dihasilkan otomatis dan sah tanpa tanda tangan.</p>
+        </body></html>`;
+
+      await page.setContent(html, { waitUntil: "networkidle0", timeout: 30000 });
+      const pdf = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: { top: "0.4in", right: "0.4in", bottom: "0.4in", left: "0.4in" },
+      });
+      return Buffer.from(pdf);
+    } finally {
+      await release();
+    }
+  }
+
   async generateQuotationPDF(
     quotationData: any,
     continuous: boolean = true,

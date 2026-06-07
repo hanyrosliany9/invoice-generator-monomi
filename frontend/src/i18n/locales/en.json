@@ -5858,7 +5858,8 @@
       "allowances": "Allowances",
       "deductions": "Deductions",
       "netPay": "Net Pay",
-      "status": "Status"
+      "status": "Status",
+      "paidAt": "Paid On"
     },
     "active": "Active",
     "inactive": "Inactive",
@@ -5897,7 +5898,8 @@
       "allowances": "Allowances",
       "base": "Base Salary",
       "deductions": "Deductions",
-      "netPay": "Net Pay"
+      "netPay": "Net Pay",
+      "staffSearch": "Search by name or position..."
     },
     "createPayment": "Create Payment",
     "updatePayment": "Update Payment",
@@ -5922,7 +5924,54 @@
       "paymentPlaceholder": "Search by staff name or period..."
     },
     "confirmDeactivate": "Deactivate this staff member?",
-    "confirmDelete": "Delete this payment?"
+    "confirmDelete": "Delete this payment?",
+    "recordPayment": {
+      "title": "Record Salary Payment",
+      "subtitleNamed": "Mark payment as paid for {{name}}",
+      "subtitle": "Mark this salary payment as paid.",
+      "period": "Period",
+      "date": "Payment Date",
+      "methodLabel": "Method",
+      "method": {
+        "bankTransfer": "Bank Transfer",
+        "cash": "Cash",
+        "other": "Other"
+      },
+      "notes": "Notes",
+      "optional": "optional",
+      "notesPlaceholder": "e.g. transfer reference, bank name",
+      "success": "Salary payment recorded.",
+      "error": "Failed to record payment.",
+      "cancel": "Cancel",
+      "saving": "Recording...",
+      "submit": "Mark as Paid"
+    },
+    "bulkGenerate": {
+      "button": "Generate Payroll",
+      "title": "Generate Payroll",
+      "description": "Creates DRAFT payments for all active staff members who are missing a payment for the selected period.",
+      "success": "Payroll generated: {{created}} created, {{skipped}} skipped.",
+      "error": "Failed to generate payroll.",
+      "generating": "Generating...",
+      "submit": "Generate"
+    },
+    "payslip": {
+      "download": "Download Payslip",
+      "error": "Failed to download payslip."
+    },
+    "staffDetail": {
+      "contact": "Contact",
+      "salary": "Salary",
+      "bank": "Bank",
+      "notes": "Notes",
+      "paymentHistory": "Payment History",
+      "paymentHistoryDesc": "All salary payments for this staff member",
+      "noPayments": "No payments yet",
+      "noPaymentsDesc": "No salary payments found for this staff member.",
+      "payStaff": "Pay This Staff",
+      "error": "Cannot load staff details"
+    },
+    "backToSalaries": "Back to Salaries"
   },
   "systemReport": {
     "backToReports": "Back to Reports",

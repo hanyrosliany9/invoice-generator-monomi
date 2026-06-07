@@ -5949,7 +5949,8 @@
       "allowances": "Tunjangan",
       "deductions": "Potongan",
       "netPay": "Gaji Bersih",
-      "status": "Status"
+      "status": "Status",
+      "paidAt": "Tanggal Bayar"
     },
     "active": "Aktif",
     "inactive": "Nonaktif",
@@ -5988,7 +5989,8 @@
       "allowances": "Tunjangan",
       "base": "Gaji Pokok",
       "deductions": "Potongan",
-      "netPay": "Gaji Bersih"
+      "netPay": "Gaji Bersih",
+      "staffSearch": "Cari berdasarkan nama atau jabatan..."
     },
     "createPayment": "Buat Pembayaran",
     "updatePayment": "Perbarui Pembayaran",
@@ -6013,7 +6015,54 @@
       "paymentPlaceholder": "Cari berdasarkan nama karyawan atau periode..."
     },
     "confirmDeactivate": "Nonaktifkan karyawan ini?",
-    "confirmDelete": "Hapus pembayaran ini?"
+    "confirmDelete": "Hapus pembayaran ini?",
+    "recordPayment": {
+      "title": "Catat Pembayaran Gaji",
+      "subtitleNamed": "Tandai pembayaran sebagai lunas untuk {{name}}",
+      "subtitle": "Tandai pembayaran gaji ini sebagai lunas.",
+      "period": "Periode",
+      "date": "Tanggal Pembayaran",
+      "methodLabel": "Metode",
+      "method": {
+        "bankTransfer": "Transfer Bank",
+        "cash": "Tunai",
+        "other": "Lainnya"
+      },
+      "notes": "Catatan",
+      "optional": "opsional",
+      "notesPlaceholder": "mis. nomor referensi transfer, nama bank",
+      "success": "Pembayaran gaji berhasil dicatat.",
+      "error": "Gagal mencatat pembayaran.",
+      "cancel": "Batal",
+      "saving": "Mencatat...",
+      "submit": "Tandai Lunas"
+    },
+    "bulkGenerate": {
+      "button": "Buat Penggajian",
+      "title": "Buat Penggajian",
+      "description": "Membuat pembayaran DRAFT untuk semua staf aktif yang belum memiliki pembayaran pada periode yang dipilih.",
+      "success": "Penggajian selesai: {{created}} dibuat, {{skipped}} dilewati.",
+      "error": "Gagal membuat penggajian.",
+      "generating": "Memproses...",
+      "submit": "Buat"
+    },
+    "payslip": {
+      "download": "Unduh Slip Gaji",
+      "error": "Gagal mengunduh slip gaji."
+    },
+    "staffDetail": {
+      "contact": "Kontak",
+      "salary": "Gaji",
+      "bank": "Bank",
+      "notes": "Catatan",
+      "paymentHistory": "Riwayat Pembayaran",
+      "paymentHistoryDesc": "Semua pembayaran gaji untuk staf ini",
+      "noPayments": "Belum ada pembayaran",
+      "noPaymentsDesc": "Tidak ada pembayaran gaji ditemukan untuk staf ini.",
+      "payStaff": "Bayar Staf Ini",
+      "error": "Tidak dapat memuat detail staf"
+    },
+    "backToSalaries": "Kembali ke Penggajian"
   },
   "systemReport": {
     "backToReports": "Kembali ke Laporan",
