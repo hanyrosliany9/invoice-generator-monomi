@@ -6,8 +6,9 @@ import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Send, CheckCircle2, Trash2, Pencil,
-  Download, AlertTriangle, Building2, Briefcase, Calendar, Receipt,
+  Download, AlertTriangle, Building2, Briefcase, Calendar, Receipt, Eye,
 } from 'lucide-react';
+import { PdfPreviewModal } from '@/components/monomi/PdfPreviewModal';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
@@ -153,6 +154,9 @@ export default function InvoiceDetailPageV2() {
     onError: onMutationError,
   });
 
+  // PDF preview modal state
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+
   // Payment recording modal + history
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const { data: payments = [] } = useQuery({
@@ -190,6 +194,20 @@ export default function InvoiceDetailPageV2() {
   }, [invoice]);
 
   /* ---------- handlers ---------- */
+  const buildPdfFilename = () => {
+    const invoiceNum = (invoice?.invoiceNumber || 'invoice').replace(/\//g, '-');
+    const parts = ['Invoice', invoiceNum];
+    const clientName = sanitize(invoice?.client?.name);
+    const projectType = sanitize(invoice?.project?.type);
+    if (clientName)  parts.push(clientName);
+    if (projectType) parts.push(projectType);
+    return `${parts.join('-')}.pdf`;
+  };
+
+  /** Opens the PDF preview modal — primary path. */
+  const handleOpenPdfPreview = () => setPdfPreviewOpen(true);
+
+  /** Direct-download used by the modal's Download button. */
   const handleDownloadPdf = async () => {
     if (!invoice) return;
     try {
@@ -197,13 +215,7 @@ export default function InvoiceDetailPageV2() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const invoiceNum = (invoice.invoiceNumber || 'invoice').replace(/\//g, '-');
-      const parts = ['Invoice', invoiceNum];
-      const clientName = sanitize(invoice.client?.name);
-      const projectType = sanitize(invoice.project?.type);
-      if (clientName)  parts.push(clientName);
-      if (projectType) parts.push(projectType);
-      a.download = `${parts.join('-')}.pdf`;
+      a.download = buildPdfFilename();
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -296,9 +308,9 @@ export default function InvoiceDetailPageV2() {
       </Button>
     )
     : (
-      <Button size="sm" variant="outline" onClick={handleDownloadPdf}>
+      <Button size="sm" variant="outline" onClick={handleOpenPdfPreview}>
         <Download className="h-4 w-4" />
-        {t('invoiceDetail.action.download', 'Download PDF')}
+        {t('invoiceDetail.action.previewPdf', 'Preview PDF')}
       </Button>
     );
 
@@ -359,9 +371,9 @@ export default function InvoiceDetailPageV2() {
                   <Pencil className="h-3.5 w-3.5" />
                   {t('invoiceDetail.action.edit', 'Edit')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDownloadPdf}>
+                <DropdownMenuItem onClick={handleOpenPdfPreview}>
                   <Download className="h-3.5 w-3.5" />
-                  {t('invoiceDetail.action.download', 'Download PDF')}
+                  {t('invoiceDetail.action.previewPdf', 'Preview PDF')}
                 </DropdownMenuItem>
                 {canDelete && (
                   <>
@@ -796,6 +808,15 @@ export default function InvoiceDetailPageV2() {
           onOpenChange={setPaymentModalOpen}
         />
       )}
+
+      <PdfPreviewModal
+        open={pdfPreviewOpen}
+        onClose={() => setPdfPreviewOpen(false)}
+        title={t('invoiceDetail.pdfPreview.title', 'Invoice PDF — {{number}}', { number: invoice.invoiceNumber })}
+        fetchPreview={() => invoiceService.generatePDF(id!, true, true)}
+        fetchDownload={() => invoiceService.generatePDF(id!, true, true)}
+        downloadFilename={buildPdfFilename()}
+      />
     </Shell>
   );
 }

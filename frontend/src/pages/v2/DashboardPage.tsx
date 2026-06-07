@@ -7,8 +7,10 @@ import {
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import { reportsService } from '@/services/reports';
+import { dashboardService } from '@/services/dashboard';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
@@ -104,6 +106,25 @@ export default function DashboardPageV2() {
     })),
     [revenueAnalytics],
   );
+
+  // Invoice stats for the payment-status donut chart.
+  const { data: invoiceStats } = useQuery({
+    queryKey: ['dashboard-invoice-stats'],
+    queryFn: dashboardService.getInvoiceStats,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const paymentDonutData = useMemo(() => {
+    if (!invoiceStats?.byStatus) return [];
+    const { byStatus } = invoiceStats;
+    const entries: { name: string; value: number; color: string }[] = [
+      { name: t('invoices.status.paid',    'Paid'),    value: byStatus.PAID    ?? 0, color: '#059669' },
+      { name: t('invoices.status.sent',    'Sent'),    value: byStatus.SENT    ?? 0, color: '#1e40af' },
+      { name: t('invoices.status.draft',   'Draft'),   value: byStatus.DRAFT   ?? 0, color: '#6b7280' },
+      { name: t('invoices.status.overdue', 'Overdue'), value: byStatus.OVERDUE ?? 0, color: '#dc2626' },
+    ];
+    return entries.filter((e) => e.value > 0);
+  }, [invoiceStats, t]);
 
   if (error) {
     return (
@@ -218,8 +239,9 @@ export default function DashboardPageV2() {
           </div>
         </section>
 
-        {/* Revenue chart — its own breathing section */}
-        <section className="mb-12">
+        {/* Revenue trend + Payment status donut — side-by-side on large screens */}
+        <section className="mb-12 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+          {/* Revenue trend */}
           <GlassPanel surface="glass" padding="lg">
             <div className="mb-6 flex items-baseline justify-between gap-4">
               <div>
@@ -274,6 +296,61 @@ export default function DashboardPageV2() {
                     activeDot={{ r: 4, fill: '#F6F3E8', stroke: '#030303', strokeWidth: 2 }}
                   />
                 </LineChart>
+              </ResponsiveContainer>
+            )}
+          </GlassPanel>
+
+          {/* Payment-status donut */}
+          <GlassPanel surface="glass" padding="lg">
+            <div className="mb-4">
+              <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
+                {t('dashboard.invoiceStatus', 'Status Invoice')}
+              </h2>
+              <p className="mt-0.5 text-xs text-text-tertiary">
+                {t('dashboard.invoiceStatusDesc', 'Distribusi berdasarkan jumlah')}
+              </p>
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-48 rounded-md" />
+            ) : paymentDonutData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-text-tertiary gap-2">
+                <FileText className="h-8 w-8 opacity-30" />
+                <p className="text-xs">{t('dashboard.noInvoiceData', 'Belum ada data invoice')}</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={paymentDonutData}
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    isAnimationActive={false}
+                  >
+                    {paymentDonutData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#131316',
+                      border: '1px solid rgba(246, 243, 232, 0.12)',
+                      borderRadius: '8px',
+                      color: '#F6F3E8',
+                      fontSize: '12px',
+                      padding: '8px 12px',
+                    }}
+                    formatter={(value) => [`${value} invoice`]}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    wrapperStyle={{ fontSize: '11px', color: 'rgba(246,243,232,0.65)' }}
+                  />
+                </PieChart>
               </ResponsiveContainer>
             )}
           </GlassPanel>

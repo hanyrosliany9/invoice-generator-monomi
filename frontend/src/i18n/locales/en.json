@@ -165,7 +165,8 @@
       "materaiRequired": "Stamp duty (materai) required — not yet applied",
       "stagePayment": "Payment",
       "stageCancelled": "Cancelled"
-    }
+    },
+    "projectTypes": "Project Types"
   },
   "breadcrumb": {
     "client": "Client",
@@ -227,7 +228,10 @@
       "title": "Cannot load dashboard"
     },
     "newQuotation": "+ New Quotation",
-    "newInvoice": "+ New Invoice"
+    "newInvoice": "+ New Invoice",
+    "invoiceStatus": "Invoice Status",
+    "invoiceStatusDesc": "Distribution by count",
+    "noInvoiceData": "No invoice data yet"
   },
   "quotations": {
     "title": "Quotations",
@@ -508,7 +512,8 @@
       "downloadPdf": "Download PDF",
       "deleteConfirm": "Delete quotation {{number}}? This action cannot be undone.",
       "delete": "Delete",
-      "viewInvoice": "View Invoice"
+      "viewInvoice": "View Invoice",
+      "previewPdf": "Preview PDF"
     },
     "filter": {
       "statusPlaceholder": "Status",
@@ -742,6 +747,17 @@
       "validationDueDateRequired": "Due date is required",
       "validationPaymentInfoTooShort": "Payment information is too short",
       "paymentInfoNoBank": "PAYMENT INFORMATION:\n\nPlease contact {{email}} for payment account details."
+    },
+    "bulk": {
+      "selected": "{{n}} selected",
+      "changeStatus": "Change Status",
+      "delete": "Delete",
+      "clear": "Clear",
+      "selectAll": "Select all",
+      "selectRow": "Select invoice",
+      "statusUpdated": "Status updated to {{status}} for selected invoices",
+      "deleted": "Selected invoices deleted",
+      "confirmDelete": "Delete {{n}} selected invoices? This cannot be undone."
     }
   },
   "clients": {
@@ -2380,6 +2396,9 @@
       "createdBy": "Created by",
       "relatedInvoices": "Related Invoices",
       "viewInvoice": "View →"
+    },
+    "pdfPreview": {
+      "title": "Quotation PDF — {{number}}"
     }
   },
   "socialReports": {
@@ -4952,7 +4971,8 @@
       "download": "Download PDF",
       "edit": "Edit",
       "delete": "Delete",
-      "recordPayment": "Record Payment"
+      "recordPayment": "Record Payment",
+      "previewPdf": "Preview PDF"
     },
     "moreActions": "More actions",
     "subtitle": "Invoice details, payment history, and related actions.",
@@ -4991,7 +5011,10 @@
     "milestone": "Payment Milestone",
     "ofTotal": "of total",
     "pdfFailed": "Failed to download PDF",
-    "paymentHistory": "Payment history"
+    "paymentHistory": "Payment history",
+    "pdfPreview": {
+      "title": "Invoice PDF — {{number}}"
+    }
   },
   "invoiceCreate": {
     "backToList": "Back to Invoices",
@@ -6532,5 +6555,186 @@
     "hintNavigate": "navigate",
     "hintSelect": "select",
     "hintClose": "close"
+  },
+  "pdfPreview": {
+    "loadError": "Failed to load PDF preview",
+    "loadFailed": "Failed to load PDF",
+    "download": "Download",
+    "downloadSuccess": "PDF downloaded successfully",
+    "downloadError": "Failed to download PDF",
+    "downloadInstead": "Download instead",
+    "empty": "No PDF loaded"
+  },
+  "projectTypes": {
+    "pageTitle": "Project Types",
+    "pageSubtitle": "Define the types of projects your agency handles. Each type gets its own code and invoice prefix.",
+    "newProjectType": "New Project Type",
+    "search": {
+      "placeholder": "Search by name or code..."
+    },
+    "filter": {
+      "reset": "Clear"
+    },
+    "col": {
+      "name": "Name",
+      "code": "Code",
+      "prefix": "Prefix",
+      "sortOrder": "Order",
+      "status": "Status"
+    },
+    "active": "Active",
+    "inactive": "Inactive",
+    "default": "Default",
+    "action": {
+      "edit": "Edit",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "delete": "Delete",
+      "save": "Save Changes",
+      "create": "Create"
+    },
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "retry": "Try Again",
+    "createSuccess": "Project type created.",
+    "updateSuccess": "Project type updated.",
+    "deleteSuccess": "Project type deleted.",
+    "toggleSuccess": "Status updated.",
+    "createError": "Failed to create project type.",
+    "updateError": "Failed to update project type.",
+    "deleteError": "Failed to delete project type.",
+    "toggleError": "Failed to toggle status.",
+    "confirmDelete": "Delete project type \"{{name}}\"? This cannot be undone.",
+    "validation": {
+      "required": "Code, Name, and Prefix are required."
+    },
+    "dialog": {
+      "editTitle": "Edit Project Type",
+      "createTitle": "New Project Type",
+      "desc": "Project types categorise your work and appear in invoice number prefixes."
+    },
+    "field": {
+      "code": "Code",
+      "prefix": "Invoice Prefix",
+      "name": "Name",
+      "namePlaceholder": "Photography",
+      "description": "Description",
+      "descriptionPlaceholder": "Photo shoots, product photography…",
+      "color": "Color",
+      "sortOrder": "Sort Order",
+      "isDefault": "Default type",
+      "isDefaultHint": "Pre-selected when creating a new project."
+    },
+    "error": {
+      "title": "Cannot load project types",
+      "generic": "An error occurred."
+    },
+    "empty": {
+      "title": "No project types yet",
+      "desc": "Create your first project type to use in projects and invoices.",
+      "filteredTitle": "No project types match",
+      "filteredDesc": "Try adjusting your search."
+    }
+  },
+  "mediaReview": {
+    "filterAll": "All",
+    "filterPhoto": "Photos",
+    "filterVideo": "Videos",
+    "searchPlaceholder": "Search filename…",
+    "clearFilters": "Clear",
+    "statusAll": "All statuses",
+    "statusDraft": "Draft",
+    "statusInReview": "In Review",
+    "statusNeedsChanges": "Needs Changes",
+    "statusApproved": "Approved",
+    "statusArchived": "Archived",
+    "anyRating": "Any rating",
+    "starsOrMore": "{{n}}★+",
+    "sortUploadedAt": "Date uploaded",
+    "sortName": "Filename",
+    "sortSize": "File size",
+    "sortRating": "Star rating",
+    "ascending": "Ascending",
+    "descending": "Descending",
+    "asc": "Asc",
+    "desc": "Desc",
+    "totalCount": "{{n}} assets",
+    "filteredCount": "{{filtered}} of {{total}}",
+    "bulkSelected": "{{n}} selected",
+    "bulkRate": "Rate…",
+    "clearRating": "Clear rating",
+    "bulkDownload": "Download",
+    "bulkDelete": "Delete",
+    "clearSelection": "Clear selection",
+    "confirmBulkDeleteTitle": "Delete {{n}} assets?",
+    "confirmBulkDeleteDesc": "This will permanently delete {{n}} assets. This action cannot be undone.",
+    "confirmDelete": "Delete",
+    "ratingUpdated": "Star rating updated.",
+    "ratingFailed": "Failed to update rating.",
+    "bulkRateSuccess": "Ratings updated.",
+    "bulkRateFailed": "Failed to update ratings.",
+    "bulkDownloadStarted": "Download started.",
+    "bulkDownloadFailed": "Download failed.",
+    "bulkDeleteSuccess": "{{n}} assets deleted.",
+    "bulkDeleteFailed": "Failed to delete assets.",
+    "yourRating": "Rating",
+    "deselect": "Deselect",
+    "select": "Select",
+    "meta": {
+      "fileInfo": "File info",
+      "technical": "Technical",
+      "type": "Type",
+      "format": "Format",
+      "size": "Size",
+      "uploaded": "Uploaded",
+      "uploader": "By",
+      "dimensions": "Dimensions",
+      "duration": "Duration",
+      "fps": "Frame rate",
+      "codec": "Codec",
+      "bitrate": "Bitrate",
+      "camera": "Camera",
+      "lens": "Lens",
+      "aperture": "Aperture",
+      "shutter": "Shutter",
+      "iso": "ISO",
+      "focalLength": "Focal length",
+      "capturedAt": "Captured",
+      "gps": "GPS",
+      "copyright": "Copyright",
+      "tags": "Tags",
+      "platforms": "Platforms"
+    },
+    "lightbox": {
+      "open": "Open lightbox",
+      "zoomOut": "Zoom out (−)",
+      "resetZoom": "Reset zoom (0)",
+      "zoomIn": "Zoom in (+)",
+      "rotate": "Rotate clockwise (R)",
+      "download": "Download",
+      "close": "Close (Esc)",
+      "hint": "+/− zoom · R rotate · 0 reset · Esc close"
+    }
+  },
+  "guestReview": {
+    "feedbackHeader": "Leave Feedback",
+    "ratingLabel": "Star rating",
+    "ratingSection": "Asset Rating",
+    "starN": "{{n}} star(s)",
+    "clearRating": "Clear rating",
+    "saving": "Saving...",
+    "ratingsaved": "Saved",
+    "ratingError": "Failed to save",
+    "commentsSection": "Comments",
+    "noComments": "No comments yet. Be the first!",
+    "anonymous": "Anonymous",
+    "yourName": "Your Name",
+    "namePlaceholder": "e.g. Budi Santoso",
+    "commentLabel": "Comment",
+    "commentPlaceholder": "Write your feedback here...",
+    "submitHint": "Ctrl+Enter to send",
+    "sending": "Sending...",
+    "sendButton": "Send Comment",
+    "commentError": "Failed to send comment. Please try again."
   }
 }

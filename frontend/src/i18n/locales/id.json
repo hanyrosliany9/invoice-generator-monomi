@@ -127,7 +127,8 @@
       "materaiRequired": "Materai diperlukan - belum diterapkan",
       "stagePayment": "Pembayaran",
       "stageCancelled": "Dibatalkan"
-    }
+    },
+    "projectTypes": "Tipe Proyek"
   },
   "auth": {
     "login": "Masuk",
@@ -318,7 +319,10 @@
       "title": "Tidak bisa memuat dashboard"
     },
     "newQuotation": "+ Penawaran Baru",
-    "newInvoice": "+ Invoice Baru"
+    "newInvoice": "+ Invoice Baru",
+    "invoiceStatus": "Status Invoice",
+    "invoiceStatusDesc": "Distribusi berdasarkan jumlah",
+    "noInvoiceData": "Belum ada data invoice"
   },
   "quotations": {
     "title": "Penawaran",
@@ -599,7 +603,8 @@
       "downloadPdf": "Unduh PDF",
       "deleteConfirm": "Hapus penawaran {{number}}? Tindakan ini tidak dapat dibatalkan.",
       "delete": "Hapus",
-      "viewInvoice": "Lihat Faktur"
+      "viewInvoice": "Lihat Faktur",
+      "previewPdf": "Pratinjau PDF"
     },
     "filter": {
       "statusPlaceholder": "Status",
@@ -833,6 +838,17 @@
       "validationDueDateRequired": "Jatuh tempo wajib diisi",
       "validationPaymentInfoTooShort": "Informasi pembayaran terlalu pendek",
       "paymentInfoNoBank": "INFORMASI PEMBAYARAN:\n\nSilakan hubungi {{email}} untuk informasi rekening pembayaran."
+    },
+    "bulk": {
+      "selected": "{{n}} dipilih",
+      "changeStatus": "Ubah Status",
+      "delete": "Hapus",
+      "clear": "Batal",
+      "selectAll": "Pilih semua",
+      "selectRow": "Pilih invoice",
+      "statusUpdated": "Status diubah menjadi {{status}} untuk invoice yang dipilih",
+      "deleted": "Invoice yang dipilih dihapus",
+      "confirmDelete": "Hapus {{n}} invoice yang dipilih? Tindakan ini tidak dapat dibatalkan."
     }
   },
   "clients": {
@@ -2471,6 +2487,9 @@
       "createdBy": "Dibuat oleh",
       "relatedInvoices": "Tagihan Terkait",
       "viewInvoice": "Lihat →"
+    },
+    "pdfPreview": {
+      "title": "PDF Penawaran — {{number}}"
     }
   },
   "socialReports": {
@@ -5043,7 +5062,8 @@
       "download": "Unduh PDF",
       "edit": "Edit",
       "delete": "Hapus",
-      "recordPayment": "Catat Pembayaran"
+      "recordPayment": "Catat Pembayaran",
+      "previewPdf": "Pratinjau PDF"
     },
     "moreActions": "Tindakan lainnya",
     "subtitle": "Detail faktur, riwayat pembayaran, dan tindakan terkait.",
@@ -5082,7 +5102,10 @@
     "milestone": "Tonggak Pembayaran",
     "ofTotal": "dari total",
     "pdfFailed": "Gagal mengunduh PDF",
-    "paymentHistory": "Riwayat pembayaran"
+    "paymentHistory": "Riwayat pembayaran",
+    "pdfPreview": {
+      "title": "PDF Invoice — {{number}}"
+    }
   },
   "invoiceCreate": {
     "backToList": "Kembali ke Tagihan",
@@ -6532,5 +6555,186 @@
     "hintNavigate": "navigasi",
     "hintSelect": "pilih",
     "hintClose": "tutup"
+  },
+  "pdfPreview": {
+    "loadError": "Gagal memuat pratinjau PDF",
+    "loadFailed": "Gagal memuat PDF",
+    "download": "Unduh",
+    "downloadSuccess": "PDF berhasil diunduh",
+    "downloadError": "Gagal mengunduh PDF",
+    "downloadInstead": "Unduh langsung",
+    "empty": "PDF belum dimuat"
+  },
+  "projectTypes": {
+    "pageTitle": "Tipe Proyek",
+    "pageSubtitle": "Tentukan jenis proyek yang ditangani oleh agen Anda. Setiap jenis mendapat kode dan awalan faktur sendiri.",
+    "newProjectType": "Tipe Proyek Baru",
+    "search": {
+      "placeholder": "Cari berdasarkan nama atau kode..."
+    },
+    "filter": {
+      "reset": "Hapus"
+    },
+    "col": {
+      "name": "Nama",
+      "code": "Kode",
+      "prefix": "Awalan",
+      "sortOrder": "Urutan",
+      "status": "Status"
+    },
+    "active": "Aktif",
+    "inactive": "Nonaktif",
+    "default": "Default",
+    "action": {
+      "edit": "Ubah",
+      "deactivate": "Nonaktifkan",
+      "activate": "Aktifkan",
+      "delete": "Hapus",
+      "save": "Simpan Perubahan",
+      "create": "Buat"
+    },
+    "cancel": "Batal",
+    "saving": "Menyimpan…",
+    "retry": "Coba Lagi",
+    "createSuccess": "Tipe proyek berhasil dibuat.",
+    "updateSuccess": "Tipe proyek berhasil diperbarui.",
+    "deleteSuccess": "Tipe proyek berhasil dihapus.",
+    "toggleSuccess": "Status berhasil diperbarui.",
+    "createError": "Gagal membuat tipe proyek.",
+    "updateError": "Gagal memperbarui tipe proyek.",
+    "deleteError": "Gagal menghapus tipe proyek.",
+    "toggleError": "Gagal mengubah status.",
+    "confirmDelete": "Hapus tipe proyek \"{{name}}\"? Tindakan ini tidak dapat dibatalkan.",
+    "validation": {
+      "required": "Kode, Nama, dan Awalan wajib diisi."
+    },
+    "dialog": {
+      "editTitle": "Ubah Tipe Proyek",
+      "createTitle": "Tipe Proyek Baru",
+      "desc": "Tipe proyek mengkategorikan pekerjaan Anda dan muncul sebagai awalan nomor faktur."
+    },
+    "field": {
+      "code": "Kode",
+      "prefix": "Awalan Faktur",
+      "name": "Nama",
+      "namePlaceholder": "Fotografi",
+      "description": "Deskripsi",
+      "descriptionPlaceholder": "Sesi foto, fotografi produk…",
+      "color": "Warna",
+      "sortOrder": "Urutan Tampil",
+      "isDefault": "Tipe default",
+      "isDefaultHint": "Dipilih otomatis saat membuat proyek baru."
+    },
+    "error": {
+      "title": "Tidak dapat memuat tipe proyek",
+      "generic": "Terjadi kesalahan."
+    },
+    "empty": {
+      "title": "Belum ada tipe proyek",
+      "desc": "Buat tipe proyek pertama Anda untuk digunakan dalam proyek dan faktur.",
+      "filteredTitle": "Tidak ada tipe proyek yang cocok",
+      "filteredDesc": "Coba sesuaikan pencarian Anda."
+    }
+  },
+  "mediaReview": {
+    "filterAll": "Semua",
+    "filterPhoto": "Foto",
+    "filterVideo": "Video",
+    "searchPlaceholder": "Cari nama file…",
+    "clearFilters": "Hapus filter",
+    "statusAll": "Semua status",
+    "statusDraft": "Draf",
+    "statusInReview": "Sedang Direview",
+    "statusNeedsChanges": "Perlu Revisi",
+    "statusApproved": "Disetujui",
+    "statusArchived": "Diarsipkan",
+    "anyRating": "Semua rating",
+    "starsOrMore": "{{n}}★+",
+    "sortUploadedAt": "Tanggal upload",
+    "sortName": "Nama file",
+    "sortSize": "Ukuran file",
+    "sortRating": "Rating bintang",
+    "ascending": "Naik",
+    "descending": "Turun",
+    "asc": "Naik",
+    "desc": "Turun",
+    "totalCount": "{{n}} aset",
+    "filteredCount": "{{filtered}} dari {{total}}",
+    "bulkSelected": "{{n}} dipilih",
+    "bulkRate": "Beri rating…",
+    "clearRating": "Hapus rating",
+    "bulkDownload": "Unduh",
+    "bulkDelete": "Hapus",
+    "clearSelection": "Batal pilih",
+    "confirmBulkDeleteTitle": "Hapus {{n}} aset?",
+    "confirmBulkDeleteDesc": "Ini akan menghapus {{n}} aset secara permanen. Tindakan ini tidak dapat dibatalkan.",
+    "confirmDelete": "Hapus",
+    "ratingUpdated": "Rating bintang diperbarui.",
+    "ratingFailed": "Gagal memperbarui rating.",
+    "bulkRateSuccess": "Rating diperbarui.",
+    "bulkRateFailed": "Gagal memperbarui rating.",
+    "bulkDownloadStarted": "Unduhan dimulai.",
+    "bulkDownloadFailed": "Unduhan gagal.",
+    "bulkDeleteSuccess": "{{n}} aset dihapus.",
+    "bulkDeleteFailed": "Gagal menghapus aset.",
+    "yourRating": "Rating",
+    "deselect": "Batal pilih",
+    "select": "Pilih",
+    "meta": {
+      "fileInfo": "Info file",
+      "technical": "Teknis",
+      "type": "Tipe",
+      "format": "Format",
+      "size": "Ukuran",
+      "uploaded": "Diunggah",
+      "uploader": "Oleh",
+      "dimensions": "Dimensi",
+      "duration": "Durasi",
+      "fps": "Frame rate",
+      "codec": "Codec",
+      "bitrate": "Bitrate",
+      "camera": "Kamera",
+      "lens": "Lensa",
+      "aperture": "Apertur",
+      "shutter": "Rana",
+      "iso": "ISO",
+      "focalLength": "Panjang fokus",
+      "capturedAt": "Diambil",
+      "gps": "GPS",
+      "copyright": "Hak cipta",
+      "tags": "Tag",
+      "platforms": "Platform"
+    },
+    "lightbox": {
+      "open": "Buka lightbox",
+      "zoomOut": "Perkecil (−)",
+      "resetZoom": "Reset zoom (0)",
+      "zoomIn": "Perbesar (+)",
+      "rotate": "Putar searah jarum jam (R)",
+      "download": "Unduh",
+      "close": "Tutup (Esc)",
+      "hint": "+/− zoom · R putar · 0 reset · Esc tutup"
+    }
+  },
+  "guestReview": {
+    "feedbackHeader": "Tinggalkan Masukan",
+    "ratingLabel": "Rating bintang",
+    "ratingSection": "Rating Aset",
+    "starN": "{{n}} bintang",
+    "clearRating": "Hapus rating",
+    "saving": "Menyimpan...",
+    "ratingsaved": "Tersimpan",
+    "ratingError": "Gagal menyimpan",
+    "commentsSection": "Komentar",
+    "noComments": "Belum ada komentar. Jadilah yang pertama!",
+    "anonymous": "Anonim",
+    "yourName": "Nama Anda",
+    "namePlaceholder": "cth. Budi Santoso",
+    "commentLabel": "Komentar",
+    "commentPlaceholder": "Tulis masukan Anda di sini...",
+    "submitHint": "Ctrl+Enter untuk kirim",
+    "sending": "Mengirim...",
+    "sendButton": "Kirim Komentar",
+    "commentError": "Gagal mengirim komentar. Coba lagi."
   }
 }

@@ -1,12 +1,12 @@
-import { useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Users, Folder,
+  Folder,
   ArrowLeft, Upload, Image as ImageIcon, Film, Play, Trash2,
   MoreHorizontal, Share2, Copy, Link as LinkIcon, MessageCircle,
-  CheckCircle2, X, Loader2, Eye, Globe, FolderOpen,
+  CheckCircle2, X, Loader2, Eye, Globe, FolderOpen, ZoomIn,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -41,6 +41,15 @@ import {
   type MediaAsset,
   type MediaCollection,
 } from '@/services/media-collab';
+import { StarRating } from '@/components/media/StarRating';
+import {
+  FilterSortBar,
+  DEFAULT_FILTERS,
+  type FilterState,
+} from '@/components/media/FilterSortBar';
+import { BulkActionBar } from '@/components/media/BulkActionBar';
+import { MetadataPanel } from '@/components/media/MetadataPanel';
+import { LightboxOverlay } from '@/components/media/LightboxOverlay';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — same shape as every v2 page.                             */
@@ -99,8 +108,6 @@ export default function MediaProjectDetailPageV2() {
   /* ---------- local ui state ---------- */
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
   const [shareExpiry, setShareExpiry] = useState<Date | undefined>(undefined);
-  const [mediaTypeFilter, setMediaTypeFilter] =
-    useState<'all' | 'IMAGE' | 'VIDEO'>('all');
   // Cap how many tiles render at once — a 440-asset project would otherwise
   // paint a 35,000px DOM. "Load more" reveals the next page on demand.
   const PAGE_SIZE = 48;
@@ -109,6 +116,11 @@ export default function MediaProjectDetailPageV2() {
   // Per-file upload state: name → { progress 0-100, error?: string }
   const [uploadStates, setUploadStates] = useState<Record<string, { progress: number; error?: string }>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  /* ---------- new review-tool state ---------- */
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lightboxAsset, setLightboxAsset] = useState<MediaAsset | null>(null);
 
   /* ---------- data ---------- */
   const {
@@ -211,16 +223,116 @@ export default function MediaProjectDetailPageV2() {
     onError: () => toast.error(t('mediaCollab.commentFailed', 'Gagal mengirim komentar.')),
   });
 
+  /* ---------- star rating mutation ---------- */
+  const starRatingMutation = useMutation({
+    mutationFn: ({ assetId, rating }: { assetId: string; rating: number }) =>
+      mediaCollabService.updateStarRating(assetId, rating),
+    onSuccess: (updated) => {
+      // Optimistically patch the cache so the sheet shows updated stars immediately
+      queryClient.setQueryData<MediaAsset[]>(['media-assets', projectId], (old = []) =>
+        old.map((a) => (a.id === updated.id ? updated : a)),
+      );
+      if (selectedAsset?.id === updated.id) setSelectedAsset(updated);
+      toast.success(t('mediaReview.ratingUpdated', 'Star rating updated.'));
+    },
+    onError: () => toast.error(t('mediaReview.ratingFailed', 'Failed to update rating.')),
+  });
+
+  /* ---------- bulk mutations ---------- */
+  const bulkRateMutation = useMutation({
+    mutationFn: ({ ids, rating }: { ids: string[]; rating: number }) =>
+      mediaCollabService.bulkUpdateStarRating(ids, rating),
+    onSuccess: () => {
+      invalidateAssets();
+      setSelectedIds(new Set());
+      toast.success(t('mediaReview.bulkRateSuccess', 'Ratings updated.'));
+    },
+    onError: () => toast.error(t('mediaReview.bulkRateFailed', 'Failed to update ratings.')),
+  });
+
+  const bulkDownloadMutation = useMutation({
+    mutationFn: (ids: string[]) =>
+      mediaCollabService.bulkDownloadAssets(ids, `${project?.name ?? 'media'}-selection`),
+    onSuccess: () => {
+      toast.success(t('mediaReview.bulkDownloadStarted', 'Download started.'));
+    },
+    onError: () => toast.error(t('mediaReview.bulkDownloadFailed', 'Download failed.')),
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) => mediaCollabService.bulkDeleteAssets(ids),
+    onSuccess: (result) => {
+      invalidateAssets();
+      setSelectedIds(new Set());
+      toast.success(
+        t('mediaReview.bulkDeleteSuccess', '{{n}} assets deleted.', { n: result.deleted }),
+      );
+    },
+    onError: () => toast.error(t('mediaReview.bulkDeleteFailed', 'Failed to delete assets.')),
+  });
+
+  /* ---------- selection helpers ---------- */
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
   /* ---------- derived ---------- */
   const filteredAssets = useMemo(() => {
-    if (mediaTypeFilter === 'all') return assets;
-    if (mediaTypeFilter === 'IMAGE') {
-      return assets.filter(
-        (a) => a.mediaType === 'IMAGE' || a.mediaType === 'RAW_IMAGE',
-      );
+    let result = [...assets];
+
+    // Media type
+    if (filters.mediaType === 'IMAGE') {
+      result = result.filter((a) => a.mediaType === 'IMAGE' || a.mediaType === 'RAW_IMAGE');
+    } else if (filters.mediaType === 'VIDEO') {
+      result = result.filter((a) => a.mediaType === 'VIDEO');
     }
-    return assets.filter((a) => a.mediaType === 'VIDEO');
-  }, [assets, mediaTypeFilter]);
+
+    // Filename search
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter((a) => a.originalName.toLowerCase().includes(q));
+    }
+
+    // Review status
+    if (filters.reviewStatus !== 'all') {
+      result = result.filter((a) => a.status === filters.reviewStatus);
+    }
+
+    // Min star rating
+    if (filters.minStar > 0) {
+      result = result.filter((a) => (a.starRating ?? 0) >= filters.minStar);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let cmp = 0;
+      switch (filters.sortBy) {
+        case 'originalName':
+          cmp = a.originalName.localeCompare(b.originalName);
+          break;
+        case 'size':
+          cmp = (Number(a.size) || 0) - (Number(b.size) || 0);
+          break;
+        case 'starRating':
+          cmp = (a.starRating ?? 0) - (b.starRating ?? 0);
+          break;
+        case 'uploadedAt':
+        default:
+          cmp = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+          break;
+      }
+      return filters.sortOrder === 'asc' ? cmp : -cmp;
+    });
+
+    return result;
+  }, [assets, filters]);
 
   const kpis = useMemo(() => {
     const total = assets.length;
@@ -554,40 +666,23 @@ export default function MediaProjectDetailPageV2() {
       {/* Gallery — leads on mobile (order-1), third on desktop. */}
       <section className="order-1 md:order-3 mb-8 md:mb-10">
         <GlassPanel surface="glass" padding="lg">
-          <div className="mb-5 flex items-baseline justify-between gap-4 flex-wrap">
-            <div>
+          <div className="mb-5">
+            <div className="flex items-baseline justify-between gap-4 mb-4">
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
                 {t('mediaCollab.assetGallery', 'Galeri Aset')}
               </h2>
-              <p className="mt-0.5 text-xs text-text-tertiary">
-                {assetsLoading
-                  ? t('common.loading', 'Loading…')
-                  : t('mediaCollab.assetCount', '{{filtered}} of {{total}} assets', { filtered: filteredAssets.length, total: assets.length })}
-              </p>
+              <Button size="sm" onClick={() => fileInputRef.current?.click()} variant="outline" className="h-7 text-xs">
+                <Upload className="h-3.5 w-3.5" /> {t('mediaCollab.uploadAsset', 'Unggah Aset')}
+              </Button>
             </div>
 
-            {/* Type filter — tab-style segmented control */}
-            <div className="inline-flex p-0.5 rounded-md bg-bg-sunken border border-border-subtle text-xs">
-              {(['all', 'IMAGE', 'VIDEO'] as const).map((opt) => {
-                const label = opt === 'all' ? t('mediaCollab.filterAll', 'Semua') : opt === 'IMAGE' ? t('mediaCollab.filterPhoto', 'Foto') : t('mediaCollab.filterVideo', 'Video');
-                const active = mediaTypeFilter === opt;
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => { setMediaTypeFilter(opt); setVisibleCount(PAGE_SIZE); }}
-                    className={cn(
-                      'px-3 py-1.5 rounded-sm transition-colors font-medium',
-                      active
-                        ? 'bg-bg-raised text-text-primary shadow-[var(--shadow-glow)]'
-                        : 'text-text-tertiary hover:text-text-secondary',
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Filter + sort bar */}
+            <FilterSortBar
+              filters={filters}
+              onChange={(f) => { setFilters(f); setVisibleCount(PAGE_SIZE); }}
+              resultCount={filteredAssets.length}
+              totalCount={assets.length}
+            />
           </div>
 
           {/* Per-file upload tiles — show progress bar and error/retry */}
@@ -657,7 +752,12 @@ export default function MediaProjectDetailPageV2() {
                     key={asset.id}
                     asset={asset}
                     mediaToken={mediaToken}
+                    isSelected={selectedIds.has(asset.id)}
+                    onSelect={() => toggleSelect(asset.id)}
                     onClick={() => setSelectedAsset(asset)}
+                    onStarChange={(rating) =>
+                      starRatingMutation.mutate({ assetId: asset.id, rating })
+                    }
                   />
                 ))}
               </div>
@@ -748,24 +848,37 @@ export default function MediaProjectDetailPageV2() {
 
               <div className="p-5 space-y-5">
                 {/* Preview */}
-                <div className="rounded-md bg-bg-sunken border border-border-subtle overflow-hidden">
+                <div className="rounded-md bg-bg-sunken border border-border-subtle overflow-hidden relative group/preview">
                   {selectedAsset.mediaType === 'VIDEO' ? (
                     <div className="aspect-video flex flex-col items-center justify-center gap-2 text-text-tertiary">
                       <Play className="h-10 w-10 stroke-1" />
                       <span className="text-xs">{t('mediaCollab.videoPreview', 'Pratinjau video')}</span>
                     </div>
                   ) : selectedAsset.thumbnailUrl || selectedAsset.url ? (
-                    <img
-                      src={getProxyUrl(
-                        selectedAsset.thumbnailUrl || selectedAsset.url,
-                        mediaToken,
-                      )}
-                      alt={selectedAsset.originalName}
-                      className="w-full max-h-[360px] object-contain bg-black"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
+                    <>
+                      <img
+                        src={getProxyUrl(
+                          selectedAsset.thumbnailUrl || selectedAsset.url,
+                          mediaToken,
+                        )}
+                        alt={selectedAsset.originalName}
+                        className="w-full max-h-[360px] object-contain bg-black"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      {/* Lightbox button — hover reveal */}
+                      <button
+                        type="button"
+                        onClick={() => setLightboxAsset(selectedAsset)}
+                        className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/30 transition-colors opacity-0 group-hover/preview:opacity-100"
+                        title={t('mediaReview.lightbox.open', 'Open lightbox')}
+                      >
+                        <div className="rounded-full bg-bg-base/80 p-2.5 border border-border-subtle backdrop-blur-sm">
+                          <ZoomIn className="h-4 w-4 text-text-primary" />
+                        </div>
+                      </button>
+                    </>
                   ) : (
                     <div className="aspect-square flex items-center justify-center text-text-tertiary">
                       <ImageIcon className="h-10 w-10 stroke-1" />
@@ -773,38 +886,40 @@ export default function MediaProjectDetailPageV2() {
                   )}
                 </div>
 
-                {/* Metadata grid */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
-                  <MetaRow label={t('mediaCollab.meta.type', 'Tipe')} value={selectedAsset.mediaType} />
-                  <MetaRow label={t('mediaCollab.meta.size', 'Ukuran')} value={formatBytes(Number(selectedAsset.size) || 0)} />
-                  <MetaRow label={t('mediaCollab.meta.format', 'Format')} value={selectedAsset.mimeType} />
-                  <MetaRow
-                    label={t('mediaCollab.meta.status', 'Status')}
-                    value={
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          'border-transparent px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
-                          assetStatusChip(selectedAsset.status),
-                        )}
-                      >
-                        {t(`mediaCollab.assetStatus.${selectedAsset.status}`, ASSET_STATUS_LABEL[selectedAsset.status] ?? selectedAsset.status)}
-                      </Badge>
+                {/* Star rating in sheet */}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-text-tertiary">
+                    {t('mediaReview.yourRating', 'Rating')}
+                  </span>
+                  <StarRating
+                    value={selectedAsset.starRating ?? 0}
+                    onChange={(rating) =>
+                      starRatingMutation.mutate({ assetId: selectedAsset.id, rating })
                     }
+                    size="md"
                   />
-                  {selectedAsset.width && selectedAsset.height && (
-                    <MetaRow
-                      label={t('mediaCollab.meta.dimensions', 'Dimensi')}
-                      value={`${selectedAsset.width} × ${selectedAsset.height}`}
-                    />
-                  )}
-                  {selectedAsset.duration && (
-                    <MetaRow
-                      label={t('mediaCollab.meta.duration', 'Durasi')}
-                      value={`${Math.round(selectedAsset.duration)} ${t('mediaCollab.meta.seconds', 'dtk')}`}
-                    />
+                  {(selectedAsset.starRating ?? 0) > 0 && (
+                    <span className="text-xs text-text-tertiary">
+                      {selectedAsset.starRating}/5
+                    </span>
                   )}
                 </div>
+
+                {/* Status badge */}
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'border-transparent px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
+                      assetStatusChip(selectedAsset.status),
+                    )}
+                  >
+                    {t(`mediaCollab.assetStatus.${selectedAsset.status}`, ASSET_STATUS_LABEL[selectedAsset.status] ?? selectedAsset.status)}
+                  </Badge>
+                </div>
+
+                {/* Full metadata panel */}
+                <MetadataPanel asset={selectedAsset} />
 
                 {/* Status actions */}
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1047,6 +1162,36 @@ export default function MediaProjectDetailPageV2() {
           </div>
         </SheetContent>
       </Sheet>
+      {/* Bulk action floating bar */}
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        onClearSelection={clearSelection}
+        onBulkRate={async (rating) => {
+          await bulkRateMutation.mutateAsync({ ids: Array.from(selectedIds), rating });
+        }}
+        onBulkDownload={async () => {
+          await bulkDownloadMutation.mutateAsync(Array.from(selectedIds));
+        }}
+        onBulkDelete={async () => {
+          await bulkDeleteMutation.mutateAsync(Array.from(selectedIds));
+        }}
+        isRating={bulkRateMutation.isPending}
+        isDownloading={bulkDownloadMutation.isPending}
+        isDeleting={bulkDeleteMutation.isPending}
+      />
+
+      {/* Lightbox */}
+      {lightboxAsset && (
+        <LightboxOverlay
+          src={getProxyUrl(
+            lightboxAsset.url || lightboxAsset.thumbnailUrl || '',
+            mediaToken,
+          )}
+          alt={lightboxAsset.originalName}
+          downloadUrl={getProxyUrl(lightboxAsset.url, mediaToken)}
+          onClose={() => setLightboxAsset(null)}
+        />
+      )}
     </Shell>
   );
 }
@@ -1058,52 +1203,94 @@ export default function MediaProjectDetailPageV2() {
 interface AssetTileProps {
   asset: MediaAsset;
   mediaToken: string | null;
+  isSelected: boolean;
+  onSelect: () => void;
   onClick: () => void;
+  onStarChange: (rating: number) => void;
 }
 
-function AssetTile({ asset, mediaToken, onClick }: AssetTileProps) {
+function AssetTile({
+  asset,
+  mediaToken,
+  isSelected,
+  onSelect,
+  onClick,
+  onStarChange,
+}: AssetTileProps) {
   const { t } = useTranslation();
   const isVideo = asset.mediaType === 'VIDEO';
   const src = asset.thumbnailUrl || (!isVideo ? asset.url : null);
   const proxied = src ? getProxyUrl(src, mediaToken) : null;
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       className={cn(
         'group relative aspect-square rounded-md overflow-hidden',
-        'bg-bg-sunken border border-border-subtle',
-        'hover:border-border-default transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-navy/40',
+        'bg-bg-sunken border transition-colors',
+        isSelected
+          ? 'border-accent ring-2 ring-accent/40'
+          : 'border-border-subtle hover:border-border-default',
       )}
     >
-      {proxied ? (
-        <img
-          src={proxied}
-          alt={asset.originalName}
-          loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
-          }}
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-text-tertiary">
-          {isVideo ? <Film className="h-8 w-8 stroke-1" /> : <ImageIcon className="h-8 w-8 stroke-1" />}
-        </div>
-      )}
+      {/* Clickable image area */}
+      <button
+        type="button"
+        onClick={onClick}
+        className="absolute inset-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-navy/40"
+        aria-label={asset.originalName}
+      >
+        {proxied ? (
+          <img
+            src={proxied}
+            alt={asset.originalName}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-text-tertiary">
+            {isVideo ? <Film className="h-8 w-8 stroke-1" /> : <ImageIcon className="h-8 w-8 stroke-1" />}
+          </div>
+        )}
+      </button>
 
       {isVideo && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
           <div className="rounded-full bg-bg-base/80 backdrop-blur-sm p-2.5 border border-border-subtle">
             <Play className="h-4 w-4 text-text-primary fill-text-primary" />
           </div>
         </div>
       )}
 
-      {/* Status pill — only when meaningful (most assets are DRAFT; showing
-          it on every tile is noise). Top-left, glassy. */}
+      {/* Selection checkbox — top-right, appears on hover or when selected */}
+      <div
+        className={cn(
+          'absolute top-1.5 right-1.5 transition-opacity',
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+        )}
+      >
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onSelect(); }}
+          className={cn(
+            'h-5 w-5 rounded border-2 flex items-center justify-center transition-colors',
+            isSelected
+              ? 'bg-accent border-accent text-white'
+              : 'bg-bg-base/80 border-border-default backdrop-blur-sm text-transparent',
+          )}
+          aria-label={isSelected ? t('mediaReview.deselect', 'Deselect') : t('mediaReview.select', 'Select')}
+        >
+          {isSelected && (
+            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Status pill — top-left */}
       {asset.status && asset.status !== 'DRAFT' && (
         <div className="absolute left-1.5 top-1.5">
           <Badge
@@ -1118,14 +1305,21 @@ function AssetTile({ asset, mediaToken, onClick }: AssetTileProps) {
         </div>
       )}
 
-      {/* Filename — bottom, on a light gradient. Appears on hover for desktop,
-          always visible on touch where there is no hover. */}
-      <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/75 via-black/25 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 transition-opacity">
-        <div className="text-[10px] text-white/90 font-medium truncate text-left">
+      {/* Bottom overlay — filename + star rating */}
+      <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+        <div className="text-[10px] text-white/90 font-medium truncate mb-0.5">
           {asset.originalName}
         </div>
+        {/* Star rating — stops propagation so it doesn't open the sheet */}
+        <div onClick={(e) => e.stopPropagation()}>
+          <StarRating
+            value={asset.starRating ?? 0}
+            onChange={onStarChange}
+            size="sm"
+          />
+        </div>
       </div>
-    </button>
+    </div>
   );
 }
 

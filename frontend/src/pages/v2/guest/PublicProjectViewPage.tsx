@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, Eye, FileImage, Film, Folder, FolderOpen,
   Image as ImageIcon, Home, Search, Star, User as UserIcon, X,
@@ -18,6 +18,7 @@ import {
 } from '@/services/media-collab';
 import { getProxyUrl } from '@/utils/mediaProxy';
 import { cn } from '@/lib/utils';
+import { GuestFeedbackPanel } from './GuestFeedbackPanel';
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                                */
@@ -376,10 +377,11 @@ export const PublicProjectViewPage = () => {
       </main>
 
       {/* Lightbox */}
-      {selected && (
+      {selected && shareToken && (
         <PreviewOverlay
           asset={selected}
           mediaToken={mediaToken ?? null}
+          shareToken={shareToken}
           imageAssets={imageAssets}
           onClose={() => setSelected(null)}
           onNavigate={(next) => setSelected(next)}
@@ -551,17 +553,20 @@ function AssetTile({
 /* ------------------------------------------------------------------ */
 /*  PreviewOverlay — lightbox shared between images and video.         */
 /*  Keyboard navigation (←/→/Esc) is handled by the parent.            */
+/*  Right column hosts the GuestFeedbackPanel (comments + star rating).*/
 /* ------------------------------------------------------------------ */
 
 function PreviewOverlay({
-  asset, mediaToken, imageAssets, onClose, onNavigate,
+  asset, mediaToken, shareToken, imageAssets, onClose, onNavigate,
 }: {
   asset: MediaAsset;
   mediaToken: string | null;
+  shareToken: string;
   imageAssets: MediaAsset[];
   onClose: () => void;
   onNavigate: (asset: MediaAsset) => void;
 }) {
+  const queryClient = useQueryClient();
   const src = getProxyUrl(asset.url, mediaToken);
   const isVideo = asset.mediaType === 'VIDEO';
   const isImage = asset.mediaType === 'IMAGE' || asset.mediaType === 'RAW_IMAGE';
@@ -570,6 +575,16 @@ function PreviewOverlay({
   const prev = idx > 0 ? imageAssets[idx - 1] : null;
   const next = idx >= 0 && idx < imageAssets.length - 1 ? imageAssets[idx + 1] : null;
 
+  // When the rating changes we optimistically patch the cached asset list so
+  // the tile badge in the gallery behind the overlay updates immediately.
+  const handleRatingChange = (newRating: number) => {
+    queryClient.setQueryData<MediaAsset[]>(
+      ['public-assets-v2', shareToken],
+      (prev) =>
+        prev?.map((a) => (a.id === asset.id ? { ...a, starRating: newRating } : a)) ?? prev,
+    );
+  };
+
   return (
     <div
       role="dialog"
@@ -577,79 +592,92 @@ function PreviewOverlay({
       className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/85 backdrop-blur-md p-2 sm:p-4"
       onClick={onClose}
     >
+      {/* Outer shell — two-column layout on md+, stacked on mobile */}
       <div
-        className="relative flex max-h-[92vh] w-full max-w-[1280px] flex-col"
+        className="relative flex max-h-[92vh] w-full max-w-[1400px] flex-col md:flex-row gap-3"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Caption bar */}
-        <div className="flex items-center justify-between gap-3 rounded-t-md border border-b-0 border-border-default bg-bg-panel px-4 py-3">
-          <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-              {asset.mediaType}
-              {isImage && imageAssets.length > 1 && (
-                <span className="ml-2 normal-case tracking-normal">
-                  {idx + 1} / {imageAssets.length}
-                </span>
-              )}
+        {/* ── Left column: media viewer ── */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Caption bar */}
+          <div className="flex items-center justify-between gap-3 rounded-t-md border border-b-0 border-border-default bg-bg-panel px-4 py-3">
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
+                {asset.mediaType}
+                {isImage && imageAssets.length > 1 && (
+                  <span className="ml-2 normal-case tracking-normal">
+                    {idx + 1} / {imageAssets.length}
+                  </span>
+                )}
+              </div>
+              <div className="mt-0.5 truncate text-sm text-text-primary">
+                {asset.originalName}
+              </div>
             </div>
-            <div className="mt-0.5 truncate text-sm text-text-primary">
-              {asset.originalName}
+            <div className="flex items-center gap-1">
+              {isImage && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!prev}
+                    onClick={() => prev && onNavigate(prev)}
+                    className="text-text-tertiary hover:text-text-primary"
+                  >
+                    Sebelumnya
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!next}
+                    onClick={() => next && onNavigate(next)}
+                    className="text-text-tertiary hover:text-text-primary"
+                  >
+                    Berikutnya
+                  </Button>
+                  <span className="mx-1 h-4 w-px bg-border-default" />
+                </>
+              )}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onClose}
+                aria-label="Tutup"
+                className="text-text-tertiary hover:text-text-primary"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            {isImage && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={!prev}
-                  onClick={() => prev && onNavigate(prev)}
-                  className="text-text-tertiary hover:text-text-primary"
-                >
-                  Sebelumnya
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={!next}
-                  onClick={() => next && onNavigate(next)}
-                  className="text-text-tertiary hover:text-text-primary"
-                >
-                  Berikutnya
-                </Button>
-                <span className="mx-1 h-4 w-px bg-border-default" />
-              </>
+
+          <div className="flex flex-1 items-center justify-center overflow-hidden rounded-b-md border border-border-default bg-bg-base p-4">
+            {isVideo ? (
+              <video
+                src={src}
+                controls
+                autoPlay
+                className="max-h-[70vh] max-w-full rounded-sm"
+              />
+            ) : (
+              <img
+                src={src}
+                alt={asset.originalName}
+                className="max-h-[70vh] max-w-full object-contain rounded-sm"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
             )}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={onClose}
-              aria-label="Tutup"
-              className="text-text-tertiary hover:text-text-primary"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </div>
 
-        <div className="flex flex-1 items-center justify-center overflow-hidden rounded-b-md border border-border-default bg-bg-base p-4">
-          {isVideo ? (
-            <video
-              src={src}
-              controls
-              autoPlay
-              className="max-h-[78vh] max-w-full rounded-sm"
-            />
-          ) : (
-            <img
-              src={src}
-              alt={asset.originalName}
-              className="max-h-[78vh] max-w-full object-contain rounded-sm"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          )}
+        {/* ── Right column: feedback panel ── */}
+        <div className="w-full md:w-[320px] md:shrink-0 overflow-y-auto">
+          <GuestFeedbackPanel
+            shareToken={shareToken}
+            asset={asset}
+            onRatingChange={handleRatingChange}
+          />
         </div>
       </div>
     </div>

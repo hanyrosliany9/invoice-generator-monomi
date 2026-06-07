@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Plus, Search, MoreHorizontal, Eye, Pencil, Send, CheckCircle2, Trash2,
-  AlertTriangle, X, Clock, Ban, RefreshCw,
+  AlertTriangle, X, Clock, Ban, RefreshCw, ChevronDown,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -33,7 +33,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth';
 import { invoiceService, type Invoice } from '@/services/invoices';
+import { InvoiceStatus } from '@/types/invoice';
 import { cn } from '@/lib/utils';
+
+// Re-aliases for the bulk-toolbar dropdown (same component, different context).
+const BulkMenu = DropdownMenu;
+const BulkMenuContent = DropdownMenuContent;
+const BulkMenuItem = DropdownMenuItem;
+const BulkMenuTrigger = DropdownMenuTrigger;
 
 /* ------------------------------------------------------------------ */
 /*  Status helpers                                                      */
@@ -86,6 +93,9 @@ export default function InvoicesPageV2() {
   const [materaiFilter, setMateraiFilter] = useState<string>('all');
   // Honour ?clientId=… deep links (e.g. AR-aging drill-down) — filters to one client.
   const [clientFilter, setClientFilter] = useState<string>(() => searchParams.get('clientId') ?? 'all');
+
+  // Bulk selection — Set of selected invoice ids.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   /* ----- data ----- */
   const { data: invoices = [], isLoading, error, refetch } = useQuery({
@@ -146,6 +156,45 @@ export default function InvoicesPageV2() {
       );
     },
     onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || (err instanceof Error ? err.message : t('common.error', 'Something went wrong'));
+      toast.error(msg);
+    },
+  });
+
+  /* ----- bulk mutations ----- */
+  const bulkStatusMutation = useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: string }) =>
+      invoiceService.bulkUpdateStatus(ids, status as InvoiceStatus),
+    onSuccess: (_data, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setSelectedIds(new Set());
+      toast.success(
+        t('invoices.bulk.statusUpdated', 'Status updated to {{status}} for selected invoices', { status })
+      );
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || (err instanceof Error ? err.message : t('common.error', 'Something went wrong'));
+      toast.error(msg);
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) {
+        await invoiceService.deleteInvoice(id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setSelectedIds(new Set());
+      toast.success(t('invoices.bulk.deleted', 'Selected invoices deleted'));
+    },
+    onError: (err: unknown) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         || (err instanceof Error ? err.message : t('common.error', 'Something went wrong'));
@@ -365,6 +414,23 @@ export default function InvoicesPageV2() {
             </div>
           )}
 
+          {/* Bulk toolbar — only visible when ≥1 row selected */}
+          {selectedIds.size > 0 && (
+            <BulkToolbar
+              count={selectedIds.size}
+              onClear={() => setSelectedIds(new Set())}
+              onChangeStatus={(status) =>
+                bulkStatusMutation.mutate({ ids: Array.from(selectedIds), status })
+              }
+              onDelete={() => {
+                if (confirm(t('invoices.bulk.confirmDelete', 'Delete {{n}} selected invoices? This cannot be undone.', { n: selectedIds.size }))) {
+                  bulkDeleteMutation.mutate(Array.from(selectedIds));
+                }
+              }}
+              isBusy={bulkStatusMutation.isPending || bulkDeleteMutation.isPending}
+            />
+          )}
+
           {/* Table */}
           {isLoading ? (
             <div className="p-5 space-y-2">
@@ -404,6 +470,22 @@ export default function InvoicesPageV2() {
             <div className="px-1 pb-1">
               <InvoiceTable
                 rows={filtered}
+                selectedIds={selectedIds}
+                onToggleSelect={(id) => {
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(id)) next.delete(id); else next.add(id);
+                    return next;
+                  });
+                }}
+                onToggleSelectAll={(ids) => {
+                  setSelectedIds((prev) => {
+                    // If all are already selected, deselect all; otherwise select all.
+                    const allSelected = ids.every((id) => prev.has(id));
+                    if (allSelected) return new Set();
+                    return new Set(ids);
+                  });
+                }}
                 onRowClick={(row) => navigate(`/invoices/${row.id}`)}
                 onView={(row) => navigate(`/invoices/${row.id}`)}
                 onEdit={(row) => navigate(`/invoices/${row.id}/edit`)}
@@ -427,11 +509,91 @@ export default function InvoicesPageV2() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  BulkToolbar                                                         */
+/* ------------------------------------------------------------------ */
+
+interface BulkToolbarProps {
+  count: number;
+  onClear: () => void;
+  onChangeStatus: (status: string) => void;
+  onDelete: () => void;
+  isBusy: boolean;
+}
+
+function BulkToolbar({ count, onClear, onChangeStatus, onDelete, isBusy }: BulkToolbarProps) {
+  const { t } = useTranslation();
+  const statuses = [
+    { value: 'DRAFT',    label: t('invoices.status.draft',    'Draft') },
+    { value: 'SENT',     label: t('invoices.status.sent',     'Sent') },
+    { value: 'PAID',     label: t('invoices.status.paid',     'Paid') },
+    { value: 'OVERDUE',  label: t('invoices.status.overdue',  'Overdue') },
+  ];
+
+  return (
+    <div className="flex items-center gap-3 px-5 py-3 border-b border-border-subtle bg-bg-sunken/80">
+      <span className="text-xs text-text-secondary font-medium">
+        {t('invoices.bulk.selected', '{{n}} selected', { n: count })}
+      </span>
+      <div className="h-4 w-px bg-border-subtle" />
+
+      {/* Change status */}
+      <BulkMenu>
+        <BulkMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isBusy}
+            className="h-7 text-xs gap-1.5"
+          >
+            {t('invoices.bulk.changeStatus', 'Change Status')}
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </BulkMenuTrigger>
+        <BulkMenuContent align="start" className="w-40">
+          {statuses.map(({ value, label }) => (
+            <BulkMenuItem key={value} onClick={() => onChangeStatus(value)}>
+              {label}
+            </BulkMenuItem>
+          ))}
+        </BulkMenuContent>
+      </BulkMenu>
+
+      {/* Delete */}
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={isBusy}
+        className="h-7 text-xs text-danger hover:text-danger border-danger/30 hover:bg-danger/5"
+        onClick={onDelete}
+      >
+        <Trash2 className="h-3 w-3" />
+        {t('invoices.bulk.delete', 'Delete')}
+      </Button>
+
+      {/* Clear selection */}
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={isBusy}
+        className="h-7 text-xs text-text-tertiary hover:text-text-primary ml-auto"
+        onClick={onClear}
+      >
+        <X className="h-3 w-3" />
+        {t('invoices.bulk.clear', 'Clear')}
+      </Button>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  InvoiceTable                                                        */
 /* ------------------------------------------------------------------ */
 
 interface InvoiceTableProps {
   rows: Invoice[];
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: (ids: string[]) => void;
   onRowClick: (row: Invoice) => void;
   onView: (row: Invoice) => void;
   onEdit: (row: Invoice) => void;
@@ -444,7 +606,8 @@ interface InvoiceTableProps {
 }
 
 function InvoiceTable({
-  rows, onRowClick, onView, onEdit, onSend, onMarkPaid, onDelete, onChangeStatus,
+  rows, selectedIds, onToggleSelect, onToggleSelectAll,
+  onRowClick, onView, onEdit, onSend, onMarkPaid, onDelete, onChangeStatus,
   isSendPending, isMarkPaidPending,
 }: InvoiceTableProps) {
   const { t } = useTranslation();
@@ -491,12 +654,42 @@ function InvoiceTable({
     }
   };
 
+  const allIds = rows.map((r) => r.id);
+  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+  const someSelected = allIds.some((id) => selectedIds.has(id));
+
   return (
     <DataTable<Invoice>
       data={rows}
       onRowClick={onRowClick}
       enablePagination
       columns={[
+        {
+          id: 'select',
+          header: () => (
+            <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(el) => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                onChange={() => onToggleSelectAll(allIds)}
+                className="h-4 w-4 rounded border-border-subtle bg-bg-sunken accent-text-primary cursor-pointer"
+                aria-label={t('invoices.bulk.selectAll', 'Select all')}
+              />
+            </div>
+          ),
+          cell: ({ row }) => (
+            <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                checked={selectedIds.has(row.original.id)}
+                onChange={() => onToggleSelect(row.original.id)}
+                className="h-4 w-4 rounded border-border-subtle bg-bg-sunken accent-text-primary cursor-pointer"
+                aria-label={t('invoices.bulk.selectRow', 'Select invoice')}
+              />
+            </div>
+          ),
+        },
         {
           accessorKey: 'invoiceNumber',
           header: t('invoices.col.number', 'Number'),

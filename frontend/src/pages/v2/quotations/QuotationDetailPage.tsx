@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { quotationService, type Quotation } from '@/services/quotations';
+import { PdfPreviewModal } from '@/components/monomi/PdfPreviewModal';
 
 // ─────────────────────────────────────────────────────────────────────
 // Sidebar mirrors DashboardPage / QuotationsPage. Active state is
@@ -127,6 +128,8 @@ export default function QuotationDetailPageV2() {
     queryFn: () => quotationService.getQuotation(id!),
     enabled: !!id,
   });
+
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
 
   // ── Mutations ──────────────────────────────────────────────────────
   const statusMutation = useMutation({
@@ -228,6 +231,13 @@ export default function QuotationDetailPageV2() {
   });
 
   // ── Handlers ───────────────────────────────────────────────────────
+  /** Opens the PDF preview modal — primary path. */
+  const handleOpenPdfPreview = useCallback(() => {
+    if (!quotation) return;
+    setPdfPreviewOpen(true);
+  }, [quotation]);
+
+  /** Direct-download — used by the modal's Download button. */
   const handleDownloadPDF = useCallback(async () => {
     if (!quotation) return;
     try {
@@ -562,9 +572,9 @@ export default function QuotationDetailPageV2() {
           <Pencil className="h-4 w-4" />
           {t('quotations.actions.edit', 'Edit')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleDownloadPDF}>
+        <DropdownMenuItem onClick={handleOpenPdfPreview}>
           <Printer className="h-4 w-4" />
-          {t('quotations.actions.downloadPdf', 'Download PDF')}
+          {t('quotations.actions.previewPdf', 'Preview PDF')}
         </DropdownMenuItem>
         {canDelete && (
           <>
@@ -995,6 +1005,15 @@ export default function QuotationDetailPageV2() {
           </GlassPanel>
         </section>
       )}
+
+      <PdfPreviewModal
+        open={pdfPreviewOpen}
+        onClose={() => setPdfPreviewOpen(false)}
+        title={t('quotationDetail.pdfPreview.title', 'Quotation PDF — {{number}}', { number: quotation.quotationNumber })}
+        fetchPreview={() => quotationService.downloadQuotationPDF(quotation.id)}
+        fetchDownload={() => quotationService.downloadQuotationPDF(quotation.id)}
+        downloadFilename={`Quotation-${quotation.quotationNumber}.pdf`}
+      />
     </>,
   );
 }

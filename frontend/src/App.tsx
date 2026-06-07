@@ -111,6 +111,7 @@ const V2StaffDetailPage = lazy(() => import('./pages/v2/salaries/StaffDetailPage
 const V2SalaryPaymentFormPage = lazy(() => import('./pages/v2/salaries/SalaryPaymentFormPage'))
 const V2PublicDeckViewPage = lazy(() => import('./pages/v2/guest/PublicDeckViewPage'))
 const V2DeckAcceptInvitePage = lazy(() => import('./pages/v2/guest/DeckAcceptInvitePage'))
+const V2ProjectTypesPage = lazy(() => import('./pages/v2/settings/ProjectTypesPage'))
 
 import './styles/relationships.css'
 
@@ -317,6 +318,7 @@ function App() {
                       <Route path='/users/new' element={<AdminRoute><V2UserCreatePage /></AdminRoute>} />
                       <Route path='/users/:id/edit' element={<AdminRoute><V2UserEditPage /></AdminRoute>} />
                       <Route path='/settings' element={<AdminRoute><V2SettingsPage /></AdminRoute>} />
+                      <Route path='/settings/project-types' element={<AdminRoute><V2ProjectTypesPage /></AdminRoute>} />
 
                       {/* Reports */}
                       <Route path='/reports' element={<AdminRoute><V2ReportsPage /></AdminRoute>} />

@@ -28,6 +28,7 @@ import {
   BarChart3,
   UserCog,
   Settings,
+  Layers,
 } from 'lucide-react';
 import type { SidebarSection } from '@/components/monomi/Sidebar';
 
@@ -114,6 +115,7 @@ export const v2SidebarSections: SidebarSection[] = [
       { label: 'nav.milestones', icon: i(Trophy), href: '/milestones' },
       { label: 'nav.users', icon: i(UserCog), href: '/users', requiresAdmin: true },
       { label: 'nav.settings', icon: i(Settings), href: '/settings', requiresAdmin: true },
+      { label: 'nav.projectTypes', icon: i(Layers), href: '/settings/project-types', requiresAdmin: true },
     ],
   },
 ];
