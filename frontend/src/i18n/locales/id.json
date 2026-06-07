@@ -6086,7 +6086,8 @@
     "roleViewer": "Penonton",
     "roleCommenter": "Pengomentar",
     "roleEditor": "Editor",
-    "confirmDeleteAssetTitle": "Hapus aset?"
+    "confirmDeleteAssetTitle": "Hapus aset?",
+    "inviteEmailInvalid": "Masukkan alamat email yang valid."
   },
   "salaries": {
     "pageTitle": "Gaji Karyawan",

@@ -318,17 +318,25 @@ export const fabricObjectToElement = (
   canvasWidth: number,
   canvasHeight: number
 ): Partial<DeckSlideElement> => {
-  const left = obj.left || 0;
-  const top = obj.top || 0;
-  const width = obj.getScaledWidth();
-  const height = obj.getScaledHeight();
+  const scaledWidth = obj.getScaledWidth();
+  const scaledHeight = obj.getScaledHeight();
+  // Normalize to the top-left corner regardless of the object's origin.
+  // elementToFabricObject reloads everything with a default (top-left) origin,
+  // so storing a center/right/bottom-origin left/top would drift the object on
+  // every save→reload (images are added with originX/Y 'center').
+  let left = obj.left || 0;
+  let top = obj.top || 0;
+  if (obj.originX === 'center') left -= scaledWidth / 2;
+  else if (obj.originX === 'right') left -= scaledWidth;
+  if (obj.originY === 'center') top -= scaledHeight / 2;
+  else if (obj.originY === 'bottom') top -= scaledHeight;
   const angle = obj.angle || 0;
 
   const base = {
     x: pixelToPercent(left, canvasWidth),
     y: pixelToPercent(top, canvasHeight),
-    width: pixelToPercent(width, canvasWidth),
-    height: pixelToPercent(height, canvasHeight),
+    width: pixelToPercent(scaledWidth, canvasWidth),
+    height: pixelToPercent(scaledHeight, canvasHeight),
     rotation: angle,
     zIndex: obj.get('zIndex') || 0,
   };
@@ -378,6 +386,19 @@ export const fabricObjectToElement = (
         ry: obj.get('ry'),
       },
     };
+  }
+
+  // Image placeholders & videos are loaded onto the canvas with non-canonical
+  // elementTypes; map them back to a real element type so a save never silently
+  // drops them (a transient image-load failure must not delete the image).
+  if (elementType === 'VIDEO') {
+    return { ...base, type: 'VIDEO', content: { url: obj.get('videoUrl') } };
+  }
+  if (elementType === 'placeholder') {
+    return { ...base, type: 'IMAGE', content: { placeholder: obj.get('placeholder') } };
+  }
+  if (elementType === 'IMAGE_PLACEHOLDER') {
+    return { ...base, type: 'IMAGE', content: { url: obj.get('originalUrl') } };
   }
 
   return base;
@@ -472,6 +493,9 @@ export const elementToFabricObject = async (
           stroke: '#cccccc',
         });
         placeholder.set('elementType', 'IMAGE_PLACEHOLDER');
+        // Keep the original URL so re-saving the slide preserves the image
+        // element instead of dropping it after a transient load failure.
+        placeholder.set('originalUrl', content.url);
         return placeholder;
       }
     }

@@ -378,6 +378,9 @@ export default function DeckCanvas({
       const detail = (evt as CustomEvent).detail as { slideId: string; canvasData: any };
       if (!detail || detail.slideId !== slideIdRef.current) return;
       applyingRemoteRef.current = true;
+      // Also flag the store so DeckEditorPage's autosave doesn't persist a
+      // snapshot we merely received from another editor.
+      useDeckCanvasStore.getState().setIsApplyingRemote(true);
       canvas
         .loadFromJSON(detail.canvasData)
         .then(() => {
@@ -386,7 +389,10 @@ export default function DeckCanvas({
         .finally(() => {
           // Defer clearing the guard so the object:* events fired during load
           // have already been swallowed.
-          setTimeout(() => { applyingRemoteRef.current = false; }, 0);
+          setTimeout(() => {
+            applyingRemoteRef.current = false;
+            useDeckCanvasStore.getState().setIsApplyingRemote(false);
+          }, 0);
         });
     };
     window.addEventListener('remote-canvas-update', handleRemoteUpdate as EventListener);

@@ -422,6 +422,13 @@ export default function MediaProjectDetailPageV2() {
     lastSelectedIndexRef.current = null;
   }, []);
 
+  // The shift-click anchor is an index into the filtered list; when the list
+  // is re-ordered/re-filtered or the folder changes, that index now points at a
+  // different asset, so drop the anchor to avoid selecting the wrong range.
+  useEffect(() => {
+    lastSelectedIndexRef.current = null;
+  }, [filters, activeFolderId]);
+
   /* ---------- breadcrumb helpers ---------- */
   const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
     if (!activeFolderId) return [];
@@ -1834,6 +1841,10 @@ function CollaboratorsSection({
     const trimmedName = name.trim();
     if (!trimmedEmail) {
       toast.error(t('mediaCollab.inviteEmailRequired', 'Email wajib diisi.'));
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error(t('mediaCollab.inviteEmailInvalid', 'Enter a valid email address.'));
       return;
     }
     try {

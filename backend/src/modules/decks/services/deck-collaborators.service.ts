@@ -134,7 +134,18 @@ export class DeckCollaboratorsService {
         acceptedAt: new Date(),
         guestName: guestInfo.name || invite.guestName,
       },
-      include: { deck: { select: { id: true, title: true } } },
+      // Include the public-share fields so the accept-invite page can route a
+      // guest to the public viewer (it needs the share token, not the invite one).
+      include: {
+        deck: {
+          select: {
+            id: true,
+            title: true,
+            isPublic: true,
+            publicShareToken: true,
+          },
+        },
+      },
     });
   }
 

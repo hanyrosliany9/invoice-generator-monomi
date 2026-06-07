@@ -5995,7 +5995,8 @@
     "roleViewer": "Viewer",
     "roleCommenter": "Commenter",
     "roleEditor": "Editor",
-    "confirmDeleteAssetTitle": "Delete asset?"
+    "confirmDeleteAssetTitle": "Delete asset?",
+    "inviteEmailInvalid": "Enter a valid email address."
   },
   "salaries": {
     "pageTitle": "Staff Salaries",

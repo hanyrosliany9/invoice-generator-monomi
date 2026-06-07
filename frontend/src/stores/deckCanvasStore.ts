@@ -40,6 +40,11 @@ interface DeckCanvasState {
   // suppress autosave so loading a slide doesn't trigger a save of itself.
   isLoadingElements: boolean;
   setIsLoadingElements: (loading: boolean) => void;
+
+  // True while applying an incoming remote canvas snapshot. Suppresses autosave
+  // so a receiver doesn't persist (and race on) a change another editor made.
+  isApplyingRemote: boolean;
+  setIsApplyingRemote: (applying: boolean) => void;
 }
 
 export const useDeckCanvasStore = create<DeckCanvasState>((set, get) => ({
@@ -109,4 +114,8 @@ export const useDeckCanvasStore = create<DeckCanvasState>((set, get) => ({
   // Loading guard
   isLoadingElements: false,
   setIsLoadingElements: (loading) => set({ isLoadingElements: loading }),
+
+  // Remote-apply guard
+  isApplyingRemote: false,
+  setIsApplyingRemote: (applying) => set({ isApplyingRemote: applying }),
 }));

@@ -253,9 +253,12 @@ export const useCollaborationStore = create<CollaborationState>((set, get) => ({
   setComments: (comments) => set({ comments }),
 
   addComment: (comment) => {
-    set((state) => ({
-      comments: [...state.comments, comment],
-    }));
+    set((state) => {
+      // De-dup: the gateway echoes comment:add back to the sender (who already
+      // added it locally), and socket reconnects can re-deliver.
+      if (state.comments.some((c) => c.id === comment.id)) return state;
+      return { comments: [...state.comments, comment] };
+    });
   },
 
   updateComment: (id, updates) => {

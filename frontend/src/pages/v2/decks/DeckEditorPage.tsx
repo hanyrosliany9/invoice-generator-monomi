@@ -246,9 +246,11 @@ export default function DeckEditorPage() {
     if (!canvas) return;
 
     const scheduleAutosave = () => {
-      // Skip while SlideCanvas is (re)loading elements — those programmatic
-      // add/remove events must not trigger a save of the slide being loaded.
-      if (useDeckCanvasStore.getState().isLoadingElements) return;
+      // Skip while SlideCanvas is (re)loading elements or while applying a
+      // remote snapshot — those programmatic add/remove events must not trigger
+      // a save of the slide being loaded / received.
+      const cs = useDeckCanvasStore.getState();
+      if (cs.isLoadingElements || cs.isApplyingRemote) return;
       setIsDirty(true);
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
       autosaveTimerRef.current = setTimeout(() => {

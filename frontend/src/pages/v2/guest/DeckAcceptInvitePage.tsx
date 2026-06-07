@@ -54,7 +54,7 @@ export const DeckAcceptInvitePage = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
-    deck?: { id: string; title: string; publicShareToken?: string };
+    deck?: { id: string; title: string; publicShareToken?: string; isPublic?: boolean };
     deckId?: string;
     role?: string;
   } | null>(null);
@@ -169,7 +169,9 @@ export const DeckAcceptInvitePage = () => {
                 //    (the public viewer expects the PUBLIC-SHARE token, not the
                 //    invite token — reusing the invite token here would 404).
                 const deckId = result.deckId ?? result.deck?.id;
-                const publicToken = result.deck?.publicShareToken;
+                // Only usable for a guest if the deck is actually public (the
+                // token can linger after public sharing is disabled).
+                const publicToken = result.deck?.isPublic ? result.deck?.publicShareToken : undefined;
                 let dest: string | null = null;
                 if (isAuthenticated && deckId) dest = `/decks/${deckId}`;
                 else if (publicToken) dest = `/deck/shared/${publicToken}`;
