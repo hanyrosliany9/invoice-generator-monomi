@@ -40,6 +40,7 @@ export { default as ExportButton } from './ExportButton';
 export { default as ExportProgressModal } from './ExportProgressModal';
 
 // Collaboration
+export { default as ShareDeckDialog } from './ShareDeckDialog';
 export { default as PresenceIndicator } from './collaboration/PresenceIndicator';
 export { default as CollaboratorCursors } from './collaboration/CollaboratorCursors';
 export { default as CommentsPanel } from './collaboration/CommentsPanel';

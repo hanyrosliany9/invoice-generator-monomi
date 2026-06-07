@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Dropdown, Space } from 'antd';
 import type { MenuProps } from 'antd';
 import { PlusOutlined, AppstoreOutlined } from '@ant-design/icons';
@@ -14,6 +15,7 @@ export default function NewSlideButton({
   onAddSlide,
   disabled,
 }: NewSlideButtonProps) {
+  const { t } = useTranslation();
   const [showPicker, setShowPicker] = useState(false);
 
   const handleQuickAdd = useCallback(() => {
@@ -25,14 +27,14 @@ export default function NewSlideButton({
   }, [onAddSlide]);
 
   const quickTemplates: MenuProps['items'] = [
-    { key: 'BLANK', label: 'Blank Slide' },
-    { key: 'TITLE', label: 'Title Slide' },
+    { key: 'BLANK', label: t('deckEditor.tplBlank', 'Blank Slide') },
+    { key: 'TITLE', label: t('deckEditor.tplTitle', 'Title Slide') },
     { type: 'divider' },
-    { key: 'MOOD_BOARD', label: 'Mood Board' },
-    { key: 'STORYBOARD', label: 'Storyboard' },
-    { key: 'SHOT_LIST', label: 'Shot List' },
+    { key: 'MOOD_BOARD', label: t('deckEditor.tplMoodBoard', 'Mood Board') },
+    { key: 'STORYBOARD', label: t('deckEditor.tplStoryboard', 'Storyboard') },
+    { key: 'SHOT_LIST', label: t('deckEditor.tplShotList', 'Shot List') },
     { type: 'divider' },
-    { key: 'browse', label: 'Browse All Templates...' },
+    { key: 'browse', label: t('deckEditor.tplBrowseAll', 'Browse All Templates...') },
   ];
 
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
@@ -52,7 +54,7 @@ export default function NewSlideButton({
         disabled={disabled}
       >
         <Space size={4}>
-          <PlusOutlined /> New Slide
+          <PlusOutlined /> {t('deckEditor.newSlide', 'New Slide')}
         </Space>
       </Dropdown.Button>
 

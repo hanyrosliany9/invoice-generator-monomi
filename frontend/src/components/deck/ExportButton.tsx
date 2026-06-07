@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Dropdown, App } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -24,6 +25,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
   currentSlideIndex,
   disabled,
 }) => {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const [exporting, setExporting] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
@@ -38,7 +40,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
         setShowProgress(true);
       } catch (err) {
         console.error('Failed to start export:', err);
-        message.error('Failed to start PDF export');
+        message.error(t('deckEditor.exportPdfStartError', 'Failed to start PDF export'));
       } finally {
         setExporting(false);
       }
@@ -61,10 +63,10 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      message.success('Slide exported successfully');
+      message.success(t('deckEditor.slideExported', 'Slide exported successfully'));
     } catch (err) {
       console.error('Failed to export slide:', err);
-      message.error('Failed to export slide');
+      message.error(t('deckEditor.slideExportError', 'Failed to export slide'));
     } finally {
       setExporting(false);
     }
@@ -79,24 +81,24 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
     {
       key: 'pdf-group',
       type: 'group',
-      label: 'Export as PDF',
+      label: t('deckEditor.exportAsPdf', 'Export as PDF'),
       children: [
         {
           key: 'pdf-draft',
           icon: <FilePdfOutlined />,
-          label: 'Draft Quality (Fast)',
+          label: t('deckEditor.exportDraftQuality', 'Draft Quality (Fast)'),
           onClick: () => handleExportPdf('draft'),
         },
         {
           key: 'pdf-standard',
           icon: <FilePdfOutlined />,
-          label: 'Standard Quality',
+          label: t('deckEditor.exportStandardQuality', 'Standard Quality'),
           onClick: () => handleExportPdf('standard'),
         },
         {
           key: 'pdf-high',
           icon: <FilePdfOutlined />,
-          label: 'High Quality (Slow)',
+          label: t('deckEditor.exportHighQuality', 'High Quality (Slow)'),
           onClick: () => handleExportPdf('high'),
         },
       ],
@@ -105,7 +107,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
     {
       key: 'png',
       icon: <FileImageOutlined />,
-      label: 'Export Current Slide as PNG',
+      label: t('deckEditor.exportCurrentSlidePng', 'Export Current Slide as PNG'),
       onClick: handleExportCurrentSlide,
     },
   ];
@@ -118,7 +120,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
         disabled={disabled || exporting}
       >
         <Button icon={<ExportOutlined />} loading={exporting}>
-          Export
+          {t('deckEditor.export', 'Export')}
         </Button>
       </Dropdown>
 

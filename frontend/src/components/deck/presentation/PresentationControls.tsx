@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Tooltip } from 'antd';
 import {
   LeftOutlined,
@@ -16,6 +17,7 @@ interface PresentationControlsProps {
 }
 
 export const PresentationControls: React.FC<PresentationControlsProps> = ({ visible }) => {
+  const { t } = useTranslation();
   const {
     endPresentation,
     nextSlide,
@@ -39,7 +41,7 @@ export const PresentationControls: React.FC<PresentationControlsProps> = ({ visi
       }`}
     >
       <div className="flex items-center gap-2 bg-black/70 rounded-full px-4 py-2">
-        <Tooltip title="Previous slide (←)">
+        <Tooltip title={t('deckPresent.prevSlide', 'Previous slide (←)')}>
           <Button
             type="text"
             icon={<LeftOutlined />}
@@ -49,7 +51,7 @@ export const PresentationControls: React.FC<PresentationControlsProps> = ({ visi
           />
         </Tooltip>
 
-        <Tooltip title="Next slide (→)">
+        <Tooltip title={t('deckPresent.nextSlide', 'Next slide (→)')}>
           <Button
             type="text"
             icon={<RightOutlined />}
@@ -61,7 +63,7 @@ export const PresentationControls: React.FC<PresentationControlsProps> = ({ visi
 
         <div className="w-px h-6 bg-white/30 mx-2" />
 
-        <Tooltip title="Slide overview (G)">
+        <Tooltip title={t('deckPresent.overview', 'Slide overview (G)')}>
           <Button
             type="text"
             icon={<AppstoreOutlined />}
@@ -70,7 +72,7 @@ export const PresentationControls: React.FC<PresentationControlsProps> = ({ visi
           />
         </Tooltip>
 
-        <Tooltip title="Laser pointer (P)">
+        <Tooltip title={t('deckPresent.laserPointer', 'Laser pointer (P)')}>
           <Button
             type="text"
             icon={<AimOutlined />}
@@ -79,7 +81,7 @@ export const PresentationControls: React.FC<PresentationControlsProps> = ({ visi
           />
         </Tooltip>
 
-        <Tooltip title={autoPlay ? 'Pause auto-play' : 'Start auto-play'}>
+        <Tooltip title={autoPlay ? t('deckPresent.pauseAutoPlay', 'Pause auto-play') : t('deckPresent.startAutoPlay', 'Start auto-play')}>
           <Button
             type="text"
             icon={autoPlay ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
@@ -90,7 +92,7 @@ export const PresentationControls: React.FC<PresentationControlsProps> = ({ visi
 
         <div className="w-px h-6 bg-white/30 mx-2" />
 
-        <Tooltip title="Exit presentation (Esc)">
+        <Tooltip title={t('deckPresent.exit', 'Exit presentation (Esc)')}>
           <Button
             type="text"
             icon={<CloseOutlined />}

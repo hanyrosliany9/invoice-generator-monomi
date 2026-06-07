@@ -8,6 +8,14 @@ import {
 } from '../../utils/deckCanvasUtils';
 import type { DeckSlide, DeckSlideElement } from '../../types/deck';
 
+// Dev-only logging — silenced in production builds to avoid console noise.
+const devLog = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.log(...args);
+};
+const devWarn = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.warn(...args);
+};
+
 interface SlideCanvasProps {
   slide: DeckSlide;
   deckWidth: number;
@@ -34,7 +42,7 @@ export default function SlideCanvas({
   // Load elements when slide changes
   useEffect(() => {
     if (!canvas || !slide) {
-      console.log('[SlideCanvas] Canvas or slide not ready:', { canvas: !!canvas, slide: !!slide });
+      devLog('[SlideCanvas] Canvas or slide not ready:', { canvas: !!canvas, slide: !!slide });
       return;
     }
 
@@ -42,8 +50,8 @@ export default function SlideCanvas({
       setIsLoading(true);
       // Suppress autosave while we tear down + rebuild the canvas for this slide.
       setIsLoadingElements(true);
-      console.log('[SlideCanvas] Loading elements for slide:', slide.id);
-      console.log('[SlideCanvas] Slide has', slide.elements?.length || 0, 'elements:', slide.elements);
+      devLog('[SlideCanvas] Loading elements for slide:', slide.id);
+      devLog('[SlideCanvas] Slide has', slide.elements?.length || 0, 'elements:', slide.elements);
 
       // Clear existing objects (except background)
       canvas.getObjects().forEach((obj) => {
@@ -52,22 +60,22 @@ export default function SlideCanvas({
 
       // Load elements
       for (const element of slide.elements || []) {
-        console.log('[SlideCanvas] Loading element:', element.id, 'type:', element.type);
+        devLog('[SlideCanvas] Loading element:', element.id, 'type:', element.type);
         const fabricObj = await elementToFabricObject(
           element,
           canvasWidth,
           canvasHeight
         );
         if (fabricObj) {
-          console.log('[SlideCanvas] Successfully loaded element:', element.id);
+          devLog('[SlideCanvas] Successfully loaded element:', element.id);
           canvas.add(fabricObj);
         } else {
-          console.warn('[SlideCanvas] Failed to load element:', element.id);
+          devWarn('[SlideCanvas] Failed to load element:', element.id);
         }
       }
 
       canvas.renderAll();
-      console.log('[SlideCanvas] Finished loading elements. Canvas has', canvas.getObjects().length, 'objects');
+      devLog('[SlideCanvas] Finished loading elements. Canvas has', canvas.getObjects().length, 'objects');
       setIsLoading(false);
       // Programmatic load is complete: clear the dirty flag set by load-time
       // history pushes, then re-enable autosave on the next tick so the

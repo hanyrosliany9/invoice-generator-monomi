@@ -10,7 +10,7 @@ import { safeUrl } from '@/utils/safeUrl';
 import {
   FileText,
   ArrowLeft, Save, Loader2, ChevronLeft, ChevronRight, Plus, Trash2,
-  Copy, Settings, Maximize2, Check, CircleDashed,
+  Copy, Settings, Maximize2, Check, CircleDashed, Share2, MessageSquare,
 } from 'lucide-react';
 import type { Canvas as FabricCanvas } from 'fabric';
 import { App as AntdApp } from 'antd';
@@ -30,7 +30,7 @@ import {
 import { Combobox } from '@/components/ui/combobox';
 
 import { useAuthStore } from '@/store/auth';
-import { decksApi, slidesApi, elementsApi } from '@/services/decks';
+import { decksApi, slidesApi, elementsApi, commentsApi } from '@/services/decks';
 import { projectService } from '@/services/projects';
 import { fabricObjectToElement } from '@/utils/deckCanvasUtils';
 import type { Deck, DeckSlide, DeckSlideElement, DeckStatus, SlideTemplate } from '@/types/deck';
@@ -50,11 +50,14 @@ import {
   SlideContextMenu,
   CanvasContextMenu,
   KeyboardShortcutsModal,
+  ShareDeckDialog,
 } from '@/components/deck';
+import { CommentsOverlay } from '@/components/deck/collaboration/CommentsOverlay';
+import { CommentsPanel } from '@/components/deck/collaboration/CommentsPanel';
 import { PresentationView } from '@/components/deck/presentation/PresentationView';
 import { useDeckCanvasStore } from '@/stores/deckCanvasStore';
 import { usePresentationStore } from '@/stores/presentationStore';
-import { useCollaborationStore } from '@/stores/collaborationStore';
+import { useCollaborationStore, mapApiComment } from '@/stores/collaborationStore';
 import { useDeckKeyboardShortcuts } from '@/hooks/useDeckKeyboardShortcuts';
 import { useSlideTemplates } from '@/hooks/useSlideTemplates';
 import type { SlideTemplateType } from '@/templates/templateTypes';
@@ -68,10 +71,10 @@ import { CollaboratorCursors } from '@/components/deck/collaboration/Collaborato
 const CANVAS_WIDTH = 1280;
 const CANVAS_HEIGHT = 720;
 
-const STATUS_OPTIONS: { value: DeckStatus; labelFallback: string }[] = [
-  { value: 'DRAFT',     labelFallback: 'Draft' },
-  { value: 'PUBLISHED', labelFallback: 'Published' },
-  { value: 'ARCHIVED',  labelFallback: 'Archived' },
+const STATUS_OPTIONS: { value: DeckStatus; labelKey: string; labelFallback: string }[] = [
+  { value: 'DRAFT',     labelKey: 'decks.statusDraft',     labelFallback: 'Draft' },
+  { value: 'PUBLISHED', labelKey: 'decks.statusPublished', labelFallback: 'Published' },
+  { value: 'ARCHIVED',  labelKey: 'decks.statusArchived',  labelFallback: 'Archived' },
 ];
 
 const metaSchema = z.object({
@@ -112,6 +115,8 @@ export default function DeckEditorPage() {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [showMeta, setShowMeta] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const canvasRef = useRef<FabricCanvas | null>(null);
 
   useEffect(() => {
@@ -124,6 +129,39 @@ export default function DeckEditorPage() {
 
   const activeSlide = slides[activeSlideIndex] ?? null;
   useEffect(() => { activeSlideIdRef.current = activeSlide?.id ?? null; }, [activeSlide?.id]);
+
+  /* ---------- collaboration: keep the store's current slide in sync so
+       CollaboratorCursors' slideId filter + comment loading target it ---------- */
+  useEffect(() => {
+    if (activeSlide?.id) {
+      useCollaborationStore.getState().setCurrentSlide(activeSlide.id);
+    }
+  }, [activeSlide?.id]);
+
+  /* ---------- comments: load the active slide's comments into the store ---------- */
+  const setComments = useCollaborationStore((s) => s.setComments);
+  const setAddingComment = useCollaborationStore((s) => s.setAddingComment);
+  const isAddingComment = useCollaborationStore((s) => s.isAddingComment);
+
+  useEffect(() => {
+    if (!activeSlide?.id) return;
+    let cancelled = false;
+    commentsApi
+      .getBySlide(activeSlide.id)
+      .then((list) => {
+        if (!cancelled) setComments(list.map(mapApiComment));
+      })
+      .catch(() => {
+        if (!cancelled) setComments([]);
+      });
+    return () => { cancelled = true; };
+  }, [activeSlide?.id, setComments]);
+
+  // Leaving comment mode whenever the panel closes keeps the canvas click
+  // behaviour predictable.
+  useEffect(() => {
+    if (!showComments) setAddingComment(false);
+  }, [showComments, setAddingComment]);
 
   /* ---------- stores ---------- */
   const canvas = useDeckCanvasStore((s) => s.canvas);
@@ -356,6 +394,53 @@ export default function DeckEditorPage() {
     }
   }, []);
 
+  /* ---------- comment persistence ---------- */
+  const handleCreateComment = useCallback(
+    async ({ content, x, y }: { content: string; x: number; y: number }) => {
+      const slideId = activeSlideIdRef.current;
+      if (!slideId) return;
+      try {
+        const created = await commentsApi.create({ slideId, content, positionX: x, positionY: y });
+        const mapped = mapApiComment(created);
+        useCollaborationStore.getState().addComment(mapped);
+        // Broadcast so peers see it live (store listens for comment:add).
+        useCollaborationStore.getState().socket?.emit('comment:add', mapped);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t('deckEditor.commentError', 'Failed to add comment'));
+      }
+    },
+    [t],
+  );
+
+  const handleResolveComment = useCallback(
+    async (commentId: string) => {
+      try {
+        await commentsApi.resolve(commentId);
+        useCollaborationStore.getState().updateComment(commentId, { resolved: true });
+        useCollaborationStore.getState().socket?.emit('comment:update', {
+          id: commentId,
+          updates: { resolved: true },
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t('deckEditor.commentResolveError', 'Failed to resolve comment'));
+      }
+    },
+    [t],
+  );
+
+  const handleDeleteComment = useCallback(
+    async (commentId: string) => {
+      try {
+        await commentsApi.delete(commentId);
+        useCollaborationStore.getState().removeComment(commentId);
+        useCollaborationStore.getState().socket?.emit('comment:delete', commentId);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t('deckEditor.commentDeleteError', 'Failed to delete comment'));
+      }
+    },
+    [t],
+  );
+
   /* ---------- guards ---------- */
   if (isLoading) {
     return (
@@ -466,6 +551,38 @@ export default function DeckEditorPage() {
                 : <Save className="h-3.5 w-3.5" />}
               {t('common.save', 'Save')}
             </Button>
+            {/* Comment-mode toggle */}
+            <Button
+              variant={showComments ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setShowComments((v) => !v)}
+              className={showComments ? '' : 'text-text-tertiary hover:text-text-primary'}
+              title={t('deckEditor.toggleComments', 'Comments')}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">{t('deckEditor.comments', 'Comments')}</span>
+            </Button>
+            {showComments && (
+              <Button
+                variant={isAddingComment ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setAddingComment(!isAddingComment)}
+                title={t('deckEditor.addCommentHint', 'Add comment (click on slide)')}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">{t('deckEditor.addComment', 'Add comment')}</span>
+              </Button>
+            )}
+            {/* Share */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowShare(true)}
+              title={t('deckShare.title', 'Share deck')}
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t('deckShare.share', 'Share')}</span>
+            </Button>
             {/* Presence: show collaborators in the toolbar */}
             <div className="hidden sm:flex items-center mr-1">
               <PresenceIndicator />
@@ -508,7 +625,7 @@ export default function DeckEditorPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {STATUS_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.labelFallback}</SelectItem>
+                          <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelFallback)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -606,6 +723,10 @@ export default function DeckEditorPage() {
                   </CanvasContextMenu>
                   {/* Collaborator cursors — pointer-events-none overlay */}
                   <CollaboratorCursors currentSlideId={activeSlide.id} />
+                  {/* Comment pins overlay (only interactive in comment mode) */}
+                  {showComments && (
+                    <CommentsOverlay slideId={activeSlide.id} onCreate={handleCreateComment} />
+                  )}
                 </div>
 
                 {/* Slide nav dots */}
@@ -636,6 +757,16 @@ export default function DeckEditorPage() {
           <div className="w-64 shrink-0 border-l border-border-subtle overflow-y-auto bg-bg-base">
             <PropertiesPanel />
           </div>
+
+          {/* Comments panel (right-most, toggled) */}
+          {showComments && activeSlide && (
+            <CommentsPanel
+              slideId={activeSlide.id}
+              onClose={() => setShowComments(false)}
+              onResolve={handleResolveComment}
+              onDelete={handleDeleteComment}
+            />
+          )}
         </div>
 
         {/* Asset browser (global modal driven by store) */}
@@ -643,6 +774,9 @@ export default function DeckEditorPage() {
 
         {/* Keyboard shortcuts modal */}
         <KeyboardShortcutsModal open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+
+        {/* Share & collaborators dialog */}
+        <ShareDeckDialog deck={deck} open={showShare} onOpenChange={setShowShare} />
       </Shell>
     </AntdApp>
   );

@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { collaboratorsApi } from '@/services/decks';
+import { useAuthStore } from '@/store/auth';
 
 /* ------------------------------------------------------------------ */
 /*  Role labels (same vocabulary as GuestAcceptInvitePage)             */
@@ -47,11 +48,14 @@ export const DeckAcceptInvitePage = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
 
+  const isAuthenticated = useAuthStore((s) => !!s.user);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
-    deck?: { id: string; title: string };
+    deck?: { id: string; title: string; publicShareToken?: string };
+    deckId?: string;
     role?: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +69,11 @@ export const DeckAcceptInvitePage = () => {
 
     try {
       const collab: any = await collaboratorsApi.acceptInvite(token, name, email);
-      setResult({ deck: collab.deck as any, role: collab.role });
+      setResult({
+        deck: collab.deck as any,
+        deckId: collab.deckId ?? collab.deck?.id,
+        role: collab.role,
+      });
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
@@ -88,7 +96,7 @@ export const DeckAcceptInvitePage = () => {
       <AuroraBackground />
 
       <div className="absolute top-6 right-8 z-10 text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
-        Monomi Studio · Undangan Deck
+        Monomi Studio · {t('deckInvite.eyebrow', 'Deck Invitation')}
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
@@ -154,17 +162,41 @@ export const DeckAcceptInvitePage = () => {
                 </div>
               )}
 
-              <Button
-                onClick={() =>
-                  result.deck
-                    ? navigate(`/deck/shared/${token}`)
-                    : navigate('/')
+              {(() => {
+                // Pick a destination that actually resolves:
+                //  - Authenticated user with a deckId → the editor.
+                //  - Otherwise, the public viewer IF a public share token exists
+                //    (the public viewer expects the PUBLIC-SHARE token, not the
+                //    invite token — reusing the invite token here would 404).
+                const deckId = result.deckId ?? result.deck?.id;
+                const publicToken = result.deck?.publicShareToken;
+                let dest: string | null = null;
+                if (isAuthenticated && deckId) dest = `/decks/${deckId}`;
+                else if (publicToken) dest = `/deck/shared/${publicToken}`;
+
+                if (!dest) {
+                  // No usable destination for a guest without a public link —
+                  // explain rather than navigating somewhere that 404s.
+                  return (
+                    <p className="text-xs text-text-tertiary text-center leading-relaxed">
+                      {t(
+                        'guest.deckAcceptInvite.signInToOpen',
+                        'Masuk dengan akun Anda untuk membuka deck ini, atau minta pemilik untuk membagikan tautan publik.',
+                      )}
+                    </p>
+                  );
                 }
-                className="w-full h-10 bg-brand-cream text-brand-black hover:bg-brand-cream/90 font-medium"
-              >
-                Buka Deck
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
+
+                return (
+                  <Button
+                    onClick={() => navigate(dest!)}
+                    className="w-full h-10 bg-brand-cream text-brand-black hover:bg-brand-cream/90 font-medium"
+                  >
+                    {t('guest.deckAcceptInvite.openDeck', 'Buka Deck')}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                );
+              })()}
             </div>
           )}
 
@@ -189,7 +221,7 @@ export const DeckAcceptInvitePage = () => {
                   htmlFor="deck-invite-name"
                   className="text-xs uppercase tracking-[0.14em] text-text-tertiary font-medium"
                 >
-                  Nama Anda
+                  {t('deckInvite.yourName', 'Your name')}
                 </Label>
                 <Input
                   id="deck-invite-name"
@@ -207,7 +239,7 @@ export const DeckAcceptInvitePage = () => {
                   htmlFor="deck-invite-email"
                   className="text-xs uppercase tracking-[0.14em] text-text-tertiary font-medium"
                 >
-                  Alamat Email
+                  {t('deckInvite.emailAddress', 'Email address')}
                 </Label>
                 <Input
                   id="deck-invite-email"

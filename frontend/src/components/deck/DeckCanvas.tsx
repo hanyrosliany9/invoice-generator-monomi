@@ -1,10 +1,20 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Canvas as FabricCanvas, FabricObject, FabricImage } from 'fabric';
 import { useDeckCanvasStore } from '../../stores/deckCanvasStore';
 import { useAssetBrowserStore, MediaAsset } from '../../stores/assetBrowserStore';
+import { useCollaborationStore } from '../../stores/collaborationStore';
 import { uploadAsset } from '../../services/assetBrowserApi';
 import { fabricObjectToElement } from '../../utils/deckCanvasUtils';
 import { App, Spin } from 'antd';
+
+// Custom Fabric properties we persist + sync so loadFromJSON round-trips them.
+const CUSTOM_PROPS = ['id', 'elementId', 'elementType', 'assetId', 'assetUrl', 'zIndex'];
+
+// Dev-only logging — silenced in production builds to avoid console noise.
+const devLog = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.log(...args);
+};
 
 interface DeckCanvasProps {
   width: number;
@@ -29,9 +39,18 @@ export default function DeckCanvas({
   onObjectModified,
   onElementCreate,
 }: DeckCanvasProps) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
+  // True while we're applying an incoming remote canvas snapshot — guards the
+  // resulting object:added/modified/removed events from re-broadcasting (echo)
+  // and from triggering redundant autosaves.
+  const applyingRemoteRef = useRef(false);
+  // Latest slideId in a ref so the cursor/canvas broadcasters never close over
+  // a stale slide after a slide switch.
+  const slideIdRef = useRef<string | undefined>(slideId);
+  useEffect(() => { slideIdRef.current = slideId; }, [slideId]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { setCanvas, pushHistory, setSelectedObjectIds } = useDeckCanvasStore();
@@ -56,19 +75,19 @@ export default function DeckCanvas({
 
     setIsUploading(true);
     try {
-      console.log('Uploading file:', file.name);
+      devLog('Uploading file:', file.name);
       const asset = await uploadAsset(file);
-      console.log('File uploaded, asset:', asset);
-      console.log('Asset URL:', asset.url);
+      devLog('File uploaded, asset:', asset);
+      devLog('Asset URL:', asset.url);
 
       // Add image to canvas - with better error handling
-      console.log('Loading image from Fabric.js, URL:', asset.url);
+      devLog('Loading image from Fabric.js, URL:', asset.url);
 
       // Use promise-based approach for better error handling
       FabricImage.fromURL(asset.url, {
         crossOrigin: 'anonymous',
       }).then((img) => {
-        console.log('Fabric.js promise resolved, image:', img);
+        devLog('Fabric.js promise resolved, image:', img);
 
         if (!img) {
           console.error('Fabric.js returned null image object');
@@ -85,9 +104,9 @@ export default function DeckCanvas({
         }
 
         const canvas = fabricRef.current;
-        console.log('Canvas dimensions:', canvas.getWidth(), 'x', canvas.getHeight());
-        console.log('Image natural size:', (img as any).naturalWidth, 'x', (img as any).naturalHeight);
-        console.log('Image scaled size:', img.width, 'x', img.height);
+        devLog('Canvas dimensions:', canvas.getWidth(), 'x', canvas.getHeight());
+        devLog('Image natural size:', (img as any).naturalWidth, 'x', (img as any).naturalHeight);
+        devLog('Image scaled size:', img.width, 'x', img.height);
 
         // Scale image to fit canvas
         const maxWidth = canvas.getWidth() * 0.6;
@@ -100,11 +119,11 @@ export default function DeckCanvas({
           scale = Math.min(scaleX, scaleY, 1);
         }
 
-        console.log('Calculated scale:', scale);
+        devLog('Calculated scale:', scale);
 
         // Position at center
         const center = canvas.getCenter();
-        console.log('Canvas center:', center);
+        devLog('Canvas center:', center);
 
         img.set({
           left: center.left,
@@ -122,14 +141,14 @@ export default function DeckCanvas({
         const elementId = `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         img.set('id', elementId);
 
-        console.log('Adding image to canvas with ID:', elementId);
+        devLog('Adding image to canvas with ID:', elementId);
 
         canvas.add(img);
         canvas.setActiveObject(img);
         canvas.renderAll();
 
-        console.log('Image rendered on canvas, total objects:', canvas.getObjects().length);
-        console.log('Image object properties:', {
+        devLog('Image rendered on canvas, total objects:', canvas.getObjects().length);
+        devLog('Image object properties:', {
           left: img.left,
           top: img.top,
           scaleX: img.scaleX,
@@ -170,9 +189,9 @@ export default function DeckCanvas({
               },
             };
 
-            console.log('Creating element in database:', elementObject);
+            devLog('Creating element in database:', elementObject);
             onElementCreate(elementObject);
-            console.log('Element creation callback invoked');
+            devLog('Element creation callback invoked');
           } catch (error) {
             console.error('Failed to create element record:', error);
             // Continue anyway - element is on canvas even if DB save failed
@@ -182,7 +201,7 @@ export default function DeckCanvas({
         }
 
         message.success(`Image "${file.name}" added to slide`);
-        console.log('Image added to canvas successfully');
+        devLog('Image added to canvas successfully');
         setIsUploading(false);
       }).catch((error: any) => {
         console.error('Fabric.js promise error:', error);
@@ -325,6 +344,53 @@ export default function DeckCanvas({
     const initialJson = canvas.toJSON();
     pushHistory(JSON.stringify(initialJson));
 
+    /* ---------- realtime collaboration ---------- */
+    const collab = useCollaborationStore.getState();
+
+    // Throttled cursor broadcast (~50ms) using canvas-relative coords.
+    let lastCursorEmit = 0;
+    const handleMouseMove = (e: any) => {
+      const sid = slideIdRef.current;
+      if (!sid) return;
+      const now = Date.now();
+      if (now - lastCursorEmit < 50) return;
+      lastCursorEmit = now;
+      const p = canvas.getScenePoint(e.e);
+      collab.broadcastCursor(p.x, p.y, sid);
+    };
+    canvas.on('mouse:move', handleMouseMove);
+
+    // Broadcast local canvas changes (skip while applying a remote snapshot).
+    const broadcastChange = () => {
+      if (applyingRemoteRef.current) return;
+      const sid = slideIdRef.current;
+      if (!sid) return;
+      // Fabric v6 typings drop the propertiesToInclude arg, but the runtime
+      // still honours it (matches the existing toJSON usage above).
+      collab.broadcastCanvasChange(sid, (canvas as any).toJSON(CUSTOM_PROPS));
+    };
+    canvas.on('object:modified', broadcastChange);
+    canvas.on('object:added', broadcastChange);
+    canvas.on('object:removed', broadcastChange);
+
+    // Apply incoming remote snapshots for the slide currently on this canvas.
+    const handleRemoteUpdate = (evt: Event) => {
+      const detail = (evt as CustomEvent).detail as { slideId: string; canvasData: any };
+      if (!detail || detail.slideId !== slideIdRef.current) return;
+      applyingRemoteRef.current = true;
+      canvas
+        .loadFromJSON(detail.canvasData)
+        .then(() => {
+          canvas.renderAll();
+        })
+        .finally(() => {
+          // Defer clearing the guard so the object:* events fired during load
+          // have already been swallowed.
+          setTimeout(() => { applyingRemoteRef.current = false; }, 0);
+        });
+    };
+    window.addEventListener('remote-canvas-update', handleRemoteUpdate as EventListener);
+
     onCanvasReady?.(canvas);
 
     // Add drag-drop listeners to canvas container
@@ -339,6 +405,7 @@ export default function DeckCanvas({
     document.addEventListener('paste', handlePaste as EventListener);
 
     return () => {
+      window.removeEventListener('remote-canvas-update', handleRemoteUpdate as EventListener);
       canvas.dispose();
       setCanvas(null);
 
@@ -430,7 +497,7 @@ export default function DeckCanvas({
               fontWeight: 600,
             }}
           >
-            📤 Drop image here to upload
+            📤 {t('deckEditor.dropImageHere', 'Drop image here to upload')}
           </div>
         </div>
       )}
@@ -455,7 +522,7 @@ export default function DeckCanvas({
           <div style={{ textAlign: 'center' }}>
             <Spin size="large" />
             <p style={{ marginTop: '16px', color: '#595959', fontSize: '14px' }}>
-              Uploading image...
+              {t('deckEditor.uploadingImage', 'Uploading image…')}
             </p>
           </div>
         </div>

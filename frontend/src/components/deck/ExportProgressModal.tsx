@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Progress, Button, Alert, Typography, Space } from 'antd';
 import {
   DownloadOutlined,
@@ -28,6 +29,7 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
   deckId,
   jobId,
 }) => {
+  const { t } = useTranslation();
   const { theme: themeConfig } = useTheme();
   const [status, setStatus] = useState<ExportJobStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,12 +51,12 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
           }
 
           if (result.status === 'failed') {
-            setError(result.error || 'Export failed');
+            setError(result.error || t('deckEditor.exportFailed', 'Export failed'));
           }
         }
       } catch (err) {
         console.error('Failed to get export status:', err);
-        setError('Failed to check export status');
+        setError(t('deckEditor.exportStatusError', 'Failed to check export status'));
         if (pollingRef.current) {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
@@ -74,7 +76,7 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
         pollingRef.current = null;
       }
     };
-  }, [open, jobId, deckId]);
+  }, [open, jobId, deckId, t]);
 
   const handleDownload = () => {
     if (jobId) {
@@ -102,25 +104,28 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
   };
 
   const getStatusText = () => {
-    if (!status) return 'Starting export...';
+    if (!status) return t('deckEditor.exportStarting', 'Starting export...');
 
     switch (status.status) {
       case 'pending':
-        return 'Preparing export...';
+        return t('deckEditor.exportPreparing', 'Preparing export...');
       case 'processing':
-        return `Rendering slide ${status.currentSlide} of ${status.totalSlides}...`;
+        return t('deckEditor.exportRendering', 'Rendering slide {{current}} of {{total}}...', {
+          current: status.currentSlide,
+          total: status.totalSlides,
+        });
       case 'completed':
-        return 'Export complete!';
+        return t('deckEditor.exportComplete', 'Export complete!');
       case 'failed':
-        return 'Export failed';
+        return t('deckEditor.exportFailed', 'Export failed');
       default:
-        return 'Processing...';
+        return t('deckEditor.exportProcessing', 'Processing...');
     }
   };
 
   return (
     <Modal
-      title="Export to PDF"
+      title={t('deckEditor.exportToPdf', 'Export to PDF')}
       open={open}
       onCancel={handleClose}
       footer={null}
@@ -152,7 +157,7 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
           {error && (
             <Alert
               type="error"
-              message="Export Error"
+              message={t('deckEditor.exportErrorTitle', 'Export Error')}
               description={error}
               showIcon
             />
@@ -167,13 +172,13 @@ export const ExportProgressModal: React.FC<ExportProgressModalProps> = ({
                 onClick={handleDownload}
                 size="large"
               >
-                Download PDF
+                {t('deckEditor.downloadPdf', 'Download PDF')}
               </Button>
             )}
 
             {(status?.status === 'completed' || status?.status === 'failed' || error) && (
               <Button onClick={handleClose}>
-                Close
+                {t('common.close', 'Close')}
               </Button>
             )}
           </div>

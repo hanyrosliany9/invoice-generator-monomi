@@ -74,6 +74,32 @@ interface CollaborationState {
   setCurrentSlide: (slideId: string) => void;
 }
 
+// Map a persisted DeckSlideComment (API/DB shape) into the in-memory Comment
+// shape this store + the comment UI components use.
+export const mapApiComment = (c: any): Comment => ({
+  id: c.id,
+  slideId: c.slideId,
+  userId: c.userId ?? c.user?.id ?? '',
+  userName: c.user?.name ?? c.guestName ?? c.guestEmail ?? 'Guest',
+  userAvatar: c.user?.avatar,
+  content: c.content ?? '',
+  x: c.positionX ?? 0,
+  y: c.positionY ?? 0,
+  resolved: c.isResolved ?? false,
+  replies: Array.isArray(c.replies)
+    ? c.replies.map((r: any) => ({
+        id: r.id,
+        userId: r.userId ?? r.user?.id ?? '',
+        userName: r.user?.name ?? r.guestName ?? 'Guest',
+        userAvatar: r.user?.avatar,
+        content: r.content ?? '',
+        createdAt: r.createdAt,
+      }))
+    : [],
+  createdAt: c.createdAt,
+  updatedAt: c.updatedAt ?? c.createdAt,
+});
+
 // Generate a random color for user
 const generateUserColor = (): string => {
   const colors = [

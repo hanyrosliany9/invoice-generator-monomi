@@ -100,7 +100,7 @@ export const PublicDeckViewPage = () => {
               </span>
               <span className="h-4 w-px bg-border-default" />
               <span className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
-                Deck Publik
+                {t('deckPublic.eyebrow', 'Public Deck')}
               </span>
             </div>
             {isLoading ? (
@@ -121,14 +121,14 @@ export const PublicDeckViewPage = () => {
                   className="border-info/30 bg-info/[0.08] text-info gap-1.5 px-2.5 py-1 text-xs"
                 >
                   <LayoutIcon className="h-3 w-3" />
-                  {totalSlides} slide
+                  {t('deckPublic.slideCount', '{{count}} slide', { count: totalSlides })}
                 </Badge>
                 <Badge
                   variant="outline"
                   className="border-info/30 bg-info/[0.08] text-info gap-1.5 px-2.5 py-1 text-xs"
                 >
                   <Eye className="h-3 w-3" />
-                  {deck.publicViewCount ?? 0} tampilan
+                  {t('deckPublic.viewCount', '{{count}} views', { count: deck.publicViewCount ?? 0 })}
                 </Badge>
               </>
             )}
@@ -142,7 +142,7 @@ export const PublicDeckViewPage = () => {
         {deck?.description && (
           <GlassPanel surface="subtle" padding="md" className="mb-5">
             <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium mb-1.5">
-              Tentang Deck Ini
+              {t('deckPublic.aboutThisDeck', 'About this deck')}
             </div>
             <p className="text-sm text-text-secondary leading-relaxed">
               {deck.description}
@@ -244,7 +244,7 @@ export const PublicDeckViewPage = () => {
 
               {/* Keyboard hint */}
               <p className="mt-3 text-center text-[11px] text-text-tertiary">
-                Gunakan ← → untuk navigasi antar slide
+                {t('deckPublic.navHint', 'Use ← → to navigate between slides')}
               </p>
             </div>
           </div>

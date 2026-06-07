@@ -112,6 +112,7 @@ export default function DecksPageV2() {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | DeckStatus>('all');
   const [createOpen, setCreateOpen] = useState(false);
+  const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
 
   // Auto-open create dialog when ?projectId is present.
   useEffect(() => {
@@ -175,8 +176,13 @@ export default function DecksPageV2() {
   const resetFilters = () => { setSearchText(''); setStatusFilter('all'); };
 
   const handleDelete = (d: Deck) => {
-    if (confirm(t('decks.confirmDelete', `Delete deck "{{title}}"? This action cannot be undone.`, { title: d.title }))) {
-      deleteMutation.mutate(d.id);
+    setDeckToDelete(d);
+  };
+
+  const confirmDelete = () => {
+    if (deckToDelete) {
+      deleteMutation.mutate(deckToDelete.id);
+      setDeckToDelete(null);
     }
   };
 
@@ -313,6 +319,40 @@ export default function DecksPageV2() {
         })}
         isPending={createMutation.isPending}
       />
+
+      {/* Delete confirmation — replaces native window.confirm */}
+      <Dialog open={!!deckToDelete} onOpenChange={(o) => !o && setDeckToDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('decks.confirmDeleteTitle', 'Delete deck')}</DialogTitle>
+            <DialogDescription>
+              {t(
+                'decks.confirmDeleteBody',
+                'Delete "{{title}}"? This action cannot be undone.',
+                { title: deckToDelete?.title ?? '' },
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDeckToDelete(null)}
+              disabled={deleteMutation.isPending}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending
+                ? t('common.deleting', 'Deleting…')
+                : t('common.delete', 'Delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }

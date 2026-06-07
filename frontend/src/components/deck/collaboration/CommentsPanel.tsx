@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Avatar, Empty, Tooltip, Popconfirm } from 'antd';
 import {
   CommentOutlined,
@@ -15,10 +16,19 @@ const { TextArea } = Input;
 interface CommentsPanelProps {
   slideId: string;
   onClose: () => void;
+  /** Persist resolve via commentsApi.resolve (wired by DeckEditorPage). */
+  onResolve: (commentId: string) => void;
+  /** Persist delete via commentsApi.delete (wired by DeckEditorPage). */
+  onDelete: (commentId: string) => void;
+  /** Persist a reply via commentsApi.create with parentId (optional). */
+  onReply?: (commentId: string, content: string) => void;
 }
 
-export const CommentsPanel: React.FC<CommentsPanelProps> = ({ slideId, onClose }) => {
-  const { comments, socket, setSelectedComment, selectedCommentId } = useCollaborationStore();
+export const CommentsPanel: React.FC<CommentsPanelProps> = ({
+  slideId, onClose, onResolve, onDelete, onReply,
+}) => {
+  const { t } = useTranslation();
+  const { comments, setSelectedComment, selectedCommentId } = useCollaborationStore();
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -27,42 +37,16 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({ slideId, onClose }
   const unresolvedCount = slideComments.filter((c) => !c.resolved).length;
 
   const handleResolve = (commentId: string) => {
-    if (socket) {
-      socket.emit('comment:update', {
-        id: commentId,
-        updates: { resolved: true },
-      });
-    }
+    onResolve(commentId);
   };
 
   const handleDelete = (commentId: string) => {
-    if (socket) {
-      socket.emit('comment:delete', commentId);
-    }
+    onDelete(commentId);
   };
 
   const handleReply = (commentId: string) => {
-    if (!replyText.trim() || !socket) return;
-
-    // In production, get user info from auth context
-    const reply = {
-      id: `reply-${Date.now()}`,
-      userId: 'current-user',
-      userName: 'You',
-      content: replyText,
-      createdAt: new Date().toISOString(),
-    };
-
-    const comment = comments.find((c) => c.id === commentId);
-    if (comment) {
-      socket.emit('comment:update', {
-        id: commentId,
-        updates: {
-          replies: [...comment.replies, reply],
-        },
-      });
-    }
-
+    if (!replyText.trim()) return;
+    onReply?.(commentId, replyText.trim());
     setReplyText('');
     setReplyingTo(null);
   };
@@ -73,7 +57,7 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({ slideId, onClose }
       <div className="flex items-center justify-between p-3 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <CommentOutlined />
-          <span className="font-medium">Comments</span>
+          <span className="font-medium">{t('deckEditor.comments', 'Comments')}</span>
           {unresolvedCount > 0 && (
             <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
               {unresolvedCount}
@@ -93,7 +77,7 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({ slideId, onClose }
         {slideComments.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="No comments yet"
+            description={t('deckEditor.noComments', 'No comments yet')}
           />
         ) : (
           <div className="space-y-4">
@@ -111,6 +95,7 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({ slideId, onClose }
                 replyText={replyText}
                 onReplyTextChange={setReplyText}
                 onSubmitReply={() => handleReply(comment.id)}
+                canReply={!!onReply}
               />
             ))}
           </div>
@@ -132,6 +117,7 @@ interface CommentItemProps {
   replyText: string;
   onReplyTextChange: (text: string) => void;
   onSubmitReply: () => void;
+  canReply: boolean;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -146,7 +132,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
   replyText,
   onReplyTextChange,
   onSubmitReply,
+  canReply,
 }) => {
+  const { t } = useTranslation();
   return (
     <div
       className={`p-3 rounded-lg border transition-colors cursor-pointer ${
@@ -174,7 +162,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       {comment.resolved && (
         <div className="flex items-center gap-1 text-green-600 text-xs mb-2">
           <CheckOutlined />
-          <span>Resolved</span>
+          <span>{t('deckEditor.resolved', 'Resolved')}</span>
         </div>
       )}
 
@@ -198,7 +186,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       {/* Actions */}
       <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
         {!comment.resolved && (
-          <Tooltip title="Resolve">
+          <Tooltip title={t('deckEditor.resolve', 'Resolve')}>
             <Button
               type="text"
               size="small"
@@ -210,19 +198,21 @@ const CommentItem: React.FC<CommentItemProps> = ({
             />
           </Tooltip>
         )}
-        <Button
-          type="text"
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onStartReply();
-          }}
-        >
-          Reply
-        </Button>
+        {canReply && (
+          <Button
+            type="text"
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStartReply();
+            }}
+          >
+            {t('deckEditor.reply', 'Reply')}
+          </Button>
+        )}
         <div className="flex-1" />
         <Popconfirm
-          title="Delete this comment?"
+          title={t('deckEditor.deleteCommentConfirm', 'Delete this comment?')}
           onConfirm={(e) => {
             e?.stopPropagation();
             onDelete();
@@ -242,7 +232,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
       {isReplying && (
         <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
           <TextArea
-            placeholder="Write a reply..."
+            placeholder={t('deckEditor.writeReply', 'Write a reply...')}
             autoSize={{ minRows: 1, maxRows: 3 }}
             value={replyText}
             onChange={(e) => onReplyTextChange(e.target.value)}

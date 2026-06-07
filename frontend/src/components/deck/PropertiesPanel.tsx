@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Tooltip, Empty, Divider } from 'antd';
 import { CloseOutlined, SettingOutlined } from '@ant-design/icons';
 import type { ActiveSelection, FabricObject, IText, Image as FabricImage } from 'fabric';
@@ -11,6 +12,7 @@ import TextProperties from './properties/TextProperties';
 import ImageProperties from './properties/ImageProperties';
 
 export default function PropertiesPanel() {
+  const { t } = useTranslation();
   const { theme: themeConfig } = useTheme();
   const {
     isOpen,
@@ -67,7 +69,7 @@ export default function PropertiesPanel() {
       return (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="Select an element to edit its properties"
+          description={t('deckEditor.propsEmpty', 'Select an element to edit its properties')}
           style={{ paddingTop: 48, paddingBottom: 48 }}
         />
       );
@@ -99,8 +101,8 @@ export default function PropertiesPanel() {
 
         {elementType === 'multiple' && (
           <div style={{ padding: 16, textAlign: 'center', color: themeConfig.colors.text.secondary }}>
-            <p>Multiple objects selected</p>
-            <p style={{ fontSize: 12 }}>Use transform controls to modify all</p>
+            <p>{t('deckEditor.propsMultiple', 'Multiple objects selected')}</p>
+            <p style={{ fontSize: 12 }}>{t('deckEditor.propsMultipleHint', 'Use transform controls to modify all')}</p>
           </div>
         )}
       </div>
@@ -130,9 +132,9 @@ export default function PropertiesPanel() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <SettingOutlined />
-          <span style={{ fontWeight: 500 }}>Properties</span>
+          <span style={{ fontWeight: 500 }}>{t('deckEditor.properties', 'Properties')}</span>
         </div>
-        <Tooltip title="Close panel">
+        <Tooltip title={t('deckEditor.closePanel', 'Close panel')}>
           <Button
             type="text"
             size="small"

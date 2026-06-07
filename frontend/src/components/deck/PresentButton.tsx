@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Dropdown, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { PlayCircleOutlined, SettingOutlined } from '@ant-design/icons';
@@ -15,6 +16,7 @@ interface PresentButtonProps {
 }
 
 export const PresentButton: React.FC<PresentButtonProps> = ({ disabled, onBeforePresent }) => {
+  const { t } = useTranslation();
   const {
     startPresentation,
     transition,
@@ -42,28 +44,28 @@ export const PresentButton: React.FC<PresentButtonProps> = ({ disabled, onBefore
   };
 
   const transitionItems: MenuProps['items'] = [
-    { key: 'none', label: 'No transition' },
-    { key: 'fade', label: 'Fade' },
-    { key: 'slide-left', label: 'Slide Left' },
-    { key: 'slide-right', label: 'Slide Right' },
-    { key: 'zoom', label: 'Zoom' },
+    { key: 'none', label: t('deckPresent.transitionNone', 'No transition') },
+    { key: 'fade', label: t('deckPresent.transitionFade', 'Fade') },
+    { key: 'slide-left', label: t('deckPresent.transitionSlideLeft', 'Slide Left') },
+    { key: 'slide-right', label: t('deckPresent.transitionSlideRight', 'Slide Right') },
+    { key: 'zoom', label: t('deckPresent.transitionZoom', 'Zoom') },
   ];
 
   const menuItems: MenuProps['items'] = [
     {
       key: 'from-start',
-      label: 'Present from start',
+      label: t('deckPresent.fromStart', 'Present from start'),
       onClick: handlePresentFromStart,
     },
     {
       key: 'from-current',
-      label: `Present from slide ${currentSlideIndex + 1}`,
+      label: t('deckPresent.fromSlide', 'Present from slide {{n}}', { n: currentSlideIndex + 1 }),
       onClick: handlePresentFromCurrent,
     },
     { type: 'divider' },
     {
       key: 'transition',
-      label: 'Transition',
+      label: t('deckPresent.transition', 'Transition'),
       children: transitionItems?.map((item) =>
         item && 'type' in item && item.type === 'divider'
           ? item
@@ -86,7 +88,7 @@ export const PresentButton: React.FC<PresentButtonProps> = ({ disabled, onBefore
       onClick={handlePresent}
       disabled={disabled}
     >
-      <PlayCircleOutlined /> Present
+      <PlayCircleOutlined /> {t('deckPresent.present', 'Present')}
     </Dropdown.Button>
   );
 };
