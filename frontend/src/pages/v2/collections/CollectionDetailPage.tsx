@@ -18,7 +18,7 @@
  *
  * All chrome is pure black + navy ACCENT. No raw hex, no AntD.
  */
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -42,6 +42,8 @@ import {
   ExternalLink,
   Layers,
   X,
+  SlidersHorizontal,
+  RefreshCw,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -56,6 +58,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,8 +93,43 @@ import { useMediaToken } from '@/hooks/useMediaToken';
 import { getProxyUrl } from '@/utils/mediaProxy';
 
 /* ------------------------------------------------------------------ */
-/*  Sidebar — same items every v2 page renders so active state holds.  */
+/*  Smart-criteria types                                               */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Criteria that drive which backend smart-endpoint is called.
+ *
+ * NOTE: The backend UpdateCollectionDto only persists name/description.
+ * The `filters` JSON column exists in the DB schema but the current
+ * service layer does not expose it through the PUT endpoint.
+ * Criteria are therefore used exclusively to drive which smart query
+ * endpoint is called when the user presses "Apply & Run" — the live
+ * result set updates the displayed member list for the session.
+ * Persistence of criteria is deferred (noted in UI).
+ */
+type SmartMode = 'rating' | 'status' | 'unresolved';
+
+interface SmartCriteria {
+  mode: SmartMode;
+  minRating: number; // 1-5, used when mode === 'rating'
+  status: MediaAsset['status']; // used when mode === 'status'
+  hasUnresolved: boolean; // used when mode === 'unresolved'
+}
+
+const DEFAULT_CRITERIA: SmartCriteria = {
+  mode: 'rating',
+  minRating: 4,
+  status: 'APPROVED',
+  hasUnresolved: true,
+};
+
+const STATUS_LABELS: Record<MediaAsset['status'], string> = {
+  DRAFT: 'Draft',
+  IN_REVIEW: 'In Review',
+  NEEDS_CHANGES: 'Needs Changes',
+  APPROVED: 'Approved',
+  ARCHIVED: 'Archived',
+};
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -123,6 +169,13 @@ export default function CollectionDetailPageV2() {
   const [addOpen, setAddOpen] = useState(false);
   const [selectedAddIds, setSelectedAddIds] = useState<string[]>([]);
 
+  // Smart-collection criteria editor
+  const [criteriaOpen, setCriteriaOpen] = useState(false);
+  const [criteria, setCriteria] = useState<SmartCriteria>(DEFAULT_CRITERIA);
+  // Assets returned by the last smart query run — null means "not yet run"
+  const [smartAssets, setSmartAssets] = useState<MediaAsset[] | null>(null);
+  const [smartRunning, setSmartRunning] = useState(false);
+
   const shell = {
     sidebar: {
       brand: <MonomiBrand />,
@@ -154,9 +207,7 @@ export default function CollectionDetailPageV2() {
 
   // Project-level assets are only fetched when the Add Assets dialog opens.
   // No reason to pay the round-trip on every detail-page mount.
-  const { data: projectAssets = [], isLoading: projectAssetsLoading } = useQuery<
-    MediaAsset[]
-  >({
+  const { data: projectAssets = [], isLoading: projectAssetsLoading } = useQuery<MediaAsset[]>({
     queryKey: ['media-assets', collection?.projectId],
     queryFn: () => mediaCollabService.getAssets(collection!.projectId),
     enabled: !!collection?.projectId && addOpen,
@@ -208,31 +259,76 @@ export default function CollectionDetailPageV2() {
     mutationFn: (assetIds: string[]) =>
       mediaCollabService.removeAssetsFromCollection(collectionId!, assetIds),
     onSuccess: () => {
-      toast.success(
-        t('collections.detail.removed', 'Aset berhasil dihapus dari koleksi.'),
-      );
+      toast.success(t('collections.detail.removed', 'Aset berhasil dihapus dari koleksi.'));
       queryClient.invalidateQueries({ queryKey: ['collection-assets', collectionId] });
     },
     onError: () =>
       toast.error(t('collections.detail.removeFailed', 'Gagal menghapus aset.')),
   });
 
+  /* ----- smart query runner ----- */
+  const runSmartQuery = useCallback(
+    async (c: SmartCriteria) => {
+      if (!collection?.projectId) return;
+      setSmartRunning(true);
+      try {
+        let result: MediaAsset[] = [];
+        if (c.mode === 'rating') {
+          result = await mediaCollabService.getSmartCollectionByRating(
+            collection.projectId,
+            c.minRating,
+          );
+        } else if (c.mode === 'status') {
+          result = await mediaCollabService.getSmartCollectionByStatus(
+            collection.projectId,
+            c.status,
+          );
+        } else {
+          result = await mediaCollabService.getSmartCollectionUnresolved(collection.projectId);
+        }
+        setSmartAssets(result);
+        toast.success(
+          t('smartCollection.queryRan', 'Kueri dijalankan — {{count}} aset cocok.', {
+            count: result.length,
+          }),
+        );
+      } catch {
+        toast.error(t('smartCollection.queryFailed', 'Gagal menjalankan kueri cerdas.'));
+      } finally {
+        setSmartRunning(false);
+      }
+    },
+    [collection?.projectId, t],
+  );
+
+  const handleApplyCriteria = async () => {
+    // Run the smart query so the member list refreshes.
+    // Criteria persistence is deferred (UpdateCollectionDto doesn't expose
+    // the filters JSON column yet).
+    await runSmartQuery(criteria);
+    setCriteriaOpen(false);
+  };
+
   /* ----- derived ----- */
+  const isSmart = !!collection?.isSmartCollection || collection?.type === 'SMART';
+
+  // For SMART collections, prefer the live smart-query result over the stored
+  // member list (which may be empty since smart assets aren't stored as items).
+  const displayAssets = isSmart && smartAssets !== null ? smartAssets : assets;
+
   const counts = useMemo(() => {
-    const total = assets.length;
-    const images = assets.filter(isImage).length;
-    const videos = assets.filter(isVideo).length;
-    const totalBytes = assets.reduce((acc, a) => acc + Number(a.size ?? 0), 0);
+    const total = displayAssets.length;
+    const images = displayAssets.filter(isImage).length;
+    const videos = displayAssets.filter(isVideo).length;
+    const totalBytes = displayAssets.reduce((acc, a) => acc + Number(a.size ?? 0), 0);
     return { total, images, videos, totalBytes };
-  }, [assets]);
+  }, [displayAssets]);
 
   const availableAssets = useMemo(() => {
     if (!projectAssets.length || !assets.length) return projectAssets;
     const inCollection = new Set(assets.map((a) => a.id));
     return projectAssets.filter((a) => !inCollection.has(a.id));
   }, [projectAssets, assets]);
-
-  const isSmart = !!collection?.isSmartCollection || collection?.type === 'SMART';
 
   /* ----- handlers ----- */
   const handleEdit = () => {
@@ -285,9 +381,7 @@ export default function CollectionDetailPageV2() {
     const url = `${window.location.origin}/v2/collections/${collection.id}`;
     navigator.clipboard
       .writeText(url)
-      .then(() =>
-        toast.success(t('collections.detail.linkCopied', 'Tautan koleksi disalin.')),
-      )
+      .then(() => toast.success(t('collections.detail.linkCopied', 'Tautan koleksi disalin.')))
       .catch(() =>
         toast.error(t('collections.detail.linkCopyFailed', 'Gagal menyalin tautan.')),
       );
@@ -415,16 +509,25 @@ export default function CollectionDetailPageV2() {
                 <ExternalLink className="h-4 w-4" />
                 {t('collections.detail.copyLink', 'Salin Tautan')}
               </Button>
-              {!isSmart && (
+              {isSmart && (
                 <Button
-                  onClick={handleEdit}
+                  onClick={() => setCriteriaOpen(true)}
                   size="sm"
                   className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
                 >
-                  <Pencil className="h-4 w-4" />
-                  {t('common.edit', 'Ubah')}
+                  <SlidersHorizontal className="h-4 w-4" />
+                  {t('smartCollection.editCriteria', 'Kriteria')}
                 </Button>
               )}
+              <Button
+                onClick={handleEdit}
+                variant="outline"
+                size="sm"
+                className="border-border-subtle"
+              >
+                <Pencil className="h-4 w-4" />
+                {t('common.edit', 'Ubah')}
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -436,10 +539,7 @@ export default function CollectionDetailPageV2() {
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="bg-bg-raised border-border-subtle"
-                >
+                <DropdownMenuContent align="end" className="bg-bg-raised border-border-subtle">
                   {!isSmart && (
                     <>
                       <DropdownMenuItem onSelect={() => setAddOpen(true)}>
@@ -487,9 +587,7 @@ export default function CollectionDetailPageV2() {
                       variant="outline"
                       className={cn(
                         'border-transparent px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider',
-                        isSmart
-                          ? 'bg-info/10 text-info'
-                          : 'bg-bg-sunken text-text-tertiary',
+                        isSmart ? 'bg-info/10 text-info' : 'bg-bg-sunken text-text-tertiary',
                       )}
                     >
                       <Sparkles className="mr-1.5 h-3 w-3" />
@@ -536,9 +634,7 @@ export default function CollectionDetailPageV2() {
                   icon={<Layers className="h-3.5 w-3.5" />}
                   label={t('collections.detail.totalSize', 'Total Ukuran')}
                   value={
-                    <span className="font-mono tabular-nums">
-                      {formatBytes(counts.totalBytes)}
-                    </span>
+                    <span className="font-mono tabular-nums">{formatBytes(counts.totalBytes)}</span>
                   }
                 />
                 {collection.description && (
@@ -601,41 +697,65 @@ export default function CollectionDetailPageV2() {
                   {t('collections.detail.gridTitle', 'Aset dalam Koleksi')}
                 </h2>
                 <p className="mt-0.5 text-xs text-text-tertiary">
-                  {assetsLoading
+                  {assetsLoading || smartRunning
                     ? t('common.loading', 'Memuat…')
                     : t('collections.detail.assetCount', '{{count}} aset', {
                         count: counts.total,
                       })}
                 </p>
               </div>
-              {!isSmart && counts.total > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAddOpen(true)}
-                  className="border-border-subtle"
-                >
-                  <Layers className="h-4 w-4" />
-                  {t('collections.detail.addAssets', 'Tambah Aset')}
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {isSmart && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => runSmartQuery(criteria)}
+                    disabled={smartRunning}
+                    className="border-border-subtle"
+                  >
+                    <RefreshCw className={cn('h-4 w-4', smartRunning && 'animate-spin')} />
+                    {t('smartCollection.runQuery', 'Jalankan Kueri')}
+                  </Button>
+                )}
+                {!isSmart && counts.total > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddOpen(true)}
+                    className="border-border-subtle"
+                  >
+                    <Layers className="h-4 w-4" />
+                    {t('collections.detail.addAssets', 'Tambah Aset')}
+                  </Button>
+                )}
+              </div>
             </div>
 
-            {assetsLoading ? (
+            {/* Smart collection callout — shown before the first query run */}
+            {isSmart && smartAssets === null && !assetsLoading && (
+              <div className="mb-4 flex items-start gap-3 rounded-md border border-border-subtle bg-bg-sunken px-4 py-3">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  {t(
+                    'smartCollection.callout',
+                    'Ini adalah koleksi cerdas — anggotanya ditentukan oleh kriteria, bukan pilihan manual. Klik "Kriteria" untuk mengatur filter lalu "Jalankan Kueri" untuk melihat hasilnya.',
+                  )}
+                </p>
+              </div>
+            )}
+
+            {assetsLoading || smartRunning ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {Array.from({ length: 10 }).map((_, i) => (
                   <Skeleton key={i} className="aspect-square rounded-md" />
                 ))}
               </div>
-            ) : assets.length === 0 ? (
+            ) : displayAssets.length === 0 ? (
               <EmptyState
                 icon={<Layers className="h-12 w-12" />}
                 title={
                   isSmart
-                    ? t(
-                        'collections.detail.emptySmart',
-                        'Tidak ada aset yang cocok',
-                      )
+                    ? t('collections.detail.emptySmart', 'Tidak ada aset yang cocok')
                     : t('collections.detail.emptyManual', 'Koleksi masih kosong')
                 }
                 description={
@@ -650,7 +770,16 @@ export default function CollectionDetailPageV2() {
                       )
                 }
                 action={
-                  !isSmart && (
+                  isSmart ? (
+                    <Button
+                      onClick={() => setCriteriaOpen(true)}
+                      size="sm"
+                      className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
+                    >
+                      <SlidersHorizontal className="h-4 w-4" />
+                      {t('smartCollection.editCriteria', 'Kriteria')}
+                    </Button>
+                  ) : (
                     <Button
                       onClick={() => setAddOpen(true)}
                       size="sm"
@@ -664,7 +793,7 @@ export default function CollectionDetailPageV2() {
               />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {assets.map((asset) => (
+                {displayAssets.map((asset) => (
                   <AssetTile
                     key={asset.id}
                     asset={asset}
@@ -678,7 +807,173 @@ export default function CollectionDetailPageV2() {
         </section>
 
         {/* ────────────────────────────────────────────────────────
-            Edit dialog — name + description. Tokens-only chrome.
+            Smart criteria editor dialog.
+            Supports three backend query modes:
+              - rating     → minimum star rating (1-5)
+              - status     → asset review status enum
+              - unresolved → assets with open frame comments
+            Criteria drive which smart endpoint is called on "Apply & Run".
+            Persistence is deferred — UpdateCollectionDto doesn't expose
+            the filters JSON column yet (noted in UI).
+           ──────────────────────────────────────────────────────── */}
+        <Dialog open={criteriaOpen} onOpenChange={setCriteriaOpen}>
+          <DialogContent className="bg-bg-raised border-border-subtle">
+            <DialogHeader>
+              <DialogTitle>
+                {t('smartCollection.dialogTitle', 'Kriteria Koleksi Cerdas')}
+              </DialogTitle>
+              <DialogDescription>
+                {t(
+                  'smartCollection.dialogDesc',
+                  'Pilih filter yang menentukan aset mana yang masuk ke koleksi ini. Anggota diperbarui setiap kali Anda menjalankan kueri.',
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-5 py-1">
+              {/* Mode selector */}
+              <div className="space-y-1.5">
+                <Label className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                  {t('smartCollection.modeLabel', 'Jenis Filter')}
+                </Label>
+                <Select
+                  value={criteria.mode}
+                  onValueChange={(v) =>
+                    setCriteria((prev) => ({ ...prev, mode: v as SmartMode }))
+                  }
+                >
+                  <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-bg-raised border-border-subtle">
+                    <SelectItem value="rating">
+                      {t('smartCollection.modeRating', 'Rating Bintang Minimum')}
+                    </SelectItem>
+                    <SelectItem value="status">
+                      {t('smartCollection.modeStatus', 'Status Review')}
+                    </SelectItem>
+                    <SelectItem value="unresolved">
+                      {t('smartCollection.modeUnresolved', 'Ada Komentar Belum Selesai')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Rating sub-field */}
+              {criteria.mode === 'rating' && (
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                    {t('smartCollection.minRatingLabel', 'Rating Minimum (1–5)')}
+                  </Label>
+                  <Select
+                    value={String(criteria.minRating)}
+                    onValueChange={(v) =>
+                      setCriteria((prev) => ({ ...prev, minRating: Number(v) }))
+                    }
+                  >
+                    <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-bg-raised border-border-subtle">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          {'★'.repeat(n)}
+                          {'☆'.repeat(5 - n)} ({n})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-text-tertiary">
+                    {t(
+                      'smartCollection.minRatingHint',
+                      'Tampilkan semua aset dengan rating ≥ nilai ini.',
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {/* Status sub-field */}
+              {criteria.mode === 'status' && (
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                    {t('smartCollection.statusLabel', 'Status Aset')}
+                  </Label>
+                  <Select
+                    value={criteria.status}
+                    onValueChange={(v) =>
+                      setCriteria((prev) => ({
+                        ...prev,
+                        status: v as MediaAsset['status'],
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-primary">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-bg-raised border-border-subtle">
+                      {(Object.entries(STATUS_LABELS) as [MediaAsset['status'], string][]).map(
+                        ([val, label]) => (
+                          <SelectItem key={val} value={val}>
+                            {label}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Unresolved comments sub-field */}
+              {criteria.mode === 'unresolved' && (
+                <div className="flex items-center gap-3 rounded-md border border-border-subtle bg-bg-sunken px-4 py-3">
+                  <Switch
+                    id="unresolved-toggle"
+                    checked={criteria.hasUnresolved}
+                    onCheckedChange={(v) =>
+                      setCriteria((prev) => ({ ...prev, hasUnresolved: v }))
+                    }
+                  />
+                  <Label
+                    htmlFor="unresolved-toggle"
+                    className="cursor-pointer text-sm text-text-secondary leading-relaxed"
+                  >
+                    {t(
+                      'smartCollection.unresolvedLabel',
+                      'Tampilkan aset yang memiliki komentar frame belum diselesaikan.',
+                    )}
+                  </Label>
+                </div>
+              )}
+
+              {/* Persistence notice */}
+              <p className="text-[11px] text-text-tertiary leading-relaxed border-t border-border-subtle pt-3">
+                {t(
+                  'smartCollection.autoUpdateNote',
+                  'Koleksi cerdas diperbarui otomatis setiap kali Anda menekan "Jalankan Kueri". Kriteria belum disimpan ke server — fitur persistensi sedang dalam pengembangan.',
+                )}
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCriteriaOpen(false)}>
+                {t('common.cancel', 'Batal')}
+              </Button>
+              <Button
+                onClick={handleApplyCriteria}
+                disabled={smartRunning}
+                className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
+              >
+                {smartRunning
+                  ? t('smartCollection.applying', 'Menjalankan…')
+                  : t('smartCollection.apply', 'Terapkan & Jalankan')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ────────────────────────────────────────────────────────
+            Edit dialog — name + description. Available for both
+            MANUAL and SMART collections.
            ──────────────────────────────────────────────────────── */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="bg-bg-raised border-border-subtle">
@@ -687,10 +982,7 @@ export default function CollectionDetailPageV2() {
                 {t('collections.detail.editTitle', 'Ubah Koleksi')}
               </DialogTitle>
               <DialogDescription>
-                {t(
-                  'collections.detail.editDesc',
-                  'Perbarui nama dan deskripsi koleksi.',
-                )}
+                {t('collections.detail.editDesc', 'Perbarui nama dan deskripsi koleksi.')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -701,10 +993,7 @@ export default function CollectionDetailPageV2() {
                 <Input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  placeholder={t(
-                    'collections.detail.namePlaceholder',
-                    'mis. Final Deliverables',
-                  )}
+                  placeholder={t('collections.detail.namePlaceholder', 'mis. Final Deliverables')}
                   className="bg-bg-sunken border-border-subtle text-text-primary"
                 />
               </div>
@@ -716,10 +1005,7 @@ export default function CollectionDetailPageV2() {
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={3}
-                  placeholder={t(
-                    'collections.detail.descPlaceholder',
-                    'Apa isi koleksi ini?',
-                  )}
+                  placeholder={t('collections.detail.descPlaceholder', 'Apa isi koleksi ini?')}
                   className="w-full rounded-md bg-bg-sunken border border-border-subtle text-sm text-text-primary placeholder:text-text-tertiary px-3 py-2 leading-relaxed focus:outline-none focus:ring-1 focus:ring-border-strong resize-none"
                 />
               </div>
@@ -839,10 +1125,7 @@ export default function CollectionDetailPageV2() {
                 onClick={() => {
                   if (selectedAddIds.length === 0) {
                     toast.error(
-                      t(
-                        'collections.detail.selectAtLeastOne',
-                        'Pilih minimal satu aset.',
-                      ),
+                      t('collections.detail.selectAtLeastOne', 'Pilih minimal satu aset.'),
                     );
                     return;
                   }

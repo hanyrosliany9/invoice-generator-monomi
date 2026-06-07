@@ -6,7 +6,7 @@ import {
   Folder,
   ArrowLeft, Upload, Image as ImageIcon, Film, Play, Trash2,
   MoreHorizontal, Share2, Copy, Link as LinkIcon, MessageCircle,
-  CheckCircle2, X, Loader2, Eye, Globe, FolderOpen, ZoomIn,
+  CheckCircle2, X, Loader2, Eye, Globe, FolderOpen, ZoomIn, Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -40,6 +40,7 @@ import {
   mediaCollabService,
   type MediaAsset,
   type MediaCollection,
+  type MediaFolder,
 } from '@/services/media-collab';
 import { StarRating } from '@/components/media/StarRating';
 import {
@@ -50,6 +51,10 @@ import {
 import { BulkActionBar } from '@/components/media/BulkActionBar';
 import { MetadataPanel } from '@/components/media/MetadataPanel';
 import { LightboxOverlay } from '@/components/media/LightboxOverlay';
+import { FolderSidebar } from '@/components/media/FolderSidebar';
+import { FolderBreadcrumb, type BreadcrumbSegment } from '@/components/media/FolderBreadcrumb';
+import { MoveToFolderDialog } from '@/components/media/MoveToFolderDialog';
+import { NewCollectionDialog } from '@/components/media/NewCollectionDialog';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — same shape as every v2 page.                             */
@@ -122,6 +127,11 @@ export default function MediaProjectDetailPageV2() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lightboxAsset, setLightboxAsset] = useState<MediaAsset | null>(null);
 
+  /* ---------- folder + collection state ---------- */
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [newCollectionDialogOpen, setNewCollectionDialogOpen] = useState(false);
+
   /* ---------- data ---------- */
   const {
     data: project,
@@ -156,6 +166,15 @@ export default function MediaProjectDetailPageV2() {
   });
 
   const {
+    data: folderTree = [],
+    isLoading: foldersLoading,
+  } = useQuery<MediaFolder[]>({
+    queryKey: ['media-folder-tree', projectId],
+    queryFn: () => mediaCollabService.getFolderTree(projectId!),
+    enabled: !!projectId,
+  });
+
+  const {
     data: assetComments = [],
     refetch: refetchComments,
   } = useQuery({
@@ -169,6 +188,70 @@ export default function MediaProjectDetailPageV2() {
     queryClient.invalidateQueries({ queryKey: ['media-assets', projectId] });
     queryClient.invalidateQueries({ queryKey: ['media-project', projectId] });
   };
+
+  const invalidateFolders = () => {
+    queryClient.invalidateQueries({ queryKey: ['media-folder-tree', projectId] });
+  };
+
+  const createFolderMutation = useMutation({
+    mutationFn: (data: { name: string; parentId: string | null }) =>
+      mediaCollabService.createFolder({
+        name: data.name,
+        projectId: projectId!,
+        parentId: data.parentId ?? undefined,
+      }),
+    onSuccess: () => {
+      invalidateFolders();
+      toast.success(t('mediaFolders.folderCreated', 'Folder created.'));
+    },
+    onError: () => toast.error(t('mediaFolders.folderCreateFailed', 'Failed to create folder.')),
+  });
+
+  const renameFolderMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      mediaCollabService.updateFolder(id, { name }),
+    onSuccess: () => {
+      invalidateFolders();
+      toast.success(t('mediaFolders.folderRenamed', 'Folder renamed.'));
+    },
+    onError: () => toast.error(t('mediaFolders.folderRenameFailed', 'Failed to rename folder.')),
+  });
+
+  const deleteFolderMutation = useMutation({
+    mutationFn: (folderId: string) => mediaCollabService.deleteFolder(folderId),
+    onSuccess: (result) => {
+      invalidateFolders();
+      invalidateAssets();
+      // If the deleted folder was active, reset to root
+      if (activeFolderId === result.deletedFolderId) setActiveFolderId(null);
+      toast.success(t('mediaFolders.folderDeleted', 'Folder deleted.'));
+    },
+    onError: () => toast.error(t('mediaFolders.folderDeleteFailed', 'Failed to delete folder.')),
+  });
+
+  const moveAssetsMutation = useMutation({
+    mutationFn: (targetFolderId: string | null) =>
+      mediaCollabService.moveAssets(projectId!, {
+        assetIds: Array.from(selectedIds),
+        folderId: targetFolderId ?? undefined,
+      }),
+    onSuccess: () => {
+      invalidateAssets();
+      clearSelection();
+      toast.success(t('mediaFolders.moveSuccess', 'Assets moved.'));
+    },
+    onError: () => toast.error(t('mediaFolders.moveFailed', 'Failed to move assets.')),
+  });
+
+  const createCollectionMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string; type: 'MANUAL' | 'SMART' }) =>
+      mediaCollabService.createCollection(projectId!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['media-collections', projectId] });
+      toast.success(t('mediaCollections.created', 'Collection created.'));
+    },
+    onError: () => toast.error(t('mediaCollections.createFailed', 'Failed to create collection.')),
+  });
 
   const deleteAssetMutation = useMutation({
     mutationFn: (assetId: string) => mediaCollabService.deleteAsset(assetId),
@@ -283,9 +366,37 @@ export default function MediaProjectDetailPageV2() {
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
+  /* ---------- breadcrumb helpers ---------- */
+  const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
+    if (!activeFolderId) return [];
+
+    const findPath = (
+      nodes: MediaFolder[],
+      targetId: string,
+      acc: BreadcrumbSegment[],
+    ): BreadcrumbSegment[] | null => {
+      for (const n of nodes) {
+        const seg: BreadcrumbSegment = { id: n.id, name: n.name };
+        if (n.id === targetId) return [...acc, seg];
+        if (n.children?.length) {
+          const found = findPath(n.children, targetId, [...acc, seg]);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    return findPath(folderTree, activeFolderId, []) ?? [];
+  }, [activeFolderId, folderTree]);
+
   /* ---------- derived ---------- */
   const filteredAssets = useMemo(() => {
     let result = [...assets];
+
+    // Folder filter — only show assets in the active folder (or all if root)
+    if (activeFolderId !== null) {
+      result = result.filter((a) => a.folderId === activeFolderId);
+    }
 
     // Media type
     if (filters.mediaType === 'IMAGE') {
@@ -685,6 +796,39 @@ export default function MediaProjectDetailPageV2() {
             />
           </div>
 
+          {/* Folder sidebar + main content area */}
+          <div className="flex gap-5">
+            {/* Folder sidebar — hidden on mobile */}
+            <div className="hidden md:block shrink-0">
+              <FolderSidebar
+                folders={folderTree}
+                loading={foldersLoading}
+                selectedFolderId={activeFolderId}
+                onSelectFolder={(id) => { setActiveFolderId(id); setVisibleCount(PAGE_SIZE); }}
+                onCreateFolder={async (parentId, name) => {
+                  await createFolderMutation.mutateAsync({ name, parentId });
+                }}
+                onRenameFolder={async (folderId, name) => {
+                  await renameFolderMutation.mutateAsync({ id: folderId, name });
+                }}
+                onDeleteFolder={async (folderId) => {
+                  await deleteFolderMutation.mutateAsync(folderId);
+                }}
+              />
+            </div>
+
+            {/* Right: breadcrumb + grid */}
+            <div className="flex-1 min-w-0">
+              {/* Breadcrumb */}
+              {breadcrumbSegments.length > 0 && (
+                <div className="mb-3">
+                  <FolderBreadcrumb
+                    segments={breadcrumbSegments}
+                    onNavigate={(id) => { setActiveFolderId(id); setVisibleCount(PAGE_SIZE); }}
+                  />
+                </div>
+              )}
+
           {/* Per-file upload tiles — show progress bar and error/retry */}
           {Object.entries(uploadStates).length > 0 && (
             <div className="mb-4 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -777,6 +921,8 @@ export default function MediaProjectDetailPageV2() {
               )}
             </>
           )}
+            </div>{/* end flex-1 right column */}
+          </div>{/* end flex gap-5 sidebar+grid */}
         </GlassPanel>
       </section>
 
@@ -794,6 +940,15 @@ export default function MediaProjectDetailPageV2() {
                   : t('mediaCollab.collectionCount', '{{count}} collections', { count: collections.length })}
               </p>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => setNewCollectionDialogOpen(true)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t('mediaCollections.new', 'New Collection')}
+            </Button>
           </div>
 
           {collectionsLoading ? (
@@ -1175,9 +1330,30 @@ export default function MediaProjectDetailPageV2() {
         onBulkDelete={async () => {
           await bulkDeleteMutation.mutateAsync(Array.from(selectedIds));
         }}
+        onMoveToFolder={() => setMoveDialogOpen(true)}
         isRating={bulkRateMutation.isPending}
         isDownloading={bulkDownloadMutation.isPending}
         isDeleting={bulkDeleteMutation.isPending}
+      />
+
+      {/* Move-to-folder dialog */}
+      <MoveToFolderDialog
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        folders={folderTree}
+        assetCount={selectedIds.size}
+        onMove={async (targetFolderId) => {
+          await moveAssetsMutation.mutateAsync(targetFolderId);
+        }}
+      />
+
+      {/* New collection dialog */}
+      <NewCollectionDialog
+        open={newCollectionDialogOpen}
+        onOpenChange={setNewCollectionDialogOpen}
+        onSubmit={async (data) => {
+          await createCollectionMutation.mutateAsync(data);
+        }}
       />
 
       {/* Lightbox */}

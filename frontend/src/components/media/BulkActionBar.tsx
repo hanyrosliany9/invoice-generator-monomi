@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Download, Star, Trash2, X, Check, Loader2 } from 'lucide-react';
+import { Download, Star, Trash2, X, Check, Loader2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,6 +24,7 @@ interface BulkActionBarProps {
   onBulkRate: (rating: number) => Promise<void>;
   onBulkDownload: () => Promise<void>;
   onBulkDelete: () => Promise<void>;
+  onMoveToFolder?: () => void;
   isRating: boolean;
   isDownloading: boolean;
   isDeleting: boolean;
@@ -35,6 +36,7 @@ export function BulkActionBar({
   onBulkRate,
   onBulkDownload,
   onBulkDelete,
+  onMoveToFolder,
   isRating,
   isDownloading,
   isDeleting,
@@ -62,6 +64,20 @@ export function BulkActionBar({
         <span className="text-xs font-medium text-text-primary tabular-nums mr-1">
           {t('mediaReview.bulkSelected', '{{n}} selected', { n: selectedCount })}
         </span>
+
+        {/* Move to folder */}
+        {onMoveToFolder && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs border-border-subtle"
+            disabled={busy}
+            onClick={onMoveToFolder}
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
+            {t('mediaFolders.moveTo', 'Move to…')}
+          </Button>
+        )}
 
         {/* Bulk star rating */}
         <Select
