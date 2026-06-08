@@ -501,6 +501,33 @@ export class QuotationsService {
       );
     }
 
+    // Reconcile existing invoices before restructuring terms. A quotation
+    // approved as FULL_PAYMENT auto-generated a single full-amount invoice;
+    // switching to termin must NOT leave that stale full invoice behind (it
+    // would read as the "first invoice" at the full amount). Block if any
+    // invoice is already issued/paid (real AR); otherwise remove the DRAFT,
+    // unpaid auto-generated invoice(s) so the new termin structure is clean.
+    const existingInvoices = (quotation as any).invoices ?? [];
+    for (const inv of existingInvoices) {
+      const paymentCount = await this.prisma.payment.count({
+        where: { invoiceId: inv.id },
+      });
+      if (
+        inv.status === "PAID" ||
+        inv.status === "OVERDUE" ||
+        inv.status === "SENT" ||
+        inv.markedPaidAt ||
+        paymentCount > 0
+      ) {
+        throw new ConflictException(
+          `Tidak dapat mengubah termin: invoice ${inv.invoiceNumber} sudah ${inv.status === "SENT" ? "dikirim ke klien" : "dibayar"}. Batalkan/hapus invoice tersebut terlebih dahulu.`,
+        );
+      }
+    }
+    for (const inv of existingInvoices) {
+      await this.invoicesService.remove(inv.id);
+    }
+
     const isMilestone = paymentType === "MILESTONE_BASED";
     if (isMilestone) {
       if (!milestones || milestones.length < 2) {
