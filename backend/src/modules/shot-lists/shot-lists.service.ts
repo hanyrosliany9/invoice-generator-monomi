@@ -33,7 +33,7 @@ export class ShotListsService {
     const list = await this.prisma.shotList.findUnique({
       where: { id },
       include: {
-        project: true,
+        project: { include: { client: { select: { id: true, name: true } } } },
         createdBy: { select: { id: true, name: true } },
         scenes: {
           orderBy: { order: "asc" },

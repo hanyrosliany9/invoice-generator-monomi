@@ -7,6 +7,22 @@ import { escapeHtml } from "./escape-html.util";
 
 export function generateShotListHTML(shotList: any): string {
   const scenes: any[] = shotList.scenes || [];
+  // Production context + roll-up summary for the print header.
+  const allShots: any[] = scenes.flatMap((s: any) => s.shots || []);
+  const totalShots = allShots.length;
+  const totalSecs = allShots.reduce(
+    (sum: number, sh: any) => sum + (Number(sh.estimatedTime) || 0),
+    0,
+  );
+  const fmtDur = (secs: number) => {
+    if (!secs) return "—";
+    if (secs < 60) return `${secs}s`;
+    const m = Math.floor(secs / 60);
+    const r = secs % 60;
+    return r ? `${m}m ${r}s` : `${m}m`;
+  };
+  const projectNumber = shotList.project?.number || "";
+  const clientName = shotList.project?.client?.name || "";
   const scenesHtml = scenes.length === 0
     ? '<p style="color:#9ca3af; font-style:italic; padding:16px 0;">No scenes have been added yet.</p>'
     : scenes
@@ -90,8 +106,10 @@ export function generateShotListHTML(shotList: any): string {
     <body>
       <h1>${escapeHtml(shotList.name)}</h1>
       <div class="meta">
-        Project: ${escapeHtml(shotList.project?.name || "N/A")} |
-        Created: ${new Date(shotList.createdAt).toLocaleDateString()}
+        Project: ${escapeHtml(shotList.project?.name || "N/A")}${projectNumber ? ` (${escapeHtml(projectNumber)})` : ""}
+        ${clientName ? ` | Client: ${escapeHtml(clientName)}` : ""}
+        | Scenes: ${scenes.length} | Shots: ${totalShots} | Est. duration: ${fmtDur(totalSecs)}
+        | Created: ${new Date(shotList.createdAt).toLocaleDateString()}
       </div>
       ${scenesHtml}
     </body>
