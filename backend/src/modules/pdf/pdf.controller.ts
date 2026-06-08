@@ -109,15 +109,33 @@ export class PdfController {
         throw new NotFoundException("Invoice tidak ditemukan");
       }
 
-      // Non-termin invoices: refresh the line-item breakdown from the live
-      // project. Termin invoices intentionally KEEP the full project breakdown
-      // as line items so the client sees the full scope of services — the
-      // payment-schedule summary (Subtotal Full Project → this Termin % →
-      // TOTAL DUE) reconciles it down to the milestone amount. (Previously this
-      // replaced the products with a single synthetic "Termin" line, so the
-      // actual services were missing from the invoice.)
+      // Non-termin invoices: refresh the line items from the live project.
       if (!invoice.paymentMilestoneId && invoice.project?.priceBreakdown) {
         invoice.priceBreakdown = invoice.project.priceBreakdown;
+      }
+      // Termin invoices: list a SINGLE line item = the selected termin at the
+      // termin amount, so the client sees exactly what this invoice bills and
+      // isn't confused by the full project breakdown on a partial invoice.
+      // CRITICAL: the amount is the milestone's paymentAmount — NOT
+      // amountPerProject (the full project value), which previously made the
+      // line read the full total.
+      if (invoice.paymentMilestoneId && invoice.paymentMilestone) {
+        const pm = invoice.paymentMilestone;
+        const terminName = `Termin ${pm.milestoneNumber} - ${pm.nameId || pm.name} (${pm.paymentPercentage}%)`;
+        const terminAmount = Number(pm.paymentAmount) || Number(invoice.totalAmount) || 0;
+        invoice.priceBreakdown = {
+          products: [
+            {
+              name: terminName,
+              description: pm.description || pm.descriptionId || null,
+              price: terminAmount,
+              quantity: 1,
+              subtotal: terminAmount,
+            },
+          ],
+          total: terminAmount,
+          calculatedAt: new Date().toISOString(),
+        };
       }
 
       // Parse continuous parameter (default: true for digital viewing)
