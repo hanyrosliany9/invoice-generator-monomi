@@ -338,6 +338,13 @@ export interface ExpenseFormProps {
   onSubmitAndApprove?: (payload: ExpenseFormPayload) => void;
   onSubmit: (payload: ExpenseFormPayload) => void;
   onCancel?: () => void;
+  /**
+   * Embedded mode (e.g. inside the QuickExpenseSheet slide-over): force a single
+   * column (the two-column Details|Summary layout uses VIEWPORT breakpoints,
+   * which crush the form inside a narrow sheet) and hide the internal sticky
+   * action bar (the host provides its own footer).
+   */
+  embedded?: boolean;
 }
 
 export const ExpenseForm = ({
@@ -349,6 +356,7 @@ export const ExpenseForm = ({
   onSubmit,
   onSubmitAndApprove,
   onCancel,
+  embedded = false,
 }: ExpenseFormProps) => {
   const { t } = useTranslation();
 
@@ -484,7 +492,12 @@ export const ExpenseForm = ({
       noValidate
       className="space-y-4"
     >
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_340px] gap-4 items-start">
+      <div className={cn(
+        'grid gap-4 items-start',
+        embedded
+          ? 'grid-cols-1'
+          : 'grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_340px]',
+      )}>
         {/* ============================================================ */}
         {/* LEFT — body                                                  */}
         {/* ============================================================ */}
@@ -1224,8 +1237,11 @@ export const ExpenseForm = ({
       </div>
 
       {/* ============================================================ */}
-      {/* Sticky bottom action bar — mirrors InvoiceForm rhythm        */}
+      {/* Sticky bottom action bar — mirrors InvoiceForm rhythm.       */}
+      {/* Hidden in embedded mode (the host slide-over supplies its    */}
+      {/* own footer, so this would duplicate it).                     */}
       {/* ============================================================ */}
+      {!embedded && (
       <div className="sticky bottom-0 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-4 mt-8 bg-bg-base/90 backdrop-blur-[24px] border-t border-border-subtle">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <p className="text-[11px] text-text-tertiary">
@@ -1262,6 +1278,7 @@ export const ExpenseForm = ({
           </div>
         </div>
       </div>
+      )}
     </form>
   );
 };

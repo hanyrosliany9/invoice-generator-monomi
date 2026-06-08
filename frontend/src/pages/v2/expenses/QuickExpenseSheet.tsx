@@ -150,6 +150,7 @@ export function QuickExpenseSheet({
           <ExpenseForm
             key={formKey}
             mode="create"
+            embedded
             formId={FORM_ID}
             lockedProjectId={projectId}
             defaultValues={{ projectId, isBillable: false }}
