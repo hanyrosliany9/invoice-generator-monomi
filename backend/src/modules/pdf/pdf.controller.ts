@@ -110,32 +110,13 @@ export class PdfController {
       }
 
       // Non-termin invoices: refresh the line items from the live project.
+      // Termin invoices KEEP the full product/service breakdown as line items so
+      // the client still sees the full scope they're paying toward; only the
+      // TOTAL DUE reflects the selected termin amount (handled in the invoice
+      // template — subTotal/finalTotal use the milestone amount, and the summary
+      // shows Subtotal Full Project → this Termin % → TOTAL DUE → Remaining).
       if (!invoice.paymentMilestoneId && invoice.project?.priceBreakdown) {
         invoice.priceBreakdown = invoice.project.priceBreakdown;
-      }
-      // Termin invoices: list a SINGLE line item = the selected termin at the
-      // termin amount, so the client sees exactly what this invoice bills and
-      // isn't confused by the full project breakdown on a partial invoice.
-      // CRITICAL: the amount is the milestone's paymentAmount — NOT
-      // amountPerProject (the full project value), which previously made the
-      // line read the full total.
-      if (invoice.paymentMilestoneId && invoice.paymentMilestone) {
-        const pm = invoice.paymentMilestone;
-        const terminName = `Termin ${pm.milestoneNumber} - ${pm.nameId || pm.name} (${pm.paymentPercentage}%)`;
-        const terminAmount = Number(pm.paymentAmount) || Number(invoice.totalAmount) || 0;
-        invoice.priceBreakdown = {
-          products: [
-            {
-              name: terminName,
-              description: pm.description || pm.descriptionId || null,
-              price: terminAmount,
-              quantity: 1,
-              subtotal: terminAmount,
-            },
-          ],
-          total: terminAmount,
-          calculatedAt: new Date().toISOString(),
-        };
       }
 
       // Parse continuous parameter (default: true for digital viewing)
