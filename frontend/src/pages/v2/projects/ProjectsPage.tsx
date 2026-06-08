@@ -205,8 +205,10 @@ export default function ProjectsPageV2() {
     const outstanding = projects.reduce((acc, p) => {
       // Cancelled projects are not owed — exclude from outstanding.
       if (p.status === 'CANCELLED') return acc;
-      // Outstanding = invoiced-but-unpaid (basePrice − paid), floored at 0.
-      const billed = toNumber(p.basePrice);
+      // Outstanding = actually INVOICED but unpaid, floored at 0. Must use
+      // totalInvoicedAmount, NOT basePrice (the full contract value) — basePrice
+      // counted un-invoiced future work and massively overstated "outstanding".
+      const billed = toNumber(p.totalInvoicedAmount);
       const paid = toNumber(p.totalPaidAmount);
       return acc + Math.max(billed - paid, 0);
     }, 0);
