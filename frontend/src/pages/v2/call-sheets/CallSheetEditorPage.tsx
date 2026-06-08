@@ -20,24 +20,18 @@
 /*    – Status chip + workflow primary action (Send / Mark Ready)      */
 /*    – Quiet metadata block (last updated, type, day-N-of-M)          */
 /*                                                                     */
-/*  ── DEFERRED (out of v2 scope for this pass) ──                     */
-/*  Classic editor (1589 LOC) carries an aggressive feature set built  */
-/*  on dedicated subcomponents (ShotListSection, ModelsSection,        */
-/*  WardrobeSection, HMUScheduleSection, MealBreaksSection,            */
-/*  CompanyMovesSection, BackgroundCallsSection,                       */
-/*  SpecialRequirementsSection, ActivitiesSection) and several         */
-/*  geo/weather/PDF integrations. These remain available on the v1     */
-/*  page; rebuilding them as v2 primitives is out of scope here.       */
+/*  Conditional sections (rendered by callSheetType):                  */
+/*    PHOTO → Models (arrival flow), Wardrobe, HMU schedule            */
+/*    FILM  → Meal breaks, Company moves, Background/extras,           */
+/*            Special requirements                                      */
+/*  Location section carries auto-fill (weather / sun times /          */
+/*  hospital / all), enabled once a location is saved.                 */
 /*                                                                     */
-/*  Deferred features (banner on page surfaces this to operators):     */
-/*    - PDF preview + export                                           */
-/*    - Auto-fill (weather, sun times, nearest hospital, address       */
-/*      autocomplete)                                                  */
+/*  ── STILL DEFERRED (out of v2 scope for this pass) ──               */
+/*    - PDF preview (export-to-PDF download IS wired, in the kebab)    */
+/*    - Address autocomplete on the location field                     */
 /*    - Drag-to-reorder for schedule and crew                          */
-/*    - FILM-specific sections: meal breaks, company moves,            */
-/*      background extras, special requirements                        */
-/*    - PHOTO-specific sections: shot list, wardrobe tracking, HMU     */
-/*      schedule, model arrival flow                                   */
+/*    - PHOTO shot list (looks)                                        */
 /*    - Cast advanced fields: workStatus (SW/W/WF/SWF/H), pickup,      */
 /*      MU call, on-set time, transport mode                           */
 /*    - "Send Call Sheet" actual distribution (button stubs status)    */
@@ -53,7 +47,8 @@ import {
   ClapperboardIcon as Clapperboard, ArrowLeft, Send, CheckCircle2,
   AlertTriangle, Plus, Trash2, Save, Loader2,
   Clock, MapPin, FileText as NotesIcon, MoreHorizontal,
-  CloudSun, HeartPulse, Download,
+  CloudSun, HeartPulse, Download, Sunrise,
+  Shirt, Sparkles, Utensils, Truck, UsersRound, ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -84,6 +79,8 @@ import { useAuthStore } from '@/store/auth';
 import { callSheetsApi } from '@/services/callSheets';
 import type {
   CallSheet, CallSheetStatus, CallSheetType, CallStatus,
+  ModelArrivalType, WardrobeStatus, HMURole,
+  MealType, SpecialReqType,
 } from '@/types/callSheet';
 import { DEPARTMENTS } from '@/constants/departments';
 
@@ -137,6 +134,48 @@ const ACTIVITY_TYPES: { value: string; labelKey: string; labelFallback: string }
   { value: 'TRANSPORT',   labelKey: 'callSheetEditor.activityTransport',   labelFallback: 'Transport' },
   { value: 'TECHNICAL',   labelKey: 'callSheetEditor.activityTechnical',   labelFallback: 'Technical' },
   { value: 'CUSTOM',      labelKey: 'callSheetEditor.activityCustom',      labelFallback: 'Custom' },
+];
+
+/* ----- PHOTO / FILM enum option lists ----- */
+const MODEL_ARRIVAL_TYPES: { value: ModelArrivalType; labelKey: string; labelFallback: string }[] = [
+  { value: 'CAMERA_READY', labelKey: 'callSheetEditor.arrivalCameraReady', labelFallback: 'Camera Ready' },
+  { value: 'STYLED',       labelKey: 'callSheetEditor.arrivalStyled',      labelFallback: 'Needs Styling' },
+];
+
+const WARDROBE_STATUSES: { value: WardrobeStatus; labelKey: string; labelFallback: string }[] = [
+  { value: 'PENDING',   labelKey: 'callSheetEditor.wardrobePending',   labelFallback: 'Pending' },
+  { value: 'CONFIRMED', labelKey: 'callSheetEditor.wardrobeConfirmed', labelFallback: 'Confirmed' },
+  { value: 'ON_SET',    labelKey: 'callSheetEditor.wardrobeOnSet',     labelFallback: 'On Set' },
+  { value: 'IN_USE',    labelKey: 'callSheetEditor.wardrobeInUse',     labelFallback: 'In Use' },
+  { value: 'WRAPPED',   labelKey: 'callSheetEditor.wardrobeWrapped',   labelFallback: 'Wrapped' },
+];
+
+const HMU_ROLES: { value: HMURole; labelKey: string; labelFallback: string }[] = [
+  { value: 'HAIR',        labelKey: 'callSheetEditor.hmuRoleHair',     labelFallback: 'Hair' },
+  { value: 'MAKEUP',      labelKey: 'callSheetEditor.hmuRoleMakeup',   labelFallback: 'Makeup' },
+  { value: 'BOTH',        labelKey: 'callSheetEditor.hmuRoleBoth',     labelFallback: 'Hair & Makeup' },
+  { value: 'KEY_STYLIST', labelKey: 'callSheetEditor.hmuRoleKey',      labelFallback: 'Key Stylist' },
+];
+
+const MEAL_TYPES: { value: MealType; labelKey: string; labelFallback: string }[] = [
+  { value: 'BREAKFAST',      labelKey: 'callSheetEditor.mealBreakfast',     labelFallback: 'Breakfast' },
+  { value: 'LUNCH',          labelKey: 'callSheetEditor.mealLunch',         labelFallback: 'Lunch' },
+  { value: 'SECOND_MEAL',    labelKey: 'callSheetEditor.mealSecond',        labelFallback: 'Second Meal' },
+  { value: 'CRAFT_SERVICES', labelKey: 'callSheetEditor.mealCraft',         labelFallback: 'Craft Services' },
+  { value: 'CATERING',       labelKey: 'callSheetEditor.mealCatering',      labelFallback: 'Catering' },
+];
+
+const SPECIAL_REQ_TYPES: { value: SpecialReqType; labelKey: string; labelFallback: string }[] = [
+  { value: 'STUNTS',       labelKey: 'callSheetEditor.reqStunts',     labelFallback: 'Stunts' },
+  { value: 'MINORS',       labelKey: 'callSheetEditor.reqMinors',     labelFallback: 'Minors' },
+  { value: 'ANIMALS',      labelKey: 'callSheetEditor.reqAnimals',    labelFallback: 'Animals' },
+  { value: 'VEHICLES',     labelKey: 'callSheetEditor.reqVehicles',   labelFallback: 'Vehicles' },
+  { value: 'SFX_PYRO',     labelKey: 'callSheetEditor.reqSfxPyro',    labelFallback: 'SFX / Pyro' },
+  { value: 'WATER_WORK',   labelKey: 'callSheetEditor.reqWaterWork',  labelFallback: 'Water Work' },
+  { value: 'AERIAL_DRONE', labelKey: 'callSheetEditor.reqAerialDrone',labelFallback: 'Aerial / Drone' },
+  { value: 'WEAPONS',      labelKey: 'callSheetEditor.reqWeapons',    labelFallback: 'Weapons' },
+  { value: 'NUDITY',       labelKey: 'callSheetEditor.reqNudity',     labelFallback: 'Nudity' },
+  { value: 'OTHER',        labelKey: 'callSheetEditor.reqOther',      labelFallback: 'Other' },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -199,6 +238,184 @@ type ActivityRowForm = {
   location: string;
   notes: string;
 };
+
+/* ----- PHOTO-specific row forms ----- */
+type ModelRowForm = {
+  id?: string;
+  modelName: string;
+  modelNumber: string;
+  agencyName: string;
+  arrivalType: ModelArrivalType;
+  arrivalTime: string;
+  hmuStartTime: string;
+  cameraReadyTime: string;
+  hmuArtist: string;
+};
+
+type WardrobeRowForm = {
+  id?: string;
+  itemName: string;
+  brand: string;
+  size: string;
+  color: string;
+  forModel: string;
+  status: WardrobeStatus;
+};
+
+type HmuRowForm = {
+  id?: string;
+  artistName: string;
+  artistRole: HMURole;
+  callTime: string;
+  availableFrom: string;
+  availableUntil: string;
+  assignedModels: string;
+};
+
+/* ----- FILM-specific row forms ----- */
+type MealRowForm = {
+  id?: string;
+  mealType: MealType;
+  time: string;
+  duration: string;
+  location: string;
+  notes: string;
+};
+
+type MoveRowForm = {
+  id?: string;
+  departTime: string;
+  fromLocation: string;
+  toLocation: string;
+  travelTime: string;
+  notes: string;
+};
+
+type BackgroundRowForm = {
+  id?: string;
+  description: string;
+  quantity: string;
+  callTime: string;
+  reportLocation: string;
+  scenes: string;
+};
+
+type SpecialReqRowForm = {
+  id?: string;
+  reqType: SpecialReqType;
+  description: string;
+  contactName: string;
+  contactPhone: string;
+  safetyNotes: string;
+};
+
+type ArraysFormShape = {
+  crew: CrewRowForm[];
+  cast: CastRowForm[];
+  activities: ActivityRowForm[];
+  models: ModelRowForm[];
+  wardrobe: WardrobeRowForm[];
+  hmu: HmuRowForm[];
+  meals: MealRowForm[];
+  moves: MoveRowForm[];
+  background: BackgroundRowForm[];
+  specialReqs: SpecialReqRowForm[];
+};
+
+/* Single source of truth for turning a fetched CallSheet into the
+   editable arrays-form shape. Used both by the reactive reset effect
+   and by the post-save reset in handleSaveAll. */
+function mapSheetToArrays(cs: CallSheet): ArraysFormShape {
+  return {
+    crew: (cs.crewCalls ?? []).map((c) => ({
+      id: c.id,
+      department: c.department,
+      position: c.position,
+      name: c.name,
+      callTime: c.callTime,
+      phone: c.phone ?? '',
+      email: c.email ?? '',
+    })),
+    cast: (cs.castCalls ?? []).map((c) => ({
+      id: c.id,
+      castNumber: c.castNumber ?? '',
+      actorName: c.actorName,
+      character: c.character ?? '',
+      callTime: c.callTime,
+      status: c.status,
+    })),
+    activities: (cs.activities ?? []).map((a) => ({
+      id: a.id,
+      activityType: a.activityType ?? 'GENERAL',
+      activityName: a.activityName,
+      startTime: a.startTime,
+      endTime: a.endTime ?? '',
+      location: a.location ?? '',
+      notes: a.notes ?? '',
+    })),
+    models: (cs.models ?? []).map((m) => ({
+      id: m.id,
+      modelName: m.modelName,
+      modelNumber: m.modelNumber ?? '',
+      agencyName: m.agencyName ?? '',
+      arrivalType: m.arrivalType,
+      arrivalTime: m.arrivalTime,
+      hmuStartTime: m.hmuStartTime ?? '',
+      cameraReadyTime: m.cameraReadyTime ?? '',
+      hmuArtist: m.hmuArtist ?? '',
+    })),
+    wardrobe: (cs.wardrobe ?? []).map((w) => ({
+      id: w.id,
+      itemName: w.itemName,
+      brand: w.brand ?? '',
+      size: w.size ?? '',
+      color: w.color ?? '',
+      forModel: w.forModel ?? '',
+      status: w.status,
+    })),
+    hmu: (cs.hmuSchedule ?? []).map((h) => ({
+      id: h.id,
+      artistName: h.artistName,
+      artistRole: h.artistRole,
+      callTime: h.callTime,
+      availableFrom: h.availableFrom ?? '',
+      availableUntil: h.availableUntil ?? '',
+      assignedModels: h.assignedModels ?? '',
+    })),
+    meals: (cs.mealBreaks ?? []).map((m) => ({
+      id: m.id,
+      mealType: m.mealType,
+      time: m.time,
+      duration: m.duration != null ? String(m.duration) : '',
+      location: m.location ?? '',
+      notes: m.notes ?? '',
+    })),
+    moves: (cs.companyMoves ?? []).map((m) => ({
+      id: m.id,
+      departTime: m.departTime,
+      fromLocation: m.fromLocation,
+      toLocation: m.toLocation,
+      travelTime: m.travelTime != null ? String(m.travelTime) : '',
+      notes: m.notes ?? '',
+    })),
+    background: (cs.backgroundCalls ?? []).map((b) => ({
+      id: b.id,
+      description: b.description,
+      quantity: b.quantity != null ? String(b.quantity) : '',
+      callTime: b.callTime,
+      reportLocation: b.reportLocation ?? '',
+      scenes: b.scenes ?? '',
+    })),
+    specialReqs: (cs.specialRequirements ?? []).map((s) => ({
+      id: s.id,
+      reqType: s.reqType,
+      description: s.description,
+      contactName: s.contactName ?? '',
+      contactPhone: s.contactPhone ?? '',
+      safetyNotes: s.safetyNotes ?? '',
+    })),
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
@@ -268,45 +485,36 @@ export default function CallSheetEditorPageV2() {
     crew: CrewRowForm[];
     cast: CastRowForm[];
     activities: ActivityRowForm[];
+    models: ModelRowForm[];
+    wardrobe: WardrobeRowForm[];
+    hmu: HmuRowForm[];
+    meals: MealRowForm[];
+    moves: MoveRowForm[];
+    background: BackgroundRowForm[];
+    specialReqs: SpecialReqRowForm[];
   }>({
-    defaultValues: { crew: [], cast: [], activities: [] },
+    defaultValues: {
+      crew: [], cast: [], activities: [],
+      models: [], wardrobe: [], hmu: [],
+      meals: [], moves: [], background: [], specialReqs: [],
+    },
   });
 
   useEffect(() => {
     if (!callSheet) return;
-    arraysForm.reset({
-      crew: (callSheet.crewCalls ?? []).map((c) => ({
-        id: c.id,
-        department: c.department,
-        position: c.position,
-        name: c.name,
-        callTime: c.callTime,
-        phone: c.phone ?? '',
-        email: c.email ?? '',
-      })),
-      cast: (callSheet.castCalls ?? []).map((c) => ({
-        id: c.id,
-        castNumber: c.castNumber ?? '',
-        actorName: c.actorName,
-        character: c.character ?? '',
-        callTime: c.callTime,
-        status: c.status,
-      })),
-      activities: (callSheet.activities ?? []).map((a) => ({
-        id: a.id,
-        activityType: a.activityType ?? 'GENERAL',
-        activityName: a.activityName,
-        startTime: a.startTime,
-        endTime: a.endTime ?? '',
-        location: a.location ?? '',
-        notes: a.notes ?? '',
-      })),
-    });
+    arraysForm.reset(mapSheetToArrays(callSheet));
   }, [callSheet, arraysForm]);
 
   const crewArray = useFieldArray({ control: arraysForm.control, name: 'crew' });
   const castArray = useFieldArray({ control: arraysForm.control, name: 'cast' });
   const activityArray = useFieldArray({ control: arraysForm.control, name: 'activities' });
+  const modelArray = useFieldArray({ control: arraysForm.control, name: 'models' });
+  const wardrobeArray = useFieldArray({ control: arraysForm.control, name: 'wardrobe' });
+  const hmuArray = useFieldArray({ control: arraysForm.control, name: 'hmu' });
+  const mealArray = useFieldArray({ control: arraysForm.control, name: 'meals' });
+  const moveArray = useFieldArray({ control: arraysForm.control, name: 'moves' });
+  const backgroundArray = useFieldArray({ control: arraysForm.control, name: 'background' });
+  const specialReqArray = useFieldArray({ control: arraysForm.control, name: 'specialReqs' });
 
   /* ----- mutations ----- */
   const updateMutation = useMutation({
@@ -409,6 +617,274 @@ export default function CallSheetEditorPageV2() {
     onError: () => toast.error(t('callSheets.editor.activityRemoveFailed', 'Gagal menghapus jadwal.')),
   });
 
+  /* ----- auto-fill mutations ----- */
+  const autoFillWeather = useMutation({
+    mutationFn: () => callSheetsApi.autoFillWeather(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.autoFillWeatherDone', 'Cuaca terisi otomatis.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.autoFillWeatherFailed', 'Gagal mengisi cuaca otomatis.')),
+  });
+  const autoFillSunTimes = useMutation({
+    mutationFn: () => callSheetsApi.autoFillSunTimes(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.autoFillSunDone', 'Jam matahari terisi otomatis.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.autoFillSunFailed', 'Gagal mengisi jam matahari.')),
+  });
+  const autoFillHospital = useMutation({
+    mutationFn: () => callSheetsApi.autoFillHospital(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.autoFillHospitalDone', 'Rumah sakit terisi otomatis.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.autoFillHospitalFailed', 'Gagal mengisi rumah sakit.')),
+  });
+  const autoFillAll = useMutation({
+    mutationFn: () => callSheetsApi.autoFillAll(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.autoFillAllDone', 'Data lokasi terisi otomatis.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.autoFillAllFailed', 'Gagal mengisi data otomatis.')),
+  });
+  const autoFillPending =
+    autoFillWeather.isPending || autoFillSunTimes.isPending ||
+    autoFillHospital.isPending || autoFillAll.isPending;
+
+  /* ----- PHOTO: models ----- */
+  const addModel = useMutation({
+    mutationFn: (row: ModelRowForm) =>
+      callSheetsApi.addModel(id!, {
+        modelName: row.modelName,
+        modelNumber: row.modelNumber || undefined,
+        agencyName: row.agencyName || undefined,
+        arrivalType: row.arrivalType,
+        arrivalTime: row.arrivalTime || '8:00 AM',
+        hmuStartTime: row.hmuStartTime || undefined,
+        cameraReadyTime: row.cameraReadyTime || undefined,
+        hmuArtist: row.hmuArtist || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.modelAdded', 'Model ditambahkan.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.modelAddFailed', 'Gagal menambah model.')),
+  });
+  const updateModel = useMutation({
+    mutationFn: ({ rowId, dto }: { rowId: string; dto: Partial<ModelRowForm> }) =>
+      callSheetsApi.updateModel(rowId, dto as any),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['call-sheet', id] }),
+    onError: () => toast.error(t('callSheetEditor.modelUpdateFailed', 'Gagal memperbarui model.')),
+  });
+  const removeModel = useMutation({
+    mutationFn: (rowId: string) => callSheetsApi.removeModel(rowId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.modelRemoved', 'Model dihapus.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.modelRemoveFailed', 'Gagal menghapus model.')),
+  });
+
+  /* ----- PHOTO: wardrobe ----- */
+  const addWardrobe = useMutation({
+    mutationFn: (row: WardrobeRowForm) =>
+      callSheetsApi.addWardrobe(id!, {
+        itemName: row.itemName,
+        brand: row.brand || undefined,
+        size: row.size || undefined,
+        color: row.color || undefined,
+        forModel: row.forModel || undefined,
+        status: row.status,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.wardrobeAdded', 'Wardrobe ditambahkan.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.wardrobeAddFailed', 'Gagal menambah wardrobe.')),
+  });
+  const updateWardrobe = useMutation({
+    mutationFn: ({ rowId, dto }: { rowId: string; dto: Partial<WardrobeRowForm> }) =>
+      callSheetsApi.updateWardrobe(rowId, dto as any),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['call-sheet', id] }),
+    onError: () => toast.error(t('callSheetEditor.wardrobeUpdateFailed', 'Gagal memperbarui wardrobe.')),
+  });
+  const removeWardrobe = useMutation({
+    mutationFn: (rowId: string) => callSheetsApi.removeWardrobe(rowId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.wardrobeRemoved', 'Wardrobe dihapus.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.wardrobeRemoveFailed', 'Gagal menghapus wardrobe.')),
+  });
+
+  /* ----- PHOTO: HMU schedule ----- */
+  const addHmu = useMutation({
+    mutationFn: (row: HmuRowForm) =>
+      callSheetsApi.addHmu(id!, {
+        artistName: row.artistName,
+        artistRole: row.artistRole,
+        callTime: row.callTime || '7:00 AM',
+        availableFrom: row.availableFrom || undefined,
+        availableUntil: row.availableUntil || undefined,
+        assignedModels: row.assignedModels || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.hmuAdded', 'Jadwal HMU ditambahkan.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.hmuAddFailed', 'Gagal menambah jadwal HMU.')),
+  });
+  const updateHmu = useMutation({
+    mutationFn: ({ rowId, dto }: { rowId: string; dto: Partial<HmuRowForm> }) =>
+      callSheetsApi.updateHmu(rowId, dto as any),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['call-sheet', id] }),
+    onError: () => toast.error(t('callSheetEditor.hmuUpdateFailed', 'Gagal memperbarui jadwal HMU.')),
+  });
+  const removeHmu = useMutation({
+    mutationFn: (rowId: string) => callSheetsApi.removeHmu(rowId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.hmuRemoved', 'Jadwal HMU dihapus.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.hmuRemoveFailed', 'Gagal menghapus jadwal HMU.')),
+  });
+
+  /* ----- FILM: meal breaks ----- */
+  const addMeal = useMutation({
+    mutationFn: (row: MealRowForm) =>
+      callSheetsApi.addMeal(id!, {
+        mealType: row.mealType,
+        time: row.time || '12:00 PM',
+        duration: row.duration ? parseInt(row.duration, 10) : undefined,
+        location: row.location || undefined,
+        notes: row.notes || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.mealAdded', 'Jadwal makan ditambahkan.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.mealAddFailed', 'Gagal menambah jadwal makan.')),
+  });
+  const updateMeal = useMutation({
+    mutationFn: ({ rowId, dto }: { rowId: string; dto: Partial<MealRowForm> }) =>
+      callSheetsApi.updateMeal(rowId, {
+        ...dto,
+        duration: dto.duration != null ? (dto.duration ? parseInt(dto.duration, 10) : undefined) : undefined,
+      } as any),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['call-sheet', id] }),
+    onError: () => toast.error(t('callSheetEditor.mealUpdateFailed', 'Gagal memperbarui jadwal makan.')),
+  });
+  const removeMeal = useMutation({
+    mutationFn: (rowId: string) => callSheetsApi.removeMeal(rowId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.mealRemoved', 'Jadwal makan dihapus.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.mealRemoveFailed', 'Gagal menghapus jadwal makan.')),
+  });
+
+  /* ----- FILM: company moves ----- */
+  const addMove = useMutation({
+    mutationFn: (row: MoveRowForm) =>
+      callSheetsApi.addMove(id!, {
+        departTime: row.departTime || '12:00 PM',
+        fromLocation: row.fromLocation,
+        toLocation: row.toLocation,
+        travelTime: row.travelTime ? parseInt(row.travelTime, 10) : undefined,
+        notes: row.notes || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.moveAdded', 'Perpindahan ditambahkan.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.moveAddFailed', 'Gagal menambah perpindahan.')),
+  });
+  const updateMove = useMutation({
+    mutationFn: ({ rowId, dto }: { rowId: string; dto: Partial<MoveRowForm> }) =>
+      callSheetsApi.updateMove(rowId, {
+        ...dto,
+        travelTime: dto.travelTime != null ? (dto.travelTime ? parseInt(dto.travelTime, 10) : undefined) : undefined,
+      } as any),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['call-sheet', id] }),
+    onError: () => toast.error(t('callSheetEditor.moveUpdateFailed', 'Gagal memperbarui perpindahan.')),
+  });
+  const removeMove = useMutation({
+    mutationFn: (rowId: string) => callSheetsApi.removeMove(rowId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.moveRemoved', 'Perpindahan dihapus.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.moveRemoveFailed', 'Gagal menghapus perpindahan.')),
+  });
+
+  /* ----- FILM: background / extras ----- */
+  const addBackground = useMutation({
+    mutationFn: (row: BackgroundRowForm) =>
+      callSheetsApi.addBackground(id!, {
+        description: row.description,
+        quantity: row.quantity ? parseInt(row.quantity, 10) : undefined,
+        callTime: row.callTime || '7:00 AM',
+        reportLocation: row.reportLocation || undefined,
+        scenes: row.scenes || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.backgroundAdded', 'Figuran ditambahkan.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.backgroundAddFailed', 'Gagal menambah figuran.')),
+  });
+  const updateBackground = useMutation({
+    mutationFn: ({ rowId, dto }: { rowId: string; dto: Partial<BackgroundRowForm> }) =>
+      callSheetsApi.updateBackground(rowId, {
+        ...dto,
+        quantity: dto.quantity != null ? (dto.quantity ? parseInt(dto.quantity, 10) : undefined) : undefined,
+      } as any),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['call-sheet', id] }),
+    onError: () => toast.error(t('callSheetEditor.backgroundUpdateFailed', 'Gagal memperbarui figuran.')),
+  });
+  const removeBackground = useMutation({
+    mutationFn: (rowId: string) => callSheetsApi.removeBackground(rowId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.backgroundRemoved', 'Figuran dihapus.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.backgroundRemoveFailed', 'Gagal menghapus figuran.')),
+  });
+
+  /* ----- FILM: special requirements ----- */
+  const addSpecialReq = useMutation({
+    mutationFn: (row: SpecialReqRowForm) =>
+      callSheetsApi.addSpecialReq(id!, {
+        reqType: row.reqType,
+        description: row.description,
+        contactName: row.contactName || undefined,
+        contactPhone: row.contactPhone || undefined,
+        safetyNotes: row.safetyNotes || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.specialReqAdded', 'Kebutuhan khusus ditambahkan.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.specialReqAddFailed', 'Gagal menambah kebutuhan khusus.')),
+  });
+  const updateSpecialReq = useMutation({
+    mutationFn: ({ rowId, dto }: { rowId: string; dto: Partial<SpecialReqRowForm> }) =>
+      callSheetsApi.updateSpecialReq(rowId, dto as any),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['call-sheet', id] }),
+    onError: () => toast.error(t('callSheetEditor.specialReqUpdateFailed', 'Gagal memperbarui kebutuhan khusus.')),
+  });
+  const removeSpecialReq = useMutation({
+    mutationFn: (rowId: string) => callSheetsApi.removeSpecialReq(rowId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
+      toast.success(t('callSheetEditor.specialReqRemoved', 'Kebutuhan khusus dihapus.'));
+    },
+    onError: () => toast.error(t('callSheetEditor.specialReqRemoveFailed', 'Gagal menghapus kebutuhan khusus.')),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: () => callSheetsApi.delete(id!),
     onSuccess: () => {
@@ -474,7 +950,11 @@ export default function CallSheetEditorPageV2() {
     try {
       await callSheetsApi.update(id, buildHeaderDto(headerForm.getValues()));
 
-      const { crew, cast, activities } = arraysForm.getValues();
+      const {
+        crew, cast, activities,
+        models, wardrobe, hmu,
+        meals, moves, background, specialReqs,
+      } = arraysForm.getValues();
 
       for (let i = 0; i < crew.length; i++) {
         const row = crew[i];
@@ -539,6 +1019,137 @@ export default function CallSheetEditorPageV2() {
         }
       }
 
+      // PHOTO: models
+      for (let i = 0; i < models.length; i++) {
+        const row = models[i];
+        if (!row.modelName) continue;
+        const dto = {
+          modelName: row.modelName,
+          modelNumber: row.modelNumber || undefined,
+          agencyName: row.agencyName || undefined,
+          arrivalType: row.arrivalType,
+          arrivalTime: row.arrivalTime || '8:00 AM',
+          hmuStartTime: row.hmuStartTime || undefined,
+          cameraReadyTime: row.cameraReadyTime || undefined,
+          hmuArtist: row.hmuArtist || undefined,
+        };
+        if (row.id) await callSheetsApi.updateModel(row.id, dto as any);
+        else {
+          const created: any = await callSheetsApi.addModel(id, dto);
+          if (created?.id) arraysForm.setValue(`models.${i}.id`, created.id);
+        }
+      }
+
+      // PHOTO: wardrobe
+      for (let i = 0; i < wardrobe.length; i++) {
+        const row = wardrobe[i];
+        if (!row.itemName) continue;
+        const dto = {
+          itemName: row.itemName,
+          brand: row.brand || undefined,
+          size: row.size || undefined,
+          color: row.color || undefined,
+          forModel: row.forModel || undefined,
+          status: row.status,
+        };
+        if (row.id) await callSheetsApi.updateWardrobe(row.id, dto as any);
+        else {
+          const created: any = await callSheetsApi.addWardrobe(id, dto);
+          if (created?.id) arraysForm.setValue(`wardrobe.${i}.id`, created.id);
+        }
+      }
+
+      // PHOTO: HMU schedule
+      for (let i = 0; i < hmu.length; i++) {
+        const row = hmu[i];
+        if (!row.artistName) continue;
+        const dto = {
+          artistName: row.artistName,
+          artistRole: row.artistRole,
+          callTime: row.callTime || '7:00 AM',
+          availableFrom: row.availableFrom || undefined,
+          availableUntil: row.availableUntil || undefined,
+          assignedModels: row.assignedModels || undefined,
+        };
+        if (row.id) await callSheetsApi.updateHmu(row.id, dto as any);
+        else {
+          const created: any = await callSheetsApi.addHmu(id, dto);
+          if (created?.id) arraysForm.setValue(`hmu.${i}.id`, created.id);
+        }
+      }
+
+      // FILM: meal breaks
+      for (let i = 0; i < meals.length; i++) {
+        const row = meals[i];
+        if (!row.time) continue;
+        const dto = {
+          mealType: row.mealType,
+          time: row.time,
+          duration: row.duration ? parseInt(row.duration, 10) : undefined,
+          location: row.location || undefined,
+          notes: row.notes || undefined,
+        };
+        if (row.id) await callSheetsApi.updateMeal(row.id, dto as any);
+        else {
+          const created: any = await callSheetsApi.addMeal(id, dto);
+          if (created?.id) arraysForm.setValue(`meals.${i}.id`, created.id);
+        }
+      }
+
+      // FILM: company moves
+      for (let i = 0; i < moves.length; i++) {
+        const row = moves[i];
+        if (!row.fromLocation || !row.toLocation) continue;
+        const dto = {
+          departTime: row.departTime || '12:00 PM',
+          fromLocation: row.fromLocation,
+          toLocation: row.toLocation,
+          travelTime: row.travelTime ? parseInt(row.travelTime, 10) : undefined,
+          notes: row.notes || undefined,
+        };
+        if (row.id) await callSheetsApi.updateMove(row.id, dto as any);
+        else {
+          const created: any = await callSheetsApi.addMove(id, dto);
+          if (created?.id) arraysForm.setValue(`moves.${i}.id`, created.id);
+        }
+      }
+
+      // FILM: background / extras
+      for (let i = 0; i < background.length; i++) {
+        const row = background[i];
+        if (!row.description) continue;
+        const dto = {
+          description: row.description,
+          quantity: row.quantity ? parseInt(row.quantity, 10) : undefined,
+          callTime: row.callTime || '7:00 AM',
+          reportLocation: row.reportLocation || undefined,
+          scenes: row.scenes || undefined,
+        };
+        if (row.id) await callSheetsApi.updateBackground(row.id, dto as any);
+        else {
+          const created: any = await callSheetsApi.addBackground(id, dto);
+          if (created?.id) arraysForm.setValue(`background.${i}.id`, created.id);
+        }
+      }
+
+      // FILM: special requirements
+      for (let i = 0; i < specialReqs.length; i++) {
+        const row = specialReqs[i];
+        if (!row.description) continue;
+        const dto = {
+          reqType: row.reqType,
+          description: row.description,
+          contactName: row.contactName || undefined,
+          contactPhone: row.contactPhone || undefined,
+          safetyNotes: row.safetyNotes || undefined,
+        };
+        if (row.id) await callSheetsApi.updateSpecialReq(row.id, dto as any);
+        else {
+          const created: any = await callSheetsApi.addSpecialReq(id, dto);
+          if (created?.id) arraysForm.setValue(`specialReqs.${i}.id`, created.id);
+        }
+      }
+
       // (c) Await refetch before resetting forms. Reset arraysForm from the
       // fresh server data ourselves so the reactive useEffect([callSheet])
       // becomes a no-op (same values, no dirty diff) and cannot clobber
@@ -546,34 +1157,7 @@ export default function CallSheetEditorPageV2() {
       await queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
       const fresh = queryClient.getQueryData<CallSheet>(['call-sheet', id]);
       if (fresh) {
-        arraysForm.reset({
-          crew: (fresh.crewCalls ?? []).map((c) => ({
-            id: c.id,
-            department: c.department,
-            position: c.position,
-            name: c.name,
-            callTime: c.callTime,
-            phone: c.phone ?? '',
-            email: c.email ?? '',
-          })),
-          cast: (fresh.castCalls ?? []).map((c) => ({
-            id: c.id,
-            castNumber: c.castNumber ?? '',
-            actorName: c.actorName,
-            character: c.character ?? '',
-            callTime: c.callTime,
-            status: c.status,
-          })),
-          activities: (fresh.activities ?? []).map((a) => ({
-            id: a.id,
-            activityType: a.activityType ?? 'GENERAL',
-            activityName: a.activityName,
-            startTime: a.startTime,
-            endTime: a.endTime ?? '',
-            location: a.location ?? '',
-            notes: a.notes ?? '',
-          })),
-        });
+        arraysForm.reset(mapSheetToArrays(fresh));
       }
       // Clear the dirty flag so the bar reflects the saved state.
       headerForm.reset(headerForm.getValues());
@@ -884,10 +1468,73 @@ export default function CallSheetEditorPageV2() {
           <FormSection
             eyebrow={t('callSheetEditor.eyebrowLocation', 'Location & Weather')}
             title={t('callSheetEditor.sectionLocation', 'Shoot Location')}
-            description={t('callSheetEditor.sectionLocationDesc', 'Address, parking, weather, and nearest hospital. Weather/hospital auto-fill is in the classic editor.')}
+            description={t('callSheetEditor.sectionLocationDesc', 'Address, parking, weather, and nearest hospital. Save a location to enable auto-fill.')}
             icon={<MapPin className="h-4 w-4" />}
           >
             <div className="space-y-5">
+              {/* Auto-fill toolbar — only useful once a location is saved. */}
+              <div className="flex flex-wrap items-center gap-2 rounded-md border border-border-subtle bg-bg-sunken/60 px-3 py-2.5">
+                <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mr-1">
+                  {t('callSheetEditor.autoFillLabel', 'Auto-fill')}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasLocation || autoFillPending}
+                  onClick={() => autoFillWeather.mutate()}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  {autoFillWeather.isPending
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <CloudSun className="h-3.5 w-3.5" />}
+                  {t('callSheetEditor.autoFillWeather', 'Weather')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasLocation || autoFillPending}
+                  onClick={() => autoFillSunTimes.mutate()}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  {autoFillSunTimes.isPending
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Sunrise className="h-3.5 w-3.5" />}
+                  {t('callSheetEditor.autoFillSun', 'Sun Times')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasLocation || autoFillPending}
+                  onClick={() => autoFillHospital.mutate()}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  {autoFillHospital.isPending
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <HeartPulse className="h-3.5 w-3.5" />}
+                  {t('callSheetEditor.autoFillHospital', 'Hospital')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={!hasLocation || autoFillPending}
+                  onClick={() => autoFillAll.mutate()}
+                >
+                  {autoFillAll.isPending
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Sparkles className="h-3.5 w-3.5" />}
+                  {t('callSheetEditor.autoFillAll', 'Auto-fill All')}
+                </Button>
+                {!hasLocation && (
+                  <span className="text-[11px] text-text-tertiary basis-full sm:basis-auto">
+                    {t('callSheetEditor.autoFillNeedsLocation', 'Save a location first to enable auto-fill.')}
+                  </span>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <Field label={t('callSheetEditor.fieldLocationName', 'Location Name')}>
                   <Input
@@ -1416,6 +2063,695 @@ export default function CallSheetEditorPageV2() {
               {t('callSheetEditor.addTalent', 'Add Talent')}
             </Button>
           </FormSection>
+
+          {/* ============================================================ */}
+          {/* PHOTO-only sections — Models, Wardrobe, HMU schedule        */}
+          {/* ============================================================ */}
+          {callSheet.callSheetType === 'PHOTO' && (
+            <>
+              {/* ──── Models / Talent arrivals ──── */}
+              <FormSection
+                eyebrow={t('callSheetEditor.eyebrowModels', 'Photo Talent')}
+                title={t('callSheetEditor.sectionModels', 'Models')}
+                description={t('callSheetEditor.sectionModelsDesc', 'Model arrival flow: arrival type, HMU start, and camera-ready time.')}
+                icon={<Users className="h-4 w-4" />}
+              >
+                {modelArray.fields.length === 0 ? (
+                  <p className="text-sm text-text-tertiary italic mb-4">
+                    {t('callSheetEditor.noModels', 'No models yet. Click "Add Model" to get started.')}
+                  </p>
+                ) : (
+                  <div className="space-y-2 mb-4">
+                    <div className="hidden sm:grid grid-cols-[1fr_120px_120px_100px_110px_1fr_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
+                      <div>{t('callSheetEditor.colName', 'Name')}</div>
+                      <div>{t('callSheetEditor.colAgency', 'Agency')}</div>
+                      <div>{t('callSheetEditor.colArrivalType', 'Arrival')}</div>
+                      <div>{t('callSheetEditor.colArrivalTime', 'Arrive')}</div>
+                      <div>{t('callSheetEditor.colCameraReady', 'Cam Ready')}</div>
+                      <div>{t('callSheetEditor.colHmuArtist', 'HMU Artist')}</div>
+                      <div />
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {modelArray.fields.map((field, idx) => {
+                        const row = arraysForm.watch(`models.${idx}`);
+                        return (
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-1 sm:grid-cols-[1fr_120px_120px_100px_110px_1fr_32px] gap-2 py-2 items-center"
+                          >
+                            <Input
+                              {...arraysForm.register(`models.${idx}.modelName`)}
+                              placeholder={t('callSheetEditor.modelNamePlaceholder', 'Model name')}
+                              onBlur={(e) => { if (row?.id) updateModel.mutate({ rowId: row.id, dto: { modelName: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              {...arraysForm.register(`models.${idx}.agencyName`)}
+                              placeholder={t('callSheetEditor.agencyPlaceholder', 'Agency')}
+                              onBlur={(e) => { if (row?.id) updateModel.mutate({ rowId: row.id, dto: { agencyName: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Controller
+                              control={arraysForm.control}
+                              name={`models.${idx}.arrivalType`}
+                              render={({ field: f }) => (
+                                <Select
+                                  value={f.value}
+                                  onValueChange={(v) => {
+                                    f.onChange(v);
+                                    if (row?.id) updateModel.mutate({ rowId: row.id, dto: { arrivalType: v as ModelArrivalType } });
+                                  }}
+                                >
+                                  <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {MODEL_ARRIVAL_TYPES.map((o) => (
+                                      <SelectItem key={o.value} value={o.value}>{t(o.labelKey, o.labelFallback)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <Input
+                              {...arraysForm.register(`models.${idx}.arrivalTime`)}
+                              placeholder="8:00 AM"
+                              onBlur={(e) => { if (row?.id) updateModel.mutate({ rowId: row.id, dto: { arrivalTime: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              {...arraysForm.register(`models.${idx}.cameraReadyTime`)}
+                              placeholder="9:30 AM"
+                              onBlur={(e) => { if (row?.id) updateModel.mutate({ rowId: row.id, dto: { cameraReadyTime: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              {...arraysForm.register(`models.${idx}.hmuArtist`)}
+                              placeholder={t('callSheetEditor.hmuArtistPlaceholder', 'HMU artist')}
+                              onBlur={(e) => { if (row?.id) updateModel.mutate({ rowId: row.id, dto: { hmuArtist: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <RowActions
+                              isSaved={!!row?.id}
+                              disabled={isSavingAll}
+                              onSave={() => {
+                                if (!row.modelName) { toast.error(t('callSheetEditor.modelNameRequired', 'Model name is required.')); return; }
+                                addModel.mutate(row);
+                              }}
+                              onRemove={() => { if (row?.id) removeModel.mutate(row.id); else modelArray.remove(idx); }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => modelArray.append({
+                    modelName: '', modelNumber: '', agencyName: '',
+                    arrivalType: 'CAMERA_READY', arrivalTime: '',
+                    hmuStartTime: '', cameraReadyTime: '', hmuArtist: '',
+                  })}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('callSheetEditor.addModel', 'Add Model')}
+                </Button>
+              </FormSection>
+
+              {/* ──── Wardrobe ──── */}
+              <FormSection
+                eyebrow={t('callSheetEditor.eyebrowStyling', 'Styling')}
+                title={t('callSheetEditor.sectionWardrobe', 'Wardrobe')}
+                description={t('callSheetEditor.sectionWardrobeDesc', 'Wardrobe items, sizing, and tracking status per look.')}
+                icon={<Shirt className="h-4 w-4" />}
+              >
+                {wardrobeArray.fields.length === 0 ? (
+                  <p className="text-sm text-text-tertiary italic mb-4">
+                    {t('callSheetEditor.noWardrobe', 'No wardrobe items yet.')}
+                  </p>
+                ) : (
+                  <div className="space-y-2 mb-4">
+                    <div className="hidden sm:grid grid-cols-[1fr_120px_80px_100px_120px_130px_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
+                      <div>{t('callSheetEditor.colItem', 'Item')}</div>
+                      <div>{t('callSheetEditor.colBrand', 'Brand')}</div>
+                      <div>{t('callSheetEditor.colSize', 'Size')}</div>
+                      <div>{t('callSheetEditor.colColor', 'Color')}</div>
+                      <div>{t('callSheetEditor.colForModel', 'For Model')}</div>
+                      <div>{t('callSheetEditor.colStatus', 'Status')}</div>
+                      <div />
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {wardrobeArray.fields.map((field, idx) => {
+                        const row = arraysForm.watch(`wardrobe.${idx}`);
+                        return (
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-1 sm:grid-cols-[1fr_120px_80px_100px_120px_130px_32px] gap-2 py-2 items-center"
+                          >
+                            <Input
+                              {...arraysForm.register(`wardrobe.${idx}.itemName`)}
+                              placeholder={t('callSheetEditor.itemPlaceholder', 'Item name')}
+                              onBlur={(e) => { if (row?.id) updateWardrobe.mutate({ rowId: row.id, dto: { itemName: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              {...arraysForm.register(`wardrobe.${idx}.brand`)}
+                              placeholder={t('callSheetEditor.brandPlaceholder', 'Brand')}
+                              onBlur={(e) => { if (row?.id) updateWardrobe.mutate({ rowId: row.id, dto: { brand: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              {...arraysForm.register(`wardrobe.${idx}.size`)}
+                              placeholder="M"
+                              onBlur={(e) => { if (row?.id) updateWardrobe.mutate({ rowId: row.id, dto: { size: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm text-center"
+                            />
+                            <Input
+                              {...arraysForm.register(`wardrobe.${idx}.color`)}
+                              placeholder={t('callSheetEditor.colorPlaceholder', 'Color')}
+                              onBlur={(e) => { if (row?.id) updateWardrobe.mutate({ rowId: row.id, dto: { color: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              {...arraysForm.register(`wardrobe.${idx}.forModel`)}
+                              placeholder={t('callSheetEditor.forModelPlaceholder', 'Model')}
+                              onBlur={(e) => { if (row?.id) updateWardrobe.mutate({ rowId: row.id, dto: { forModel: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Controller
+                              control={arraysForm.control}
+                              name={`wardrobe.${idx}.status`}
+                              render={({ field: f }) => (
+                                <Select
+                                  value={f.value}
+                                  onValueChange={(v) => {
+                                    f.onChange(v);
+                                    if (row?.id) updateWardrobe.mutate({ rowId: row.id, dto: { status: v as WardrobeStatus } });
+                                  }}
+                                >
+                                  <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {WARDROBE_STATUSES.map((o) => (
+                                      <SelectItem key={o.value} value={o.value}>{t(o.labelKey, o.labelFallback)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <RowActions
+                              isSaved={!!row?.id}
+                              disabled={isSavingAll}
+                              onSave={() => {
+                                if (!row.itemName) { toast.error(t('callSheetEditor.itemNameRequired', 'Item name is required.')); return; }
+                                addWardrobe.mutate(row);
+                              }}
+                              onRemove={() => { if (row?.id) removeWardrobe.mutate(row.id); else wardrobeArray.remove(idx); }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => wardrobeArray.append({
+                    itemName: '', brand: '', size: '', color: '',
+                    forModel: '', status: 'PENDING',
+                  })}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('callSheetEditor.addWardrobe', 'Add Wardrobe')}
+                </Button>
+              </FormSection>
+
+              {/* ──── HMU schedule ──── */}
+              <FormSection
+                eyebrow={t('callSheetEditor.eyebrowHmu', 'Hair & Makeup')}
+                title={t('callSheetEditor.sectionHmu', 'HMU Schedule')}
+                description={t('callSheetEditor.sectionHmuDesc', 'Hair & makeup artist call times and availability.')}
+                icon={<Sparkles className="h-4 w-4" />}
+              >
+                {hmuArray.fields.length === 0 ? (
+                  <p className="text-sm text-text-tertiary italic mb-4">
+                    {t('callSheetEditor.noHmu', 'No HMU schedule yet.')}
+                  </p>
+                ) : (
+                  <div className="space-y-2 mb-4">
+                    <div className="hidden sm:grid grid-cols-[1fr_130px_100px_100px_100px_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
+                      <div>{t('callSheetEditor.colArtist', 'Artist')}</div>
+                      <div>{t('callSheetEditor.colRole', 'Role')}</div>
+                      <div>{t('callSheetEditor.colCall', 'Call')}</div>
+                      <div>{t('callSheetEditor.colFrom', 'From')}</div>
+                      <div>{t('callSheetEditor.colUntil', 'Until')}</div>
+                      <div />
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {hmuArray.fields.map((field, idx) => {
+                        const row = arraysForm.watch(`hmu.${idx}`);
+                        return (
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-1 sm:grid-cols-[1fr_130px_100px_100px_100px_32px] gap-2 py-2 items-center"
+                          >
+                            <Input
+                              {...arraysForm.register(`hmu.${idx}.artistName`)}
+                              placeholder={t('callSheetEditor.artistPlaceholder', 'Artist name')}
+                              onBlur={(e) => { if (row?.id) updateHmu.mutate({ rowId: row.id, dto: { artistName: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Controller
+                              control={arraysForm.control}
+                              name={`hmu.${idx}.artistRole`}
+                              render={({ field: f }) => (
+                                <Select
+                                  value={f.value}
+                                  onValueChange={(v) => {
+                                    f.onChange(v);
+                                    if (row?.id) updateHmu.mutate({ rowId: row.id, dto: { artistRole: v as HMURole } });
+                                  }}
+                                >
+                                  <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {HMU_ROLES.map((o) => (
+                                      <SelectItem key={o.value} value={o.value}>{t(o.labelKey, o.labelFallback)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <Input
+                              {...arraysForm.register(`hmu.${idx}.callTime`)}
+                              placeholder="7:00 AM"
+                              onBlur={(e) => { if (row?.id) updateHmu.mutate({ rowId: row.id, dto: { callTime: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              {...arraysForm.register(`hmu.${idx}.availableFrom`)}
+                              placeholder="7:00 AM"
+                              onBlur={(e) => { if (row?.id) updateHmu.mutate({ rowId: row.id, dto: { availableFrom: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              {...arraysForm.register(`hmu.${idx}.availableUntil`)}
+                              placeholder="4:00 PM"
+                              onBlur={(e) => { if (row?.id) updateHmu.mutate({ rowId: row.id, dto: { availableUntil: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <RowActions
+                              isSaved={!!row?.id}
+                              disabled={isSavingAll}
+                              onSave={() => {
+                                if (!row.artistName) { toast.error(t('callSheetEditor.artistNameRequired', 'Artist name is required.')); return; }
+                                addHmu.mutate(row);
+                              }}
+                              onRemove={() => { if (row?.id) removeHmu.mutate(row.id); else hmuArray.remove(idx); }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => hmuArray.append({
+                    artistName: '', artistRole: 'BOTH', callTime: '',
+                    availableFrom: '', availableUntil: '', assignedModels: '',
+                  })}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('callSheetEditor.addHmu', 'Add HMU Artist')}
+                </Button>
+              </FormSection>
+            </>
+          )}
+
+          {/* ============================================================ */}
+          {/* FILM-only sections — Meals, Moves, Background, Special Reqs */}
+          {/* ============================================================ */}
+          {callSheet.callSheetType === 'FILM' && (
+            <>
+              {/* ──── Meal breaks ──── */}
+              <FormSection
+                eyebrow={t('callSheetEditor.eyebrowCatering', 'Catering')}
+                title={t('callSheetEditor.sectionMeals', 'Meal Breaks')}
+                description={t('callSheetEditor.sectionMealsDesc', 'Scheduled meals with time, duration, and location.')}
+                icon={<Utensils className="h-4 w-4" />}
+              >
+                {mealArray.fields.length === 0 ? (
+                  <p className="text-sm text-text-tertiary italic mb-4">
+                    {t('callSheetEditor.noMeals', 'No meal breaks yet.')}
+                  </p>
+                ) : (
+                  <div className="space-y-2 mb-4">
+                    <div className="hidden sm:grid grid-cols-[150px_100px_90px_1fr_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
+                      <div>{t('callSheetEditor.colMealType', 'Type')}</div>
+                      <div>{t('callSheetEditor.colTime', 'Time')}</div>
+                      <div>{t('callSheetEditor.colDuration', 'Min')}</div>
+                      <div>{t('callSheetEditor.colLocation', 'Location')}</div>
+                      <div />
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {mealArray.fields.map((field, idx) => {
+                        const row = arraysForm.watch(`meals.${idx}`);
+                        return (
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-1 sm:grid-cols-[150px_100px_90px_1fr_32px] gap-2 py-2 items-center"
+                          >
+                            <Controller
+                              control={arraysForm.control}
+                              name={`meals.${idx}.mealType`}
+                              render={({ field: f }) => (
+                                <Select
+                                  value={f.value}
+                                  onValueChange={(v) => {
+                                    f.onChange(v);
+                                    if (row?.id) updateMeal.mutate({ rowId: row.id, dto: { mealType: v as MealType } });
+                                  }}
+                                >
+                                  <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {MEAL_TYPES.map((o) => (
+                                      <SelectItem key={o.value} value={o.value}>{t(o.labelKey, o.labelFallback)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <Input
+                              {...arraysForm.register(`meals.${idx}.time`)}
+                              placeholder="12:00 PM"
+                              onBlur={(e) => { if (row?.id) updateMeal.mutate({ rowId: row.id, dto: { time: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              type="number"
+                              {...arraysForm.register(`meals.${idx}.duration`)}
+                              placeholder="30"
+                              onBlur={(e) => { if (row?.id) updateMeal.mutate({ rowId: row.id, dto: { duration: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              {...arraysForm.register(`meals.${idx}.location`)}
+                              placeholder={t('callSheetEditor.locationOptionalPlaceholder', 'Location (optional)')}
+                              onBlur={(e) => { if (row?.id) updateMeal.mutate({ rowId: row.id, dto: { location: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <RowActions
+                              isSaved={!!row?.id}
+                              disabled={isSavingAll}
+                              onSave={() => {
+                                if (!row.time) { toast.error(t('callSheetEditor.mealTimeRequired', 'Meal time is required.')); return; }
+                                addMeal.mutate(row);
+                              }}
+                              onRemove={() => { if (row?.id) removeMeal.mutate(row.id); else mealArray.remove(idx); }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => mealArray.append({
+                    mealType: 'LUNCH', time: '', duration: '', location: '', notes: '',
+                  })}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('callSheetEditor.addMeal', 'Add Meal Break')}
+                </Button>
+              </FormSection>
+
+              {/* ──── Company moves ──── */}
+              <FormSection
+                eyebrow={t('callSheetEditor.eyebrowLogistics', 'Logistics')}
+                title={t('callSheetEditor.sectionMoves', 'Company Moves')}
+                description={t('callSheetEditor.sectionMovesDesc', 'Mid-day location moves with depart time and travel estimate.')}
+                icon={<Truck className="h-4 w-4" />}
+              >
+                {moveArray.fields.length === 0 ? (
+                  <p className="text-sm text-text-tertiary italic mb-4">
+                    {t('callSheetEditor.noMoves', 'No company moves yet.')}
+                  </p>
+                ) : (
+                  <div className="space-y-2 mb-4">
+                    <div className="hidden sm:grid grid-cols-[100px_1fr_1fr_90px_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
+                      <div>{t('callSheetEditor.colDepart', 'Depart')}</div>
+                      <div>{t('callSheetEditor.colFromLoc', 'From')}</div>
+                      <div>{t('callSheetEditor.colToLoc', 'To')}</div>
+                      <div>{t('callSheetEditor.colTravel', 'Travel')}</div>
+                      <div />
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {moveArray.fields.map((field, idx) => {
+                        const row = arraysForm.watch(`moves.${idx}`);
+                        return (
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-1 sm:grid-cols-[100px_1fr_1fr_90px_32px] gap-2 py-2 items-center"
+                          >
+                            <Input
+                              {...arraysForm.register(`moves.${idx}.departTime`)}
+                              placeholder="1:00 PM"
+                              onBlur={(e) => { if (row?.id) updateMove.mutate({ rowId: row.id, dto: { departTime: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              {...arraysForm.register(`moves.${idx}.fromLocation`)}
+                              placeholder={t('callSheetEditor.fromLocPlaceholder', 'From location')}
+                              onBlur={(e) => { if (row?.id) updateMove.mutate({ rowId: row.id, dto: { fromLocation: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              {...arraysForm.register(`moves.${idx}.toLocation`)}
+                              placeholder={t('callSheetEditor.toLocPlaceholder', 'To location')}
+                              onBlur={(e) => { if (row?.id) updateMove.mutate({ rowId: row.id, dto: { toLocation: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              type="number"
+                              {...arraysForm.register(`moves.${idx}.travelTime`)}
+                              placeholder="30"
+                              onBlur={(e) => { if (row?.id) updateMove.mutate({ rowId: row.id, dto: { travelTime: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <RowActions
+                              isSaved={!!row?.id}
+                              disabled={isSavingAll}
+                              onSave={() => {
+                                if (!row.fromLocation || !row.toLocation) { toast.error(t('callSheetEditor.moveLocRequired', 'From and to locations are required.')); return; }
+                                addMove.mutate(row);
+                              }}
+                              onRemove={() => { if (row?.id) removeMove.mutate(row.id); else moveArray.remove(idx); }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => moveArray.append({
+                    departTime: '', fromLocation: '', toLocation: '', travelTime: '', notes: '',
+                  })}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('callSheetEditor.addMove', 'Add Company Move')}
+                </Button>
+              </FormSection>
+
+              {/* ──── Background / Extras ──── */}
+              <FormSection
+                eyebrow={t('callSheetEditor.eyebrowExtras', 'Extras')}
+                title={t('callSheetEditor.sectionBackground', 'Background / Extras')}
+                description={t('callSheetEditor.sectionBackgroundDesc', 'Background talent groups with quantity and call time.')}
+                icon={<UsersRound className="h-4 w-4" />}
+              >
+                {backgroundArray.fields.length === 0 ? (
+                  <p className="text-sm text-text-tertiary italic mb-4">
+                    {t('callSheetEditor.noBackground', 'No background talent yet.')}
+                  </p>
+                ) : (
+                  <div className="space-y-2 mb-4">
+                    <div className="hidden sm:grid grid-cols-[1fr_80px_100px_1fr_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
+                      <div>{t('callSheetEditor.colDescription', 'Description')}</div>
+                      <div>{t('callSheetEditor.colQuantity', 'Qty')}</div>
+                      <div>{t('callSheetEditor.colCall', 'Call')}</div>
+                      <div>{t('callSheetEditor.colReportLoc', 'Report To')}</div>
+                      <div />
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {backgroundArray.fields.map((field, idx) => {
+                        const row = arraysForm.watch(`background.${idx}`);
+                        return (
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-1 sm:grid-cols-[1fr_80px_100px_1fr_32px] gap-2 py-2 items-center"
+                          >
+                            <Input
+                              {...arraysForm.register(`background.${idx}.description`)}
+                              placeholder={t('callSheetEditor.bgDescPlaceholder', 'E.g. Pedestrians')}
+                              onBlur={(e) => { if (row?.id) updateBackground.mutate({ rowId: row.id, dto: { description: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              type="number"
+                              {...arraysForm.register(`background.${idx}.quantity`)}
+                              placeholder="10"
+                              onBlur={(e) => { if (row?.id) updateBackground.mutate({ rowId: row.id, dto: { quantity: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              {...arraysForm.register(`background.${idx}.callTime`)}
+                              placeholder="7:00 AM"
+                              onBlur={(e) => { if (row?.id) updateBackground.mutate({ rowId: row.id, dto: { callTime: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <Input
+                              {...arraysForm.register(`background.${idx}.reportLocation`)}
+                              placeholder={t('callSheetEditor.reportLocPlaceholder', 'Report location')}
+                              onBlur={(e) => { if (row?.id) updateBackground.mutate({ rowId: row.id, dto: { reportLocation: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <RowActions
+                              isSaved={!!row?.id}
+                              disabled={isSavingAll}
+                              onSave={() => {
+                                if (!row.description) { toast.error(t('callSheetEditor.bgDescRequired', 'Description is required.')); return; }
+                                addBackground.mutate(row);
+                              }}
+                              onRemove={() => { if (row?.id) removeBackground.mutate(row.id); else backgroundArray.remove(idx); }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => backgroundArray.append({
+                    description: '', quantity: '', callTime: '', reportLocation: '', scenes: '',
+                  })}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('callSheetEditor.addBackground', 'Add Background')}
+                </Button>
+              </FormSection>
+
+              {/* ──── Special requirements ──── */}
+              <FormSection
+                eyebrow={t('callSheetEditor.eyebrowSafety', 'Safety')}
+                title={t('callSheetEditor.sectionSpecialReqs', 'Special Requirements')}
+                description={t('callSheetEditor.sectionSpecialReqsDesc', 'Stunts, minors, animals, SFX and other safety-flagged needs.')}
+                icon={<ShieldAlert className="h-4 w-4" />}
+              >
+                {specialReqArray.fields.length === 0 ? (
+                  <p className="text-sm text-text-tertiary italic mb-4">
+                    {t('callSheetEditor.noSpecialReqs', 'No special requirements yet.')}
+                  </p>
+                ) : (
+                  <div className="space-y-2 mb-4">
+                    <div className="hidden sm:grid grid-cols-[140px_1fr_130px_120px_32px] gap-2 px-1 pb-1 text-[10px] uppercase tracking-[0.14em] text-text-tertiary border-b border-border-subtle">
+                      <div>{t('callSheetEditor.colReqType', 'Type')}</div>
+                      <div>{t('callSheetEditor.colDescription', 'Description')}</div>
+                      <div>{t('callSheetEditor.colContact', 'Contact')}</div>
+                      <div>{t('callSheetEditor.colPhone', 'Phone')}</div>
+                      <div />
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {specialReqArray.fields.map((field, idx) => {
+                        const row = arraysForm.watch(`specialReqs.${idx}`);
+                        return (
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-1 sm:grid-cols-[140px_1fr_130px_120px_32px] gap-2 py-2 items-center"
+                          >
+                            <Controller
+                              control={arraysForm.control}
+                              name={`specialReqs.${idx}.reqType`}
+                              render={({ field: f }) => (
+                                <Select
+                                  value={f.value}
+                                  onValueChange={(v) => {
+                                    f.onChange(v);
+                                    if (row?.id) updateSpecialReq.mutate({ rowId: row.id, dto: { reqType: v as SpecialReqType } });
+                                  }}
+                                >
+                                  <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {SPECIAL_REQ_TYPES.map((o) => (
+                                      <SelectItem key={o.value} value={o.value}>{t(o.labelKey, o.labelFallback)}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <Input
+                              {...arraysForm.register(`specialReqs.${idx}.description`)}
+                              placeholder={t('callSheetEditor.reqDescPlaceholder', 'Describe the requirement')}
+                              onBlur={(e) => { if (row?.id) updateSpecialReq.mutate({ rowId: row.id, dto: { description: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              {...arraysForm.register(`specialReqs.${idx}.contactName`)}
+                              placeholder={t('callSheetEditor.contactNamePlaceholder', 'Contact')}
+                              onBlur={(e) => { if (row?.id) updateSpecialReq.mutate({ rowId: row.id, dto: { contactName: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm"
+                            />
+                            <Input
+                              {...arraysForm.register(`specialReqs.${idx}.contactPhone`)}
+                              placeholder="0812-..."
+                              onBlur={(e) => { if (row?.id) updateSpecialReq.mutate({ rowId: row.id, dto: { contactPhone: e.target.value } }); }}
+                              className="bg-bg-sunken border-border-subtle text-sm tabular-nums"
+                            />
+                            <RowActions
+                              isSaved={!!row?.id}
+                              disabled={isSavingAll}
+                              onSave={() => {
+                                if (!row.description) { toast.error(t('callSheetEditor.reqDescRequired', 'Description is required.')); return; }
+                                addSpecialReq.mutate(row);
+                              }}
+                              onRemove={() => { if (row?.id) removeSpecialReq.mutate(row.id); else specialReqArray.remove(idx); }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => specialReqArray.append({
+                    reqType: 'STUNTS', description: '', contactName: '', contactPhone: '', safetyNotes: '',
+                  })}
+                  className="border-border-subtle text-text-secondary hover:text-text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('callSheetEditor.addSpecialReq', 'Add Requirement')}
+                </Button>
+              </FormSection>
+            </>
+          )}
 
           {/* ──── Notes ──── */}
           <FormSection
