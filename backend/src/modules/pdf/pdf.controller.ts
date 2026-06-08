@@ -109,33 +109,15 @@ export class PdfController {
         throw new NotFoundException("Invoice tidak ditemukan");
       }
 
-      // FIX 1: Only refresh the priceBreakdown from the live project for
-      // non-termin invoices. Termin invoices carry a snapshot of the FULL
-      // project breakdown which would make the line-items table sum to the
-      // full project price while TOTAL DUE correctly shows only the termin
-      // amount — a self-contradictory legal document.
+      // Non-termin invoices: refresh the line-item breakdown from the live
+      // project. Termin invoices intentionally KEEP the full project breakdown
+      // as line items so the client sees the full scope of services — the
+      // payment-schedule summary (Subtotal Full Project → this Termin % →
+      // TOTAL DUE) reconciles it down to the milestone amount. (Previously this
+      // replaced the products with a single synthetic "Termin" line, so the
+      // actual services were missing from the invoice.)
       if (!invoice.paymentMilestoneId && invoice.project?.priceBreakdown) {
         invoice.priceBreakdown = invoice.project.priceBreakdown;
-      }
-      // For termin invoices, synthesise a single line item that matches the
-      // termin amount so that line-items and TOTAL DUE are always consistent.
-      if (invoice.paymentMilestoneId && invoice.paymentMilestone) {
-        const pm = invoice.paymentMilestone;
-        const terminName = `Termin ${pm.milestoneNumber} - ${pm.nameId || pm.name} (${pm.paymentPercentage}%)`;
-        const terminAmount = Number(invoice.amountPerProject) || Number(invoice.totalAmount);
-        invoice.priceBreakdown = {
-          products: [
-            {
-              name: terminName,
-              description: pm.description || pm.descriptionId || null,
-              price: terminAmount,
-              quantity: 1,
-              subtotal: terminAmount,
-            },
-          ],
-          total: terminAmount,
-          calculatedAt: new Date().toISOString(),
-        };
       }
 
       // Parse continuous parameter (default: true for digital viewing)

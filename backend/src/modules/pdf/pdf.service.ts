@@ -549,7 +549,13 @@ export class PdfService implements OnModuleDestroy {
     // FIX 1: taxRate is stored as a PERCENT (e.g. 11 for 11%), not a decimal.
     // Prefer the authoritative stored taxAmount when present; only recompute as
     // fallback using taxRate/100 so we never multiply by 11 and get 1100%.
-    const subTotal = Number(amountPerProject) || 0;
+    // For termin invoices the amount due is the MILESTONE amount, not the full
+    // project (amountPerProject holds the full project value). TOTAL DUE must
+    // equal this milestone while the line-items still show the full scope; the
+    // payment-schedule summary bridges the two.
+    const subTotal = paymentMilestone
+      ? Number(paymentMilestone.paymentAmount ?? totalAmount) || 0
+      : Number(amountPerProject) || 0;
     const taxAmount = includeTax
       ? invoiceData.taxAmount != null
         ? Number(invoiceData.taxAmount)
