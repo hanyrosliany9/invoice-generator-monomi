@@ -1496,6 +1496,9 @@ export class PdfService implements OnModuleDestroy {
       scopeOfWork,
       terms,
       priceBreakdown,
+      // Payment schedule (termin) — rendered when the quotation is milestone-based.
+      paymentType,
+      paymentMilestones,
       // Tax fields (Indonesian PPN compliance)
       // FIX 1: taxRate is stored as PERCENT (e.g. 11), not a decimal fraction.
       // Default changed from 0.11 → 11 to match the DTO/DB convention.
@@ -2184,6 +2187,46 @@ export class PdfService implements OnModuleDestroy {
         </tr>
       </table>
     </div>
+
+    <!-- Payment Schedule (Termin) — only for milestone-based quotations -->
+    ${
+      paymentType === "MILESTONE_BASED" &&
+      Array.isArray(paymentMilestones) &&
+      paymentMilestones.length > 0
+        ? `
+    <div class="section-box">
+      <div class="section-box-title">Jadwal Pembayaran (Termin)</div>
+      <table class="service-table" style="margin-top: 8px;">
+        <thead>
+          <tr>
+            <th>Termin</th>
+            <th>Keterangan</th>
+            <th>Persentase</th>
+            <th>Jumlah</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${[...paymentMilestones]
+            .sort(
+              (a: any, b: any) =>
+                (a.milestoneNumber || 0) - (b.milestoneNumber || 0),
+            )
+            .map(
+              (m: any) => `
+          <tr>
+            <td>${m.milestoneNumber ?? ""}</td>
+            <td>${esc(m.nameId || m.name || "")}</td>
+            <td>${Number(m.paymentPercentage) || 0}%</td>
+            <td>${formatIDR(Number(m.paymentAmount) || 0)}</td>
+          </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    `
+        : ""
+    }
 
     <!-- Scope of Work Section -->
     ${
