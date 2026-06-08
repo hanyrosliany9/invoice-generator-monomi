@@ -16,17 +16,26 @@ export function generateShotListHTML(shotList: any): string {
         const shotsBody = shots.length === 0
           ? '<tr><td colspan="7" style="color:#9ca3af; font-style:italic; text-align:center;">No shots added for this scene.</td></tr>'
           : shots.map(
-              (shot: any) => `
+              (shot: any) => {
+                // Duration is entered in minutes in the editor.
+                const duration =
+                  shot.estimatedTime !== null &&
+                  shot.estimatedTime !== undefined &&
+                  shot.estimatedTime !== ""
+                    ? `${escapeHtml(String(shot.estimatedTime))} min`
+                    : "-";
+                return `
             <tr>
               <td>${escapeHtml(shot.shotNumber)}</td>
-              <td>${escapeHtml(shot.shotSize) || "-"}</td>
-              <td>${escapeHtml(shot.shotType) || "-"}</td>
-              <td>${escapeHtml(shot.cameraMovement) || "-"}</td>
-              <td>${escapeHtml(shot.lens) || "-"}</td>
               <td>${escapeHtml(shot.description) || "-"}</td>
-              <td>${escapeHtml(shot.status)}</td>
+              <td>${escapeHtml(shot.shotType) || "-"}</td>
+              <td>${escapeHtml(shot.camera) || "-"}</td>
+              <td>${escapeHtml(shot.cameraMovement) || "-"}</td>
+              <td>${duration}</td>
+              <td>${escapeHtml(shot.notes) || "-"}</td>
             </tr>
-          `,
+          `;
+              },
             ).join("");
         return `
     <div class="scene">
@@ -39,12 +48,12 @@ export function generateShotListHTML(shotList: any): string {
         <thead>
           <tr>
             <th>#</th>
-            <th>Size</th>
-            <th>Type</th>
-            <th>Movement</th>
-            <th>Lens</th>
             <th>Description</th>
-            <th>Status</th>
+            <th>Type</th>
+            <th>Camera</th>
+            <th>Movement</th>
+            <th>Duration</th>
+            <th>Notes</th>
           </tr>
         </thead>
         <tbody>
