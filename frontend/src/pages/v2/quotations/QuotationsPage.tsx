@@ -139,6 +139,22 @@ export default function QuotationsPageV2() {
     onError: () => toast.error(t('quotations.toast.statusError', 'Failed to update quotation status.')),
   });
 
+  // Revise a DECLINED quotation via the dedicated endpoint (new draft copy,
+  // original → REVISED), then open the new draft. NOT a DECLINED→DRAFT status
+  // change (the state machine rejects that).
+  const reviseMutation = useMutation({
+    mutationFn: (id: string) => quotationService.revise(id),
+    onSuccess: (revised) => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      toast.success(t('quotations.toast.revised', 'Revision created — editing the new draft.'));
+      if (revised?.id) navigate(`/quotations/${revised.id}`);
+    },
+    onError: (err: unknown) => {
+      const resp = (err as { response?: { data?: { details?: string; message?: string } } })?.response?.data;
+      toast.error(resp?.details || resp?.message || t('quotations.toast.reviseError', 'Failed to create revision.'));
+    },
+  });
+
   const reopenMutation = useMutation({
     mutationFn: (id: string) => quotationService.reopen(id),
     onSuccess: () => {
@@ -410,13 +426,11 @@ export default function QuotationsPageV2() {
 
                       {status === 'DECLINED' && (
                         <DropdownMenuItem
-                          disabled={statusMutation.isPending}
-                          onClick={() =>
-                            statusMutation.mutate({ id: q.id, status: 'DRAFT' })
-                          }
+                          disabled={reviseMutation.isPending}
+                          onClick={() => reviseMutation.mutate(q.id)}
                         >
                           <RotateCcw className="h-4 w-4" />
-                          {t('quotations.actions.revise', 'Revise (back to Draft)')}
+                          {t('quotations.actions.revise', 'Create Revision')}
                         </DropdownMenuItem>
                       )}
 

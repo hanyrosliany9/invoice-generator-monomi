@@ -182,6 +182,13 @@ export const quotationService = {
     return response.data?.data ?? response.data
   },
 
+  // Create a revised DRAFT copy of a DECLINED quotation. The original becomes
+  // REVISED (superseded); the returned quotation is the new editable draft.
+  revise: async (id: string): Promise<Quotation> => {
+    const response = await apiClient.post(`/quotations/${id}/revise`)
+    return response.data?.data ?? response.data
+  },
+
   // Replace payment terms (termin) on an existing quotation
   setPaymentTerms: async (
     id: string,

@@ -590,7 +590,9 @@
       "invoiceError": "Gagal membuat tagihan dari penawaran.",
       "pdfDownloaded": "PDF berhasil diunduh.",
       "pdfError": "Gagal mengunduh PDF.",
-      "viewInvoice": "Lihat faktur"
+      "viewInvoice": "Lihat faktur",
+      "revised": "Revisi dibuat — mengedit draf baru.",
+      "reviseError": "Gagal membuat revisi."
     },
     "actions": {
       "aria": "Aksi penawaran",
@@ -600,7 +602,7 @@
       "markSent": "Tandai Terkirim",
       "approve": "Setujui",
       "decline": "Tolak",
-      "revise": "Revisi (kembali ke Draf)",
+      "revise": "Buat Revisi",
       "reopenConfirm": "Buka kembali penawaran ini ke Draf? Tagihan yang dibuat otomatis akan dihapus (hanya jika belum dikirim/dibayar). Lanjutkan?",
       "reopen": "Buka Kembali (Batalkan Persetujuan)",
       "createInvoice": "Buat Tagihan",
@@ -608,7 +610,8 @@
       "deleteConfirm": "Hapus penawaran {{number}}? Tindakan ini tidak dapat dibatalkan.",
       "delete": "Hapus",
       "viewInvoice": "Lihat Faktur",
-      "previewPdf": "Pratinjau PDF"
+      "previewPdf": "Pratinjau PDF",
+      "reviseConfirm": "Buat draf revisi baru dari quotation yang ditolak ini? Yang asli akan ditandai sebagai Revised."
     },
     "filter": {
       "statusPlaceholder": "Status",

@@ -499,7 +499,9 @@
       "invoiceError": "Failed to create invoice from quotation.",
       "pdfDownloaded": "PDF downloaded successfully.",
       "pdfError": "Failed to download PDF.",
-      "viewInvoice": "View invoice"
+      "viewInvoice": "View invoice",
+      "revised": "Revision created — editing the new draft.",
+      "reviseError": "Failed to create revision."
     },
     "actions": {
       "aria": "Quotation actions",
@@ -509,7 +511,7 @@
       "markSent": "Mark as Sent",
       "approve": "Approve",
       "decline": "Decline",
-      "revise": "Revise (back to Draft)",
+      "revise": "Create Revision",
       "reopenConfirm": "Reopen this quotation to Draft? The auto-generated invoice will be deleted (only if not yet sent/paid). Continue?",
       "reopen": "Reopen (Cancel Approval)",
       "createInvoice": "Create Invoice",
@@ -517,7 +519,8 @@
       "deleteConfirm": "Delete quotation {{number}}? This action cannot be undone.",
       "delete": "Delete",
       "viewInvoice": "View Invoice",
-      "previewPdf": "Preview PDF"
+      "previewPdf": "Preview PDF",
+      "reviseConfirm": "Create a new revised draft from this declined quotation? The original will be marked as Revised."
     },
     "filter": {
       "statusPlaceholder": "Status",

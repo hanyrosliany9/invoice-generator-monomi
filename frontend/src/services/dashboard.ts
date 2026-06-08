@@ -88,17 +88,24 @@ export const dashboardService = {
     // Outstanding = invoices awaiting payment. Only SENT + OVERDUE count:
     // DRAFT isn't billed yet, PAID is settled, and CANCELLED invoices (e.g.
     // from declined quotations / cancelled projects) are not owed.
+    // Use the REMAINING balance (total − confirmed payments), not the full
+    // total — a partially-paid invoice (Indonesian termin/DP) stays SENT, so
+    // counting its full amount overstates outstanding. paymentSummary is
+    // provided by the invoices list endpoint; fall back to total if absent.
     const invoices = allInvoices?.data?.data || []
     const pendingPayments = invoices
       .filter(
         (invoice: any) =>
           invoice.status === 'SENT' || invoice.status === 'OVERDUE'
       )
-      .reduce(
-        (sum: number, invoice: any) =>
-          sum + (parseFloat(invoice.totalAmount) || 0),
-        0
-      )
+      .reduce((sum: number, invoice: any) => {
+        const remaining = invoice?.paymentSummary?.remainingAmount
+        const amount =
+          remaining != null && !Number.isNaN(Number(remaining))
+            ? Number(remaining)
+            : parseFloat(invoice.totalAmount) || 0
+        return sum + Math.max(0, amount)
+      }, 0)
 
     return {
       totalQuotations: quotationStats.total,

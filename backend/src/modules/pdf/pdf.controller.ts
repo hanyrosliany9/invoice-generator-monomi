@@ -202,8 +202,12 @@ export class PdfController {
         throw new NotFoundException("Quotation tidak ditemukan");
       }
 
-      // Refresh priceBreakdown from live project for quotations (no termin risk).
-      if (quotation.project?.priceBreakdown) {
+      // Prefer the quotation's OWN priceBreakdown — it reflects per-quotation
+      // edits. Only fall back to the project's breakdown when the quotation has
+      // none of its own (legacy quotations created before line-item editing).
+      // (Previously this always overwrote with the project's, so edits to the
+      // quotation's line items never appeared in the PDF.)
+      if (!quotation.priceBreakdown && quotation.project?.priceBreakdown) {
         quotation.priceBreakdown = quotation.project.priceBreakdown;
       }
 
@@ -342,8 +346,12 @@ export class PdfController {
         throw new NotFoundException("Quotation tidak ditemukan");
       }
 
-      // Refresh priceBreakdown from live project for quotations (no termin risk).
-      if (quotation.project?.priceBreakdown) {
+      // Prefer the quotation's OWN priceBreakdown — it reflects per-quotation
+      // edits. Only fall back to the project's breakdown when the quotation has
+      // none of its own (legacy quotations created before line-item editing).
+      // (Previously this always overwrote with the project's, so edits to the
+      // quotation's line items never appeared in the PDF.)
+      if (!quotation.priceBreakdown && quotation.project?.priceBreakdown) {
         quotation.priceBreakdown = quotation.project.priceBreakdown;
       }
 

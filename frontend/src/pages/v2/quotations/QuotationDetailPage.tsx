@@ -195,6 +195,34 @@ export default function QuotationDetailPageV2() {
     }
   };
 
+  // Revise a DECLINED quotation: backend creates a NEW draft copy (with a fresh
+  // number, cloned data, parentQuotationId) and marks this one REVISED. This is
+  // a dedicated endpoint — NOT a DECLINED→DRAFT status change (which the state
+  // machine rejects).
+  const reviseMutation = useMutation({
+    mutationFn: () => quotationService.revise(quotation!.id),
+    onSuccess: (revised) => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] });
+      toast.success(t('quotations.toast.revised', 'Revision created — editing the new draft.'));
+      if (revised?.id) navigate(`/quotations/${revised.id}`);
+    },
+    onError: (err: unknown) => {
+      const resp = (err as any)?.response?.data;
+      toast.error(resp?.details || resp?.message || t('quotations.toast.reviseError', 'Failed to create revision.'));
+    },
+  });
+
+  const handleRevise = () => {
+    if (
+      window.confirm(
+        t('quotations.actions.reviseConfirm', 'Create a new revised draft from this declined quotation? The original will be marked as Revised.'),
+      )
+    ) {
+      reviseMutation.mutate();
+    }
+  };
+
   const invoiceMutation = useMutation({
     mutationFn: (qId: string) => quotationService.generateInvoice(qId),
     onSuccess: (data) => {
@@ -491,6 +519,20 @@ export default function QuotationDetailPageV2() {
         </Button>
       );
     }
+    if (statusKey === 'DECLINED') {
+      // A declined quotation's natural next step is a revision (new draft copy).
+      return (
+        <Button
+          size="sm"
+          onClick={handleRevise}
+          disabled={reviseMutation.isPending}
+          className="gap-2"
+        >
+          <RotateCcw className="h-4 w-4" />
+          {t('quotations.actions.revise', 'Create Revision')}
+        </Button>
+      );
+    }
     return null;
   };
 
@@ -512,9 +554,9 @@ export default function QuotationDetailPageV2() {
       statusOptions.push({ to: 'APPROVED', label: t('quotations.actions.approve', 'Approve'), icon: CheckCircle2 });
       statusOptions.push({ to: 'DECLINED', label: t('quotations.actions.decline', 'Decline'), icon: XCircle, danger: true });
     }
-  } else if (statusKey === 'DECLINED') {
-    statusOptions.push({ to: 'DRAFT', label: t('quotations.actions.revise', 'Revise (back to Draft)'), icon: RotateCcw });
   }
+  // DECLINED → Revise is handled by the primary CTA (a dedicated /revise call
+  // that spawns a new draft); it is NOT a DECLINED→DRAFT status transition.
   // APPROVED is terminal in the forward flow, but can be reopened (a guarded
   // undo) via reopenMutation below — rendered as its own destructive item.
 

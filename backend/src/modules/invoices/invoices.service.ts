@@ -473,6 +473,7 @@ export class InvoicesService {
           project: true,
           quotation: true,
           paymentMilestone: true,
+          payments: true,
           user: {
             select: {
               id: true,
@@ -486,8 +487,31 @@ export class InvoicesService {
       this.prisma.invoice.count({ where }),
     ]);
 
+    // Attach a payment summary per invoice (CONFIRMED payments only — mirrors
+    // findOne) so consumers (dashboard "outstanding", AR views) can use the
+    // REMAINING balance instead of the full total on partially-paid invoices.
+    const invoicesWithSummary = invoices.map((inv: any) => {
+      const list: any[] = inv.payments || [];
+      const totalPaid = list.reduce(
+        (sum: number, p: any) =>
+          p.status === "CONFIRMED" ? sum + Number(p.amount) : sum,
+        0,
+      );
+      const totalAmount = Number(inv.totalAmount);
+      const remainingAmount = totalAmount - totalPaid;
+      return {
+        ...inv,
+        paymentSummary: {
+          totalPaid,
+          remainingAmount,
+          isPaid: remainingAmount <= 0,
+          paymentCount: list.length,
+        },
+      };
+    });
+
     return new PaginatedResponse(
-      invoices,
+      invoicesWithSummary,
       {
         page: safePage,
         limit: safeLimit,
