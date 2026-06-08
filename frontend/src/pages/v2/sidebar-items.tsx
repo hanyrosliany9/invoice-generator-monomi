@@ -84,6 +84,7 @@ export const v2SidebarSections: SidebarSection[] = [
     label: 'sectionLabels.production',
     items: [
       { label: 'nav.shotLists', icon: i(ClapperboardIcon), href: '/shot-lists' },
+      { label: 'nav.schedules', icon: i(CalendarRange), href: '/schedules' },
       { label: 'nav.callSheets', icon: i(ListChecks), href: '/call-sheets' },
     ],
   },

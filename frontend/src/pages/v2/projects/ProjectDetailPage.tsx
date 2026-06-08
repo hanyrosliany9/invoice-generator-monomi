@@ -6,6 +6,7 @@ import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Pencil, Trash2, Copy, Building2, Calendar,
   PlayCircle, CheckCircle2, PauseCircle, ListChecks, Briefcase, Plus, Film,
+  CalendarRange,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -35,6 +36,7 @@ import { invoiceService, type Invoice } from '@/services/invoices';
 import { quotationService, type Quotation } from '@/services/quotations';
 import { expenseService } from '@/services/expenses';
 import { shotListsApi } from '@/services/shotLists';
+import { schedulesApi } from '@/services/schedules';
 import type { Expense } from '@/types/expense';
 import { QuickExpenseSheet } from '@/pages/v2/expenses/QuickExpenseSheet';
 
@@ -224,6 +226,12 @@ export default function ProjectDetailPageV2() {
   const { data: shotLists = [], isLoading: shotListsLoading } = useQuery({
     queryKey: ['shot-lists', 'by-project', id],
     queryFn: () => shotListsApi.getByProject(id!),
+    enabled: !!id,
+  });
+
+  const { data: schedules = [], isLoading: schedulesLoading } = useQuery({
+    queryKey: ['schedules', 'by-project', id],
+    queryFn: () => schedulesApi.getByProject(id!),
     enabled: !!id,
   });
 
@@ -1141,6 +1149,74 @@ export default function ProjectDetailPageV2() {
                       <div className="shrink-0 flex items-center gap-4 text-xs text-text-tertiary tabular-nums">
                         <span>{t('projectDetail.shotCount', '{{count}} shots', { count: shotCount })}</span>
                         <DateDisplay date={sl.updatedAt} />
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </GlassPanel>
+      </section>
+
+      {/* Production — shooting schedules belonging to this project. Mirrors
+          the Shot Lists section and threads ?from= so the editor returns
+          here. */}
+      <section className="mb-10">
+        <GlassPanel surface="glass" padding="lg">
+          <SectionHeader
+            title={t('projectDetail.schedulesSection', 'Shooting Schedules')}
+            sublabel={schedulesLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: schedules.length })}
+            action={
+              <Button
+                size="sm"
+                onClick={() => navigate(`/schedules?projectId=${id}&from=${encodeURIComponent(`/projects/${id}`)}`)}
+              >
+                <Plus className="h-4 w-4" />
+                {t('projectDetail.newSchedule', 'New Schedule')}
+              </Button>
+            }
+          />
+          {schedulesLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 rounded" />
+              <Skeleton className="h-12 rounded" />
+            </div>
+          ) : schedules.length === 0 ? (
+            <EmptyState
+              icon={<CalendarRange className="h-12 w-12" />}
+              title={t('projectDetail.noSchedules', 'No schedules yet')}
+              description={t('projectDetail.noSchedulesDesc', 'Plan your shoot by creating a shooting schedule for this project.')}
+              action={
+                <Button
+                  size="sm"
+                  onClick={() => navigate(`/schedules?projectId=${id}&from=${encodeURIComponent(`/projects/${id}`)}`)}
+                >
+                  <Plus className="h-4 w-4" />
+                  {t('projectDetail.newSchedule', 'New Schedule')}
+                </Button>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-border-subtle">
+              {schedules.map((sch) => {
+                const dayCount = sch._count?.shootDays ?? sch.shootDays?.length ?? 0;
+                return (
+                  <li key={sch.id}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/schedules/${sch.id}?from=${encodeURIComponent(`/projects/${id}`)}`)}
+                      className="w-full flex items-center justify-between gap-4 py-3 px-2 -mx-2 text-left rounded-md hover:bg-bg-sunken/40 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm text-text-primary truncate">{sch.name}</div>
+                        {sch.description && (
+                          <div className="text-xs text-text-tertiary truncate mt-0.5">{sch.description}</div>
+                        )}
+                      </div>
+                      <div className="shrink-0 flex items-center gap-4 text-xs text-text-tertiary tabular-nums">
+                        <span>{t('projectDetail.dayCount', '{{count}} days', { count: dayCount })}</span>
+                        <DateDisplay date={sch.updatedAt} />
                       </div>
                     </button>
                   </li>

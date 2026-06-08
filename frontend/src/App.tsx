@@ -74,6 +74,8 @@ const V2DecksPage = lazy(() => import('./pages/v2/decks/DecksPage'))
 const V2DeckEditorPage = lazy(() => import('./pages/v2/decks/DeckEditorPage'))
 const V2ShotListsPage = lazy(() => import('./pages/v2/shot-lists/ShotListsPage'))
 const V2ShotListEditorPage = lazy(() => import('./pages/v2/shot-lists/ShotListEditorPage'))
+const V2SchedulesPage = lazy(() => import('./pages/v2/schedules/SchedulesPage'))
+const V2ScheduleEditorPage = lazy(() => import('./pages/v2/schedules/ScheduleEditorPage'))
 const V2MediaCollaborationPage = lazy(() => import('./pages/v2/media/MediaCollaborationPage'))
 const V2MediaProjectDetailPage = lazy(() => import('./pages/v2/media/MediaProjectDetailPage'))
 const V2CollectionDetailPage = lazy(() => import('./pages/v2/collections/CollectionDetailPage'))
@@ -343,6 +345,8 @@ function App() {
                       <Route path='/decks/:id' element={<V2DeckEditorPage />} />
                       <Route path='/shot-lists' element={<V2ShotListsPage />} />
                       <Route path='/shot-lists/:id' element={<V2ShotListEditorPage />} />
+                      <Route path='/schedules' element={<V2SchedulesPage />} />
+                      <Route path='/schedules/:id' element={<V2ScheduleEditorPage />} />
                       <Route path='/media-collab' element={<V2MediaCollaborationPage />} />
                       <Route path='/media-collab/projects/:projectId' element={<V2MediaProjectDetailPage />} />
                       <Route path='/collections/:id' element={<V2CollectionDetailPage />} />
