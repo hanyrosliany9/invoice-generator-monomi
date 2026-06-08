@@ -56,8 +56,11 @@ export default function ExpenseCreatePageV2() {
     enabled: !!prefilledProjectId,
   });
 
+  // Reimbursable is opt-in: most project expenses are the company's own cost
+  // (DR expense / reduces margin). Only when explicitly billable does it become
+  // a pass-through to Piutang Lain-lain, so do NOT default it to true.
   const defaultValues: Partial<ExpenseFormValues> | undefined = prefilledProjectId
-    ? { projectId: prefilledProjectId, isBillable: true }
+    ? { projectId: prefilledProjectId, isBillable: false }
     : undefined;
 
   // After save: return to where we came from, with a toast that links to the

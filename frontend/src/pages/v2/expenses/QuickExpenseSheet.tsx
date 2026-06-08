@@ -152,7 +152,7 @@ export function QuickExpenseSheet({
             mode="create"
             formId={FORM_ID}
             lockedProjectId={projectId}
-            defaultValues={{ projectId, isBillable: true }}
+            defaultValues={{ projectId, isBillable: false }}
             isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
             onSubmitAndApprove={handleSubmitAndApprove}
