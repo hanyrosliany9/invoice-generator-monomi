@@ -50,7 +50,7 @@ const shotRowSchema = z.object({
   shotType:       z.string().optional(), // e.g. CU / WS / MS
   cameraMovement: z.string().optional(), // e.g. Pan / Track / Static
   camera:         z.string().optional(),
-  estimatedTime:  z.coerce.number().min(0).optional(), // minutes
+  estimatedTime:  z.coerce.number().min(0).optional(), // seconds (shot durations are short)
   notes:          z.string().optional(),
 });
 
@@ -414,7 +414,7 @@ export default function ShotListEditorPageV2() {
                   <div>{t('shotListEditor.colDescription', 'Description')}</div>
                   <div>{t('shotListEditor.colType', 'Type')}</div>
                   <div>{t('shotListEditor.colCameraMove', 'Camera / Move')}</div>
-                  <div className="text-right">{t('shotListEditor.colDuration', 'Duration')}</div>
+                  <div className="text-right">{t('shotListEditor.colDuration', 'Duration (s)')}</div>
                   <div>{t('shotListEditor.colNotes', 'Notes')}</div>
                   <div className="text-right">{t('shotListEditor.colActions', 'Actions')}</div>
                 </div>
@@ -470,14 +470,14 @@ export default function ShotListEditorPageV2() {
                         />
                       </div>
 
-                      {/* estimated time (minutes) */}
+                      {/* estimated time (seconds) — shot durations are short */}
                       <div>
                         <Input
                           type="number"
                           min="0"
                           step="1"
                           inputMode="numeric"
-                          placeholder={t('shotListEditor.durationPlaceholder', 'min')}
+                          placeholder={t('shotListEditor.durationPlaceholder', 'sec')}
                           {...register(`shots.${idx}.estimatedTime` as const, { valueAsNumber: true })}
                           className="bg-bg-sunken border-border-subtle text-right font-mono tabular-nums text-text-primary text-sm"
                         />

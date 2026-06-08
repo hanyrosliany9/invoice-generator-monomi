@@ -17,12 +17,14 @@ export function generateShotListHTML(shotList: any): string {
           ? '<tr><td colspan="7" style="color:#9ca3af; font-style:italic; text-align:center;">No shots added for this scene.</td></tr>'
           : shots.map(
               (shot: any) => {
-                // Duration is entered in minutes in the editor.
+                // Duration is stored in SECONDS (shot durations are short).
+                // Show "Ns" under a minute, else "Mm Ss".
+                const secs = Number(shot.estimatedTime);
                 const duration =
-                  shot.estimatedTime !== null &&
-                  shot.estimatedTime !== undefined &&
-                  shot.estimatedTime !== ""
-                    ? `${escapeHtml(String(shot.estimatedTime))} min`
+                  Number.isFinite(secs) && secs > 0
+                    ? secs < 60
+                      ? `${secs}s`
+                      : `${Math.floor(secs / 60)}m${secs % 60 ? ` ${secs % 60}s` : ""}`
                     : "-";
                 return `
             <tr>
