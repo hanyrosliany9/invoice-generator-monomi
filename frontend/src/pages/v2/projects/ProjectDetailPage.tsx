@@ -188,6 +188,10 @@ export default function ProjectDetailPageV2() {
   const canAddExpense = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   // Quick-add slide-over so recording an expense never leaves the project page.
   const [quickExpenseOpen, setQuickExpenseOpen] = useState(false);
+  // When "realizing" a planned (estimated) expense line, seed the sheet's form.
+  const [prefill, setPrefill] = useState<
+    { categoryId?: string; grossAmount?: number; description?: string } | undefined
+  >(undefined);
   const queryClient = useQueryClient();
 
   /* ---------- data ---------- */
@@ -862,75 +866,6 @@ export default function ProjectDetailPageV2() {
         </GlassPanel>
       </section>
 
-      {/* Cost budget — estimated (planned) cost vs actual spending */}
-      {totals.estimatedCost > 0 ? (
-        <section className="mb-10">
-          <GlassPanel surface="glass" padding="lg">
-            <SectionHeader
-              title={t('projectDetail.costBudget', 'Cost Budget')}
-              sublabel={t('projectDetail.costBudgetSub', 'Estimated cost vs. actual spending')}
-            />
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                  {t('projectDetail.estimatedCost', 'Estimated')}
-                </div>
-                <MoneyDisplay amount={totals.estimatedCost} className="text-text-primary" />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                  {t('projectDetail.actualCost', 'Actual')}
-                </div>
-                <MoneyDisplay amount={totals.totalExpenses} className="text-text-primary" />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                  {t('projectDetail.remainingCost', 'Remaining')}
-                </div>
-                <MoneyDisplay
-                  amount={totals.costRemaining}
-                  className={totals.costRemaining < 0 ? 'text-danger' : 'text-success'}
-                />
-              </div>
-            </div>
-            <div className="h-2 rounded-full bg-bg-sunken overflow-hidden">
-              <div
-                className={cn(
-                  'h-full transition-all',
-                  totals.costUsedPct > 100 ? 'bg-danger' : totals.costUsedPct > 80 ? 'bg-warning' : 'bg-brand-cream',
-                )}
-                style={{ width: `${Math.min(totals.costUsedPct, 100)}%` }}
-              />
-            </div>
-            <div className="mt-2 text-xs text-text-tertiary">
-              {t('projectDetail.budgetUsed', '{{pct}}% of budget used', { pct: totals.costUsedPct.toFixed(0) })}
-              {totals.costRemaining < 0 && (
-                <span className="text-danger"> · {t('projectDetail.overBudget', 'over budget')}</span>
-              )}
-            </div>
-          </GlassPanel>
-        </section>
-      ) : canAddExpense ? (
-        <section className="mb-10">
-          <GlassPanel surface="subtle" padding="lg">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                  {t('projectDetail.costBudget', 'Cost Budget')}
-                </h2>
-                <p className="mt-0.5 text-xs text-text-tertiary">
-                  {t('projectDetail.noCostBudget', 'No estimated cost budget set for this project yet.')}
-                </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/projects/${id}/edit`)}>
-                <Plus className="h-4 w-4" />
-                {t('projectDetail.setBudget', 'Set Budget')}
-              </Button>
-            </div>
-          </GlassPanel>
-        </section>
-      ) : null}
-
       {/* Profitability — projected (from estimated expenses) vs actual margins */}
       {project.profitCalculatedAt != null ||
       project.grossMarginPercent != null ||
@@ -1036,7 +971,7 @@ export default function ProjectDetailPageV2() {
         })()
       ) : null}
 
-      {/* Expenses */}
+      {/* Expenses — budget summary, planned (estimate) lines, then actuals */}
       <section className="mb-10">
         <GlassPanel surface="glass" padding="lg">
           <SectionHeader
@@ -1046,7 +981,7 @@ export default function ProjectDetailPageV2() {
               canAddExpense ? (
                 <Button
                   size="sm"
-                  onClick={() => setQuickExpenseOpen(true)}
+                  onClick={() => { setPrefill(undefined); setQuickExpenseOpen(true); }}
                 >
                   <Plus className="h-4 w-4" />
                   {t('projectDetail.addExpense', 'Add Expense')}
@@ -1054,6 +989,127 @@ export default function ProjectDetailPageV2() {
               ) : undefined
             }
           />
+
+          {/* Cost-budget summary bar — estimated vs. actual vs. remaining.
+              Merged here from the former standalone Cost Budget section. */}
+          {totals.estimatedCost > 0 ? (
+            <div className="mb-6">
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                    {t('projectDetail.estimatedCost', 'Estimated')}
+                  </div>
+                  <MoneyDisplay amount={totals.estimatedCost} className="text-text-primary" />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                    {t('projectDetail.actualCost', 'Actual')}
+                  </div>
+                  <MoneyDisplay amount={totals.totalExpenses} className="text-text-primary" />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                    {t('projectDetail.remainingCost', 'Remaining')}
+                  </div>
+                  <MoneyDisplay
+                    amount={totals.costRemaining}
+                    className={totals.costRemaining < 0 ? 'text-danger' : 'text-success'}
+                  />
+                </div>
+              </div>
+              <div className="h-2 rounded-full bg-bg-sunken overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full transition-all',
+                    totals.costUsedPct > 100 ? 'bg-danger' : totals.costUsedPct > 80 ? 'bg-warning' : 'bg-brand-cream',
+                  )}
+                  style={{ width: `${Math.min(totals.costUsedPct, 100)}%` }}
+                />
+              </div>
+              <div className="mt-2 text-xs text-text-tertiary">
+                {t('projectDetail.budgetUsed', '{{pct}}% of budget used', { pct: totals.costUsedPct.toFixed(0) })}
+                {totals.costRemaining < 0 && (
+                  <span className="text-danger"> · {t('projectDetail.overBudget', 'over budget')}</span>
+                )}
+              </div>
+            </div>
+          ) : canAddExpense ? (
+            <div className="mb-6 text-xs text-text-tertiary">
+              <button
+                type="button"
+                onClick={() => navigate(`/projects/${id}/edit`)}
+                className="inline-flex items-center gap-1 text-text-tertiary hover:text-text-secondary transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {t('projectDetail.setCostPlan', 'Set cost plan')}
+              </button>
+            </div>
+          ) : null}
+
+          {/* Planned (from estimate) — secondary muted list with a per-line
+              "Record" action that realizes the estimate into a real expense. */}
+          {(() => {
+            const planned = Array.isArray(
+              (project as { estimatedExpenses?: unknown }).estimatedExpenses,
+            )
+              ? ((project as {
+                  estimatedExpenses?: Array<{
+                    categoryId: string;
+                    categoryName?: string;
+                    categoryNameId?: string;
+                    amount: number | string;
+                    notes?: string;
+                  }>;
+                }).estimatedExpenses ?? [])
+              : [];
+            if (planned.length === 0) return null;
+            return (
+              <div className="mb-6 rounded-md border border-border-subtle bg-bg-sunken/30 p-3">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-2">
+                  {t('projectDetail.plannedFromEstimate', 'Planned (from estimate)')}
+                </div>
+                <ul className="divide-y divide-border-subtle">
+                  {planned.map((line, i) => {
+                    const label =
+                      line.categoryName ||
+                      line.categoryNameId ||
+                      line.notes ||
+                      t('projectDetail.uncategorized', 'Uncategorized');
+                    return (
+                      <li
+                        key={line.categoryId ? `${line.categoryId}-${i}` : i}
+                        className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm text-text-secondary truncate">{label}</div>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-3">
+                          <MoneyDisplay amount={toNumber(line.amount)} className="text-xs text-text-tertiary tabular-nums" />
+                          {canAddExpense && (
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              onClick={() => {
+                                setPrefill({
+                                  categoryId: line.categoryId,
+                                  grossAmount: Number(line.amount) || 0,
+                                  description: line.notes || line.categoryName || '',
+                                });
+                                setQuickExpenseOpen(true);
+                              }}
+                            >
+                              {t('projectDetail.recordPlanned', 'Record')}
+                            </Button>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })()}
+
           {expensesLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-12 rounded" />
@@ -1304,7 +1360,11 @@ export default function ProjectDetailPageV2() {
           projectId={id}
           projectLabel={project?.description}
           open={quickExpenseOpen}
-          onOpenChange={setQuickExpenseOpen}
+          onOpenChange={(o) => {
+            setQuickExpenseOpen(o);
+            if (!o) setPrefill(undefined);
+          }}
+          prefill={prefill}
         />
       )}
     </Shell>

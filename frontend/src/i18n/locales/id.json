@@ -4962,7 +4962,11 @@
     "newSchedule": "Jadwal Baru",
     "noSchedules": "Belum ada jadwal",
     "noSchedulesDesc": "Rencanakan syuting Anda dengan membuat jadwal syuting untuk proyek ini.",
-    "dayCount": "{{count}} hari"
+    "dayCount": "{{count}} hari",
+    "setCostPlan": "Atur rencana biaya",
+    "plannedFromEstimate": "Direncanakan (dari estimasi)",
+    "recordPlanned": "Catat",
+    "uncategorized": "Tanpa kategori"
   },
   "projectForm": {
     "identity": {

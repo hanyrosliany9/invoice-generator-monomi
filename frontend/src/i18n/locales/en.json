@@ -4871,7 +4871,11 @@
     "newSchedule": "New Schedule",
     "noSchedules": "No schedules yet",
     "noSchedulesDesc": "Plan your shoot by creating a shooting schedule for this project.",
-    "dayCount": "{{count}} days"
+    "dayCount": "{{count}} days",
+    "setCostPlan": "Set cost plan",
+    "plannedFromEstimate": "Planned (from estimate)",
+    "recordPlanned": "Record",
+    "uncategorized": "Uncategorized"
   },
   "projectForm": {
     "identity": {

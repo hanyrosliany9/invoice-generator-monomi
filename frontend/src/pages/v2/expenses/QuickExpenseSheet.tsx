@@ -27,6 +27,8 @@ export interface QuickExpenseSheetProps {
   projectLabel?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Seed the form from a planned (estimated) expense line. */
+  prefill?: { categoryId?: string; grossAmount?: number; description?: string };
 }
 
 /**
@@ -40,6 +42,7 @@ export function QuickExpenseSheet({
   projectLabel,
   open,
   onOpenChange,
+  prefill,
 }: QuickExpenseSheetProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -148,12 +151,12 @@ export function QuickExpenseSheet({
 
         <div className="flex-1 overflow-y-auto p-4">
           <ExpenseForm
-            key={formKey}
+            key={`${formKey}:${prefill ? `${prefill.categoryId ?? ''}|${prefill.grossAmount ?? ''}|${prefill.description ?? ''}` : ''}`}
             mode="create"
             embedded
             formId={FORM_ID}
             lockedProjectId={projectId}
-            defaultValues={{ projectId, isBillable: false }}
+            defaultValues={{ projectId, isBillable: false, ...(prefill ?? {}) }}
             isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
             onSubmitAndApprove={handleSubmitAndApprove}
