@@ -440,6 +440,8 @@ export class LedgerService {
           },
           take: 1, // Get latest ECL provision
         },
+        // Needed to net out partial payments (termin) from the AR balance.
+        payments: { select: { amount: true, status: true } },
       },
     });
 
@@ -490,20 +492,29 @@ export class LedgerService {
       const eclRate = latestECL ? Number(latestECL.eclRate) : 0;
       const eclStatus = latestECL ? latestECL.provisionStatus : null;
 
+      // Outstanding AR = invoice total minus CONFIRMED payments (a partially
+      // paid SENT/OVERDUE invoice only carries its remaining balance in AR).
+      const confirmedPaid = (invoice.payments || []).reduce(
+        (s: number, p: any) =>
+          p.status === "CONFIRMED" ? s + Number(p.amount || 0) : s,
+        0,
+      );
+      const outstanding = Math.max(0, Number(invoice.totalAmount) - confirmedPaid);
+
       return {
         invoiceId: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
         client: invoice.client,
         invoiceDate: invoice.creationDate,
         dueDate: invoice.dueDate,
-        amount: invoice.totalAmount,
+        amount: outstanding,
         daysOverdue,
         agingBucket,
         // ECL (PSAK 71) data
         eclAmount,
         eclRate,
         eclStatus,
-        netReceivable: Number(invoice.totalAmount) - eclAmount,
+        netReceivable: outstanding - eclAmount,
       };
     });
 

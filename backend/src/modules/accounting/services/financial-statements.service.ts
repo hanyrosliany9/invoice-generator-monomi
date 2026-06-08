@@ -800,37 +800,49 @@ export class FinancialStatementsService {
     const totalCredit = arBalance.reduce((sum, e) => sum + Number(e.credit), 0);
     const netARBalance = totalDebit - totalCredit;
 
-    // Get top customers by AR balance
-    const invoicesByClient = await this.prisma.invoice.groupBy({
-      by: ["clientId"],
+    // Get top customers by OUTSTANDING AR. groupBy _sum.totalAmount can't net
+    // out payments, so it overstated per-client AR and disagreed with the net
+    // AR balance above. Fetch invoices with payments and sum the remaining
+    // (total − CONFIRMED payments) per client instead.
+    const arInvoices = await this.prisma.invoice.findMany({
       where: {
         status: { in: ["SENT", "OVERDUE"] },
         creationDate: { lte: endDate },
       },
-      _sum: {
+      select: {
+        clientId: true,
         totalAmount: true,
-      },
-      _count: {
-        id: true,
+        payments: { select: { amount: true, status: true } },
       },
     });
 
+    const byClient = new Map<string, { outstanding: number; count: number }>();
+    for (const inv of arInvoices) {
+      const paid = inv.payments.reduce(
+        (s, p) => (p.status === "CONFIRMED" ? s + Number(p.amount || 0) : s),
+        0,
+      );
+      const outstanding = Math.max(0, Number(inv.totalAmount || 0) - paid);
+      if (outstanding <= 0) continue;
+      const e = byClient.get(inv.clientId) || { outstanding: 0, count: 0 };
+      e.outstanding += outstanding;
+      e.count += 1;
+      byClient.set(inv.clientId, e);
+    }
+
     const topCustomers = await Promise.all(
-      invoicesByClient
-        .sort(
-          (a, b) =>
-            Number(b._sum.totalAmount || 0) - Number(a._sum.totalAmount || 0),
-        )
+      [...byClient.entries()]
+        .sort((a, b) => b[1].outstanding - a[1].outstanding)
         .slice(0, 10)
-        .map(async (group) => {
+        .map(async ([clientId, agg]) => {
           const client = await this.prisma.client.findUnique({
-            where: { id: group.clientId },
+            where: { id: clientId },
             select: { id: true, name: true, email: true },
           });
           return {
             client,
-            outstandingAmount: group._sum.totalAmount || 0,
-            invoiceCount: group._count.id,
+            outstandingAmount: agg.outstanding,
+            invoiceCount: agg.count,
           };
         }),
     );
@@ -848,7 +860,7 @@ export class FinancialStatementsService {
           Number(aging.summary.days31to60) +
           Number(aging.summary.days61to90) +
           Number(aging.summary.over90),
-        customerCount: invoicesByClient.length,
+        customerCount: byClient.size,
       },
     };
   }

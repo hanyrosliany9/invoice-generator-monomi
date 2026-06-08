@@ -116,6 +116,7 @@ export class ClientsService {
                 id: true,
                 status: true,
                 totalAmount: true,
+                payments: { select: { amount: true, status: true } },
               },
             },
           },
@@ -147,7 +148,16 @@ export class ClientsService {
 
         const totalPending = client.invoices
           .filter((i) => ["SENT", "OVERDUE"].includes(i.status))
-          .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+          .reduce((sum, i) => {
+            // Subtract CONFIRMED payments — a partially-paid SENT/OVERDUE
+            // invoice (termin) only owes the remaining balance, not its total.
+            const paid = ((i as any).payments || []).reduce(
+              (s: number, p: any) =>
+                p.status === "CONFIRMED" ? s + Number(p.amount || 0) : s,
+              0,
+            );
+            return sum + Math.max(0, Number(i.totalAmount || 0) - paid);
+          }, 0);
 
         // Remove the detailed data and add calculated metrics
         const { quotations, invoices, ...clientData } = client;
@@ -233,6 +243,7 @@ export class ClientsService {
         select: {
           status: true,
           totalAmount: true,
+          payments: { select: { amount: true, status: true } },
         },
       });
 
@@ -242,7 +253,15 @@ export class ClientsService {
 
       const totalPending = allInvoices
         .filter((i) => ["SENT", "OVERDUE"].includes(i.status))
-        .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+        .reduce((sum, i) => {
+          // Subtract CONFIRMED payments — only the remaining balance is owed.
+          const paid = ((i as any).payments || []).reduce(
+            (s: number, p: any) =>
+              p.status === "CONFIRMED" ? s + Number(p.amount || 0) : s,
+            0,
+          );
+          return sum + Math.max(0, Number(i.totalAmount || 0) - paid);
+        }, 0);
 
       return {
         ...client,
@@ -356,6 +375,7 @@ export class ClientsService {
               id: true,
               status: true,
               totalAmount: true,
+              payments: { select: { amount: true, status: true } },
             },
           },
         },
@@ -383,7 +403,15 @@ export class ClientsService {
 
       const totalPending = client.invoices
         .filter((i) => ["SENT", "OVERDUE"].includes(i.status))
-        .reduce((sum, i) => sum + Number(i.totalAmount || 0), 0);
+        .reduce((sum, i) => {
+          // Subtract CONFIRMED payments — only the remaining balance is owed.
+          const paid = ((i as any).payments || []).reduce(
+            (s: number, p: any) =>
+              p.status === "CONFIRMED" ? s + Number(p.amount || 0) : s,
+            0,
+          );
+          return sum + Math.max(0, Number(i.totalAmount || 0) - paid);
+        }, 0);
 
       // Remove the detailed data and add calculated metrics
       const { quotations, invoices, ...clientData } = client;

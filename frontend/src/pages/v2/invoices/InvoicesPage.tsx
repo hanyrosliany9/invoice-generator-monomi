@@ -229,9 +229,17 @@ export default function InvoicesPageV2() {
   /* ----- derived: KPI band ----- */
   const stats = useMemo(() => {
     const sum = (list: Invoice[]) => list.reduce((acc, i) => acc + toNumber(i.totalAmount), 0);
+    // Outstanding/overdue must use the REMAINING balance (total − confirmed
+    // payments), not the full total — a partially-paid invoice (termin/DP) stays
+    // SENT/OVERDUE and counting it in full overstates what's owed.
+    const remainingOf = (i: Invoice) => {
+      const r = i.paymentSummary?.remainingAmount;
+      return r != null && !Number.isNaN(Number(r)) ? Math.max(0, Number(r)) : toNumber(i.totalAmount);
+    };
+    const sumRemaining = (list: Invoice[]) => list.reduce((acc, i) => acc + remainingOf(i), 0);
     return {
-      outstanding: sum(invoices.filter((i) => i.status === 'SENT' || i.status === 'OVERDUE')),
-      overdue:     sum(invoices.filter((i) => i.status === 'OVERDUE')),
+      outstanding: sumRemaining(invoices.filter((i) => i.status === 'SENT' || i.status === 'OVERDUE')),
+      overdue:     sumRemaining(invoices.filter((i) => i.status === 'OVERDUE')),
       paidThisMonth: sum(invoices.filter((i) => i.status === 'PAID' && isThisMonth(i.paidAt ?? i.updatedAt))),
       draftCount:  invoices.filter((i) => i.status === 'DRAFT').length,
     };

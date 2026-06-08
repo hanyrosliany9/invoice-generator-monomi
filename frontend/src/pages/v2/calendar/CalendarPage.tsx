@@ -146,7 +146,11 @@ export default function CalendarPageV2() {
         title: `${inv.invoiceNumber} — ${inv.client?.name ?? inv.clientName ?? '—'}`,
         subtitle: inv.project?.description ?? inv.projectName,
         href: `/invoices/${inv.id}`,
-        amount: toNumber(inv.totalAmount),
+        // For unpaid invoices the calendar's "Receivable Value" should reflect
+        // the REMAINING balance (total − payments), not the full total.
+        amount: unpaid
+          ? Math.max(0, toNumber(inv.paymentSummary?.remainingAmount ?? inv.totalAmount))
+          : toNumber(inv.totalAmount),
         status: inv.status,
         overdue: unpaid && isBefore(d, now),
       });
