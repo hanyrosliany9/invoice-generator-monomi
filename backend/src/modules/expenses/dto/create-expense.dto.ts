@@ -90,7 +90,10 @@ export class CreateExpenseDto {
 
   @ApiProperty({ description: "PSAK account code", example: "6-2050" })
   @IsString()
-  @Matches(/^[6-8]-\d{4}$/, { message: "Invalid PSAK account code format" })
+  // 5-xxxx = COGS / direct project costs (e.g. Sewa Lokasi 5-3030), 6-xxxx =
+  // operating expenses, 8-xxxx = other expenses. COGS categories were wrongly
+  // rejected by the old [6-8] class, blocking direct-cost expense entry.
+  @Matches(/^[5-8]-\d{4}$/, { message: "Invalid PSAK account code format" })
   accountCode: string;
 
   @ApiProperty({
