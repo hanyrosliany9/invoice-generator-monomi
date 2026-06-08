@@ -4515,7 +4515,8 @@
     "action": {
       "approve": "Approve",
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "recover": "Record Reimbursement"
     },
     "moreActions": "More actions",
     "subtitle": "Expense details, taxes, and related actions.",
@@ -4549,7 +4550,12 @@
     "reference": "Ref.",
     "paidOn": "Paid on",
     "approvedBy": "Approved By",
-    "backToProject": "Back to project"
+    "backToProject": "Back to project",
+    "reimbursed": "Reimbursed",
+    "reimbursable": "Reimbursable",
+    "recoverHint": "Record that the client reimbursed this expense (clears Piutang Lain-lain)",
+    "recoverSuccess": "Reimbursement recorded — Piutang Lain-lain cleared.",
+    "recoverError": "Failed to record reimbursement."
   },
   "expenseForm": {
     "section1": {

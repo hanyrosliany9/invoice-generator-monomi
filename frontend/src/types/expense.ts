@@ -193,6 +193,9 @@ export interface Expense {
 
   // Billable to Project/Client
   isBillable: boolean;
+  billableAmount?: string;                // Amount recoverable from client (Decimal string)
+  reimbursedAt?: string;                  // Set when the expense has been recovered (reimbursed)
+  reimbursementJournalId?: string;        // Journal entry id for the recovery posting
   projectId?: string;
   project?: {
     id: string;
@@ -368,6 +371,7 @@ export interface CreateExpenseFormData {
 
   // Billable
   isBillable: boolean;
+  billableAmount?: number | string;       // Amount recoverable from client (defaults to total)
   projectId?: string;
   clientId?: string;
 

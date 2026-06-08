@@ -225,6 +225,26 @@ export const expenseService = {
     return response.data.data;
   },
 
+  /**
+   * Record the client's reimbursement of a billable (pass-through) expense.
+   *
+   * Pass-through model: the expense was paid on the client's behalf as an asset
+   * (Dr 1-2040 Piutang Lain-lain / Cr Cash). This clears the receivable when the
+   * client pays us back:  Dr Cash/Bank / Cr 1-2040  (no P&L impact).
+   *
+   * Only valid for billable expenses that have not yet been reimbursed.
+   *
+   * @param id - Expense ID
+   * @returns Updated expense (reimbursedAt + reimbursementJournalId set)
+   */
+  recoverExpense: async (id: string): Promise<Expense> => {
+    const response = await apiClient.post(`/expenses/${id}/recover`);
+    if (!response?.data?.data) {
+      throw new Error('Expense recovery failed');
+    }
+    return response.data.data;
+  },
+
   // ============================================================================
   // STATISTICS & ANALYTICS
   // ============================================================================

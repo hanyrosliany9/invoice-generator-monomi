@@ -5,8 +5,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Trash2, Pencil, CheckCircle2,
-  Building2, Briefcase, Calendar, Receipt, AlertTriangle, Hash,
+  Building2, Briefcase, Calendar, Receipt, AlertTriangle, Hash, HandCoins,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
@@ -150,6 +151,21 @@ export default function ExpenseDetailPageV2() {
     },
   });
 
+  // Record the client's reimbursement of a billable (pass-through) expense:
+  // clears Piutang Lain-lain (Dr Cash / Cr 1-2040), no P&L impact.
+  const recoverMutation = useMutation({
+    mutationFn: () => expenseService.recoverExpense(id!),
+    onSuccess: () => {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
+      toast.success(t('expenseDetail.recoverSuccess', 'Reimbursement recorded — Piutang Lain-lain cleared.'));
+    },
+    onError: (e: unknown) => {
+      const resp = (e as { response?: { data?: { message?: string; details?: string } } })?.response?.data;
+      toast.error(resp?.details || resp?.message || t('expenseDetail.recoverError', 'Failed to record reimbursement.'));
+    },
+  });
+
   /* ---------- derived totals — defensively coerce all Decimal strings */
   const totals = useMemo(() => {
     if (!expense) return null;
@@ -276,6 +292,28 @@ export default function ExpenseDetailPageV2() {
             <Badge variant={getPaymentVariant(expense.paymentStatus)} className="h-7 px-3">
               {getPaymentLabel(expense.paymentStatus)}
             </Badge>
+            {expense.isBillable && (
+              <Badge
+                variant={expense.reimbursedAt ? 'default' : 'outline'}
+                className="h-7 px-3"
+              >
+                {expense.reimbursedAt
+                  ? t('expenseDetail.reimbursed', 'Reimbursed')
+                  : t('expenseDetail.reimbursable', 'Reimbursable')}
+              </Badge>
+            )}
+            {expense.isBillable && !expense.reimbursedAt && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => recoverMutation.mutate()}
+                disabled={recoverMutation.isPending}
+                title={t('expenseDetail.recoverHint', 'Record that the client reimbursed this expense (clears Piutang Lain-lain)')}
+              >
+                <HandCoins className="h-4 w-4" />
+                {t('expenseDetail.action.recover', 'Record Reimbursement')}
+              </Button>
+            )}
             {PrimaryAction}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

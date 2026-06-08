@@ -660,4 +660,43 @@ export class ExpensesController {
     const userId = req.user.id;
     return this.expensesService.markPaid(id, userId, markPaidDto);
   }
+
+  /**
+   * Record the client's reimbursement of a billable (pass-through) expense.
+   *
+   * Pass-through model: the expense was paid on the client's behalf as an asset
+   * (Dr 1-2040 Piutang Lain-lain / Cr Cash at create time). This clears the
+   * receivable when the client pays us back:
+   *   Dr Cash/Bank / Cr 1-2040 Piutang Lain-lain   (no P&L impact)
+   *
+   * Only valid for billable expenses that have not yet been reimbursed.
+   *
+   * @param req - Request object with authenticated user
+   * @param id - Expense ID
+   * @returns Updated expense (reimbursedAt + reimbursementJournalId set)
+   */
+  @Post(":id/recover")
+  @ApiOperation({
+    summary: "Record client reimbursement of a billable expense",
+    description:
+      "Clears the Other Receivable (1-2040 Piutang Lain-lain): Dr Cash/Bank / " +
+      "Cr 1-2040. Pass-through — no P&L impact.",
+  })
+  @ApiParam({ name: "id", description: "Expense ID" })
+  @ApiResponse({
+    status: 201,
+    description: "Expense recovery recognized successfully",
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Expense is not billable or already reimbursed",
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Expense not found",
+  })
+  async recover(@Request() req: any, @Param("id") id: string) {
+    const userId = req.user.id;
+    return this.expensesService.recoverBillableExpense(id, userId);
+  }
 }

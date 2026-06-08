@@ -54,6 +54,11 @@ export const buildCreateExpensePayload = async (
     withholdingTaxRate: amounts.withholdingTaxRate,
 
     isBillable: values.isBillable,
+    // Only send a billable amount when billable; empty → backend defaults to total.
+    billableAmount:
+      values.isBillable && values.billableAmount != null && values.billableAmount > 0
+        ? Math.round(Number(values.billableAmount))
+        : undefined,
     projectId:  values.projectId || undefined,
     clientId,
     paymentSource: values.paymentSource,

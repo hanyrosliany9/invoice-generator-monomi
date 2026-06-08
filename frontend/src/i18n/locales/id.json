@@ -4606,7 +4606,8 @@
     "action": {
       "approve": "Setujui",
       "edit": "Edit",
-      "delete": "Hapus"
+      "delete": "Hapus",
+      "recover": "Catat Reimburse"
     },
     "moreActions": "Tindakan lainnya",
     "subtitle": "Detail pengeluaran, pajak, dan tindakan terkait.",
@@ -4640,7 +4641,12 @@
     "reference": "Ref.",
     "paidOn": "Dibayar pada",
     "approvedBy": "Disetujui Oleh",
-    "backToProject": "Kembali ke proyek"
+    "backToProject": "Kembali ke proyek",
+    "reimbursed": "Sudah Reimburse",
+    "reimbursable": "Dapat Direimburse",
+    "recoverHint": "Catat bahwa klien telah me-reimburse biaya ini (melunasi Piutang Lain-lain)",
+    "recoverSuccess": "Reimburse dicatat — Piutang Lain-lain lunas.",
+    "recoverError": "Gagal mencatat reimburse."
   },
   "expenseForm": {
     "section1": {

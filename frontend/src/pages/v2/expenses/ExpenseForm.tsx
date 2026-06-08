@@ -69,6 +69,8 @@ export const expenseFormSchema = z.object({
 
   // 04 · Konteks (proyek/klien)
   isBillable: z.boolean(),
+  // Amount recoverable from the client. Empty → defaults to the expense total.
+  billableAmount: z.coerce.number().min(0, 'Amount must be 0 or more').optional(),
   projectId:  z.string().optional().or(z.literal('')),
 
   // 05 · e-Faktur (opsional)
@@ -102,6 +104,7 @@ export const emptyExpenseFormValues: ExpenseFormValues = {
   ppnCategory:       PPNCategory.CREDITABLE,
   withholdingTaxType: WithholdingTaxType.NONE,
   isBillable:        false,
+  billableAmount:    undefined,
   projectId:         '',
   eFakturNSFP:       '',
   eFakturStatus:     EFakturStatus.NOT_REQUIRED,
@@ -862,6 +865,39 @@ export const ExpenseForm = ({
                   </div>
                 )}
               />
+
+              {isBillable && (
+                <div className="space-y-1.5">
+                  <FieldLabel htmlFor="ef-billable-amount">
+                    {t('expenseForm.field.billableAmount', 'Reimbursable amount')}
+                  </FieldLabel>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary text-sm">
+                      Rp
+                    </span>
+                    <Input
+                      id="ef-billable-amount"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step="1"
+                      placeholder={t('expenseForm.field.billableAmountPlaceholder', 'Defaults to total')}
+                      className={cn(
+                        fieldInputClass,
+                        'pl-9 text-right font-mono tabular-nums',
+                        errors.billableAmount && fieldInvalidClass,
+                      )}
+                      aria-invalid={!!errors.billableAmount}
+                      disabled={isSubmitting}
+                      {...register('billableAmount', { valueAsNumber: true })}
+                    />
+                  </div>
+                  <FieldHint>
+                    {t('expenseForm.field.billableAmountHint', 'Amount recoverable from the client. Leave empty to recover the full total. Reimbursable costs do not reduce project margin.')}
+                  </FieldHint>
+                  <FieldError message={errors.billableAmount?.message} />
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <FieldLabel>{t('expenseForm.field.project', 'Related Project')}</FieldLabel>

@@ -373,21 +373,31 @@ export class ExpensesService {
       }
     }
 
-    // Create payment journal entry to reduce cash
+    // Create payment journal entry to reduce cash.
+    // Reimbursable (billable) expenses are a PASS-THROUGH paid on the client's
+    // behalf: they debit Other Receivables (1-2040 Piutang Lain-lain) instead of
+    // an expense account, so they never hit the P&L / project margin. Cleared
+    // later when the client reimburses (recoverBillableExpense → DR Cash / CR 1-2040).
+    const isReimbursable = createExpenseDto.isBillable === true;
+    const debitAccount = isReimbursable ? "1-2040" : category.accountCode;
     try {
       const paymentJournal = await this.journalService.createJournalEntry({
-        description: `Pembayaran Expense - ${expense.expenseNumber}`,
+        description: isReimbursable
+          ? `Reimburse (dibayar atas nama klien) - ${expense.expenseNumber}`
+          : `Pembayaran Expense - ${expense.expenseNumber}`,
         entryDate: new Date(createExpenseDto.expenseDate),
         transactionId: expense.expenseNumber,
-        transactionType: "EXPENSE_PAID",
+        transactionType: isReimbursable ? "EXPENSE_REIMBURSEMENT" : "EXPENSE_PAID",
         createdBy: userId,
         autoPost: true, // ✅ FIX: Auto-post to General Ledger
         lineItems: [
           {
-            accountCode: category.accountCode, // Debit expense account
+            accountCode: debitAccount, // Debit: expense account, or 1-2040 if reimbursable
             debit: Number(createExpenseDto.totalAmount),
             credit: 0,
-            description: `${expense.description} - ${expense.vendorName}`,
+            description: isReimbursable
+              ? `Piutang reimburse - ${expense.vendorName}`
+              : `${expense.description} - ${expense.vendorName}`,
             // FIX 1: stamp projectId/clientId so GL lines are project-attributable
             projectId: createExpenseDto.projectId ?? undefined,
             clientId: createExpenseDto.clientId ?? undefined,
@@ -423,7 +433,11 @@ export class ExpensesService {
     // Only when a projectId is present. Wrapped in its own try/catch so a costing
     // failure NEVER rolls back the expense or its GL journal (project-costing is a
     // recomputable rollup, not part of double-entry bookkeeping).
-    if (createExpenseDto.projectId) {
+    // MARGIN EXCLUSION: billable/reimbursable expenses are a pass-through paid on
+    // the client's behalf (debited to 1-2040 Piutang Lain-lain above, never an
+    // expense account), so they must NOT reduce project profit/margin. Skip WIP
+    // accumulation for them.
+    if (createExpenseDto.projectId && !createExpenseDto.isBillable) {
       try {
         // Accumulate into WIP directExpenses for the period of the expense date.
         // accumulateProjectCosts' createWIPJournalEntry is a stub (console.log only)
@@ -1127,6 +1141,95 @@ export class ExpensesService {
         comments: markPaidDto.notes,
       },
     });
+
+    return updated;
+  }
+
+  /**
+   * Record the client's reimbursement of a billable (pass-through) expense.
+   *
+   * Pass-through model: a billable expense was paid on the client's behalf at
+   * create time as an ASSET, NOT an expense (Dr 1-2040 Piutang Lain-lain / Cr
+   * Cash). This collection step clears that receivable when the client pays us
+   * back — never touching the P&L (no revenue, no expense):
+   *
+   *   Dr Cash/Bank                          (billable amount)
+   *       Cr 1-2040  Piutang Lain-lain      (clear the receivable)
+   *
+   * Idempotent guard via reimbursedAt.
+   */
+  async recoverBillableExpense(
+    id: string,
+    userId: string,
+    opts?: { paymentSource?: "CASH" | "BANK" },
+  ) {
+    const expense = await this.prisma.expense.findUnique({ where: { id } });
+
+    if (!expense) {
+      throw new NotFoundException(`Expense not found: ${id}`);
+    }
+
+    if (!expense.isBillable) {
+      throw new BadRequestException(
+        "Hanya biaya billable yang bisa di-reimburse (expense is not billable)",
+      );
+    }
+
+    if (expense.reimbursedAt) {
+      throw new BadRequestException(
+        "Biaya ini sudah di-reimburse (already reimbursed)",
+      );
+    }
+
+    const amount = Number(expense.billableAmount ?? expense.totalAmount);
+    const cashAccount = accountForSource(opts?.paymentSource ?? "CASH");
+
+    const journal = await this.journalService.createJournalEntry({
+      description: `Penerimaan reimburse dari klien - ${expense.expenseNumber}`,
+      entryDate: new Date(),
+      transactionId: expense.expenseNumber,
+      transactionType: "EXPENSE_REIMBURSEMENT",
+      createdBy: userId,
+      autoPost: true,
+      lineItems: [
+        {
+          accountCode: cashAccount, // DR Cash/Bank (we receive the reimbursement)
+          debit: amount,
+          credit: 0,
+          description: `Penerimaan reimburse ${expense.expenseNumber}`,
+          projectId: expense.projectId ?? undefined,
+          clientId: expense.clientId ?? undefined,
+        },
+        {
+          accountCode: "1-2040", // CR Piutang Lain-lain (clear the receivable)
+          debit: 0,
+          credit: amount,
+          description: `Pelunasan piutang reimburse ${expense.expenseNumber}`,
+          projectId: expense.projectId ?? undefined,
+          clientId: expense.clientId ?? undefined,
+        },
+      ],
+    });
+
+    const updated = await this.prisma.expense.update({
+      where: { id },
+      data: {
+        reimbursedAt: new Date(),
+        reimbursementJournalId: journal.id,
+        updatedBy: userId,
+      },
+      include: {
+        category: true,
+        user: { select: { id: true, name: true, email: true } },
+        project: { select: { id: true, number: true, description: true } },
+        client: { select: { id: true, name: true } },
+      },
+    });
+
+    this.logger.log(
+      `✅ [REIMBURSE] Recovered billable expense ${expense.expenseNumber} ` +
+        `(amount ${amount}) → journal ${journal.id}`,
+    );
 
     return updated;
   }

@@ -676,6 +676,23 @@ async function main() {
     },
   });
 
+  // Other Receivables (1-2040) — used by reimbursable/billable expense recovery
+  const accountOtherReceivables = await prisma.chartOfAccounts.upsert({
+    where: { code: '1-2040' },
+    update: {},
+    create: {
+      code: '1-2040',
+      name: 'Other Receivables',
+      nameId: 'Piutang Lain-Lain',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isSystemAccount: true,
+      description: 'Receivables from clients for reimbursable expenses',
+      descriptionId: 'Piutang dari klien atas penggantian biaya',
+    },
+  });
+
   // LIABILITIES (2-xxxx)
   // Accounts Payable (2-1xxx)
   const accountPayable = await prisma.chartOfAccounts.upsert({
@@ -1014,6 +1031,9 @@ async function main() {
       descriptionId: 'Beban penyusutan aset tetap (PSAK 16)',
     },
   });
+
+  // (Reimbursable expenses use the PASS-THROUGH model: paid as an asset to
+  //  1-2040 Piutang Lain-lain, cleared on collection — no contra-expense account.)
 
   // Other Expenses (8-xxxx)
   const accountBadDebtExpense = await prisma.chartOfAccounts.upsert({

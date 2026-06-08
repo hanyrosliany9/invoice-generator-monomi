@@ -1254,6 +1254,12 @@ model Expense {
   billableAmount Decimal? @db.Decimal(12, 2)
   invoiceId      String? // If converted to invoice item
   invoice        Invoice? @relation(fields: [invoiceId], references: [id])
+  // Reimbursable recovery (Piutang Lain-lain). A billable expense is paid as a
+  // normal expense; "recovery" recognizes it as receivable from the client
+  // (Dr Other Receivable / Cr Expense-Recovery contra), so it no longer reduces
+  // profit and never inflates sales. reimbursedAt is set when recovery posts.
+  reimbursedAt           DateTime?
+  reimbursementJournalId String? // Journal entry recognizing the recovery
 
   // Approval Workflow
   status          ExpenseStatus @default(DRAFT)
@@ -1938,6 +1944,7 @@ enum TransactionType {
   INVOICE_PAID // Debit Cash, Credit AR
   EXPENSE_SUBMITTED // Debit Expense, Credit AP
   EXPENSE_PAID // Debit AP, Credit Cash
+  EXPENSE_REIMBURSEMENT // Reimbursable expense recovery - DR Other Receivable (1-2040), CR Expense Recovery (6-9010)
   PAYMENT_RECEIVED // Debit Cash, Credit AR
   PAYMENT_MADE // Debit AP, Credit Cash
   DEPRECIATION // Debit Depreciation Expense, Credit Accumulated Depreciation
