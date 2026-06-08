@@ -7,9 +7,12 @@ export class InvoiceCounterService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Get next invoice number with thread-safe atomic increment
-   * Format: {PREFIX}YYYY/MM/XXXX (e.g., INV-2025/01/0001)
-   * Uses invoicePrefix from SystemSettings
+   * Get next invoice number with thread-safe atomic increment.
+   * Format: {PREFIX}YYYYMM-XXXX (e.g., INV-202501-0001) — dash-separated to
+   * match the quotation number format and avoid slashes in a document number
+   * (slashes break filenames/URLs and forced ad-hoc sanitization in the PDF
+   * filename builder and the frontend download handler).
+   * Uses invoicePrefix from SystemSettings.
    */
   async getNextInvoiceNumber(): Promise<string> {
     const now = new Date();
@@ -41,11 +44,11 @@ export class InvoiceCounterService {
         },
       });
 
-      // Format: {PREFIX}YYYY/MM/XXXX
+      // Format: {PREFIX}YYYYMM-XXXX (dash-separated, consistent with quotations)
       const paddedSequence = counter.sequence.toString().padStart(4, "0");
       const paddedMonth = month.toString().padStart(2, "0");
 
-      return `${prefix}${year}/${paddedMonth}/${paddedSequence}`;
+      return `${prefix}${year}${paddedMonth}-${paddedSequence}`;
     });
 
     return result;
