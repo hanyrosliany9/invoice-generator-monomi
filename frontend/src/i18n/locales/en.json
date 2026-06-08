@@ -501,7 +501,8 @@
       "pdfError": "Failed to download PDF.",
       "viewInvoice": "View invoice",
       "revised": "Revision created — editing the new draft.",
-      "reviseError": "Failed to create revision."
+      "reviseError": "Failed to create revision.",
+      "approvedMilestone": "Quotation approved. Generate the first termin invoice when ready."
     },
     "actions": {
       "aria": "Quotation actions",
@@ -520,7 +521,8 @@
       "delete": "Delete",
       "viewInvoice": "View Invoice",
       "previewPdf": "Preview PDF",
-      "reviseConfirm": "Create a new revised draft from this declined quotation? The original will be marked as Revised."
+      "reviseConfirm": "Create a new revised draft from this declined quotation? The original will be marked as Revised.",
+      "generateTerminInvoice": "Generate Termin Invoice"
     },
     "filter": {
       "statusPlaceholder": "Status",

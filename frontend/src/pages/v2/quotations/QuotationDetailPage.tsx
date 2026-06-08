@@ -139,17 +139,28 @@ export default function QuotationDetailPageV2() {
       queryClient.invalidateQueries({ queryKey: ['quotation', id] });
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       if (variables.status === 'APPROVED') {
-        // Approval triggers auto-invoice on the backend.
         setTimeout(
           () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
           500,
         );
-        toast.success(t('quotations.toast.approved', 'Quotation approved — invoice created automatically.'), {
-          action: {
-            label: t('quotations.toast.viewInvoice', 'View invoice'),
-            onClick: () => invoiceMutation.mutate(quotation!.id),
-          },
-        });
+        if (quotation?.paymentType === 'MILESTONE_BASED') {
+          // Milestone-based: nothing is auto-billed — each termin is invoiced
+          // on demand. Prompt the user to generate the first termin invoice.
+          toast.success(t('quotations.toast.approvedMilestone', 'Quotation approved. Generate the first termin invoice when ready.'), {
+            action: {
+              label: t('quotations.actions.generateTerminInvoice', 'Generate Termin Invoice'),
+              onClick: () => invoiceMutation.mutate(quotation!.id),
+            },
+          });
+        } else {
+          // Non-milestone: approval auto-creates the single invoice.
+          toast.success(t('quotations.toast.approved', 'Quotation approved — invoice created automatically.'), {
+            action: {
+              label: t('quotations.toast.viewInvoice', 'View invoice'),
+              onClick: () => invoiceMutation.mutate(quotation!.id),
+            },
+          });
+        }
       } else if (variables.status === 'SENT') {
         toast.success(t('quotations.toast.sent', 'Quotation sent to client.'));
       } else if (variables.status === 'DECLINED') {
@@ -224,19 +235,30 @@ export default function QuotationDetailPageV2() {
   };
 
   const invoiceMutation = useMutation({
-    mutationFn: (qId: string) => quotationService.generateInvoice(qId),
-    onSuccess: (data) => {
+    // Milestone-based quotations are billed per termin — the generic
+    // generate-invoice endpoint rejects them, so route to the milestone path.
+    mutationFn: async (qId: string) => {
+      if (quotation?.paymentType === 'MILESTONE_BASED') {
+        const inv = await quotationService.generateNextMilestoneInvoice(qId);
+        return { invoiceId: inv?.id, invoice: inv };
+      }
+      return quotationService.generateInvoice(qId);
+    },
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['quotation', id] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast.success(
         t('quotations.toast.invoiceCreated', 'Invoice {{number}} created successfully.', { number: data?.invoice?.invoiceNumber ?? '' }),
       );
-      // Match classic page semantics: jump to the new invoice.
-      if (data?.invoiceId) {
-        navigate(`/invoices/${data.invoiceId}`);
+      const invoiceId = data?.invoiceId ?? data?.invoice?.id;
+      if (invoiceId) {
+        navigate(`/invoices/${invoiceId}`);
       }
     },
-    onError: () => toast.error(t('quotations.toast.invoiceError', 'Failed to create invoice from quotation.')),
+    onError: (err: unknown) => {
+      const resp = (err as any)?.response?.data;
+      toast.error(resp?.details || resp?.message || t('quotations.toast.invoiceError', 'Failed to create invoice from quotation.'));
+    },
   });
 
   const deleteMutation = useMutation({
@@ -505,8 +527,10 @@ export default function QuotationDetailPageV2() {
       );
     }
     if (statusKey === 'APPROVED') {
-      // The invoice was already auto-created on approval; this opens it
-      // (the backend call is idempotent and returns the existing invoice).
+      // Non-milestone: a single invoice was auto-created on approval; this opens
+      // it (idempotent). Milestone-based: bill each termin on demand via the
+      // per-milestone endpoint (the generic generate-invoice rejects termin).
+      const isMilestone = quotation.paymentType === 'MILESTONE_BASED';
       return (
         <Button
           size="sm"
@@ -515,7 +539,9 @@ export default function QuotationDetailPageV2() {
           className="gap-2"
         >
           <FileInput className="h-4 w-4" />
-          {t('quotations.actions.viewInvoice', 'View Invoice')}
+          {isMilestone
+            ? t('quotations.actions.generateTerminInvoice', 'Generate Termin Invoice')
+            : t('quotations.actions.viewInvoice', 'View Invoice')}
         </Button>
       );
     }

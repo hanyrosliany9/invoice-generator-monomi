@@ -224,6 +224,17 @@ export const quotationService = {
     return response.data.data || response.data
   },
 
+  // Generate the next un-invoiced milestone (termin) invoice. Used for
+  // MILESTONE_BASED quotations, where the generic generate-invoice is blocked.
+  generateNextMilestoneInvoice: async (
+    id: string,
+  ): Promise<{ id: string; invoiceNumber?: string; status?: string }> => {
+    const response = await apiClient.post(
+      `/quotations/${id}/generate-next-milestone-invoice`,
+    )
+    return response.data?.data ?? response.data
+  },
+
   // Get quotation statistics
   getQuotationStats: async () => {
     const response = await apiClient.get('/quotations/stats')

@@ -354,10 +354,12 @@ export class QuotationsService {
       status as ValidatorQuotationStatus,
     );
 
-    // Validate milestones before approval (only for MILESTONE payment type)
+    // Validate milestones before approval (only for milestone-based payment).
+    // NOTE: the enum value is "MILESTONE_BASED" — the old "MILESTONE" literal
+    // never matched, so milestone validation was silently skipped.
     if (
       status === QuotationStatus.APPROVED &&
-      quotation.paymentType === "MILESTONE"
+      quotation.paymentType === "MILESTONE_BASED"
     ) {
       await this.paymentMilestonesService.validateQuotationMilestones(id);
     }
@@ -821,9 +823,19 @@ export class QuotationsService {
     quotation: any,
     tx: Prisma.TransactionClient,
   ): Promise<any> {
+    // Milestone-based quotations are NOT invoiced as one full-amount invoice on
+    // approval — each termin is invoiced separately via generateNextMilestoneInvoice
+    // (the per-milestone amount, not the quotation total). Creating a single
+    // full invoice here would both double-bill and bypass milestone tracking.
+    if (quotation.paymentType === "MILESTONE_BASED") {
+      this.logger.log(
+        `Skipping single auto-invoice for milestone-based quotation ${quotation.quotationNumber}; each milestone is invoiced separately.`,
+      );
+      return null;
+    }
+
     // Idempotency guard — skip if invoice already exists for this quotation.
-    // For MILESTONE_BASED quotations the per-milestone guard is handled further
-    // down; for all other payment types a single invoice per quotation suffices.
+    // For all (non-milestone) payment types a single invoice per quotation suffices.
     // Uses tx so the check is serialised within the same transaction snapshot.
     if (quotation.paymentType !== "MILESTONE_BASED") {
       const existing = await tx.invoice.findFirst({

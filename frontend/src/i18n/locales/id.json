@@ -592,7 +592,8 @@
       "pdfError": "Gagal mengunduh PDF.",
       "viewInvoice": "Lihat faktur",
       "revised": "Revisi dibuat — mengedit draf baru.",
-      "reviseError": "Gagal membuat revisi."
+      "reviseError": "Gagal membuat revisi.",
+      "approvedMilestone": "Quotation disetujui. Buat invoice termin pertama saat siap."
     },
     "actions": {
       "aria": "Aksi penawaran",
@@ -611,7 +612,8 @@
       "delete": "Hapus",
       "viewInvoice": "Lihat Faktur",
       "previewPdf": "Pratinjau PDF",
-      "reviseConfirm": "Buat draf revisi baru dari quotation yang ditolak ini? Yang asli akan ditandai sebagai Revised."
+      "reviseConfirm": "Buat draf revisi baru dari quotation yang ditolak ini? Yang asli akan ditandai sebagai Revised.",
+      "generateTerminInvoice": "Buat Invoice Termin"
     },
     "filter": {
       "statusPlaceholder": "Status",

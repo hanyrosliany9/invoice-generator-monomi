@@ -186,13 +186,26 @@ export default function QuotationsPageV2() {
   });
 
   const invoiceMutation = useMutation({
-    mutationFn: quotationService.generateInvoice,
-    onSuccess: (data) => {
+    // Milestone-based quotations are billed per termin (the generic
+    // generate-invoice endpoint rejects them) — route to the milestone path.
+    mutationFn: async (q: Quotation) => {
+      if (q.paymentType === 'MILESTONE_BASED') {
+        const inv = await quotationService.generateNextMilestoneInvoice(q.id);
+        return { invoiceId: inv?.id, invoice: inv };
+      }
+      return quotationService.generateInvoice(q.id);
+    },
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast.success(t('quotations.toast.invoiceCreated', 'Invoice {{number}} created successfully.', { number: data?.invoice?.invoiceNumber ?? '' }));
+      const invoiceId = data?.invoiceId ?? data?.invoice?.id;
+      if (invoiceId) navigate(`/invoices/${invoiceId}`);
     },
-    onError: () => toast.error(t('quotations.toast.invoiceError', 'Failed to create invoice from quotation.')),
+    onError: (err: unknown) => {
+      const resp = (err as { response?: { data?: { details?: string; message?: string } } })?.response?.data;
+      toast.error(resp?.details || resp?.message || t('quotations.toast.invoiceError', 'Failed to create invoice from quotation.'));
+    },
   });
 
   const handlePrint = useCallback(async (q: Quotation) => {
@@ -463,10 +476,12 @@ export default function QuotationsPageV2() {
 
                   {canConvert && (
                     <DropdownMenuItem
-                      onClick={() => invoiceMutation.mutate(q.id)}
+                      onClick={() => invoiceMutation.mutate(q)}
                     >
                       <FileInput className="h-4 w-4" />
-                      {t('quotations.actions.createInvoice', 'Create Invoice')}
+                      {q.paymentType === 'MILESTONE_BASED'
+                        ? t('quotations.actions.generateTerminInvoice', 'Generate Termin Invoice')
+                        : t('quotations.actions.createInvoice', 'Create Invoice')}
                     </DropdownMenuItem>
                   )}
 
