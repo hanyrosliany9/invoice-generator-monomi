@@ -65,6 +65,7 @@ const statusChipClass = (status?: string) => {
 
 const TRANSACTION_TYPE_LABEL_KEYS: Record<string, string> = {
   ADJUSTMENT:           'accounting.journalEntries.typeAdjustment',
+  ASSET_PURCHASE:       'accounting.journalEntries.typeAssetPurchase',
   CASH_RECEIPT:         'accounting.journalEntries.typeCashReceipt',
   CASH_DISBURSEMENT:    'accounting.journalEntries.typeCashDisbursement',
   DEPRECIATION:         'accounting.journalEntries.typeDepreciation',

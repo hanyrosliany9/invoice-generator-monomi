@@ -2992,7 +2992,8 @@
       "noAccountFound": "No account found",
       "fiscalPeriodClosedTitle": "Fiscal period is closed",
       "fiscalPeriodClosedDesc": "This fiscal period has been closed. Saving or posting new entries is disabled. Contact your administrator to re-open it.",
-      "footerPeriodClosed": "Fiscal period closed — editing disabled"
+      "footerPeriodClosed": "Fiscal period closed — editing disabled",
+      "transactionTypeAssetPurchase": "Purchase & Asset"
     },
     "cashReceipts": {
       "title": "Cash Receipts",
@@ -3611,7 +3612,8 @@
       "colDebit": "Debit",
       "colCredit": "Credit",
       "typeExpense": "Expense",
-      "typeReimbursement": "Reimbursement"
+      "typeReimbursement": "Reimbursement",
+      "typeAssetPurchase": "Purchase & Asset"
     },
     "generalLedger": {
       "title": "General Ledger",

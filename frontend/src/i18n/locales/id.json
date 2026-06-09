@@ -3083,7 +3083,8 @@
       "noAccountFound": "Akun tidak ditemukan",
       "fiscalPeriodClosedTitle": "Periode fiskal sudah ditutup",
       "fiscalPeriodClosedDesc": "Periode fiskal ini sudah ditutup. Menyimpan atau memposting entri baru tidak dapat dilakukan. Hubungi administrator Anda untuk membukanya kembali.",
-      "footerPeriodClosed": "Periode fiskal ditutup — pengeditan dinonaktifkan"
+      "footerPeriodClosed": "Periode fiskal ditutup — pengeditan dinonaktifkan",
+      "transactionTypeAssetPurchase": "Pembelian & Aset"
     },
     "cashReceipts": {
       "title": "Penerimaan Kas",
@@ -3702,7 +3703,8 @@
       "colDebit": "Debit",
       "colCredit": "Kredit",
       "typeExpense": "Beban",
-      "typeReimbursement": "Reimbursement"
+      "typeReimbursement": "Reimbursement",
+      "typeAssetPurchase": "Pembelian & Aset"
     },
     "generalLedger": {
       "title": "Buku Besar",
