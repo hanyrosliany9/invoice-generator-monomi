@@ -715,7 +715,9 @@
       "paidThisMonth": "Paid This Month",
       "paidThisMonthSub": "paid in current month",
       "revenueTag": "revenue",
-      "reimburseTag": "reimburse"
+      "reimburseTag": "reimburse",
+      "revenueGroup": "Revenue (services)",
+      "reimburseGroup": "Reimbursement · Piutang Lain-lain"
     },
     "new": "New Invoice",
     "search": {

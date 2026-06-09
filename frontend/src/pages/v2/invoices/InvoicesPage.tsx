@@ -76,33 +76,6 @@ const isThisMonth = (dateStr?: string | null) => {
   return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
 };
 
-/* KPI value that separates the revenue (services) portion from the reimbursable
-   (pass-through) portion — revenue is the headline, reimburse the quiet second line. */
-function SplitStat({
-  revenue, reimburse, revenueClass, t,
-}: {
-  revenue: number;
-  reimburse: number;
-  revenueClass?: string;
-  t: (key: string, fallback: string) => string;
-}) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-baseline gap-1.5">
-        <MoneyDisplay amount={revenue} className={revenueClass} />
-        <span className="text-[10px] font-normal uppercase tracking-wider text-text-tertiary">
-          {t('invoices.kpi.revenueTag', 'revenue')}
-        </span>
-      </div>
-      <div className="flex items-baseline gap-1.5 text-text-tertiary">
-        <MoneyDisplay amount={reimburse} className="text-sm font-medium text-text-secondary" />
-        <span className="text-[10px] font-normal uppercase tracking-wider">
-          {t('invoices.kpi.reimburseTag', 'reimburse')}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
@@ -376,35 +349,64 @@ export default function InvoicesPageV2() {
           }
         />
 
-        {/* KPI band */}
-        <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-[108px] rounded-lg" />
-                <Skeleton className="h-[108px] rounded-lg" />
-                <Skeleton className="h-[108px] rounded-lg" />
-              </>
-            ) : (
-              <>
-                <StatCard
-                  label={t('invoices.kpi.outstanding', 'Outstanding')}
-                  value={<SplitStat revenue={stats.outstanding.revenue} reimburse={stats.outstanding.reimburse} t={t} />}
-                  sublabel={t('invoices.kpi.outstandingSub', 'sent & overdue')}
-                />
-                <StatCard
-                  label={t('invoices.kpi.overdue', 'Overdue')}
-                  value={<SplitStat revenue={stats.overdue.revenue} reimburse={stats.overdue.reimburse} revenueClass="text-danger" t={t} />}
-                  sublabel={t('invoices.kpi.overdueSub', 'needs action')}
-                />
-                <StatCard
-                  label={t('invoices.kpi.paidThisMonth', 'Paid This Month')}
-                  value={<SplitStat revenue={stats.paidThisMonth.revenue} reimburse={stats.paidThisMonth.reimburse} t={t} />}
-                  sublabel={t('invoices.kpi.paidThisMonthSub', 'paid in current month')}
-                />
-              </>
-            )}
-          </div>
+        {/* KPI band — Revenue (services) and Reimbursement (pass-through) split
+            into two clearly-separated rows of cards. */}
+        <section className="mb-12 space-y-5">
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[108px] rounded-lg" />)}
+            </div>
+          ) : (
+            <>
+              {/* Revenue (services) */}
+              <div>
+                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                  {t('invoices.kpi.revenueGroup', 'Revenue (services)')}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <StatCard
+                    label={t('invoices.kpi.outstanding', 'Outstanding')}
+                    value={<MoneyDisplay amount={stats.outstanding.revenue} />}
+                    sublabel={t('invoices.kpi.outstandingSub', 'sent & overdue')}
+                  />
+                  <StatCard
+                    label={t('invoices.kpi.overdue', 'Overdue')}
+                    value={<MoneyDisplay amount={stats.overdue.revenue} className="text-danger" />}
+                    sublabel={t('invoices.kpi.overdueSub', 'needs action')}
+                  />
+                  <StatCard
+                    label={t('invoices.kpi.paidThisMonth', 'Paid This Month')}
+                    value={<MoneyDisplay amount={stats.paidThisMonth.revenue} />}
+                    sublabel={t('invoices.kpi.paidThisMonthSub', 'paid in current month')}
+                  />
+                </div>
+              </div>
+
+              {/* Reimbursement (Piutang Lain-lain) */}
+              <div>
+                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                  {t('invoices.kpi.reimburseGroup', 'Reimbursement · Piutang Lain-lain')}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <StatCard
+                    label={t('invoices.kpi.outstanding', 'Outstanding')}
+                    value={<MoneyDisplay amount={stats.outstanding.reimburse} />}
+                    sublabel={t('invoices.kpi.outstandingSub', 'sent & overdue')}
+                  />
+                  <StatCard
+                    label={t('invoices.kpi.overdue', 'Overdue')}
+                    value={<MoneyDisplay amount={stats.overdue.reimburse} className="text-danger" />}
+                    sublabel={t('invoices.kpi.overdueSub', 'needs action')}
+                  />
+                  <StatCard
+                    label={t('invoices.kpi.paidThisMonth', 'Paid This Month')}
+                    value={<MoneyDisplay amount={stats.paidThisMonth.reimburse} />}
+                    sublabel={t('invoices.kpi.paidThisMonthSub', 'paid in current month')}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
         {/* Filter + table */}

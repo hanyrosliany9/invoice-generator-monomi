@@ -806,7 +806,9 @@
       "paidThisMonth": "Lunas Bulan Ini",
       "paidThisMonthSub": "lunas pada bulan berjalan",
       "revenueTag": "pendapatan",
-      "reimburseTag": "reimburse"
+      "reimburseTag": "reimburse",
+      "revenueGroup": "Pendapatan (jasa)",
+      "reimburseGroup": "Reimbursement · Piutang Lain-lain"
     },
     "new": "Tagihan Baru",
     "search": {
