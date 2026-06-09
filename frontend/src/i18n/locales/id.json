@@ -3700,7 +3700,9 @@
       "actionsAriaLabel": "Aksi",
       "resetFilter": "Reset",
       "colDebit": "Debit",
-      "colCredit": "Kredit"
+      "colCredit": "Kredit",
+      "typeExpense": "Beban",
+      "typeReimbursement": "Reimbursement"
     },
     "generalLedger": {
       "title": "Buku Besar",
@@ -4637,7 +4639,11 @@
       "date": "Tanggal",
       "status": "Status",
       "actions": "Aksi"
-    }
+    },
+    "glPosted": "GL ✓",
+    "glPending": "GL —",
+    "glPostedAria": "Sudah diposting ke Buku Besar",
+    "glPendingAria": "Belum diposting ke Buku Besar"
   },
   "expenseDetail": {
     "error": {
@@ -4690,7 +4696,11 @@
     "reimbursable": "Dapat Direimburse",
     "recoverHint": "Catat bahwa klien telah me-reimburse biaya ini (melunasi Piutang Lain-lain)",
     "recoverSuccess": "Reimburse dicatat — Piutang Lain-lain lunas.",
-    "recoverError": "Gagal mencatat reimburse."
+    "recoverError": "Gagal mencatat reimburse.",
+    "glPosting": "Posting GL",
+    "viewJournal": "Lihat jurnal",
+    "notPosted": "Belum diposting ke GL",
+    "viewJournalAria": "Lihat jurnal yang diposting expense ini ke Buku Besar"
   },
   "expenseForm": {
     "section1": {

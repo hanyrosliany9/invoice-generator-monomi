@@ -196,6 +196,7 @@ export interface Expense {
   billableAmount?: string;                // Amount recoverable from client (Decimal string)
   reimbursedAt?: string;                  // Set when the expense has been recovered (reimbursed)
   reimbursementJournalId?: string;        // Journal entry id for the recovery posting
+  paymentJournalId?: string;              // Journal entry id for the GL posting (DR expense/CR cash)
   projectId?: string;
   project?: {
     id: string;

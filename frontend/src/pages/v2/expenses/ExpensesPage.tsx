@@ -653,6 +653,20 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
                 <Badge variant={getPaymentVariant(e.paymentStatus)} className="text-[10px]">
                   {getPaymentLabel(e.paymentStatus)}
                 </Badge>
+                {/* GL posting indicator — confirms the expense reached the ledger. */}
+                <Badge
+                  variant="outline"
+                  className={cn('text-[10px]', e.paymentJournalId
+                    ? 'border-transparent bg-success/15 text-success'
+                    : 'text-text-tertiary')}
+                  title={e.paymentJournalId
+                    ? t('expensesPage.glPostedAria', 'Posted to the General Ledger')
+                    : t('expensesPage.glPendingAria', 'Not yet posted to the General Ledger')}
+                >
+                  {e.paymentJournalId
+                    ? t('expensesPage.glPosted', 'GL ✓')
+                    : t('expensesPage.glPending', 'GL —')}
+                </Badge>
               </div>
             );
           },

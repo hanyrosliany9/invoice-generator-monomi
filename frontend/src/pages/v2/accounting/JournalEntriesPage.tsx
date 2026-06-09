@@ -75,7 +75,20 @@ const TRANSACTION_TYPE_LABEL_KEYS: Record<string, string> = {
   OPENING:              'accounting.journalEntries.typeOpening',
   INVOICE:              'accounting.journalEntries.typeInvoice',
   PAYMENT:              'accounting.journalEntries.typePayment',
+  EXPENSE:              'accounting.journalEntries.typeExpense',
   ECL:                  'accounting.journalEntries.typeECL',
+};
+
+/* Per-row display: map the SPECIFIC transactionType to a readable label so an
+   expense entry reads "Expense"/"Reimbursement" rather than raw "EXPENSE_PAID". */
+const ROW_TYPE_LABEL_KEYS: Record<string, string> = {
+  INVOICE_SENT:          'accounting.journalEntries.typeInvoice',
+  INVOICE_PAID:          'accounting.journalEntries.typePayment',
+  PAYMENT_RECEIVED:      'accounting.journalEntries.typePayment',
+  PAYMENT_MADE:          'accounting.journalEntries.typePayment',
+  EXPENSE_PAID:          'accounting.journalEntries.typeExpense',
+  EXPENSE_SUBMITTED:     'accounting.journalEntries.typeExpense',
+  EXPENSE_REIMBURSEMENT: 'accounting.journalEntries.typeReimbursement',
 };
 
 const toNumber = (v: unknown): number => {
@@ -406,7 +419,7 @@ function JournalTable({ rows, onView, onEdit, onReverse, onDelete }: JournalTabl
           header: t('accounting.journalEntries.colType', 'Type'),
           cell: ({ row }) => {
             const e = row.original;
-            const key = TRANSACTION_TYPE_LABEL_KEYS[e.transactionType];
+            const key = ROW_TYPE_LABEL_KEYS[e.transactionType] ?? TRANSACTION_TYPE_LABEL_KEYS[e.transactionType];
             // Show the COA accounts touched: debit account(s) → credit account(s),
             // so the user can read the double-entry at a glance.
             const debitAccts = [

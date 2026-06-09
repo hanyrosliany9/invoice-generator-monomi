@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Trash2, Pencil, CheckCircle2,
-  Building2, Briefcase, Calendar, Receipt, AlertTriangle, Hash, HandCoins,
+  Building2, Briefcase, Calendar, Receipt, AlertTriangle, Hash, HandCoins, BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -439,6 +439,28 @@ export default function ExpenseDetailPageV2() {
                   </button>
                 </div>
               )}
+
+              {/* GL posting — trace the expense to the journal entry it created. */}
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                  {t('expenseDetail.glPosting', 'GL Posting')}
+                </div>
+                {expense.paymentJournalId ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/accounting/journal-entries/${expense.paymentJournalId}/edit`)}
+                    className="inline-flex items-center gap-1.5 text-sm text-success hover:underline transition-colors"
+                    title={t('expenseDetail.viewJournalAria', 'View the journal entry this expense posted to the General Ledger')}
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                    {t('expenseDetail.viewJournal', 'View journal entry')}
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-text-tertiary">
+                    {t('expenseDetail.notPosted', 'Not posted to GL')}
+                  </span>
+                )}
+              </div>
             </div>
 
             {expense.buktiPengeluaranNumber && (

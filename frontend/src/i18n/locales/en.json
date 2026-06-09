@@ -3609,7 +3609,9 @@
       "actionsAriaLabel": "Actions",
       "resetFilter": "Reset",
       "colDebit": "Debit",
-      "colCredit": "Credit"
+      "colCredit": "Credit",
+      "typeExpense": "Expense",
+      "typeReimbursement": "Reimbursement"
     },
     "generalLedger": {
       "title": "General Ledger",
@@ -4547,7 +4549,11 @@
       "date": "Date",
       "status": "Status",
       "actions": "Actions"
-    }
+    },
+    "glPosted": "GL ✓",
+    "glPending": "GL —",
+    "glPostedAria": "Posted to the General Ledger",
+    "glPendingAria": "Not yet posted to the General Ledger"
   },
   "expenseDetail": {
     "error": {
@@ -4600,7 +4606,11 @@
     "reimbursable": "Reimbursable",
     "recoverHint": "Record that the client reimbursed this expense (clears Piutang Lain-lain)",
     "recoverSuccess": "Reimbursement recorded — Piutang Lain-lain cleared.",
-    "recoverError": "Failed to record reimbursement."
+    "recoverError": "Failed to record reimbursement.",
+    "glPosting": "GL Posting",
+    "viewJournal": "View journal entry",
+    "notPosted": "Not posted to GL",
+    "viewJournalAria": "View the journal entry this expense posted to the General Ledger"
   },
   "expenseForm": {
     "section1": {
