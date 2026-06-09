@@ -555,6 +555,80 @@ export function generatePhotoCallSheetHTML(
         : ""
     }
 
+    <!-- MEAL BREAKS -->
+    ${
+      cs.mealBreaks && cs.mealBreaks.length > 0
+        ? `
+    <div class="data-section">
+      <div class="section-title">MEALS</div>
+      <table class="activities-table">
+        <thead>
+          <tr>
+            <th style="width: 120px;">MEAL</th>
+            <th style="width: 90px;">TIME</th>
+            <th style="width: 90px;">DURATION</th>
+            <th>LOCATION</th>
+            <th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cs.mealBreaks
+            .map(
+              (m: any) => `
+            <tr>
+              <td style="font-weight: bold;">${escapeHtml(m.mealType) || "MEAL"}</td>
+              <td style="white-space: nowrap;">${escapeHtml(m.time)}</td>
+              <td>${m.duration ? escapeHtml(m.duration) + " min" : ""}</td>
+              <td>${escapeHtml(m.location)}</td>
+              <td>${escapeHtml(m.notes)}</td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    `
+        : ""
+    }
+
+    <!-- COMPANY MOVES -->
+    ${
+      cs.companyMoves && cs.companyMoves.length > 0
+        ? `
+    <div class="data-section">
+      <div class="section-title">COMPANY MOVES</div>
+      <table class="activities-table">
+        <thead>
+          <tr>
+            <th style="width: 90px;">DEPART</th>
+            <th>FROM</th>
+            <th>TO</th>
+            <th style="width: 90px;">TRAVEL</th>
+            <th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cs.companyMoves
+            .map(
+              (mv: any) => `
+            <tr>
+              <td style="font-weight: bold; white-space: nowrap;">${escapeHtml(mv.departTime)}</td>
+              <td>${escapeHtml(mv.fromLocation)}</td>
+              <td>${escapeHtml(mv.toLocation)}</td>
+              <td>${mv.travelTime ? escapeHtml(mv.travelTime) + " min" : ""}</td>
+              <td>${escapeHtml(mv.notes)}</td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    `
+        : ""
+    }
+
     <!-- SHOT LIST -->
     <div class="data-section">
       <div class="section-title">SHOT LIST / LOOKS (${cs.shots?.length || 0} shots)</div>

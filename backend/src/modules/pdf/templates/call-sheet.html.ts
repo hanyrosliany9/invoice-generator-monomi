@@ -709,6 +709,170 @@ export function generateCallSheetHTML(
         : ""
     }
 
+    <!-- MEAL BREAKS -->
+    ${
+      cs.mealBreaks && cs.mealBreaks.length > 0
+        ? `
+    <div class="activities-section">
+      <div class="section-title">MEALS</div>
+      <table class="activities-table">
+        <thead>
+          <tr>
+            <th style="width: 120px;">MEAL</th>
+            <th style="width: 90px;">TIME</th>
+            <th style="width: 90px;">DURATION</th>
+            <th>LOCATION</th>
+            <th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cs.mealBreaks
+            .map(
+              (m: any) => `
+            <tr>
+              <td style="font-weight: bold;">${escapeHtml(m.mealType) || "MEAL"}</td>
+              <td style="white-space: nowrap;">${escapeHtml(m.time)}</td>
+              <td>${m.duration ? escapeHtml(m.duration) + " min" : ""}</td>
+              <td>${escapeHtml(m.location)}</td>
+              <td>${escapeHtml(m.notes)}</td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    `
+        : ""
+    }
+
+    <!-- COMPANY MOVES -->
+    ${
+      cs.companyMoves && cs.companyMoves.length > 0
+        ? `
+    <div class="activities-section">
+      <div class="section-title">COMPANY MOVES</div>
+      <table class="activities-table">
+        <thead>
+          <tr>
+            <th style="width: 90px;">DEPART</th>
+            <th>FROM</th>
+            <th>TO</th>
+            <th style="width: 90px;">TRAVEL</th>
+            <th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cs.companyMoves
+            .map(
+              (mv: any) => `
+            <tr>
+              <td style="font-weight: bold; white-space: nowrap;">${escapeHtml(mv.departTime)}</td>
+              <td>${escapeHtml(mv.fromLocation)}</td>
+              <td>${escapeHtml(mv.toLocation)}</td>
+              <td>${mv.travelTime ? escapeHtml(mv.travelTime) + " min" : ""}</td>
+              <td>${escapeHtml(mv.notes)}</td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    `
+        : ""
+    }
+
+    <!-- SPECIAL REQUIREMENTS -->
+    ${
+      cs.specialRequirements && cs.specialRequirements.length > 0
+        ? `
+    <div class="activities-section">
+      <div class="section-title">SPECIAL REQUIREMENTS</div>
+      <table class="activities-table">
+        <thead>
+          <tr>
+            <th style="width: 90px;">SCENES</th>
+            <th>REQUIREMENT</th>
+            <th style="width: 150px;">CONTACT</th>
+            <th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cs.specialRequirements
+            .map((sr: any) => {
+              // Stored shape uses `description`; strip-derived shape uses boolean flags.
+              const flags = [
+                ["hasStunts", "Stunts"],
+                ["hasMinors", "Minors"],
+                ["hasAnimals", "Animals"],
+                ["hasSfx", "SFX"],
+                ["hasWaterWork", "Water Work"],
+                ["hasVehicles", "Vehicles"],
+              ]
+                .filter(([k]) => sr[k])
+                .map(([, label]) => label);
+              const requirement = sr.description || flags.join(", ");
+              const contact = [sr.contactName || sr.contact, sr.contactPhone]
+                .filter(Boolean)
+                .join(" · ");
+              const notes = sr.safetyNotes || sr.notes || "";
+              return `
+            <tr>
+              <td>${escapeHtml(sr.scenes || sr.sceneNumber)}</td>
+              <td>${escapeHtml(requirement)}</td>
+              <td>${escapeHtml(contact)}</td>
+              <td>${escapeHtml(notes)}</td>
+            </tr>
+          `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    `
+        : ""
+    }
+
+    <!-- BACKGROUND / EXTRAS -->
+    ${
+      cs.backgroundCalls && cs.backgroundCalls.length > 0
+        ? `
+    <div class="activities-section">
+      <div class="section-title">BACKGROUND / EXTRAS</div>
+      <table class="activities-table">
+        <thead>
+          <tr>
+            <th style="width: 60px;">QTY</th>
+            <th>DESCRIPTION</th>
+            <th style="width: 80px;">CALL</th>
+            <th>LOCATION</th>
+            <th>WARDROBE</th>
+            <th>NOTES</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cs.backgroundCalls
+            .map(
+              (bg: any) => `
+            <tr>
+              <td style="text-align: center;">${escapeHtml(bg.quantity)}</td>
+              <td>${escapeHtml(bg.description)}</td>
+              <td style="white-space: nowrap;">${escapeHtml(bg.callTime)}</td>
+              <td>${escapeHtml(bg.reportLocation || bg.location)}</td>
+              <td>${escapeHtml(bg.wardrobeNotes || bg.wardrobe)}</td>
+              <td>${escapeHtml(bg.notes)}</td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+    `
+        : ""
+    }
+
     <!-- SCENES TABLE -->
     ${
       cs.scenes && cs.scenes.length > 0

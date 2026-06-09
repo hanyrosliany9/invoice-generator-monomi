@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -64,6 +65,8 @@ const statusChipClass = (status?: string) => {
 
 const TRANSACTION_TYPE_LABEL_KEYS: Record<string, string> = {
   ADJUSTMENT:           'accounting.journalEntries.typeAdjustment',
+  PURCHASE:             'accounting.journalEntries.typePurchase',
+  ASSET_PURCHASE:       'accounting.journalEntries.typeAssetPurchase',
   CASH_RECEIPT:         'accounting.journalEntries.typeCashReceipt',
   CASH_DISBURSEMENT:    'accounting.journalEntries.typeCashDisbursement',
   DEPRECIATION:         'accounting.journalEntries.typeDepreciation',
@@ -74,7 +77,20 @@ const TRANSACTION_TYPE_LABEL_KEYS: Record<string, string> = {
   OPENING:              'accounting.journalEntries.typeOpening',
   INVOICE:              'accounting.journalEntries.typeInvoice',
   PAYMENT:              'accounting.journalEntries.typePayment',
+  EXPENSE:              'accounting.journalEntries.typeExpense',
   ECL:                  'accounting.journalEntries.typeECL',
+};
+
+/* Per-row display: map the SPECIFIC transactionType to a readable label so an
+   expense entry reads "Expense"/"Reimbursement" rather than raw "EXPENSE_PAID". */
+const ROW_TYPE_LABEL_KEYS: Record<string, string> = {
+  INVOICE_SENT:          'accounting.journalEntries.typeInvoice',
+  INVOICE_PAID:          'accounting.journalEntries.typePayment',
+  PAYMENT_RECEIVED:      'accounting.journalEntries.typePayment',
+  PAYMENT_MADE:          'accounting.journalEntries.typePayment',
+  EXPENSE_PAID:          'accounting.journalEntries.typeExpense',
+  EXPENSE_SUBMITTED:     'accounting.journalEntries.typeExpense',
+  EXPENSE_REIMBURSEMENT: 'accounting.journalEntries.typeReimbursement',
 };
 
 const toNumber = (v: unknown): number => {
@@ -117,8 +133,8 @@ export default function JournalEntriesPageV2() {
       search: searchText || undefined,
       status: statusFilter !== 'all' ? statusFilter : undefined,
       transactionType: typeFilter !== 'all' ? typeFilter : undefined,
-      startDate: startDate?.toISOString().slice(0, 10),
-      endDate: endDate?.toISOString().slice(0, 10),
+      startDate: (startDate ? toLocalISODate(startDate) : undefined),
+      endDate: (endDate ? toLocalISODate(endDate) : undefined),
       sortBy: 'entryDate',
       sortOrder: 'desc',
     }),
@@ -214,14 +230,14 @@ export default function JournalEntriesPageV2() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/accounting/journal-entries/adjusting')}
+                onClick={() => navigate('/accounting/journal-entries/create?type=adjusting')}
               >
                 <Wand2 className="h-4 w-4" />
                 {t('accounting.journalEntries.newAdjusting', 'Adjusting')}
               </Button>
               <Button
                 size="sm"
-                onClick={() => navigate('/accounting/journal-entries/new')}
+                onClick={() => navigate('/accounting/journal-entries/create')}
               >
                 <Plus className="h-4 w-4" />
                 {t('accounting.journalEntries.newJournal', 'New Journal')}
@@ -337,7 +353,7 @@ export default function JournalEntriesPageV2() {
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.journalEntries.resetFilter', 'Reset')}</Button>
                 ) : (
-                  <Button size="sm" onClick={() => navigate('/accounting/journal-entries/new')}>
+                  <Button size="sm" onClick={() => navigate('/accounting/journal-entries/create')}>
                     <Plus className="h-4 w-4" /> {t('accounting.journalEntries.newJournal', 'New Journal')}
                   </Button>
                 )
@@ -404,12 +420,25 @@ function JournalTable({ rows, onView, onEdit, onReverse, onDelete }: JournalTabl
           accessorKey: 'transactionType',
           header: t('accounting.journalEntries.colType', 'Type'),
           cell: ({ row }) => {
-            const type = row.original.transactionType;
-            const key = TRANSACTION_TYPE_LABEL_KEYS[type];
+            const e = row.original;
+            const key = ROW_TYPE_LABEL_KEYS[e.transactionType] ?? TRANSACTION_TYPE_LABEL_KEYS[e.transactionType];
+            // Show the COA accounts touched: debit account(s) → credit account(s),
+            // so the user can read the double-entry at a glance.
+            const debitAccts = [
+              ...new Set((e.lineItems ?? []).filter((l) => toNumber(l.debitAmount) > 0).map((l) => l.accountCode)),
+            ];
+            const creditAccts = [
+              ...new Set((e.lineItems ?? []).filter((l) => toNumber(l.creditAmount) > 0).map((l) => l.accountCode)),
+            ];
             return (
-              <span className="text-xs text-text-secondary">
-                {key ? t(key, type) : type}
-              </span>
+              <div className="min-w-0">
+                <div className="text-xs text-text-secondary">{key ? t(key, e.transactionType) : e.transactionType}</div>
+                {(debitAccts.length > 0 || creditAccts.length > 0) && (
+                  <div className="mt-0.5 font-mono text-[10px] text-text-tertiary truncate">
+                    {debitAccts.join(', ') || '—'} <span className="text-text-tertiary/60">→</span> {creditAccts.join(', ') || '—'}
+                  </div>
+                )}
+              </div>
             );
           },
         },
@@ -434,8 +463,17 @@ function JournalTable({ rows, onView, onEdit, onReverse, onDelete }: JournalTabl
           },
         },
         {
-          id: 'totals',
-          header: () => <span className="block text-right">{t('accounting.journalEntries.colDebitCredit', 'Debit / Credit')}</span>,
+          id: 'debit',
+          header: () => <span className="block text-right">{t('accounting.journalEntries.colDebit', 'Debit')}</span>,
+          cell: ({ row }) => (
+            <div className="text-right">
+              <MoneyDisplay amount={sumDebit(row.original)} className="tabular-nums text-text-primary" />
+            </div>
+          ),
+        },
+        {
+          id: 'credit',
+          header: () => <span className="block text-right">{t('accounting.journalEntries.colCredit', 'Credit')}</span>,
           cell: ({ row }) => {
             const d = sumDebit(row.original);
             const c = sumCredit(row.original);
@@ -443,12 +481,14 @@ function JournalTable({ rows, onView, onEdit, onReverse, onDelete }: JournalTabl
             return (
               <div className="text-right">
                 <MoneyDisplay
-                  amount={d}
-                  className={cn('tabular-nums', balanced ? 'text-text-primary' : 'text-warning')}
+                  amount={c}
+                  className={cn('tabular-nums', balanced ? 'text-text-secondary' : 'text-warning')}
                 />
-                <div className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary">
-                  {balanced ? 'balanced' : `Δ ${formatIDR(Math.abs(d - c))}`}
-                </div>
+                {!balanced && (
+                  <div className="text-[10px] uppercase tracking-[0.12em] text-warning">
+                    Δ {formatIDR(Math.abs(d - c))}
+                  </div>
+                )}
               </div>
             );
           },

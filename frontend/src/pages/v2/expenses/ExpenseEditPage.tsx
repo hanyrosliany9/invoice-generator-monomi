@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateAccountingQueries } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -191,6 +192,7 @@ export default function ExpenseEditPageV2() {
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['expense', id] });
+      invalidateAccountingQueries(queryClient); // edit re-posts the GL journal
       toast.success(
         t('expenseEdit.success', 'Changes for {{n}} saved.', {
           n: updated.expenseNumber || '',

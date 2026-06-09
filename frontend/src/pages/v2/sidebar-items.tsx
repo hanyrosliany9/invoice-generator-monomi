@@ -50,15 +50,18 @@ const i = (Icon: typeof Settings) => <Icon className="h-4 w-4" />;
  * requiresAdmin: true  → hidden for VIDEOGRAPHER, visible to ADMIN/SUPER_ADMIN.
  * No flag (or false)   → visible to all authenticated roles.
  *
- * Filtering is applied inside <Sidebar> via usePermissions().isAdmin().
- * isAdmin() returns true for ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'].
+ * Access model is simplified: ADMIN == SUPER_ADMIN, so there's no
+ * super-admin-only nav tier. Filtering is applied inside <Sidebar> via
+ * usePermissions().isAdmin() (true for ['SUPER_ADMIN', 'ADMIN']).
  */
 export const v2SidebarSections: SidebarSection[] = [
   {
     label: 'sectionLabels.workspace',
     items: [
-      // Dashboard is visible to all roles
-      { label: 'nav.dashboard', icon: i(LayoutDashboard), href: '/' },
+      // Dashboard (business analytics) is admin-only — RootLanding redirects a
+      // VIDEOGRAPHER from '/' to /media-collab, so don't show them a tab they
+      // can't open.
+      { label: 'nav.dashboard', icon: i(LayoutDashboard), href: '/', requiresAdmin: true },
       // Admin-only business items
       { label: 'nav.projects', icon: i(Folder), href: '/projects', requiresAdmin: true },
       { label: 'nav.calendar', icon: i(CalendarDays), href: '/calendar', requiresAdmin: true },
@@ -114,8 +117,14 @@ export const v2SidebarSections: SidebarSection[] = [
       { label: 'nav.reports', icon: i(BarChart3), href: '/reports', requiresAdmin: true },
       // Milestones — visible to all roles
       { label: 'nav.milestones', icon: i(Trophy), href: '/milestones' },
+      // User management is available to ADMIN + SUPER_ADMIN (they're equivalent).
       { label: 'nav.users', icon: i(UserCog), href: '/users', requiresAdmin: true },
-      { label: 'nav.settings', icon: i(Settings), href: '/settings', requiresAdmin: true },
+      // Settings is for ALL roles: the page self-filters so non-super-admins
+      // see only Profile / Security (password) / Notifications, while
+      // Company/System/Backup tabs are super-admin-only. It's the only place a
+      // user can change their own password, so it must stay reachable by all.
+      { label: 'nav.settings', icon: i(Settings), href: '/settings' },
+      // Project types backend allows any authenticated user — ADMIN is fine here.
       { label: 'nav.projectTypes', icon: i(Layers), href: '/settings/project-types', requiresAdmin: true },
     ],
   },

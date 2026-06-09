@@ -304,31 +304,37 @@ export class CallSheetsService {
   // ============ AUTO-FILL METHODS ============
 
   /**
+   * Resolve coordinates for external lookups. Prefers the Google Places
+   * coordinates stored on the call sheet (precise, captured when the user
+   * picks an address); falls back to geocoding the free-text address.
+   */
+  private async resolveCoords(callSheet: {
+    locationLat?: number | null;
+    locationLng?: number | null;
+    locationAddress?: string | null;
+  }): Promise<{ lat: number; lng: number } | null> {
+    if (callSheet.locationLat != null && callSheet.locationLng != null) {
+      return { lat: callSheet.locationLat, lng: callSheet.locationLng };
+    }
+    if (!callSheet.locationAddress) return null;
+    return this.externalApisService.geocodeAddress(callSheet.locationAddress);
+  }
+
+  /**
    * Auto-fill all external data for a call sheet
    * Fetches weather, sun times, and hospital info
    */
   async autoFillCallSheet(id: string) {
     const callSheet = await this.findOne(id);
 
-    if (!callSheet.locationAddress) {
+    if (!callSheet.locationAddress && callSheet.locationLat == null) {
       throw new BadRequestException(
         "Location address is required for auto-fill",
       );
     }
 
     try {
-      // Geocode the address to get coordinates
-      let coords: { lat: number; lng: number } | null = null;
-
-      if (callSheet.locationAddress) {
-        // Geocode the address using Nominatim
-        const geocoded = await this.externalApisService.geocodeAddress(
-          callSheet.locationAddress,
-        );
-        if (geocoded) {
-          coords = { lat: geocoded.lat, lng: geocoded.lng };
-        }
-      }
+      const coords = await this.resolveCoords(callSheet);
 
       if (!coords) {
         throw new Error("Could not determine location coordinates. Please re-select the address.");
@@ -393,7 +399,7 @@ export class CallSheetsService {
       return this.update(id, updateData);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`Auto-fill failed: ${errorMsg}`);
+      throw new BadRequestException(`Auto-fill failed: ${errorMsg}`);
     }
   }
 
@@ -403,16 +409,14 @@ export class CallSheetsService {
   async autoFillWeather(id: string) {
     const callSheet = await this.findOne(id);
 
-    if (!callSheet.locationAddress) {
+    if (!callSheet.locationAddress && callSheet.locationLat == null) {
       throw new BadRequestException(
         "Location address is required for auto-fill",
       );
     }
 
     try {
-      const coords = await this.externalApisService.geocodeAddress(
-        callSheet.locationAddress,
-      );
+      const coords = await this.resolveCoords(callSheet);
       if (!coords) {
         throw new Error("Could not geocode address");
       }
@@ -436,7 +440,7 @@ export class CallSheetsService {
       return this.update(id, updateData);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`Weather auto-fill failed: ${errorMsg}`);
+      throw new BadRequestException(`Weather auto-fill failed: ${errorMsg}`);
     }
   }
 
@@ -446,16 +450,14 @@ export class CallSheetsService {
   async autoFillSunTimes(id: string) {
     const callSheet = await this.findOne(id);
 
-    if (!callSheet.locationAddress) {
+    if (!callSheet.locationAddress && callSheet.locationLat == null) {
       throw new BadRequestException(
         "Location address is required for auto-fill",
       );
     }
 
     try {
-      const coords = await this.externalApisService.geocodeAddress(
-        callSheet.locationAddress,
-      );
+      const coords = await this.resolveCoords(callSheet);
       if (!coords) {
         throw new Error("Could not geocode address");
       }
@@ -477,7 +479,7 @@ export class CallSheetsService {
       return this.update(id, updateData);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`Sun times auto-fill failed: ${errorMsg}`);
+      throw new BadRequestException(`Sun times auto-fill failed: ${errorMsg}`);
     }
   }
 
@@ -487,16 +489,14 @@ export class CallSheetsService {
   async autoFillHospital(id: string) {
     const callSheet = await this.findOne(id);
 
-    if (!callSheet.locationAddress) {
+    if (!callSheet.locationAddress && callSheet.locationLat == null) {
       throw new BadRequestException(
         "Location address is required for auto-fill",
       );
     }
 
     try {
-      const coords = await this.externalApisService.geocodeAddress(
-        callSheet.locationAddress,
-      );
+      const coords = await this.resolveCoords(callSheet);
       if (!coords) {
         throw new Error("Could not geocode address");
       }
@@ -522,7 +522,7 @@ export class CallSheetsService {
       return this.update(id, updateData);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`Hospital auto-fill failed: ${errorMsg}`);
+      throw new BadRequestException(`Hospital auto-fill failed: ${errorMsg}`);
     }
   }
 
@@ -604,7 +604,9 @@ export class CallSheetsService {
    */
   async searchAddresses(
     query: string,
-  ): Promise<Array<{ value: string; label: string }>> {
+  ): Promise<
+    Array<{ value: string; label: string; lat?: number; lng?: number }>
+  > {
     console.log(
       "[CallSheetsService] searchAddresses called with query:",
       query,

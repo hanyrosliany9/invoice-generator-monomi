@@ -86,13 +86,21 @@ export default function UserEditPageV2() {
     mutationFn: ({ id: userId, data }: { id: string; data: UpdateUserRequest }) =>
       userService.updateUser(userId, data),
     onMutate: () => setIsSubmitting(true),
-    onSuccess: (updated) => {
+    onSuccess: (updated, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['user', id] });
+      // Confirm the password change explicitly — the edit form clears the
+      // field on reload (we never get the hash back), so without this the
+      // operator can't tell their new password actually took.
+      const passwordChanged = !!variables.data.password;
       toast.success(
-        t('users.edit.success', 'Perubahan untuk "{{name}}" tersimpan.', {
-          name: updated.name,
-        }),
+        passwordChanged
+          ? t('users.edit.successPassword', 'Perubahan untuk "{{name}}" tersimpan. Kata sandi diperbarui.', {
+              name: updated.name,
+            })
+          : t('users.edit.success', 'Perubahan untuk "{{name}}" tersimpan.', {
+              name: updated.name,
+            }),
       );
       navigate('/users');
     },
@@ -134,7 +142,7 @@ export default function UserEditPageV2() {
             title={t('users.denied.title', 'Akses ditolak')}
             description={t(
               'users.denied.desc',
-              'Hanya Super Admin yang dapat mengelola pengguna sistem.',
+              'Hanya Admin yang dapat mengelola pengguna sistem.',
             )}
             action={
               <Button

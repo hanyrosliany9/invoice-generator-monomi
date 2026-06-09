@@ -313,7 +313,13 @@ export default function ShotListEditorPageV2() {
   }
 
   const isPending = isSubmitting || saveMutation.isPending;
-  const projectLabel = shotList.project?.name ?? '—';
+  // Projects are identified by number + description (there is no `name` field),
+  // so build the label from those — mirrors the schedule editor.
+  const projectLabel = shotList.project
+    ? [shotList.project.number, shotList.project.description ?? shotList.project.name]
+        .filter(Boolean)
+        .join(' — ') || '—'
+    : '—';
 
   /* ---------- render ---------- */
   return (

@@ -998,9 +998,12 @@ export class QuotationsService {
     }
 
     // FIX 1 (CRITICAL): Idempotency guard for milestone — don't create a second
-    // invoice if this milestone already has one (re-entrance protection).
+    // invoice if this milestone already has a LIVE one (re-entrance protection).
+    // CANCELLED invoices don't count: a cancelled milestone invoice must be
+    // re-issuable, so exclude them here (and the milestone's isInvoiced is reset
+    // on cancel).
     const existingMilestoneInvoice = await this.prisma.invoice.findFirst({
-      where: { paymentMilestoneId: nextMilestone.id },
+      where: { paymentMilestoneId: nextMilestone.id, status: { not: "CANCELLED" } },
       select: { id: true, invoiceNumber: true },
     });
     if (existingMilestoneInvoice) {

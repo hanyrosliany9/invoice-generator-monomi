@@ -315,11 +315,16 @@ function App() {
                       <Route path='/salaries/payments/new' element={<AdminRoute><V2SalaryPaymentFormPage /></AdminRoute>} />
                       <Route path='/salaries/payments/:id/edit' element={<AdminRoute><V2SalaryPaymentFormPage /></AdminRoute>} />
 
-                      {/* Users / settings */}
+                      {/* User management is available to ADMIN + SUPER_ADMIN
+                          (backend @RequireAdmin) — full CRUD incl. role assignment. */}
                       <Route path='/users' element={<AdminRoute><V2UsersPage /></AdminRoute>} />
                       <Route path='/users/new' element={<AdminRoute><V2UserCreatePage /></AdminRoute>} />
                       <Route path='/users/:id/edit' element={<AdminRoute><V2UserEditPage /></AdminRoute>} />
-                      <Route path='/settings' element={<AdminRoute><V2SettingsPage /></AdminRoute>} />
+                      {/* Settings is reachable by ANY authenticated user — the page
+                          self-filters (Profile/Security/Notifications for everyone;
+                          Company/System/Backup for super-admin only). It's the only
+                          place a user can change their own password. */}
+                      <Route path='/settings' element={<V2SettingsPage />} />
                       <Route path='/settings/project-types' element={<AdminRoute><V2ProjectTypesPage /></AdminRoute>} />
 
                       {/* Reports */}
@@ -336,8 +341,10 @@ function App() {
                        *  accessible to every authenticated role.
                        * ─────────────────────────────────────────────────────────────── */}
 
-                      {/* Calendar / creative tooling */}
-                      <Route path='/calendar' element={<V2CalendarPage />} />
+                      {/* Calendar / creative tooling.
+                          Business calendar is admin-only; content calendar +
+                          all production/media tools are open to VIDEOGRAPHER. */}
+                      <Route path='/calendar' element={<AdminRoute><V2CalendarPage /></AdminRoute>} />
                       <Route path='/calendar/content' element={<V2ContentCalendarPage />} />
                       <Route path='/call-sheets' element={<V2CallSheetsListPage />} />
                       <Route path='/call-sheets/:id' element={<V2CallSheetEditorPage />} />
@@ -354,28 +361,30 @@ function App() {
                       <Route path='/media-downloader' element={<V2MediaDownloaderPage />} />
                       <Route path='/pinterest-downloader' element={<V2PinterestDownloaderPage />} />
 
-                      {/* Accounting suite */}
-                      <Route path='/accounting/chart-of-accounts' element={<V2ChartOfAccountsPage />} />
-                      <Route path='/accounting/depreciation' element={<V2DepreciationPage />} />
-                      <Route path='/accounting/ecl-provisions' element={<V2ECLProvisionPage />} />
-                      <Route path='/accounting/bank-reconciliations' element={<V2BankReconciliationsPage />} />
-                      <Route path='/accounting/bank-transfers' element={<V2BankTransfersPage />} />
-                      <Route path='/accounting/cash-bank-balance' element={<V2CashBankBalancePage />} />
-                      <Route path='/accounting/journal-entries' element={<V2JournalEntriesPage />} />
-                      <Route path='/accounting/journal-entries/create' element={<V2JournalEntryFormPage />} />
-                      <Route path='/accounting/journal-entries/:id/edit' element={<V2JournalEntryFormPage />} />
-                      <Route path='/accounting/adjusting-entries' element={<V2AdjustingEntryWizard />} />
-                      <Route path='/accounting/balance-sheet' element={<V2BalanceSheetPage />} />
-                      <Route path='/accounting/income-statement' element={<V2IncomeStatementPage />} />
-                      <Route path='/accounting/cash-flow' element={<V2CashFlowStatementPage />} />
-                      <Route path='/accounting/trial-balance' element={<V2TrialBalancePage />} />
-                      <Route path='/accounting/general-ledger' element={<V2GeneralLedgerPage />} />
-                      <Route path='/accounting/accounts-receivable' element={<V2AccountsReceivablePage />} />
-                      <Route path='/accounting/accounts-payable' element={<V2AccountsPayablePage />} />
-                      <Route path='/accounting/ar-aging' element={<V2ARAgingPage />} />
-                      <Route path='/accounting/ap-aging' element={<V2APAgingPage />} />
-                      <Route path='/accounting/cash-receipts' element={<V2CashReceiptsPage />} />
-                      <Route path='/accounting/cash-disbursements' element={<V2CashDisbursementsPage />} />
+                      {/* Accounting suite — admin-only (backend @RequireAdmin).
+                          Wrapped so a VIDEOGRAPHER can't reach a broken/403 page
+                          by URL; the nav already hides this whole section. */}
+                      <Route path='/accounting/chart-of-accounts' element={<AdminRoute><V2ChartOfAccountsPage /></AdminRoute>} />
+                      <Route path='/accounting/depreciation' element={<AdminRoute><V2DepreciationPage /></AdminRoute>} />
+                      <Route path='/accounting/ecl-provisions' element={<AdminRoute><V2ECLProvisionPage /></AdminRoute>} />
+                      <Route path='/accounting/bank-reconciliations' element={<AdminRoute><V2BankReconciliationsPage /></AdminRoute>} />
+                      <Route path='/accounting/bank-transfers' element={<AdminRoute><V2BankTransfersPage /></AdminRoute>} />
+                      <Route path='/accounting/cash-bank-balance' element={<AdminRoute><V2CashBankBalancePage /></AdminRoute>} />
+                      <Route path='/accounting/journal-entries' element={<AdminRoute><V2JournalEntriesPage /></AdminRoute>} />
+                      <Route path='/accounting/journal-entries/create' element={<AdminRoute><V2JournalEntryFormPage /></AdminRoute>} />
+                      <Route path='/accounting/journal-entries/:id/edit' element={<AdminRoute><V2JournalEntryFormPage /></AdminRoute>} />
+                      <Route path='/accounting/adjusting-entries' element={<AdminRoute><V2AdjustingEntryWizard /></AdminRoute>} />
+                      <Route path='/accounting/balance-sheet' element={<AdminRoute><V2BalanceSheetPage /></AdminRoute>} />
+                      <Route path='/accounting/income-statement' element={<AdminRoute><V2IncomeStatementPage /></AdminRoute>} />
+                      <Route path='/accounting/cash-flow' element={<AdminRoute><V2CashFlowStatementPage /></AdminRoute>} />
+                      <Route path='/accounting/trial-balance' element={<AdminRoute><V2TrialBalancePage /></AdminRoute>} />
+                      <Route path='/accounting/general-ledger' element={<AdminRoute><V2GeneralLedgerPage /></AdminRoute>} />
+                      <Route path='/accounting/accounts-receivable' element={<AdminRoute><V2AccountsReceivablePage /></AdminRoute>} />
+                      <Route path='/accounting/accounts-payable' element={<AdminRoute><V2AccountsPayablePage /></AdminRoute>} />
+                      <Route path='/accounting/ar-aging' element={<AdminRoute><V2ARAgingPage /></AdminRoute>} />
+                      <Route path='/accounting/ap-aging' element={<AdminRoute><V2APAgingPage /></AdminRoute>} />
+                      <Route path='/accounting/cash-receipts' element={<AdminRoute><V2CashReceiptsPage /></AdminRoute>} />
+                      <Route path='/accounting/cash-disbursements' element={<AdminRoute><V2CashDisbursementsPage /></AdminRoute>} />
 
                       {/* Unknown → home */}
                       <Route path='*' element={<Navigate to='/' replace />} />

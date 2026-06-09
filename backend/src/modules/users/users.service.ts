@@ -30,7 +30,58 @@ export class UsersService {
       },
     });
 
+    // A videographer's workspace is Media Collaboration, so grant a new
+    // videographer EDITOR access to every existing media project (mirrors the
+    // auto-grant done at project-creation time).
+    if (user.role === "VIDEOGRAPHER") {
+      await this.syncVideographerMediaAccess(user.id);
+    }
+
     return this.transformToResponse(user);
+  }
+
+  /**
+   * Ensure a videographer is an EDITOR collaborator on every media project.
+   * Called when a user is created as — or promoted to — VIDEOGRAPHER, so the
+   * Media Collaboration list is never empty for them. Idempotent; failures are
+   * logged, never thrown (the user write has already succeeded).
+   */
+  private async syncVideographerMediaAccess(userId: string): Promise<void> {
+    try {
+      const projects = await this.prisma.mediaProject.findMany({
+        select: { id: true, createdBy: true },
+      });
+      if (projects.length === 0) return;
+
+      const existing = await this.prisma.mediaCollaborator.findMany({
+        where: { userId, projectId: { in: projects.map((p) => p.id) } },
+        select: { projectId: true },
+      });
+      const have = new Set(existing.map((e) => e.projectId));
+
+      const toAdd = projects
+        .filter((p) => !have.has(p.id))
+        .map((p) => ({
+          projectId: p.id,
+          userId,
+          role: "EDITOR" as const,
+          invitedBy: p.createdBy,
+        }));
+
+      if (toAdd.length > 0) {
+        await this.prisma.mediaCollaborator.createMany({
+          data: toAdd,
+          skipDuplicates: true,
+        });
+        this.logger.log(
+          `Granted videographer ${userId} EDITOR access to ${toAdd.length} media project(s)`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to sync media access for videographer ${userId}: ${err}`,
+      );
+    }
   }
 
   async findAll(filters?: {
@@ -168,6 +219,12 @@ export class UsersService {
           `Failed to revoke refresh tokens for user ${id} after password change: ${err}`,
         );
       }
+    }
+
+    // If this update promotes the user to VIDEOGRAPHER, backfill their Media
+    // Collaboration access just like a freshly-created videographer.
+    if (updateUserDto.role === "VIDEOGRAPHER") {
+      await this.syncVideographerMediaAccess(id);
     }
 
     return this.transformToResponse(user);

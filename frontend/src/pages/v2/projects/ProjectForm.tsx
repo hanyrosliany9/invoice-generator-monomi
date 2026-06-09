@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, CalendarDays } from 'lucide-react';
 
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -241,6 +242,12 @@ export interface ProjectFormProps {
    * via the standard <button form={id}> association.
    */
   formId?: string;
+  /**
+   * Edit mode only: the project already exists, so the host can let the user
+   * record a REAL expense straight from the budget section. When provided, the
+   * Budget Estimate panel shows a "record actual" action that calls this.
+   */
+  onAddActualExpense?: () => void;
 }
 
 export const ProjectForm = ({
@@ -249,6 +256,7 @@ export const ProjectForm = ({
   isSubmitting,
   onSubmit,
   formId = 'project-form',
+  onAddActualExpense,
 }: ProjectFormProps) => {
   const { t } = useTranslation();
 
@@ -325,7 +333,16 @@ export const ProjectForm = ({
   return (
     <form
       id={formId}
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(onSubmit, (errs) => {
+        // Without this, a failed zod validation silently does nothing — the
+        // user clicks Save and sees no response ("failed to save"). Surface
+        // the first problem so the blocked submit is never silent.
+        const first = Object.values(errs)[0] as { message?: string } | undefined;
+        toast.error(
+          (first && typeof first.message === 'string' && first.message) ||
+            t('projectForm.fixErrors', 'Please fix the highlighted fields before saving.'),
+        );
+      })}
       noValidate
       className="space-y-6"
     >
@@ -822,6 +839,30 @@ export const ProjectForm = ({
             'Estimasi biaya langsung dan tidak langsung sebelum proyek dimulai. Disimpan sebagai referensi internal.',
           )}
         />
+
+        {/* Edit mode: the plan above is just estimates. When real money goes
+            out, record the actual expense here without leaving the page. */}
+        {onAddActualExpense && (
+          <div className="mb-5 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-sunken/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] leading-relaxed text-text-tertiary">
+              {t(
+                'projectForm.estimator.actualNote',
+                'These are planned amounts. When a real expense is paid, record the actual here — it posts to the ledger immediately, separate from saving the project.',
+              )}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onAddActualExpense}
+              disabled={isSubmitting}
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              {t('projectForm.estimator.addActual', 'Record real expense')}
+            </Button>
+          </div>
+        )}
 
         <Controller
           control={control}

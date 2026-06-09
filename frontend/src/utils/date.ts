@@ -54,12 +54,26 @@ export const formatLongDate = (date: Date | string): string => {
 }
 
 /**
- * Format date for forms (YYYY-MM-DD)
+ * LOCAL calendar date as "YYYY-MM-DD" (WIB for our users).
+ *
+ * IMPORTANT: never use `date.toISOString().slice(0,10)` for a date-only value —
+ * toISOString() converts to UTC, so for WIB (UTC+7) users in the evening/just
+ * after midnight it returns the PREVIOUS day. That silently shifted every "as
+ * of <date>" report and date filter by a day. Use this instead — it reads the
+ * browser's local (WIB) calendar parts.
  */
-export const formatFormDate = (date: Date | string): string => {
-  const targetDate = typeof date === 'string' ? new Date(date) : date
-  return targetDate.toISOString().split('T')[0]
+export const toLocalISODate = (date: Date | string = now()): string => {
+  const d = typeof date === 'string' ? new Date(date) : date
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
+
+/**
+ * Format date for forms (YYYY-MM-DD) — local/WIB calendar date.
+ */
+export const formatFormDate = (date: Date | string): string => toLocalISODate(date)
 
 /**
  * Format time only (HH:MM)

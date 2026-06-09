@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Loader2, AlertTriangle, Receipt, ChevronDown, FolderOpen } from 'lucide-react';
 
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -41,7 +42,10 @@ import {
 const npwpPattern = /^\d{2}\.\d{3}\.\d{3}\.\d{1}-\d{3}\.\d{3}$/;
 const nsfpPattern = /^\d{3}\.\d{3}-\d{2}\.\d{8}$/;
 
-const STATUS_VALUES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
+// Must mirror the Prisma ExpenseStatus enum exactly. 'PAID' was missing, so
+// editing any expense (all are auto-created PAID) failed zod validation on load
+// — the save silently did nothing / errored on the status field.
+const STATUS_VALUES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED'] as const;
 
 export const expenseFormSchema = z.object({
   // 01 · Rincian
@@ -99,7 +103,9 @@ export const emptyExpenseFormValues: ExpenseFormValues = {
   vendorName:        '',
   vendorNPWP:        '',
   vendorAddress:     '',
-  includePPN:        true,
+  // VAT off by default — most ad-hoc / reimbursable expenses are entered
+  // without PPN; the user toggles it on only when there's a faktur.
+  includePPN:        false,
   isLuxuryGoods:     false,
   ppnCategory:       PPNCategory.CREDITABLE,
   withholdingTaxType: WithholdingTaxType.NONE,
@@ -436,6 +442,31 @@ export const ExpenseForm = ({
     [categories, categoryId],
   );
 
+  // The dedicated "Reimbursable" category books to Piutang Lain-lain (1-2040),
+  // not an expense account. Reimbursable expenses are ALWAYS this category, so
+  // it is hidden from the normal picker and auto-assigned when billable.
+  const reimbursableCategory = useMemo(
+    () => categories.find((c) => c.accountCode === '1-2040'),
+    [categories],
+  );
+  const selectableCategories = useMemo(
+    () => categories.filter((c) => c.accountCode !== '1-2040'),
+    [categories],
+  );
+
+  // Keep categoryId in lockstep with the billable toggle: reimbursable → force
+  // the Piutang Lain-lain category (no picker); turning it off clears that
+  // category so the user must choose a real expense category.
+  useEffect(() => {
+    if (isBillable) {
+      if (reimbursableCategory && categoryId !== reimbursableCategory.id) {
+        setValue('categoryId', reimbursableCategory.id, { shouldDirty: true });
+      }
+    } else if (reimbursableCategory && categoryId === reimbursableCategory.id) {
+      setValue('categoryId', '', { shouldDirty: true });
+    }
+  }, [isBillable, reimbursableCategory, categoryId, setValue]);
+
   // When category changes, mirror category defaults into the form. This is
   // a soft nudge: PPN category and withholding type are auto-suggested but
   // remain user-overridable for edge cases (e.g. one-off vendor exemption).
@@ -472,23 +503,42 @@ export const ExpenseForm = ({
     };
   };
 
+  // Without a toast here, an unresolved category (categories still loading, or
+  // a stale categoryId) made buildPayload return null and the Save click did
+  // NOTHING — no error, no feedback. Surface it instead of failing silently.
   const submitPrimary: SubmitHandler<ExpenseFormValues> = (values) => {
     const payload = buildPayload(values);
-    if (!payload) return;
+    if (!payload) {
+      toast.error(t('expenseForm.categoryNotResolved', 'Expense category could not be resolved — please re-select it and try again.'));
+      return;
+    }
     onSubmit(payload);
   };
 
   const submitAndApprove = handleSubmit((values) => {
     const payload = buildPayload(values);
-    if (!payload || !onSubmitAndApprove) return;
+    if (!payload || !onSubmitAndApprove) {
+      if (!payload) toast.error(t('expenseForm.categoryNotResolved', 'Expense category could not be resolved — please re-select it and try again.'));
+      return;
+    }
     onSubmitAndApprove(payload);
+  }, () => {
+    toast.error(t('expenseForm.fixErrors', 'Please fix the highlighted fields before saving.'));
   });
 
   /* ---------- render ---------- */
   return (
     <form
       id={formId}
-      onSubmit={handleSubmit(submitPrimary)}
+      onSubmit={handleSubmit(submitPrimary, (errs) => {
+        // A failed zod validation used to do nothing (no onInvalid handler) —
+        // the user clicked Save and saw no response. Surface the first error.
+        const first = Object.values(errs)[0] as { message?: string } | undefined;
+        toast.error(
+          (first && typeof first.message === 'string' && first.message) ||
+            t('expenseForm.fixErrors', 'Please fix the highlighted fields before saving.'),
+        );
+      })}
       noValidate
       className="space-y-4"
     >
@@ -513,48 +563,61 @@ export const ExpenseForm = ({
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-              {/* Category */}
-              <div className="space-y-1.5 sm:col-span-2">
-                <FieldLabel required>{t('expenseForm.field.category', 'Expense Category')}</FieldLabel>
-                <Controller
-                  control={control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <Combobox
-                      value={field.value || undefined}
-                      onChange={field.onChange}
-                      disabled={categoriesLoading || isSubmitting}
-                      aria-invalid={!!errors.categoryId}
-                      className={cn(
-                        fieldInputClass,
-                        errors.categoryId && fieldInvalidClass,
-                      )}
-                      placeholder={t('expenseForm.field.categoryPlaceholder', 'Select expense category')}
-                      searchPlaceholder={t('expenseForm.field.categorySearch', 'Search by name or account code…')}
-                      emptyText={t('expenseForm.noCategories', 'No expense categories yet')}
-                      options={categories.map((cat) => ({
-                        value: cat.id,
-                        label: cat.nameId || cat.name,
-                        keywords: [cat.accountCode, cat.name, cat.nameId, cat.expenseClass],
-                        node: (
-                          <span className="flex items-baseline gap-2">
-                            <span className="font-mono text-xs text-text-tertiary">
-                              {cat.accountCode}
+              {/* Category — hidden for reimbursables: those always book to
+                  Piutang Lain-lain (1-2040), never an expense category. */}
+              {isBillable ? (
+                <div className="space-y-1.5 sm:col-span-2">
+                  <FieldLabel>{t('expenseForm.field.classification', 'Classification')}</FieldLabel>
+                  <div className="rounded-md border border-border-subtle bg-bg-sunken/40 px-4 py-3 text-sm text-text-secondary">
+                    {t('expenseForm.field.reimbursableClassification', 'Other Receivable · Piutang Lain-lain (1-2040)')}
+                    <span className="mt-0.5 block text-[11px] text-text-tertiary">
+                      {t('expenseForm.field.reimbursableClassificationHint', 'Reimbursable pass-through — no expense category needed.')}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5 sm:col-span-2">
+                  <FieldLabel required>{t('expenseForm.field.category', 'Expense Category')}</FieldLabel>
+                  <Controller
+                    control={control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <Combobox
+                        value={field.value || undefined}
+                        onChange={field.onChange}
+                        disabled={categoriesLoading || isSubmitting}
+                        aria-invalid={!!errors.categoryId}
+                        className={cn(
+                          fieldInputClass,
+                          errors.categoryId && fieldInvalidClass,
+                        )}
+                        placeholder={t('expenseForm.field.categoryPlaceholder', 'Select expense category')}
+                        searchPlaceholder={t('expenseForm.field.categorySearch', 'Search by name or account code…')}
+                        emptyText={t('expenseForm.noCategories', 'No expense categories yet')}
+                        options={selectableCategories.map((cat) => ({
+                          value: cat.id,
+                          label: cat.nameId || cat.name,
+                          keywords: [cat.accountCode, cat.name, cat.nameId, cat.expenseClass],
+                          node: (
+                            <span className="flex items-baseline gap-2">
+                              <span className="font-mono text-xs text-text-tertiary">
+                                {cat.accountCode}
+                              </span>
+                              <span className="truncate">{cat.nameId || cat.name}</span>
                             </span>
-                            <span className="truncate">{cat.nameId || cat.name}</span>
-                          </span>
-                        ),
-                      }))}
-                    />
+                          ),
+                        }))}
+                      />
+                    )}
+                  />
+                  {resolvedCategory && (
+                    <FieldHint>
+                      {resolvedCategory.accountCode} · {expenseClassLabel(resolvedCategory.expenseClass)}
+                    </FieldHint>
                   )}
-                />
-                {resolvedCategory && (
-                  <FieldHint>
-                    {resolvedCategory.accountCode} · {expenseClassLabel(resolvedCategory.expenseClass)}
-                  </FieldHint>
-                )}
-                <FieldError message={errors.categoryId?.message} />
-              </div>
+                  <FieldError message={errors.categoryId?.message} />
+                </div>
+              )}
 
               {/* Date */}
               <div className="space-y-1.5">
@@ -582,21 +645,38 @@ export const ExpenseForm = ({
                   <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs font-mono text-text-tertiary">
                     Rp
                   </span>
-                  <Input
-                    id="ef-gross"
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    step="1"
-                    placeholder="0"
-                    className={cn(
-                      fieldInputClass,
-                      'pl-9 text-right font-mono tabular-nums',
-                      errors.grossAmount && fieldInvalidClass,
+                  {/* Controlled so an empty/zero amount renders BLANK (placeholder
+                      "0" shows) instead of a literal "0" the user must delete
+                      before typing. Typing replaces cleanly; clearing → empty. */}
+                  <Controller
+                    control={control}
+                    name="grossAmount"
+                    render={({ field }) => (
+                      <Input
+                        id="ef-gross"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        step="1"
+                        placeholder="0"
+                        className={cn(
+                          fieldInputClass,
+                          'pl-9 text-right font-mono tabular-nums',
+                          errors.grossAmount && fieldInvalidClass,
+                        )}
+                        aria-invalid={!!errors.grossAmount}
+                        disabled={isSubmitting}
+                        value={
+                          field.value === 0 || field.value == null || Number.isNaN(field.value)
+                            ? ''
+                            : field.value
+                        }
+                        onChange={(e) =>
+                          field.onChange(e.target.value === '' ? 0 : Number(e.target.value))
+                        }
+                        onBlur={field.onBlur}
+                      />
                     )}
-                    aria-invalid={!!errors.grossAmount}
-                    disabled={isSubmitting}
-                    {...register('grossAmount', { valueAsNumber: true })}
                   />
                 </div>
                 <FieldError message={errors.grossAmount?.message} />
@@ -871,13 +951,22 @@ export const ExpenseForm = ({
                       </Label>
                       <p className="mt-0.5 text-[11px] text-text-tertiary">
                         {field.value
-                          ? t('expenseForm.field.billableOn', 'Cost will appear as a line item on the project invoice')
-                          : t('expenseForm.field.billableOff', 'Internal cost — not billed to client')}
+                          ? t('expenseForm.field.billableOn', 'Pass-through — booked to Piutang Lain-lain (1-2040), not an internal expense. Collected back from the client.')
+                          : t('expenseForm.field.billableOff', 'Internal cost — charged to the project expense account and reduces margin.')}
                       </p>
                     </div>
                   </div>
                 )}
               />
+
+              {isBillable && (
+                <div className="rounded-md border border-border-subtle bg-bg-sunken/40 px-4 py-3 text-[11px] leading-relaxed text-text-tertiary">
+                  {t(
+                    'expenseForm.field.billableExplain',
+                    'On save this posts DR Piutang Lain-lain (1-2040) / CR Cash — a receivable from the client, not a 5-xxx/6-xxx expense. When the client pays you back, record the reimbursement from the expense to reverse it (DR Cash / CR Piutang Lain-lain). The chosen category is kept for reference only.',
+                  )}
+                </div>
+              )}
 
               {isBillable && (
                 <div className="space-y-1.5">

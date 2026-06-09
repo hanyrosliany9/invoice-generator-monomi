@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
@@ -42,7 +43,7 @@ export default function StaffFormPage() {
         email: existing.email ?? undefined,
         phone: existing.phone ?? undefined,
         joinedDate: existing.joinedDate
-          ? new Date(existing.joinedDate).toISOString().slice(0, 10)
+          ? toLocalISODate(new Date(existing.joinedDate))
           : undefined,
         baseSalary: Number(existing.baseSalary),
         bankName: existing.bankName ?? undefined,

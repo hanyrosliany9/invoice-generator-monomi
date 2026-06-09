@@ -40,7 +40,7 @@ import { RequireAdmin } from "../auth/decorators/auth.decorators";
  * - Multi-line item management
  *
  * All endpoints require JWT authentication.
- * Approval operations require SUPER_ADMIN or FINANCE_MANAGER role.
+ * Approval operations require Admin role.
  */
 @ApiTags("purchase-orders")
 @ApiBearerAuth()
@@ -270,7 +270,7 @@ export class PurchaseOrdersController {
    * Records approver and approval date.
    * Creates PO commitment journal entry if recordCommitment is true.
    *
-   * Requires SUPER_ADMIN or FINANCE_MANAGER role.
+   * Requires Admin role.
    *
    * @param req - Request object with authenticated user
    * @param id - Purchase order ID
@@ -299,7 +299,7 @@ export class PurchaseOrdersController {
   @ApiResponse({
     status: 403,
     description:
-      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Access forbidden (requires Admin role)",
   })
   async approve(
     @Request() req: any,
@@ -316,7 +316,7 @@ export class PurchaseOrdersController {
    * Changes status from DRAFT to REJECTED.
    * Records rejection reason.
    *
-   * Requires SUPER_ADMIN or FINANCE_MANAGER role.
+   * Requires Admin role.
    *
    * @param req - Request object with authenticated user
    * @param id - Purchase order ID
@@ -344,7 +344,7 @@ export class PurchaseOrdersController {
   @ApiResponse({
     status: 403,
     description:
-      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Access forbidden (requires Admin role)",
   })
   async reject(
     @Request() req: any,
@@ -363,7 +363,7 @@ export class PurchaseOrdersController {
    * Only APPROVED or PARTIALLY_RECEIVED POs can be cancelled.
    * Cannot cancel if goods receipts are posted.
    *
-   * Requires SUPER_ADMIN or FINANCE_MANAGER role.
+   * Requires Admin role.
    *
    * @param req - Request object with authenticated user
    * @param id - Purchase order ID
@@ -392,7 +392,7 @@ export class PurchaseOrdersController {
   @ApiResponse({
     status: 403,
     description:
-      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Access forbidden (requires Admin role)",
   })
   async cancel(
     @Request() req: any,
@@ -410,7 +410,7 @@ export class PurchaseOrdersController {
    * Changes status to CLOSED.
    * Only APPROVED or PARTIALLY_RECEIVED POs can be closed.
    *
-   * Requires SUPER_ADMIN or FINANCE_MANAGER role.
+   * Requires Admin role.
    *
    * @param req - Request object with authenticated user
    * @param id - Purchase order ID
@@ -437,7 +437,7 @@ export class PurchaseOrdersController {
   @ApiResponse({
     status: 403,
     description:
-      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Access forbidden (requires Admin role)",
   })
   async close(@Request() req: any, @Param("id") id: string) {
     const userId = req.user.id;

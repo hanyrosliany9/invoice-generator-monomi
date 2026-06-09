@@ -487,7 +487,7 @@ export default function ReportDetailPageV2() {
                 onClick={() => navigate(`/reports/${report.id}/edit`)}
               >
                 <Pencil className="h-4 w-4" />
-                {t('common.edit', 'Ubah')}
+                {t('common.edit', 'Edit')}
               </Button>
             )}
             <DropdownMenu>
@@ -496,7 +496,7 @@ export default function ReportDetailPageV2() {
                   variant="ghost"
                   size="icon-sm"
                   className="text-text-tertiary hover:text-text-primary"
-                  aria-label={t('common.moreActions', 'Tindakan lain')}
+                  aria-label={t('common.moreActions', 'More Actions')}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -538,7 +538,7 @@ export default function ReportDetailPageV2() {
                   className="text-danger focus:text-danger"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  {t('common.delete', 'Hapus')}
+                  {t('common.delete', 'Delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

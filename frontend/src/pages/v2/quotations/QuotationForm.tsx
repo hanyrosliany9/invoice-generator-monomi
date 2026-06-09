@@ -9,7 +9,7 @@
 // of mode, which is the whole point of v2.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 
 import { clientService } from '@/services/clients';
 import { projectService } from '@/services/projects';
+import { expenseService } from '@/services/expenses';
 import type { Quotation } from '@/services/quotations';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -254,7 +255,7 @@ export const QuotationForm = ({
     values: defaultValues as QuotationFormValues,
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control,
     name: 'lineItems',
   });
@@ -298,6 +299,59 @@ export const QuotationForm = ({
       setValue('projectId', '', { shouldDirty: true });
     }
   }, [watchedClientId, watchedProjectId, allProjects, setValue]);
+
+  // Prefill line items from the selected project's products (create mode only).
+  // Project products live in priceBreakdown.products — without this the
+  // quotation started blank even though the project already had products
+  // ("disintegration between projects and quotation"). A ref guard ensures we
+  // only hydrate once per project selection so we never clobber user edits.
+  // Outstanding reimbursable expenses for the selected project — billed back to
+  // the client, so they appear on the quotation/invoice as separate lines.
+  // NB: the backend isBillable query filter doesn't parse the string param, so
+  // we fetch the project's expenses and filter (billable + not yet reimbursed)
+  // client-side.
+  const { data: reimbData, isFetching: reimbFetching } = useQuery({
+    queryKey: ['project-reimbursables', watchedProjectId],
+    queryFn: () => expenseService.getExpenses({ projectId: watchedProjectId, limit: 100 }),
+    enabled: mode === 'create' && !!watchedProjectId,
+  });
+  const reimbursables = useMemo(
+    () => (reimbData?.data ?? []).filter((e: any) => e.isBillable && !e.reimbursedAt),
+    [reimbData],
+  );
+
+  const prefilledForProjectRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (mode !== 'create') return;
+    if (!watchedProjectId) {
+      prefilledForProjectRef.current = null;
+      return;
+    }
+    if (prefilledForProjectRef.current === watchedProjectId) return;
+    if (reimbFetching) return; // wait for reimbursables before hydrating once
+    const project = allProjects.find((p) => p.id === watchedProjectId);
+    if (!project) return;
+    prefilledForProjectRef.current = watchedProjectId;
+    const products = (project as { priceBreakdown?: { products?: any[] } })?.priceBreakdown?.products;
+    const productLines = Array.isArray(products)
+      ? products.map((prod: any) => ({
+          name: prod?.name ?? '',
+          description: prod?.description ?? '',
+          quantity: Number(prod?.quantity) || 1,
+          price: Number(prod?.price) || 0,
+        }))
+      : [];
+    // Reimbursable cost-recovery lines, clearly labelled and distinct from
+    // services. (Quotation = estimate; the GL clearing happens on the invoice.)
+    const reimbLines = reimbursables.map((e: any) => ({
+      name: `[Reimburse] ${e.vendorName || e.description || 'Biaya'}`,
+      description: e.description ?? '',
+      quantity: 1,
+      price: Number(e.billableAmount ?? e.totalAmount) || 0,
+    }));
+    const combined = [...productLines, ...reimbLines];
+    if (combined.length > 0) replace(combined);
+  }, [watchedProjectId, allProjects, mode, replace, reimbFetching, reimbursables]);
 
   // ── Totals (live) ──
   // Computed inline (NOT memoised): react-hook-form's watch() mutates the

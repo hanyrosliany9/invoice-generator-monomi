@@ -77,6 +77,8 @@ type FormValues = z.infer<ReturnType<typeof makeFormSchema>>;
 
 const TRANSACTION_TYPE_KEYS: Record<string, string> = {
   ADJUSTMENT:           'accounting.journalEntryForm.transactionTypeAdjustment',
+  PURCHASE:             'accounting.journalEntryForm.transactionTypePurchase',
+  ASSET_PURCHASE:       'accounting.journalEntryForm.transactionTypeAssetPurchase',
   CASH_RECEIPT:         'accounting.journalEntryForm.transactionTypeCashReceipt',
   CASH_DISBURSEMENT:    'accounting.journalEntryForm.transactionTypeCashDisbursement',
   DEPRECIATION:         'accounting.journalEntryForm.transactionTypeDepreciation',
@@ -243,7 +245,12 @@ export default function JournalEntryFormPageV2() {
   });
 
   /* ----- submit handlers ----- */
-  const buildPayload = (values: FormValues): Partial<JournalEntry> => ({
+  // NB: the WRITE API (create/update DTO) expects line-item amounts as
+  // `debit`/`credit`, while the READ API returns them as `debitAmount`/
+  // `creditAmount`. buildPayload mapped to the read names, so the backend
+  // whitelist rejected the body ("property debitAmount should not exist") and
+  // Save & Post 400'd. Emit the write names.
+  const buildPayload = (values: FormValues): any => ({
     entryDate:       values.entryDate.toISOString(),
     transactionType: values.transactionType,
     transactionId:   id || `MANUAL-${Date.now()}`,
@@ -256,8 +263,8 @@ export default function JournalEntryFormPageV2() {
       accountCode:   l.accountCode,
       description:   l.descriptionId || values.descriptionId,
       descriptionId: l.descriptionId || values.descriptionId,
-      debitAmount:   toNumber(l.debit),
-      creditAmount:  toNumber(l.credit),
+      debit:         toNumber(l.debit),
+      credit:        toNumber(l.credit),
     })),
   });
 

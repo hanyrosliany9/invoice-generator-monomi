@@ -595,15 +595,18 @@ export class ContentCalendarService {
     userId: string,
     userRole: UserRole,
   ): void {
-    // SUPER_ADMIN can modify anything
-    if (userRole === UserRole.SUPER_ADMIN) {
+    // ADMIN / SUPER_ADMIN can modify anything (admin == super-admin).
+    if (
+      userRole === UserRole.SUPER_ADMIN ||
+      userRole === UserRole.ADMIN
+    ) {
       return;
     }
 
     // Other users can only modify their own content
     if (content.createdBy !== userId) {
       throw new ForbiddenException(
-        "You do not have permission to modify this content. Only the creator or SUPER_ADMIN can modify it.",
+        "You do not have permission to modify this content. Only the creator or an admin can modify it.",
       );
     }
   }

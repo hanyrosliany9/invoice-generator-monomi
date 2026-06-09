@@ -100,6 +100,43 @@ const PLATFORM_LABEL: Record<string, string> = {
 const formatPlatform = (p?: string | null) =>
   PLATFORM_LABEL[(p ?? 'unknown').toLowerCase()] ?? (p ?? 'Unknown');
 
+/* ------------------------------------------------------------------ */
+/*  Client-side platform detection — mirrors the backend's detector.   */
+/*  This is the SOURCE OF TRUTH for enabling the download button.      */
+/*  We intentionally do NOT gate the button on the server's            */
+/*  `isSupported`, because that field comes from a live                */
+/*  `yt-dlp --simulate` round-trip that is slow and is frequently      */
+/*  blocked by YouTube bot-detection on datacenter IPs. A false        */
+/*  negative there used to silently disable the button with no         */
+/*  feedback — the "pasted a link, can't press Download" bug. The      */
+/*  server /detect result stays advisory: it enriches the badge and    */
+/*  drives the optional media preview only.                            */
+/* ------------------------------------------------------------------ */
+const SUPPORTED_PLATFORMS = new Set([
+  'youtube', 'instagram', 'tiktok', 'twitter', 'facebook', 'vimeo', 'pinterest',
+]);
+
+function detectPlatformLocal(rawUrl: string): string {
+  const u = rawUrl.toLowerCase();
+  if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+  if (u.includes('instagram.com')) return 'instagram';
+  if (u.includes('tiktok.com')) return 'tiktok';
+  if (u.includes('twitter.com') || u.includes('x.com')) return 'twitter';
+  if (u.includes('facebook.com') || u.includes('fb.watch')) return 'facebook';
+  if (u.includes('vimeo.com')) return 'vimeo';
+  if (u.includes('pinterest.com') || u.includes('pin.it')) return 'pinterest';
+  return 'unknown';
+}
+
+function isValidHttpUrl(raw: string): boolean {
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 const formatDuration = (seconds?: number): string => {
   if (!seconds) return '—';
   const h = Math.floor(seconds / 3600);
@@ -166,7 +203,15 @@ export default function MediaDownloaderPageV2() {
 
   const debouncedUrl = useDebouncedValue(url.trim(), 600);
 
-  /* ---- platform detection on debounced URL ---- */
+  /* ---- client-side detection: instant, drives the Download button ---- */
+  const trimmedUrl = url.trim();
+  const localPlatform = useMemo(() => detectPlatformLocal(trimmedUrl), [trimmedUrl]);
+  const localSupported = useMemo(
+    () => isValidHttpUrl(trimmedUrl) && SUPPORTED_PLATFORMS.has(localPlatform),
+    [trimmedUrl, localPlatform],
+  );
+
+  /* ---- platform detection on debounced URL (advisory only) ---- */
   const { data: platform, isFetching: detecting } = useQuery<PlatformDetection | null>({
     queryKey: ['media-downloader', 'detect', debouncedUrl],
     queryFn: () => mediaDownloaderService.detectPlatform(debouncedUrl),
@@ -191,7 +236,7 @@ export default function MediaDownloaderPageV2() {
   const downloadMutation = useMutation({
     mutationFn: () =>
       mediaDownloaderService.quickDownload({
-        url: debouncedUrl,
+        url: trimmedUrl,
         quality,
         audioOnly,
       }),
@@ -201,8 +246,8 @@ export default function MediaDownloaderPageV2() {
       toast.success(t('mediaDownloader.startSuccess', 'Unduhan dimulai — periksa folder Downloads Anda.'));
       const entry: DownloadEntry = {
         id: crypto.randomUUID(),
-        url: debouncedUrl,
-        platform: platform?.platform ?? 'unknown',
+        url: trimmedUrl,
+        platform: platform?.platform ?? localPlatform,
         title: mediaInfo?.title,
         thumbnail: mediaInfo?.thumbnail,
         quality,
@@ -220,8 +265,8 @@ export default function MediaDownloaderPageV2() {
       toast.error(message);
       const entry: DownloadEntry = {
         id: crypto.randomUUID(),
-        url: debouncedUrl,
-        platform: platform?.platform ?? 'unknown',
+        url: trimmedUrl,
+        platform: platform?.platform ?? localPlatform,
         quality,
         audioOnly,
         status: 'failed',
@@ -276,14 +321,14 @@ export default function MediaDownloaderPageV2() {
     return { total, success, failed, rate };
   }, [history]);
 
-  /* ---- derived state for the action button ---- */
-  const platformSupported = !!platform?.isSupported;
-  const isPinterest = platform?.platform === 'pinterest';
-  const canDownload =
-    debouncedUrl.length >= 10
-    && platformSupported
-    && !isPinterest
-    && !downloading;
+  /* ---- derived state for the action button ----
+     The button is gated on LOCAL detection only (see detectPlatformLocal),
+     so a slow/blocked server `yt-dlp --simulate` can never silently lock
+     it. The server's detection just enriches the badge when it arrives. */
+  const displayPlatform =
+    platform?.platform ?? (localPlatform !== 'unknown' ? localPlatform : undefined);
+  const isPinterest = displayPlatform === 'pinterest';
+  const canDownload = localSupported && !isPinterest && !downloading;
 
   return (
     <Shell user={user}>
@@ -342,16 +387,11 @@ export default function MediaDownloaderPageV2() {
 
           {/* Inline status under the URL — single line, no modal noise */}
           <div className="mt-3 min-h-[20px] flex items-center gap-2 text-xs">
-            {url.length === 0 ? (
+            {trimmedUrl.length === 0 ? (
               <span className="text-text-tertiary">
                 {t('mediaDownloader.supportedPlatforms', 'Mendukung YouTube, Instagram, TikTok, Twitter, Facebook, Vimeo.')}
               </span>
-            ) : detecting || loadingInfo ? (
-              <span className="inline-flex items-center gap-1.5 text-text-tertiary">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                {t('mediaDownloader.detecting', 'Memeriksa tautan…')}
-              </span>
-            ) : platform && platformSupported ? (
+            ) : localSupported ? (
               <>
                 <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                 <span className="text-text-secondary">
@@ -361,23 +401,30 @@ export default function MediaDownloaderPageV2() {
                   variant="outline"
                   className="border-transparent bg-accent-navy/15 text-accent-navy px-2 py-0.5 text-[10px] font-medium"
                 >
-                  {formatPlatform(platform.platform)}
-                  {platform.contentType ? ` · ${platform.contentType}` : ''}
+                  {formatPlatform(displayPlatform)}
+                  {platform?.contentType ? ` · ${platform.contentType}` : ''}
                 </Badge>
                 {isPinterest && (
                   <span className="text-text-tertiary">
                     {t('mediaDownloader.usePinterestPage', '— gunakan halaman Pinterest untuk batch.')}
                   </span>
                 )}
+                {(detecting || loadingInfo) && (
+                  <Loader2 className="h-3 w-3 animate-spin text-text-tertiary" />
+                )}
               </>
-            ) : platform && !platformSupported ? (
+            ) : trimmedUrl.length >= 10 ? (
               <>
                 <XCircle className="h-3.5 w-3.5 text-danger" />
                 <span className="text-text-secondary">
-                  {t('mediaDownloader.notSupported', 'Platform')} <span className="text-text-primary">{formatPlatform(platform.platform)}</span> {t('mediaDownloader.notSupportedSuffix', 'belum didukung.')}
+                  {t('mediaDownloader.notSupported', 'Platform')} <span className="text-text-primary">{formatPlatform(displayPlatform ?? 'unknown')}</span> {t('mediaDownloader.notSupportedSuffix', 'belum didukung.')}
                 </span>
               </>
-            ) : null}
+            ) : (
+              <span className="text-text-tertiary">
+                {t('mediaDownloader.supportedPlatforms', 'Mendukung YouTube, Instagram, TikTok, Twitter, Facebook, Vimeo.')}
+              </span>
+            )}
           </div>
         </div>
 

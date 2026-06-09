@@ -584,7 +584,9 @@ export class ExternalApisService {
    */
   async searchAddresses(
     query: string,
-  ): Promise<Array<{ value: string; label: string }>> {
+  ): Promise<
+    Array<{ value: string; label: string; lat?: number; lng?: number }>
+  > {
     this.logger.log(
       `[searchAddresses] Querying Nominatim for: "${query}" (Indonesia only)`,
     );
@@ -607,9 +609,13 @@ export class ExternalApisService {
         `[searchAddresses] Nominatim returned ${response.data?.length || 0} Indonesian results`,
       );
 
+      // Carry lat/lng so the caller can store coordinates at selection time —
+      // this avoids a second (flaky / rate-limited) geocode during auto-fill.
       const results = response.data.map((item: any) => ({
         value: item.display_name,
         label: item.display_name,
+        lat: item.lat != null ? parseFloat(item.lat) : undefined,
+        lng: item.lon != null ? parseFloat(item.lon) : undefined,
       }));
 
       return results;

@@ -289,6 +289,40 @@ async function main() {
   console.log('💰 Creating Indonesian expense categories...');
 
   // Beban Penjualan (Selling Expenses) - 6-1xxx
+  // Dedicated category for REIMBURSABLE pass-through costs. These are not beban
+  // — they book to Piutang Lain-lain (1-2040 Other Receivable). The expense form
+  // hides the normal category picker and auto-assigns this when "billable" is on.
+  // Identified app-side by accountCode '1-2040'; never offered as a normal pick.
+  await prisma.expenseCategory.upsert({
+    where: { code: 'REIMBURSABLE' },
+    update: {
+      accountCode: '1-2040',
+      name: 'Reimbursable (Other Receivable)',
+      nameId: 'Reimburse (Piutang Lain-lain)',
+      isBillable: true,
+      isActive: true,
+    },
+    create: {
+      id: 'reimbursable-piutang-lainlain',
+      code: 'REIMBURSABLE',
+      accountCode: '1-2040',
+      expenseClass: 'OTHER',
+      name: 'Reimbursable (Other Receivable)',
+      nameId: 'Reimburse (Piutang Lain-lain)',
+      description: 'Costs paid on the client\'s behalf and billed back — booked to Piutang Lain-lain (1-2040), not an expense.',
+      descriptionId: 'Biaya yang ditalangi untuk klien dan ditagihkan kembali — dibukukan ke Piutang Lain-lain (1-2040), bukan beban.',
+      color: '#1890ff',
+      defaultPPNRate: 0.00,
+      isLuxuryGoods: false,
+      isBillable: true,
+      withholdingTaxType: 'NONE',
+      requiresReceipt: false,
+      requiresEFaktur: false,
+      approvalRequired: false,
+      sortOrder: 999,
+    },
+  });
+
   const expenseCategorySelling = await prisma.expenseCategory.upsert({
     where: { code: 'SELLING_SALARIES' },
     update: {},
@@ -611,6 +645,26 @@ async function main() {
     },
   });
 
+  // Unbilled Revenue / Work in Progress (1-2020) — used by revenue recognition
+  // (PSAK 72 / POC) before an invoice is issued. Posting code references this code
+  // (revenue-recognition.service, project-costing.service), so it MUST exist.
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '1-2020' },
+    update: {},
+    create: {
+      code: '1-2020',
+      name: 'Unbilled Revenue',
+      nameId: 'Pendapatan Belum Ditagih',
+      accountType: 'ASSET',
+      accountSubType: 'CURRENT_ASSET',
+      normalBalance: 'DEBIT',
+      isControlAccount: true,
+      isSystemAccount: true,
+      description: 'Revenue recognized but not yet billed (WIP / POC)',
+      descriptionId: 'Pendapatan diakui namun belum ditagih (WIP / POC)',
+    },
+  });
+
   // Prepaid Expenses (1-3xxx)
   const accountPrepaidExpenses = await prisma.chartOfAccounts.upsert({
     where: { code: '1-3010' },
@@ -709,6 +763,26 @@ async function main() {
       isSystemAccount: true,
       description: 'Accounts payable to vendors',
       descriptionId: 'Hutang kepada vendor',
+    },
+  });
+
+  // Deferred Revenue / PO Commitments (2-1020) — used by revenue recognition
+  // (advance/deferred income) and PO-commitment postings (journal.service). Posting
+  // code references this code, so it MUST exist or those journals fail validation.
+  await prisma.chartOfAccounts.upsert({
+    where: { code: '2-1020' },
+    update: {},
+    create: {
+      code: '2-1020',
+      name: 'Deferred Revenue',
+      nameId: 'Pendapatan Diterima Dimuka',
+      accountType: 'LIABILITY',
+      accountSubType: 'CURRENT_LIABILITY',
+      normalBalance: 'CREDIT',
+      isControlAccount: true,
+      isSystemAccount: true,
+      description: 'Unearned revenue / PO commitments (recognized when earned)',
+      descriptionId: 'Pendapatan diterima dimuka / komitmen PO',
     },
   });
 
@@ -2739,6 +2813,57 @@ async function main() {
   });
 
   console.log('📊 Chart of Accounts created: 160+ accounts (Comprehensive PSAK-compliant)');
+
+  // ── Backfill expense categories from EVERY expense-type COA account ──────────
+  // The expense form's category picker is driven by expense_categories. Rather
+  // than hand-curate a subset (which left most COA accounts unpickable), mirror
+  // the full chart: one category per active 5-xxx (COGS/direct), 6-xxx (OpEx),
+  // 8-xxx (other expense) account. Idempotent — skips accounts that already have
+  // a category. expenseClass is derived from the code prefix.
+  {
+    const expenseCoa = await prisma.chartOfAccounts.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { code: { startsWith: '5-' } },
+          { code: { startsWith: '6-' } },
+          { code: { startsWith: '8-' } },
+        ],
+      },
+      select: { code: true, name: true, nameId: true },
+    });
+    const classFor = (code: string): 'COGS' | 'SELLING' | 'GENERAL_ADMIN' | 'OTHER' =>
+      code.startsWith('5-') ? 'COGS'
+      : code.startsWith('6-1') ? 'SELLING'
+      : code.startsWith('8-') ? 'OTHER'
+      : 'GENERAL_ADMIN';
+    let made = 0;
+    for (const a of expenseCoa) {
+      const existing = await prisma.expenseCategory.findFirst({
+        where: { OR: [{ code: a.code }, { accountCode: a.code }] },
+        select: { id: true },
+      });
+      if (existing) continue;
+      await prisma.expenseCategory.create({
+        data: {
+          code: a.code,
+          accountCode: a.code,
+          expenseClass: classFor(a.code) as any,
+          name: a.name,
+          nameId: a.nameId,
+          defaultPPNRate: 0.11,
+          isActive: true,
+          isBillable: false,
+          requiresReceipt: false,
+          requiresEFaktur: false,
+          approvalRequired: false,
+        },
+      });
+      made++;
+    }
+    console.log(`💰 Expense categories backfilled from COA: +${made} (every expense account is now selectable)`);
+  }
+
   console.log('  🎨 DIGITAL CREATIVE AGENCY EDITION - ENHANCED');
   console.log('  ');
   console.log('  - ASET (Assets): 33 accounts');

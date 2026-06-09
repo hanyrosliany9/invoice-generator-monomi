@@ -58,6 +58,66 @@ export class SchedulesService {
     return { success: true };
   }
 
+  /**
+   * Import every scene from a shot list into a shoot day as SCENE strips.
+   * Scenes are appended after any existing strips on the target day, in scene
+   * order. Atomic: all scenes are created in one transaction.
+   */
+  async importFromShotList(
+    scheduleId: string,
+    shotListId: string,
+    shootDayId: string,
+  ) {
+    const schedule = await this.prisma.shootingSchedule.findUnique({
+      where: { id: scheduleId },
+      select: { projectId: true },
+    });
+    if (!schedule) throw new NotFoundException("Schedule not found");
+
+    const day = await this.prisma.shootDay.findUnique({
+      where: { id: shootDayId },
+    });
+    if (!day || day.scheduleId !== scheduleId) {
+      throw new NotFoundException("Shoot day not found for this schedule");
+    }
+
+    const shotList = await this.prisma.shotList.findUnique({
+      where: { id: shotListId },
+      include: { scenes: { orderBy: { order: "asc" } } },
+    });
+    if (!shotList) throw new NotFoundException("Shot list not found");
+    // Guard: only import from a shot list on the same project as the schedule.
+    if (schedule.projectId && shotList.projectId !== schedule.projectId) {
+      throw new NotFoundException("Shot list belongs to a different project");
+    }
+
+    const maxOrder = await this.prisma.scheduleStrip.aggregate({
+      where: { shootDayId },
+      _max: { order: true },
+    });
+    let order = (maxOrder._max.order ?? -1) + 1;
+
+    await this.prisma.$transaction(
+      shotList.scenes.map((scene) =>
+        this.prisma.scheduleStrip.create({
+          data: {
+            shootDayId,
+            order: order++,
+            stripType: "SCENE",
+            sceneId: scene.id,
+            sceneNumber: scene.sceneNumber,
+            sceneName: scene.name,
+            intExt: scene.intExt,
+            dayNight: scene.dayNight,
+            location: scene.location,
+          },
+        }),
+      ),
+    );
+
+    return this.findOne(scheduleId);
+  }
+
   async autoSchedule(id: string, groupBy: "location" | "intExt" | "dayNight") {
     // Get the schedule with all data
     const schedule = await this.prisma.shootingSchedule.findUnique({

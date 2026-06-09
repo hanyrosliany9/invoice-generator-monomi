@@ -7,6 +7,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { JournalService } from "./journal.service";
 import { ECLProvisionStatus, TransactionType } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
+import { servicesPortionOf } from "../../../common/utils/reimbursable.util";
 
 /**
  * PSAK 71: Expected Credit Loss (ECL) Provision Service
@@ -111,7 +112,10 @@ export class ECLService {
       (sum, payment) => sum + Number(payment.amount),
       0,
     );
-    const outstandingAmount = Number(invoice.totalAmount) - totalPaid;
+    // ECL (PSAK 71) is assessed on the TRADE receivable only — the services
+    // portion. The reimbursable portion is a pass-through in 1-2040, not trade AR.
+    const eclServicesAmount = servicesPortionOf(invoice);
+    const outstandingAmount = Math.max(0, eclServicesAmount - Math.min(totalPaid, eclServicesAmount));
 
     if (outstandingAmount <= 0) {
       throw new BadRequestException("Invoice has no outstanding balance");
@@ -357,7 +361,10 @@ export class ECLService {
           (sum, payment) => sum + Number(payment.amount),
           0,
         );
-        const outstandingAmount = Number(invoice.totalAmount) - totalPaid;
+        // ECL (PSAK 71) is assessed on the TRADE receivable only — the services
+    // portion. The reimbursable portion is a pass-through in 1-2040, not trade AR.
+    const eclServicesAmount = servicesPortionOf(invoice);
+    const outstandingAmount = Math.max(0, eclServicesAmount - Math.min(totalPaid, eclServicesAmount));
 
         // Skip if fully paid
         if (outstandingAmount <= 0.01) {

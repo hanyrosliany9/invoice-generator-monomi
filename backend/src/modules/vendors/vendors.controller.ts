@@ -33,7 +33,7 @@ import { RequireAdmin } from "../auth/decorators/auth.decorators";
  * - Statistics and analytics
  *
  * All endpoints require JWT authentication.
- * Creation and deletion require SUPER_ADMIN role.
+ * Creation and deletion require Admin role.
  */
 @ApiTags("vendors")
 @ApiBearerAuth()
@@ -46,7 +46,7 @@ export class VendorsController {
    * Create a new vendor
    *
    * Creates a new vendor with Indonesian tax compliance validation.
-   * Requires SUPER_ADMIN role.
+   * Requires Admin role.
    *
    * Validates:
    * - NPWP format (15 digits) if PKP status
@@ -61,7 +61,7 @@ export class VendorsController {
   @ApiOperation({
     summary: "Create a new vendor",
     description:
-      "Create vendor with Indonesian tax compliance validation (requires SUPER_ADMIN role)",
+      "Create vendor with Indonesian tax compliance validation (requires Admin role)",
   })
   @ApiResponse({
     status: 201,
@@ -73,7 +73,7 @@ export class VendorsController {
   })
   @ApiResponse({
     status: 403,
-    description: "Access forbidden (requires SUPER_ADMIN role)",
+    description: "Access forbidden (requires Admin role)",
   })
   async create(@Request() req: any, @Body() createVendorDto: CreateVendorDto) {
     const userId = req.user.id;
@@ -195,7 +195,7 @@ export class VendorsController {
    * Update a vendor
    *
    * Updates vendor information with validation.
-   * Requires SUPER_ADMIN or FINANCE_MANAGER role.
+   * Requires Admin role.
    *
    * Validates:
    * - NPWP format if changing to PKP
@@ -210,7 +210,7 @@ export class VendorsController {
   @ApiOperation({
     summary: "Update vendor",
     description:
-      "Update vendor information (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Update vendor information (requires Admin role)",
   })
   @ApiParam({ name: "id", description: "Vendor ID" })
   @ApiResponse({
@@ -228,7 +228,7 @@ export class VendorsController {
   @ApiResponse({
     status: 403,
     description:
-      "Access forbidden (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Access forbidden (requires Admin role)",
   })
   async update(
     @Request() req: any,
@@ -244,7 +244,7 @@ export class VendorsController {
    *
    * Deletes a vendor if not used in any transactions.
    * If vendor has related records, prevents deletion.
-   * Requires SUPER_ADMIN role.
+   * Requires Admin role.
    *
    * Recommended: Set vendor as inactive instead of deleting.
    *
@@ -256,7 +256,7 @@ export class VendorsController {
   @ApiOperation({
     summary: "Delete vendor",
     description:
-      "Delete vendor (requires SUPER_ADMIN role, only if not used in transactions)",
+      "Delete vendor (requires Admin role, only if not used in transactions)",
   })
   @ApiParam({ name: "id", description: "Vendor ID" })
   @ApiResponse({
@@ -273,7 +273,7 @@ export class VendorsController {
   })
   @ApiResponse({
     status: 403,
-    description: "Access forbidden (requires SUPER_ADMIN role)",
+    description: "Access forbidden (requires Admin role)",
   })
   async remove(@Param("id") id: string) {
     return this.vendorsService.remove(id);

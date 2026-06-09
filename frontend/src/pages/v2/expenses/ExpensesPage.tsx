@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateAccountingQueries } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -204,6 +205,7 @@ export default function ExpensesPageV2() {
         return old;
       });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      invalidateAccountingQueries(queryClient); // delete reverses the GL journal
     },
     onError: (err: unknown) => {
       const msg =
@@ -652,6 +654,20 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
                 </Badge>
                 <Badge variant={getPaymentVariant(e.paymentStatus)} className="text-[10px]">
                   {getPaymentLabel(e.paymentStatus)}
+                </Badge>
+                {/* GL posting indicator — confirms the expense reached the ledger. */}
+                <Badge
+                  variant="outline"
+                  className={cn('text-[10px]', e.paymentJournalId
+                    ? 'border-transparent bg-success/15 text-success'
+                    : 'text-text-tertiary')}
+                  title={e.paymentJournalId
+                    ? t('expensesPage.glPostedAria', 'Posted to the General Ledger')
+                    : t('expensesPage.glPendingAria', 'Not yet posted to the General Ledger')}
+                >
+                  {e.paymentJournalId
+                    ? t('expensesPage.glPosted', 'GL ✓')
+                    : t('expensesPage.glPending', 'GL —')}
                 </Badge>
               </div>
             );

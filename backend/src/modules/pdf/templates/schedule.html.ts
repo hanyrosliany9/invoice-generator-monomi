@@ -6,19 +6,6 @@
 import { escapeHtml } from "./escape-html.util";
 
 export function generateScheduleHTML(schedule: any): string {
-  const STRIP_COLORS: Record<string, string> = {
-    INT_DAY: "#FFFFFF",
-    INT_NIGHT: "#FFE4B5",
-    EXT_DAY: "#90EE90",
-    EXT_NIGHT: "#87CEEB",
-    "INT/EXT_DAY": "#FFD700",
-    "INT/EXT_NIGHT": "#DDA0DD",
-    DAY_BREAK: "#4A5568",
-    MEAL_BREAK: "#F6AD55",
-    COMPANY_MOVE: "#9F7AEA",
-    NOTE: "#63B3ED",
-  };
-
   const BANNER_ICONS: Record<string, string> = {
     DAY_BREAK: "🌙",
     MEAL_BREAK: "🍽️",
@@ -26,44 +13,29 @@ export function generateScheduleHTML(schedule: any): string {
     NOTE: "📝",
   };
 
-  const getStripColor = (strip: any) => {
-    if (strip.stripType === "BANNER") {
-      return STRIP_COLORS[strip.bannerType] || STRIP_COLORS.NOTE;
-    }
-    return (
-      STRIP_COLORS[`${strip.intExt || "INT"}_${strip.dayNight || "DAY"}`] ||
-      STRIP_COLORS.INT_DAY
-    );
-  };
+  // Black & white theme: scene rows are white, banner rows are solid black.
+  const getStripColor = (strip: any) =>
+    strip.stripType === "BANNER" ? "#1a1a1a" : "#ffffff";
 
-  const getIntExtStyle = (intExt: string) => {
-    const colors: Record<string, string> = {
-      INT: "#3b82f6",
-      EXT: "#22c55e",
-      "INT/EXT": "#f59e0b",
-    };
-    return `background: ${colors[intExt] || colors.INT}; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;`;
-  };
+  // Monochrome badges. "Filled" (black) vs "outlined" (white) keeps the
+  // INT/EXT and DAY/NIGHT distinction readable without using color.
+  const filledBadge =
+    "background: #1a1a1a; color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #1a1a1a;";
+  const outlinedBadge =
+    "background: #fff; color: #1a1a1a; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; border: 1px solid #1a1a1a;";
 
-  const getDayNightStyle = (dayNight: string) => {
-    const styles: Record<string, { bg: string; color: string }> = {
-      DAY: { bg: "#eab308", color: "#1a1a1a" },
-      NIGHT: { bg: "#1e293b", color: "#fff" },
-      DAWN: { bg: "#ea580c", color: "#fff" },
-      DUSK: { bg: "#db2777", color: "#fff" },
-    };
-    const style = styles[dayNight] || styles.DAY;
-    return `background: ${style.bg}; color: ${style.color}; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;`;
-  };
+  // EXT filled, INT outlined.
+  const getIntExtStyle = (intExt: string) =>
+    intExt === "EXT" ? filledBadge : outlinedBadge;
+
+  // NIGHT filled, everything else outlined.
+  const getDayNightStyle = (dayNight: string) =>
+    dayNight === "NIGHT" ? filledBadge : outlinedBadge;
 
   const daysHtml = schedule.shootDays
     .map((day: any) => {
       const strips = day.strips || [];
       const sceneStrips = strips.filter((s: any) => s.stripType === "SCENE");
-      const totalPages = sceneStrips.reduce(
-        (sum: number, s: any) => sum + (s.pageCount || 0),
-        0,
-      );
       const sceneCount = sceneStrips.length;
 
       const stripsHtml = strips
@@ -73,7 +45,7 @@ export function generateScheduleHTML(schedule: any): string {
           if (strip.stripType === "BANNER") {
             const icon = BANNER_ICONS[strip.bannerType] || "📝";
             return `<tr class="banner-row" style="background: ${bgColor};">
-          <td colspan="6" style="padding: 10px 16px; color: #fff; font-weight: 600; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">
+          <td colspan="5" style="padding: 10px 16px; color: #fff; font-weight: 600; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">
             ${icon} ${escapeHtml(strip.bannerText || strip.bannerType?.replace("_", " "))}
           </td>
         </tr>`;
@@ -93,11 +65,8 @@ export function generateScheduleHTML(schedule: any): string {
             <div style="font-size: 12px; font-weight: 500; color: #1a1a1a;">${escapeHtml(strip.sceneName) || "Untitled Scene"}</div>
             ${strip.description ? `<div style="font-size: 10px; color: rgba(0,0,0,0.6); margin-top: 2px;">${escapeHtml(strip.description)}</div>` : ""}
           </td>
-          <td style="width: 100px; text-align: center; padding: 6px; font-size: 11px; color: rgba(0,0,0,0.7); border-right: 1px solid rgba(0,0,0,0.1);">
+          <td style="width: 100px; text-align: center; padding: 6px; font-size: 11px; color: rgba(0,0,0,0.7);">
             ${escapeHtml(strip.location) || "—"}
-          </td>
-          <td style="width: 50px; text-align: center; font-weight: 600; font-size: 12px; background: rgba(0,0,0,0.03);">
-            ${strip.pageCount?.toFixed(1) || "0"}
           </td>
         </tr>`;
         })
@@ -117,10 +86,10 @@ export function generateScheduleHTML(schedule: any): string {
       return `
       <!-- Day Header -->
       <tr class="day-header">
-        <td colspan="6" style="background: #1e293b; border-left: 4px solid #6366f1; padding: 12px 16px;">
+        <td colspan="5" style="background: #1a1a1a; padding: 12px 16px;">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 20px;">
-              <span style="background: #6366f1; color: #fff; padding: 6px 16px; border-radius: 4px; font-weight: 700; font-size: 12px; letter-spacing: 1px;">
+              <span style="background: #fff; color: #1a1a1a; padding: 6px 16px; border-radius: 4px; font-weight: 700; font-size: 12px; letter-spacing: 1px;">
                 DAY ${day.dayNumber}
               </span>
               <span style="color: #fff; font-size: 13px; font-weight: 500;">${shootDate}</span>
@@ -130,10 +99,6 @@ export function generateScheduleHTML(schedule: any): string {
               <div style="text-align: center;">
                 <div style="font-size: 16px; font-weight: 700;">${sceneCount}</div>
                 <div style="font-size: 9px; text-transform: uppercase; opacity: 0.8;">Scenes</div>
-              </div>
-              <div style="text-align: center;">
-                <div style="font-size: 16px; font-weight: 700;">${totalPages.toFixed(1)}</div>
-                <div style="font-size: 9px; text-transform: uppercase; opacity: 0.8;">Pages</div>
               </div>
             </div>
           </div>
@@ -149,15 +114,6 @@ export function generateScheduleHTML(schedule: any): string {
       (day.strips?.filter((s: any) => s.stripType === "SCENE").length || 0),
     0,
   );
-  const totalPages = schedule.shootDays.reduce(
-    (sum: number, day: any) =>
-      sum +
-      (day.strips
-        ?.filter((s: any) => s.stripType === "SCENE")
-        .reduce((p: number, s: any) => p + (s.pageCount || 0), 0) || 0),
-    0,
-  );
-
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -175,7 +131,7 @@ export function generateScheduleHTML(schedule: any): string {
 
     .schedule-table { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
     .schedule-table th {
-      background: #1f2937;
+      background: #1a1a1a;
       color: #fff;
       padding: 10px 12px;
       font-size: 10px;
@@ -215,10 +171,6 @@ export function generateScheduleHTML(schedule: any): string {
         <div class="stat-value">${totalScenes}</div>
         <div class="stat-label">Total Scenes</div>
       </div>
-      <div class="stat">
-        <div class="stat-value">${totalPages.toFixed(1)}</div>
-        <div class="stat-label">Total Pages</div>
-      </div>
     </div>
   </div>
 
@@ -230,7 +182,6 @@ export function generateScheduleHTML(schedule: any): string {
         <th style="width: 60px;">D/N</th>
         <th>Description / Set</th>
         <th style="width: 100px;">Location</th>
-        <th style="width: 50px;">Pages</th>
       </tr>
     </thead>
     <tbody>

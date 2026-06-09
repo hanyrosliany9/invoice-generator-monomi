@@ -13,8 +13,11 @@ import { useAuthStore } from '../store/auth';
 import type { UserRole } from '../types/user';
 import i18n from '@/i18n/config';
 
-// Permission role groups (matches backend constants)
-const SYSTEM_ADMIN_ROLES: UserRole[] = ['SUPER_ADMIN'];
+// Permission role groups (matches backend constants).
+// Simplified access model: ADMIN == SUPER_ADMIN. SYSTEM_ADMIN_ROLES therefore
+// includes ADMIN, so isSuperAdmin()/canManageSettings() are true for admins —
+// there is no super-admin-only tier anymore.
+const SYSTEM_ADMIN_ROLES: UserRole[] = ['SUPER_ADMIN', 'ADMIN'];
 const ADMIN_ROLES: UserRole[] = ['SUPER_ADMIN', 'ADMIN'];
 const MEDIA_ROLES: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'VIDEOGRAPHER'];
 
@@ -52,10 +55,12 @@ export const usePermissions = () => {
   };
 
   /**
-   * Check if user can manage users (SUPER_ADMIN only)
+   * Check if user can manage users (ADMIN + SUPER_ADMIN).
+   * User management is full CRUD incl. role assignment for both — simplified
+   * access model with no super-admin-only carve-out.
    */
   const canManageUsers = (): boolean => {
-    return isSuperAdmin();
+    return isAdmin();
   };
 
   /**

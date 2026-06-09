@@ -38,9 +38,14 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
 // ============================================
 
 /**
- * System admin roles — users and system settings
+ * System admin roles — users and system settings.
+ * ADMIN == SUPER_ADMIN in the simplified model, so ADMIN is included here too
+ * (no super-admin-only tier). Equivalent to ADMIN_ROLES.
  */
-export const SYSTEM_ADMIN_ROLES = [UserRole.SUPER_ADMIN] as const;
+export const SYSTEM_ADMIN_ROLES = [
+  UserRole.SUPER_ADMIN,
+  UserRole.ADMIN,
+] as const;
 
 /**
  * Admin roles — content management (invoices, projects, clients, accounting)
@@ -116,9 +121,12 @@ export function getRoleDescription(role: UserRole): string {
 }
 
 /**
- * Check if user can approve their own submission (segregation of duties)
- * Only SUPER_ADMIN can approve their own submissions
+ * Check if user can approve their own submission (segregation of duties).
+ * ADMIN == SUPER_ADMIN in the simplified access model, so both may approve
+ * their own submissions (the frontend already shows them the approve button).
  */
 export function canApproveOwnSubmission(userRole: UserRole): boolean {
-  return userRole === UserRole.SUPER_ADMIN;
+  return (
+    userRole === UserRole.SUPER_ADMIN || userRole === UserRole.ADMIN
+  );
 }

@@ -41,6 +41,8 @@ export interface CallSheet {
 
   locationName?: string;
   locationAddress?: string;
+  locationLat?: number | null;
+  locationLng?: number | null;
   parkingNotes?: string;
   mapUrl?: string;
   weatherHigh?: number;

@@ -62,6 +62,23 @@ export function wibStartOfDay(date: Date = new Date()): Date {
   );
 }
 
+/**
+ * The LAST instant (23:59:59.999) of the WIB calendar day for the given date,
+ * as a Date (UTC instant). Use as an INCLUSIVE upper bound for "as of <date>"
+ * report filters so entries timestamped later the same WIB day aren't dropped.
+ * e.g. 2026-06-09 → 2026-06-09T16:59:59.999Z (= WIB 2026-06-09 23:59:59.999).
+ */
+export function wibEndOfDay(date: Date = new Date()): Date {
+  const { year, month, day } = wibParts(date);
+  // WIB midnight (prev-day 17:00 UTC) + 24h − 1ms.
+  return new Date(
+    Date.UTC(year, month - 1, day, 0, 0, 0) -
+      7 * 60 * 60 * 1000 +
+      24 * 60 * 60 * 1000 -
+      1,
+  );
+}
+
 /** First instant of the WIB month containing `date`. */
 export function wibStartOfMonth(date: Date = new Date()): Date {
   const { year, month } = wibParts(date);

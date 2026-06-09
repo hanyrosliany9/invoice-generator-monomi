@@ -324,6 +324,20 @@ export class ExpensesService {
         expense = await this.prisma.expense.create({
           data: {
             ...expenseData,
+            // Reimbursable (billable) = a pass-through advanced for the client.
+            // It is NOT an expense (beban): classify the record itself as Other
+            // Receivable (1-2040 Piutang Lain-lain) so it never shows up under a
+            // 5/6-xxx expense account in expense-by-account views. The GL already
+            // posts to 1-2040; this keeps the Expense row's own account in sync.
+            // The chosen categoryId is kept only as a descriptive tag (what the
+            // advance was for).
+            ...(createExpenseDto.isBillable
+              ? {
+                  accountCode: "1-2040",
+                  accountName: "Piutang Lain-Lain",
+                  accountNameEn: "Other Receivables",
+                }
+              : {}),
             ppnAmount: createExpenseDto.ppnAmount ?? 0,
             ppnRate: createExpenseDto.ppnRate ?? 0,
             ppnCategory: createExpenseDto.ppnCategory || "NON_CREDITABLE",
@@ -380,7 +394,13 @@ export class ExpensesService {
     // later when the client reimburses (recoverBillableExpense → DR Cash / CR 1-2040).
     const isReimbursable = createExpenseDto.isBillable === true;
     const debitAccount = isReimbursable ? "1-2040" : category.accountCode;
-    try {
+    // DEFERRED POSTING (per business decision): a reimbursable expense does NOT
+    // touch the journal at record time. It is only tracked on the Expense row
+    // (classified to 1-2040 above, paymentJournalId stays null = "pending"). The
+    // GL leg DR 1-2040 / CR Cash is posted later, at invoice SENT, alongside the
+    // services AR/Revenue split (invoices.service → updateStatus SENT). This keeps
+    // the reimburse out of the books until it is actually billed to the client.
+    if (!isReimbursable) try {
       const paymentJournal = await this.journalService.createJournalEntry({
         description: isReimbursable
           ? `Reimburse (dibayar atas nama klien) - ${expense.expenseNumber}`
@@ -628,6 +648,46 @@ export class ExpensesService {
   /**
    * Update an expense (can edit any status for corrections)
    */
+  /**
+   * Keep a project's WIP direct costs (and denormalised profit/margin) in sync
+   * when an expense changes. create() accumulates each non-billable project
+   * expense into WIP, but update()/remove() historically did NOT back it out —
+   * so edited/deleted expenses left their cost in the project forever, inflating
+   * actual cost and making the Profitability panel disagree with the live
+   * expense list. This applies a signed delta and recalculates.
+   *
+   * Billable (reimbursable) expenses never hit project cost, so they are
+   * skipped — the guard mirrors create()'s `projectId && !isBillable`.
+   */
+  private async syncProjectCostingDelta(
+    projectId: string | null | undefined,
+    isBillable: boolean,
+    expenseDate: Date,
+    delta: number,
+    userId: string,
+  ): Promise<void> {
+    if (!projectId || isBillable || !delta) return;
+    try {
+      const periodDate = new Date(expenseDate);
+      periodDate.setDate(1);
+      periodDate.setHours(0, 0, 0, 0);
+      await this.projectCostingService.accumulateProjectCosts(
+        projectId,
+        periodDate,
+        { directExpenses: delta },
+        userId,
+      );
+      await this.profitCalculationService.calculateProjectProfitMargin(
+        projectId,
+        userId,
+      );
+    } catch (e) {
+      this.logger.error(
+        `[PROJECT_COST] Failed to sync costing delta (${delta}) for project ${projectId}: ${String(e)}`,
+      );
+    }
+  }
+
   async update(
     id: string,
     userId: string,
@@ -698,23 +758,35 @@ export class ExpensesService {
         );
         const cashAccountCode = cashLine?.account.code ?? "1-1010"; // default: Cash
 
-        // Reload the updated expense to get the category's accountCode
+        // Reload the updated expense to get the category's accountCode AND the
+        // (possibly updated) isBillable flag.
         const freshExpense = await this.prisma.expense.findUnique({
           where: { id },
           include: { category: true },
         });
+
+        // Mirror create(): a REIMBURSABLE (billable) expense is a pass-through
+        // booked to Piutang Lain-lain (1-2040), NOT an internal expense account.
+        // The old repost ignored this and always debited the 5/6-xxx expense
+        // account, corrupting the GL for billable expenses on every edit.
+        const isReimbursable = freshExpense!.isBillable === true;
+        const debitAccount = isReimbursable
+          ? "1-2040"
+          : freshExpense!.category!.accountCode;
 
         // Post a new payment journal at the new amount
         const newPaymentJournal = await this.journalService.createJournalEntry({
           description: `Pembayaran Expense (Koreksi) - ${expense.expenseNumber}`,
           entryDate: new Date(),
           transactionId: expense.expenseNumber,
-          transactionType: "EXPENSE_PAID",
+          transactionType: isReimbursable
+            ? "EXPENSE_REIMBURSEMENT"
+            : "EXPENSE_PAID",
           createdBy: userId,
           autoPost: true,
           lineItems: [
             {
-              accountCode: freshExpense!.category!.accountCode, // Debit expense account
+              accountCode: debitAccount, // Debit: expense account, or 1-2040 if reimbursable
               debit: newAmount,
               credit: 0,
               description: `${expense.description} - koreksi jumlah`,
@@ -770,6 +842,48 @@ export class ExpensesService {
       } catch (error) {
         this.logger.error("[BUDGET] Failed to update budget on update:", error);
       }
+    }
+
+    // ── Project costing: keep WIP direct costs in sync ────────────────────
+    // Back out the OLD contribution and apply the NEW one. The helper skips
+    // billable expenses and missing projects, so this transparently handles
+    // amount edits, billable on/off toggles, project moves, and date/period
+    // changes (each as a remove-from-old + add-to-new).
+    const oldBillable = expense.isBillable;
+    const newBillable = updateExpenseDto.isBillable ?? expense.isBillable;
+    const oldProjectId = expense.projectId;
+    const newProjectId =
+      updateExpenseDto.projectId !== undefined
+        ? updateExpenseDto.projectId
+        : expense.projectId;
+    const oldAmt = Number(expense.totalAmount);
+    const newAmt =
+      updateExpenseDto.totalAmount !== undefined
+        ? Number(updateExpenseDto.totalAmount)
+        : oldAmt;
+    const newDate = updateExpenseDto.expenseDate
+      ? new Date(updateExpenseDto.expenseDate)
+      : expense.expenseDate;
+    const costingRelevantChanged =
+      oldAmt !== newAmt ||
+      oldBillable !== newBillable ||
+      oldProjectId !== newProjectId ||
+      expense.expenseDate.getTime() !== newDate.getTime();
+    if (costingRelevantChanged) {
+      await this.syncProjectCostingDelta(
+        oldProjectId,
+        oldBillable,
+        expense.expenseDate,
+        -oldAmt,
+        userId,
+      );
+      await this.syncProjectCostingDelta(
+        newProjectId,
+        newBillable,
+        newDate,
+        newAmt,
+        userId,
+      );
     }
 
     return updated;
@@ -846,6 +960,17 @@ export class ExpensesService {
     } catch (error) {
       this.logger.error("[BUDGET] Failed to update budget on delete:", error);
     }
+
+    // ── Project costing: back out this expense's WIP contribution ─────────
+    // Without this, a deleted non-billable project expense left its cost in
+    // the project's direct costs, overstating actual cost and net loss.
+    await this.syncProjectCostingDelta(
+      expense.projectId,
+      expense.isBillable,
+      expense.expenseDate,
+      -Number(expense.totalAmount),
+      userId,
+    );
 
     await this.prisma.expense.delete({ where: { id } });
 
@@ -1183,6 +1308,45 @@ export class ExpensesService {
 
     const amount = Number(expense.billableAmount ?? expense.totalAmount);
     const cashAccount = accountForSource(opts?.paymentSource ?? "CASH");
+
+    // DEFERRED POSTING: the advance (DR 1-2040 / CR Kas) is NOT booked at record
+    // time. If this billable is being recovered directly (without going through a
+    // supplementary invoice), the receivable was never put into 1-2040 — so post
+    // the advance leg first, otherwise the CR 1-2040 below would drive the account
+    // negative. paymentJournalId stamps it as posted (idempotent: skipped if set,
+    // e.g. when an invoice already SENT it).
+    if (!expense.paymentJournalId) {
+      const advance = await this.journalService.createJournalEntry({
+        description: `Reimburse advanced (dibayar atas nama klien) - ${expense.expenseNumber}`,
+        entryDate: expense.expenseDate ?? new Date(),
+        transactionId: expense.expenseNumber,
+        transactionType: "EXPENSE_REIMBURSEMENT",
+        createdBy: userId,
+        autoPost: true,
+        lineItems: [
+          {
+            accountCode: "1-2040", // DR Piutang Lain-lain (advance becomes receivable)
+            debit: amount,
+            credit: 0,
+            description: `Piutang reimburse - ${expense.vendorName}`,
+            projectId: expense.projectId ?? undefined,
+            clientId: expense.clientId ?? undefined,
+          },
+          {
+            accountCode: "1-1010", // CR Kas (cash advanced on client's behalf)
+            debit: 0,
+            credit: amount,
+            description: `Pembayaran atas nama klien - ${expense.vendorName}`,
+            projectId: expense.projectId ?? undefined,
+            clientId: expense.clientId ?? undefined,
+          },
+        ],
+      });
+      await this.prisma.expense.update({
+        where: { id },
+        data: { paymentJournalId: advance.id },
+      });
+    }
 
     const journal = await this.journalService.createJournalEntry({
       description: `Penerimaan reimburse dari klien - ${expense.expenseNumber}`,

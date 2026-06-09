@@ -366,7 +366,9 @@ export default function SchedulesPageV2() {
           name: values.name,
           projectId: values.projectId,
           shotListId: values.shotListId || undefined,
-          startDate: values.startDate || undefined,
+          // <input type="date"> yields "YYYY-MM-DD"; Prisma's DateTime needs a
+          // full ISO-8601 datetime or the create 400s. Match ScheduleEditorPage.
+          startDate: values.startDate ? new Date(values.startDate).toISOString() : undefined,
           pagesPerDay: values.pagesPerDay,
         })}
         isPending={createMutation.isPending}

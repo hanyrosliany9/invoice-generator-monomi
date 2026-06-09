@@ -135,6 +135,57 @@ export interface EstimatedExpense {
   costType: 'direct' | 'indirect'
 }
 
+/**
+ * Normalise the project's `estimatedExpenses` JSON back into a flat array.
+ *
+ * IMPORTANT shape contract: the create/edit FORM submits a flat array
+ * (`[{ categoryId, amount, costType, notes }]`), but the backend REWRITES it
+ * on save into a bucketed object `{ direct[], indirect[], totalDirect,
+ * totalIndirect, totalEstimated }` (projects.service.ts) and drops `costType`
+ * from each stored line. The readers used to do `Array.isArray(...)` and bail
+ * on the object — which silently dropped every estimate on the edit/detail
+ * pages. This helper accepts BOTH shapes (and a JSON string) and re-derives
+ * `costType` from whichever bucket a line sits in.
+ */
+export function parseEstimatedExpenses(raw: unknown): EstimatedExpense[] {
+  if (!raw) return []
+  let data: unknown = raw
+  if (typeof raw === 'string') {
+    try {
+      data = JSON.parse(raw)
+    } catch {
+      return []
+    }
+  }
+  const norm = (
+    item: any,
+    fallbackCostType: 'direct' | 'indirect',
+  ): EstimatedExpense => ({
+    categoryId: typeof item?.categoryId === 'string' ? item.categoryId : '',
+    categoryName: item?.categoryName ?? '',
+    categoryNameId: item?.categoryNameId ?? '',
+    amount: Number(item?.amount) || 0,
+    notes: item?.notes ?? '',
+    costType: item?.costType === 'indirect' ? 'indirect' : fallbackCostType,
+  })
+  // Flat array — the in-form value, or a legacy stored array.
+  if (Array.isArray(data)) {
+    return data.map((i) => norm(i, 'direct')).filter((e) => e.categoryId)
+  }
+  // Bucketed object — the canonical stored shape.
+  if (data && typeof data === 'object') {
+    const obj = data as { direct?: unknown[]; indirect?: unknown[] }
+    const direct = Array.isArray(obj.direct)
+      ? obj.direct.map((i) => norm(i, 'direct'))
+      : []
+    const indirect = Array.isArray(obj.indirect)
+      ? obj.indirect.map((i) => norm(i, 'indirect'))
+      : []
+    return [...direct, ...indirect].filter((e) => e.categoryId)
+  }
+  return []
+}
+
 export interface ProjectionResult {
   // Revenue
   estimatedRevenue: number

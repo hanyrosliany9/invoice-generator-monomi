@@ -40,13 +40,18 @@ export function RequireAuth() {
 // ============================================
 
 /**
- * Require SUPER_ADMIN role only
+ * Require admin access (SUPER_ADMIN or ADMIN)
  * Use for: User management, system settings, critical operations
+ *
+ * NOTE: the access model was simplified so ADMIN == SUPER_ADMIN — there is no
+ * super-admin-only tier anymore. This decorator now admits ADMIN too, making
+ * it equivalent to RequireAdmin(). Kept because settings/media still reference
+ * it; prefer RequireAdmin() in new code.
  */
 export function RequireSuperAdmin() {
   return applyDecorators(
     UseGuards(JwtAuthGuard, RolesGuard),
-    Roles(UserRole.SUPER_ADMIN),
+    Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN),
   );
 }
 

@@ -24,6 +24,7 @@ import {
 
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/hooks/usePermissions';
 import { clientService } from '@/services/clients';
 import { projectService } from '@/services/projects';
 import { quotationService } from '@/services/quotations';
@@ -62,6 +63,12 @@ export interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // The palette only surfaces admin entities (clients, projects, quotations,
+  // invoices, users). Gate everything behind admin access so a VIDEOGRAPHER
+  // doesn't fire 403s (and the global "Access denied" toast) or see admin
+  // destinations. ADMIN == SUPER_ADMIN.
+  const { isAdmin } = usePermissions();
+  const adminUser = isAdmin();
 
   const [query, setQuery] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -77,42 +84,42 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: () => clientService.getClients(),
-    enabled: everOpened,
+    enabled: everOpened && adminUser,
     staleTime: 60_000,
   });
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: () => projectService.getProjects(),
-    enabled: everOpened,
+    enabled: everOpened && adminUser,
     staleTime: 60_000,
   });
 
   const { data: quotations = [] } = useQuery({
     queryKey: ['quotations'],
     queryFn: () => quotationService.getQuotations(),
-    enabled: everOpened,
+    enabled: everOpened && adminUser,
     staleTime: 60_000,
   });
 
   const { data: invoices = [] } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => invoiceService.getInvoices(),
-    enabled: everOpened,
+    enabled: everOpened && adminUser,
     staleTime: 60_000,
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersService.getUsers(),
-    enabled: everOpened,
+    enabled: everOpened && adminUser,
     staleTime: 60_000,
   });
 
   // ── build flat item list ─────────────────────────────────────────────────────
 
   const quickActions: PaletteItem[] = React.useMemo(
-    () => [
+    () => (!adminUser ? [] : [
       {
         id: 'action-new-quotation',
         group: t('commandPalette.groupActions', 'Quick Actions'),
@@ -145,8 +152,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         icon: <Plus className="h-4 w-4" />,
         isAction: true,
       },
-    ],
-    [t],
+    ]),
+    [t, adminUser],
   );
 
   const entityItems: PaletteItem[] = React.useMemo(() => {

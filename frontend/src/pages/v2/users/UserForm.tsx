@@ -3,7 +3,7 @@ import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { Button } from '@/components/ui/button';
@@ -494,6 +494,19 @@ export const UserForm = ({
                 : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          {/* Edit mode, field untouched: reassure that a password already
+              exists. The field is blank because we never receive the hash
+              back from the server — blank on save means "keep current". Users
+              read an empty box as "my password was lost", so we say otherwise. */}
+          {mode === 'edit' && watchedPassword.length === 0 && (
+            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-text-tertiary">
+              <ShieldCheck className="h-3.5 w-3.5 text-success" />
+              {t(
+                'users.form.passwordSet',
+                'Kata sandi sudah diatur. Kosongkan untuk mempertahankannya.',
+              )}
+            </div>
+          )}
           {/* Live strength indicator — shows as soon as the user types */}
           {watchedPassword.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">

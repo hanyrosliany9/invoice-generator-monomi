@@ -43,7 +43,7 @@ import { MediaCleanupService } from "./services/media-cleanup.service";
  *
  * Security:
  * - JWT authentication required
- * - SUPER_ADMIN and PROJECT_MANAGER can upload/delete
+ * - Admins can upload/delete
  *
  * File limits:
  * - Max 100MB per file (configurable)
@@ -390,7 +390,7 @@ export class MediaController {
    * Manual cleanup trigger for orphaned thumbnails and old files
    *
    * POST /media/cleanup
-   * Requires SUPER_ADMIN role
+   * Requires Admin role
    *
    * This endpoint manually triggers the cleanup job that normally runs daily at 2 AM.
    * Useful for testing or immediate cleanup needs.

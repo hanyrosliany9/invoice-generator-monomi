@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,8 +8,17 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Plus, Save, Trash2, Loader2, CalendarRange, Download,
-  ChevronUp, ChevronDown, Wand2, Utensils, Truck, Pencil,
+  Wand2, Utensils, Truck, Pencil, GripVertical, Copy, ListChecks,
 } from 'lucide-react';
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, sortableKeyboardCoordinates, useSortable,
+  verticalListSortingStrategy, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -40,8 +49,10 @@ import { useAuthStore } from '@/store/auth';
 import {
   schedulesApi, shootDaysApi, stripsApi,
   type Schedule, type ShootDay, type ScheduleStrip,
-  type AutoScheduleGroupBy,
+  type AutoScheduleGroupBy, type CreateStripDto,
 } from '@/services/schedules';
+import { shotListsApi } from '@/services/shotLists';
+import type { ShotList } from '@/types/shotList';
 
 /* ------------------------------------------------------------------ */
 /*  Meta form                                                          */
@@ -242,7 +253,7 @@ export default function ScheduleEditorPageV2() {
 
         <PageHeader
           title={schedule.name}
-          description={t('scheduleEditor.description', 'Organize scenes into shoot days. Reorder strips, add meal breaks and company moves, or auto-schedule from a shot list.')}
+          description={t('scheduleEditor.description', 'Organize scenes into shoot days. Type a scene and press Enter to add the next, drag strips to reorder, or import scenes from a shot list.')}
           actions={
             <Button
               type="button"
@@ -389,6 +400,7 @@ export default function ScheduleEditorPageV2() {
               <ShootDayCard
                 key={day.id}
                 day={day}
+                projectId={schedule.projectId}
                 onChanged={invalidate}
                 onDelete={() => {
                   if (confirm(t('scheduleEditor.confirmDeleteDay', 'Delete Day {{n}}? All its strips will be removed.', { n: day.dayNumber }))) {
@@ -409,23 +421,27 @@ export default function ScheduleEditorPageV2() {
 /* ================================================================== */
 
 function ShootDayCard({
-  day, onChanged, onDelete,
+  day, projectId, onChanged, onDelete,
 }: {
   day: ShootDay;
+  projectId: string;
   onChanged: () => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editingDay, setEditingDay] = useState(false);
-  const [stripDialog, setStripDialog] = useState<{ mode: 'create' | 'edit'; strip?: ScheduleStrip } | null>(null);
   const [bannerDialog, setBannerDialog] = useState<{ kind: 'meal' | 'move'; afterStripId: string } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const strips = (day.strips ?? []).slice().sort((a, b) => a.order - b.order);
   const sceneStrips = strips.filter((s) => s.stripType === 'SCENE');
   const dayPages = sceneStrips.reduce((p, s) => p + (s.pageCount ?? 0), 0);
 
-  const refresh = () => onChanged();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   /* ----- day meta inline edit ----- */
   const { register, handleSubmit, reset } = useForm<{ dayNumber: number; shootDate?: string; location?: string; notes?: string }>({
@@ -453,33 +469,53 @@ function ShootDayCard({
         location: v.location || undefined,
         notes: v.notes || undefined,
       }),
-    onSuccess: () => { refresh(); setEditingDay(false); toast.success(t('scheduleEditor.daySaved', 'Shoot day saved')); },
+    onSuccess: () => { onChanged(); setEditingDay(false); toast.success(t('scheduleEditor.daySaved', 'Shoot day saved')); },
     onError: (e: Error) => toast.error(e.message || t('scheduleEditor.dayAddFailed', 'Failed to add shoot day')),
   });
 
   /* ----- strip mutations ----- */
   const deleteStrip = useMutation({
     mutationFn: (stripId: string) => stripsApi.delete(stripId),
-    onSuccess: () => { refresh(); toast.success(t('scheduleEditor.stripDeleted', 'Strip deleted')); },
+    onSuccess: () => { onChanged(); },
     onError: (e: Error) => toast.error(e.message || t('scheduleEditor.stripDeleteFailed', 'Failed to delete strip')),
+  });
+
+  const duplicateStrip = useMutation({
+    mutationFn: (strip: ScheduleStrip) => {
+      const payload: CreateStripDto = {
+        shootDayId: day.id,
+        stripType: 'SCENE',
+        sceneNumber: strip.sceneNumber ?? undefined,
+        sceneName: strip.sceneName ?? undefined,
+        intExt: strip.intExt ?? undefined,
+        dayNight: strip.dayNight ?? undefined,
+        location: strip.location ?? undefined,
+        pageCount: strip.pageCount ?? undefined,
+        estimatedTime: strip.estimatedTime ?? undefined,
+      };
+      return stripsApi.create(payload);
+    },
+    onSuccess: () => { onChanged(); toast.success(t('scheduleEditor.stripDuplicated', 'Scene duplicated')); },
+    onError: (e: Error) => toast.error(e.message || t('scheduleEditor.stripSaveFailed', 'Failed to save scene')),
   });
 
   const reorder = useMutation({
     mutationFn: (next: ScheduleStrip[]) =>
       stripsApi.reorder(next.map((s, i) => ({ stripId: s.id, shootDayId: day.id, order: i }))),
-    onSuccess: () => refresh(),
+    onSuccess: () => onChanged(),
     onError: (e: Error) => {
       toast.error(e.message || t('scheduleEditor.reorderFailed', 'Failed to reorder strips'));
       queryClient.invalidateQueries({ queryKey: ['schedule'] });
     },
   });
 
-  const moveStrip = (idx: number, dir: -1 | 1) => {
-    const target = idx + dir;
-    if (target < 0 || target >= strips.length) return;
-    const next = strips.slice();
-    [next[idx], next[target]] = [next[target], next[idx]];
-    reorder.mutate(next);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = strips.findIndex((s) => s.id === active.id);
+    const newIndex = strips.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    reorder.mutate(arrayMove(strips, oldIndex, newIndex));
   };
 
   return (
@@ -507,12 +543,12 @@ function ShootDayCard({
                 <Pencil className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem onClick={() => setEditingDay((v) => !v)}>
                 <Pencil className="h-3.5 w-3.5" /> {t('scheduleEditor.editDay', 'Edit day')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStripDialog({ mode: 'create' })}>
-                <Plus className="h-3.5 w-3.5" /> {t('scheduleEditor.addScene', 'Add scene')}
+              <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                <ListChecks className="h-3.5 w-3.5" /> {t('scheduleEditor.importFromShotList', 'Import from shot list')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onDelete} className="text-danger focus:text-danger">
@@ -557,56 +593,41 @@ function ShootDayCard({
         </form>
       )}
 
-      {/* Strips */}
-      {strips.length === 0 ? (
-        <div className="px-5 py-8 text-center">
-          <p className="text-sm text-text-tertiary mb-3">{t('scheduleEditor.noStrips', 'No strips on this day yet.')}</p>
-          <Button type="button" variant="outline" size="sm" onClick={() => setStripDialog({ mode: 'create' })} className="border-border-subtle text-text-secondary hover:text-text-primary">
-            <Plus className="h-3.5 w-3.5" />
-            {t('scheduleEditor.addScene', 'Add scene')}
-          </Button>
-        </div>
-      ) : (
-        <div className="divide-y divide-border-subtle">
-          {strips.map((strip, idx) => (
-            <StripRow
-              key={strip.id}
-              strip={strip}
-              isFirst={idx === 0}
-              isLast={idx === strips.length - 1}
-              onMoveUp={() => moveStrip(idx, -1)}
-              onMoveDown={() => moveStrip(idx, 1)}
-              onEdit={() => setStripDialog({ mode: 'edit', strip })}
-              onDelete={() => {
-                if (confirm(t('scheduleEditor.confirmDeleteStrip', 'Delete this strip?'))) deleteStrip.mutate(strip.id);
-              }}
-              onInsertMeal={() => setBannerDialog({ kind: 'meal', afterStripId: strip.id })}
-              onInsertMove={() => setBannerDialog({ kind: 'move', afterStripId: strip.id })}
-            />
-          ))}
-        </div>
-      )}
-
+      {/* Column hints */}
       {strips.length > 0 && (
-        <div className="px-5 py-3 border-t border-border-subtle">
-          <Button type="button" variant="ghost" size="sm" onClick={() => setStripDialog({ mode: 'create' })} className="text-text-secondary hover:text-text-primary">
-            <Plus className="h-3.5 w-3.5" />
-            {t('scheduleEditor.addScene', 'Add scene')}
-          </Button>
+        <div className="hidden sm:flex items-center gap-3 px-5 py-2 border-b border-border-subtle bg-bg-sunken/20 text-[10px] uppercase tracking-[0.12em] text-text-tertiary">
+          <span className="w-4 shrink-0" />
+          <span className="w-14 shrink-0">{t('scheduleEditor.colScene', 'Scene')}</span>
+          <span className="w-[76px] shrink-0">{t('scheduleEditor.colIntExt', 'I/E')}</span>
+          <span className="w-[76px] shrink-0">{t('scheduleEditor.colDayNight', 'D/N')}</span>
+          <span className="flex-1">{t('scheduleEditor.colDescription', 'Description / Set')}</span>
+          <span className="w-32 shrink-0">{t('scheduleEditor.colLocation', 'Location')}</span>
+          <span className="w-14 shrink-0 text-right">{t('scheduleEditor.colPages', 'Pages')}</span>
+          <span className="w-8 shrink-0" />
         </div>
       )}
 
-      {/* Strip create/edit dialog */}
-      {stripDialog && (
-        <StripDialog
-          open
-          mode={stripDialog.mode}
-          shootDayId={day.id}
-          strip={stripDialog.strip}
-          onOpenChange={(o) => { if (!o) setStripDialog(null); }}
-          onSaved={() => { setStripDialog(null); refresh(); }}
-        />
-      )}
+      {/* Strips */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={strips.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+          <div className="divide-y divide-border-subtle">
+            {strips.map((strip) => (
+              <SortableStripRow
+                key={strip.id}
+                strip={strip}
+                onChanged={onChanged}
+                onDelete={() => deleteStrip.mutate(strip.id)}
+                onDuplicate={() => duplicateStrip.mutate(strip)}
+                onInsertMeal={() => setBannerDialog({ kind: 'meal', afterStripId: strip.id })}
+                onInsertMove={() => setBannerDialog({ kind: 'move', afterStripId: strip.id })}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      {/* Quick-add row — the primary way to add scenes fast */}
+      <QuickAddRow dayId={day.id} onChanged={onChanged} />
 
       {/* Banner (meal / move) dialog */}
       {bannerDialog && (
@@ -615,7 +636,20 @@ function ShootDayCard({
           kind={bannerDialog.kind}
           afterStripId={bannerDialog.afterStripId}
           onOpenChange={(o) => { if (!o) setBannerDialog(null); }}
-          onSaved={() => { setBannerDialog(null); refresh(); }}
+          onSaved={() => { setBannerDialog(null); onChanged(); }}
+        />
+      )}
+
+      {/* Import-from-shot-list dialog */}
+      {importOpen && (
+        <ImportFromShotListDialog
+          open
+          scheduleId={day.scheduleId}
+          projectId={projectId}
+          shootDayId={day.id}
+          dayNumber={day.dayNumber}
+          onOpenChange={(o) => { if (!o) setImportOpen(false); }}
+          onImported={() => { setImportOpen(false); onChanged(); }}
         />
       )}
     </GlassPanel>
@@ -623,74 +657,143 @@ function ShootDayCard({
 }
 
 /* ================================================================== */
-/*  Strip row                                                          */
+/*  Sortable strip row (scene = inline editable, banner = display)     */
 /* ================================================================== */
 
-function StripRow({
-  strip, isFirst, isLast, onMoveUp, onMoveDown, onEdit, onDelete, onInsertMeal, onInsertMove,
-}: {
+function SortableStripRow(props: {
   strip: ScheduleStrip;
-  isFirst: boolean;
-  isLast: boolean;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onEdit: () => void;
+  onChanged: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onInsertMeal: () => void;
   onInsertMove: () => void;
 }) {
-  const { t } = useTranslation();
+  const { strip } = props;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: strip.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
 
-  const reorderControls = (
-    <div className="flex items-center gap-0.5">
-      <Button type="button" variant="ghost" size="icon-sm" onClick={onMoveUp} disabled={isFirst} className="text-text-tertiary hover:text-text-primary disabled:opacity-30" aria-label={t('scheduleEditor.moveUp', 'Move up')}>
-        <ChevronUp className="h-3.5 w-3.5" />
-      </Button>
-      <Button type="button" variant="ghost" size="icon-sm" onClick={onMoveDown} disabled={isLast} className="text-text-tertiary hover:text-text-primary disabled:opacity-30" aria-label={t('scheduleEditor.moveDown', 'Move down')}>
-        <ChevronDown className="h-3.5 w-3.5" />
-      </Button>
-    </div>
+  const dragHandle = (
+    <button
+      type="button"
+      className="shrink-0 cursor-grab touch-none text-text-tertiary hover:text-text-secondary active:cursor-grabbing"
+      aria-label="Drag to reorder"
+      {...attributes}
+      {...listeners}
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
   );
 
-  if (strip.stripType === 'BANNER') {
-    return (
-      <div className="flex items-center justify-between gap-3 px-5 py-2.5 bg-accent-navy/[0.08]">
-        <div className="flex items-center gap-2 min-w-0">
-          {strip.bannerType === 'MEAL_BREAK' ? <Utensils className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
-            : strip.bannerType === 'COMPANY_MOVE' ? <Truck className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
-            : null}
-          <span className="text-xs uppercase tracking-wider text-text-secondary truncate">
-            {strip.bannerText || strip.bannerType?.replace('_', ' ')}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {reorderControls}
-          <Button type="button" variant="ghost" size="icon-sm" onClick={onDelete} className="text-text-tertiary hover:text-danger" aria-label={t('scheduleEditor.deleteStrip', 'Delete strip')}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  return (
+    <div ref={setNodeRef} style={style} className="bg-bg-base">
+      {strip.stripType === 'BANNER'
+        ? <BannerStripRow {...props} dragHandle={dragHandle} />
+        : <SceneStripRow {...props} dragHandle={dragHandle} />}
+    </div>
+  );
+}
+
+/* ----- editable scene row ----- */
+
+function SceneStripRow({
+  strip, onChanged, onDelete, onDuplicate, onInsertMeal, onInsertMove, dragHandle,
+}: {
+  strip: ScheduleStrip;
+  onChanged: () => void;
+  onDelete: () => void;
+  onDuplicate: () => void;
+  onInsertMeal: () => void;
+  onInsertMove: () => void;
+  dragHandle: React.ReactNode;
+}) {
+  const { t } = useTranslation();
+
+  // Local editable state, re-synced when the strip identity changes.
+  const [sceneNumber, setSceneNumber] = useState(strip.sceneNumber ?? '');
+  const [sceneName, setSceneName] = useState(strip.sceneName ?? '');
+  const [location, setLocation] = useState(strip.location ?? '');
+  const [pageCount, setPageCount] = useState(strip.pageCount != null ? String(strip.pageCount) : '');
+  useEffect(() => {
+    setSceneNumber(strip.sceneNumber ?? '');
+    setSceneName(strip.sceneName ?? '');
+    setLocation(strip.location ?? '');
+    setPageCount(strip.pageCount != null ? String(strip.pageCount) : '');
+  }, [strip.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const update = useMutation({
+    mutationFn: (patch: Partial<CreateStripDto>) => stripsApi.update(strip.id, patch),
+    onSuccess: () => onChanged(),
+    onError: (e: Error) => toast.error(e.message || t('scheduleEditor.stripSaveFailed', 'Failed to save scene')),
+  });
+
+  // Save a field only when it actually differs from the server value.
+  const saveText = (field: 'sceneNumber' | 'sceneName' | 'location', value: string) => {
+    if ((strip[field] ?? '') !== value) update.mutate({ [field]: value || undefined });
+  };
+  const savePages = () => {
+    const num = pageCount === '' ? undefined : Number(pageCount);
+    if ((strip.pageCount ?? undefined) !== num) update.mutate({ pageCount: num });
+  };
+  const saveSelect = (field: 'intExt' | 'dayNight', value: string) => {
+    if ((strip[field] ?? '') !== value) update.mutate({ [field]: value });
+  };
+
+  const cell = 'h-8 bg-bg-sunken/60 border-border-subtle text-text-primary focus-visible:bg-bg-sunken';
 
   return (
-    <div className="flex items-center gap-3 px-5 py-2.5">
-      <div className="w-12 shrink-0 text-center font-mono text-sm text-text-primary tabular-nums">
-        {strip.sceneNumber || '—'}
+    <div className="flex items-center gap-3 px-5 py-1.5">
+      {dragHandle}
+      <Input
+        value={sceneNumber}
+        onChange={(e) => setSceneNumber(e.target.value)}
+        onBlur={() => saveText('sceneNumber', sceneNumber)}
+        placeholder="12A"
+        aria-label={t('scheduleEditor.fieldSceneNumber', 'Scene #')}
+        className={`w-14 shrink-0 font-mono text-sm ${cell}`}
+      />
+      <div className="w-[76px] shrink-0">
+        <Select value={strip.intExt ?? 'INT'} onValueChange={(v) => saveSelect('intExt', v)}>
+          <SelectTrigger size="sm" className={cell}><SelectValue /></SelectTrigger>
+          <SelectContent>{INT_EXT.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+        </Select>
       </div>
-      <div className="w-14 shrink-0 flex flex-col gap-0.5 text-[10px]">
-        <Tag>{strip.intExt || 'INT'}</Tag>
-        <Tag>{strip.dayNight || 'DAY'}</Tag>
+      <div className="w-[76px] shrink-0">
+        <Select value={strip.dayNight ?? 'DAY'} onValueChange={(v) => saveSelect('dayNight', v)}>
+          <SelectTrigger size="sm" className={cell}><SelectValue /></SelectTrigger>
+          <SelectContent>{DAY_NIGHT.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+        </Select>
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm text-text-primary truncate">{strip.sceneName || t('scheduleEditor.untitledScene', 'Untitled scene')}</div>
-        {strip.location && <div className="text-xs text-text-tertiary truncate">{strip.location}</div>}
-      </div>
-      <div className="w-16 shrink-0 text-right tabular-nums text-sm text-text-secondary">
-        {(strip.pageCount ?? 0).toFixed(1)}
-      </div>
-      <div className="shrink-0 flex items-center gap-0.5">
-        {reorderControls}
+      <Input
+        value={sceneName}
+        onChange={(e) => setSceneName(e.target.value)}
+        onBlur={() => saveText('sceneName', sceneName)}
+        placeholder={t('scheduleEditor.sceneNamePlaceholder', 'E.g. Office — Confrontation')}
+        aria-label={t('scheduleEditor.fieldSceneName', 'Scene / Set')}
+        className={`flex-1 min-w-0 text-sm ${cell}`}
+      />
+      <Input
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+        onBlur={() => saveText('location', location)}
+        placeholder={t('scheduleEditor.fieldLocation', 'Location')}
+        aria-label={t('scheduleEditor.fieldLocation', 'Location')}
+        className={`w-32 shrink-0 text-sm hidden sm:block ${cell}`}
+      />
+      <Input
+        type="number" min="0" step="0.125"
+        value={pageCount}
+        onChange={(e) => setPageCount(e.target.value)}
+        onBlur={savePages}
+        placeholder="0"
+        aria-label={t('scheduleEditor.fieldPageCount', 'Pages')}
+        className={`w-14 shrink-0 text-right font-mono tabular-nums text-sm ${cell}`}
+      />
+      <div className="w-8 shrink-0 flex justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon-sm" className="text-text-tertiary hover:text-text-primary" aria-label={t('scheduleEditor.stripActions', 'Strip actions')}>
@@ -698,8 +801,8 @@ function StripRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={onEdit}>
-              <Pencil className="h-3.5 w-3.5" /> {t('scheduleEditor.editStrip', 'Edit scene')}
+            <DropdownMenuItem onClick={onDuplicate}>
+              <Copy className="h-3.5 w-3.5" /> {t('scheduleEditor.duplicateScene', 'Duplicate scene')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onInsertMeal}>
               <Utensils className="h-3.5 w-3.5" /> {t('scheduleEditor.insertMeal', 'Insert meal break')}
@@ -718,122 +821,232 @@ function StripRow({
   );
 }
 
-/* ================================================================== */
-/*  Strip create/edit dialog                                          */
-/* ================================================================== */
+/* ----- banner row (display + delete) ----- */
 
-const stripSchema = z.object({
-  sceneNumber:   z.string().optional(),
-  sceneName:     z.string().optional(),
-  intExt:        z.string().optional(),
-  dayNight:      z.string().optional(),
-  location:      z.string().optional(),
-  pageCount:     z.coerce.number().min(0).optional(),
-  estimatedTime: z.coerce.number().min(0).optional(),
-});
-type StripValues = z.infer<typeof stripSchema>;
-
-function StripDialog({
-  open, mode, shootDayId, strip, onOpenChange, onSaved,
+function BannerStripRow({
+  strip, onDelete, dragHandle,
 }: {
-  open: boolean;
-  mode: 'create' | 'edit';
-  shootDayId: string;
-  strip?: ScheduleStrip;
-  onOpenChange: (o: boolean) => void;
-  onSaved: () => void;
+  strip: ScheduleStrip;
+  onDelete: () => void;
+  dragHandle: React.ReactNode;
 }) {
   const { t } = useTranslation();
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<StripValues>({
-    resolver: zodResolver(stripSchema),
-    defaultValues: {
-      sceneNumber:   strip?.sceneNumber ?? '',
-      sceneName:     strip?.sceneName ?? '',
-      intExt:        strip?.intExt ?? 'INT',
-      dayNight:      strip?.dayNight ?? 'DAY',
-      location:      strip?.location ?? '',
-      pageCount:     strip?.pageCount ?? undefined,
-      estimatedTime: strip?.estimatedTime ?? undefined,
-    },
-  });
+  return (
+    <div className="flex items-center justify-between gap-3 px-5 py-2.5 bg-bg-sunken/60">
+      <div className="flex items-center gap-2 min-w-0">
+        {dragHandle}
+        {strip.bannerType === 'MEAL_BREAK' ? <Utensils className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
+          : strip.bannerType === 'COMPANY_MOVE' ? <Truck className="h-3.5 w-3.5 text-text-tertiary shrink-0" />
+          : null}
+        <span className="text-xs uppercase tracking-wider text-text-secondary truncate">
+          {strip.bannerText || strip.bannerType?.replace('_', ' ')}
+        </span>
+      </div>
+      <Button type="button" variant="ghost" size="icon-sm" onClick={onDelete} className="text-text-tertiary hover:text-danger shrink-0" aria-label={t('scheduleEditor.deleteStrip', 'Delete strip')}>
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
 
-  const save = useMutation({
-    mutationFn: (v: StripValues) => {
-      const payload = {
-        sceneNumber:   v.sceneNumber || undefined,
-        sceneName:     v.sceneName || undefined,
-        intExt:        v.intExt || undefined,
-        dayNight:      v.dayNight || undefined,
-        location:      v.location || undefined,
-        pageCount:     Number.isFinite(v.pageCount) ? v.pageCount : undefined,
-        estimatedTime: Number.isFinite(v.estimatedTime) ? Math.round(v.estimatedTime as number) : undefined,
-      };
-      return mode === 'create'
-        ? stripsApi.create({ shootDayId, stripType: 'SCENE', ...payload })
-        : stripsApi.update(strip!.id, payload);
+/* ================================================================== */
+/*  Quick-add row — type and press Enter to add the next scene         */
+/* ================================================================== */
+
+function QuickAddRow({ dayId, onChanged }: { dayId: string; onChanged: () => void }) {
+  const { t } = useTranslation();
+  const blank = { sceneNumber: '', intExt: 'INT', dayNight: 'DAY', sceneName: '', location: '', pageCount: '' };
+  const [v, setV] = useState(blank);
+  const sceneNumberRef = useRef<HTMLInputElement>(null);
+
+  const create = useMutation({
+    mutationFn: () => stripsApi.create({
+      shootDayId: dayId,
+      stripType: 'SCENE',
+      sceneNumber: v.sceneNumber || undefined,
+      sceneName: v.sceneName || undefined,
+      intExt: v.intExt,
+      dayNight: v.dayNight,
+      location: v.location || undefined,
+      pageCount: v.pageCount === '' ? undefined : Number(v.pageCount),
+    }),
+    onSuccess: () => {
+      setV(blank);
+      onChanged();
+      // Refocus for rapid sequential entry.
+      requestAnimationFrame(() => sceneNumberRef.current?.focus());
     },
-    onSuccess: () => { toast.success(mode === 'create' ? t('scheduleEditor.stripCreated', 'Scene added') : t('scheduleEditor.stripUpdated', 'Scene updated')); onSaved(); },
     onError: (e: Error) => toast.error(e.message || t('scheduleEditor.stripSaveFailed', 'Failed to save scene')),
   });
+
+  const submit = () => {
+    if (!v.sceneNumber.trim() && !v.sceneName.trim()) return;
+    create.mutate();
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') { e.preventDefault(); submit(); }
+  };
+
+  const cell = 'h-8 bg-bg-sunken/40 border-dashed border-border-subtle text-text-primary focus-visible:bg-bg-sunken';
+
+  return (
+    <div className="flex items-center gap-3 px-5 py-2 border-t border-border-subtle bg-bg-sunken/20">
+      <span className="shrink-0 text-text-tertiary"><Plus className="h-4 w-4" /></span>
+      <Input
+        ref={sceneNumberRef}
+        value={v.sceneNumber}
+        onChange={(e) => setV({ ...v, sceneNumber: e.target.value })}
+        onKeyDown={onKeyDown}
+        placeholder="12A"
+        aria-label={t('scheduleEditor.fieldSceneNumber', 'Scene #')}
+        className={`w-14 shrink-0 font-mono text-sm ${cell}`}
+      />
+      <div className="w-[76px] shrink-0">
+        <Select value={v.intExt} onValueChange={(val) => setV({ ...v, intExt: val })}>
+          <SelectTrigger size="sm" className={cell}><SelectValue /></SelectTrigger>
+          <SelectContent>{INT_EXT.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="w-[76px] shrink-0">
+        <Select value={v.dayNight} onValueChange={(val) => setV({ ...v, dayNight: val })}>
+          <SelectTrigger size="sm" className={cell}><SelectValue /></SelectTrigger>
+          <SelectContent>{DAY_NIGHT.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <Input
+        value={v.sceneName}
+        onChange={(e) => setV({ ...v, sceneName: e.target.value })}
+        onKeyDown={onKeyDown}
+        placeholder={t('scheduleEditor.quickAddHint', 'Type a scene and press Enter to add the next')}
+        aria-label={t('scheduleEditor.fieldSceneName', 'Scene / Set')}
+        className={`flex-1 min-w-0 text-sm ${cell}`}
+      />
+      <Input
+        value={v.location}
+        onChange={(e) => setV({ ...v, location: e.target.value })}
+        onKeyDown={onKeyDown}
+        placeholder={t('scheduleEditor.fieldLocation', 'Location')}
+        aria-label={t('scheduleEditor.fieldLocation', 'Location')}
+        className={`w-32 shrink-0 text-sm hidden sm:block ${cell}`}
+      />
+      <Input
+        type="number" min="0" step="0.125"
+        value={v.pageCount}
+        onChange={(e) => setV({ ...v, pageCount: e.target.value })}
+        onKeyDown={onKeyDown}
+        placeholder="0"
+        aria-label={t('scheduleEditor.fieldPageCount', 'Pages')}
+        className={`w-14 shrink-0 text-right font-mono tabular-nums text-sm ${cell}`}
+      />
+      <div className="w-8 shrink-0 flex justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={submit}
+          disabled={create.isPending}
+          aria-label={t('scheduleEditor.addScene', 'Add scene')}
+          className="text-text-tertiary hover:text-text-primary"
+        >
+          {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Import from shot list dialog                                       */
+/* ================================================================== */
+
+function ImportFromShotListDialog({
+  open, scheduleId, projectId, shootDayId, dayNumber, onOpenChange, onImported,
+}: {
+  open: boolean;
+  scheduleId: string;
+  projectId: string;
+  shootDayId: string;
+  dayNumber: number;
+  onOpenChange: (o: boolean) => void;
+  onImported: () => void;
+}) {
+  const { t } = useTranslation();
+  const [selectedId, setSelectedId] = useState<string>('');
+
+  const { data: shotLists, isLoading } = useQuery({
+    queryKey: ['shotLists', projectId],
+    queryFn: () => shotListsApi.getByProject(projectId),
+    enabled: open && !!projectId,
+  });
+
+  const importMutation = useMutation({
+    mutationFn: () => schedulesApi.importFromShotList(scheduleId, selectedId, shootDayId),
+    onSuccess: (schedule) => {
+      const count = schedule.shootDays?.find((d) => d.id === shootDayId)
+        ?.strips?.filter((s) => s.stripType === 'SCENE').length;
+      toast.success(t('scheduleEditor.importSuccess', 'Scenes imported into Day {{n}}', { n: dayNumber, count }));
+      onImported();
+    },
+    onError: (e: Error) => toast.error(e.message || t('scheduleEditor.importFailed', 'Failed to import scenes')),
+  });
+
+  const lists: ShotList[] = shotLists ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {mode === 'create' ? t('scheduleEditor.addSceneTitle', 'Add Scene Strip') : t('scheduleEditor.editSceneTitle', 'Edit Scene Strip')}
-          </DialogTitle>
-          <DialogDescription>{t('scheduleEditor.sceneDialogDesc', 'A scene strip on the stripboard.')}</DialogDescription>
+          <DialogTitle>{t('scheduleEditor.importTitle', 'Import scenes from a shot list')}</DialogTitle>
+          <DialogDescription>
+            {t('scheduleEditor.importDesc', 'Every scene from the selected shot list is added to Day {{n}} as strips. You can reorder or auto-schedule them afterwards.', { n: dayNumber })}
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit((v) => save.mutate(v))} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <FieldLabel>{t('scheduleEditor.fieldSceneNumber', 'Scene #')}</FieldLabel>
-              <Input {...register('sceneNumber')} placeholder="12A" className="bg-bg-sunken border-border-default text-text-primary font-mono" />
-            </div>
-            <div className="space-y-1.5">
-              <FieldLabel>{t('scheduleEditor.fieldPageCount', 'Pages')}</FieldLabel>
-              <Input type="number" min="0" step="0.125" {...register('pageCount', { valueAsNumber: true })} className="bg-bg-sunken border-border-default text-text-primary text-right font-mono tabular-nums" />
-            </div>
+
+        {isLoading ? (
+          <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-text-tertiary" /></div>
+        ) : lists.length === 0 ? (
+          <p className="py-6 text-sm text-text-tertiary text-center">
+            {t('scheduleEditor.importNoLists', 'No shot lists found for this project.')}
+          </p>
+        ) : (
+          <div className="space-y-2 py-2 max-h-72 overflow-y-auto">
+            {lists.map((list) => {
+              const sceneCount = list.scenes?.length ?? 0;
+              const active = selectedId === list.id;
+              return (
+                <button
+                  key={list.id}
+                  type="button"
+                  onClick={() => setSelectedId(list.id)}
+                  className={`w-full text-left rounded-md border px-3 py-2.5 transition-colors ${
+                    active
+                      ? 'border-accent-navy-ring bg-accent-navy/[0.06]'
+                      : 'border-border-subtle bg-bg-sunken/40 hover:border-border-default'
+                  }`}
+                >
+                  <div className="text-sm text-text-primary truncate">{list.name}</div>
+                  <div className="text-xs text-text-tertiary">
+                    {t('scheduleEditor.importSceneCount', '{{count}} scenes', { count: sceneCount })}
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          <div className="space-y-1.5">
-            <FieldLabel>{t('scheduleEditor.fieldSceneName', 'Scene / Set')}</FieldLabel>
-            <Input {...register('sceneName')} placeholder={t('scheduleEditor.sceneNamePlaceholder', 'E.g. Office — Confrontation')} className="bg-bg-sunken border-border-default text-text-primary" aria-invalid={!!errors.sceneName} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <FieldLabel>{t('scheduleEditor.fieldIntExt', 'INT / EXT')}</FieldLabel>
-              <Select value={watch('intExt')} onValueChange={(v) => setValue('intExt', v)}>
-                <SelectTrigger className="bg-bg-sunken border-border-default text-text-primary"><SelectValue /></SelectTrigger>
-                <SelectContent>{INT_EXT.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <FieldLabel>{t('scheduleEditor.fieldDayNight', 'Day / Night')}</FieldLabel>
-              <Select value={watch('dayNight')} onValueChange={(v) => setValue('dayNight', v)}>
-                <SelectTrigger className="bg-bg-sunken border-border-default text-text-primary"><SelectValue /></SelectTrigger>
-                <SelectContent>{DAY_NIGHT.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <FieldLabel>{t('scheduleEditor.fieldLocation', 'Location')}</FieldLabel>
-              <Input {...register('location')} className="bg-bg-sunken border-border-default text-text-primary" />
-            </div>
-            <div className="space-y-1.5">
-              <FieldLabel>{t('scheduleEditor.fieldEstTime', 'Est. Time (min)')}</FieldLabel>
-              <Input type="number" min="0" step="1" {...register('estimatedTime', { valueAsNumber: true })} className="bg-bg-sunken border-border-default text-text-primary text-right font-mono tabular-nums" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={save.isPending}>{t('common.cancel', 'Cancel')}</Button>
-            <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {t('common.save', 'Save')}
-            </Button>
-          </DialogFooter>
-        </form>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={importMutation.isPending}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => importMutation.mutate()}
+            disabled={!selectedId || importMutation.isPending}
+          >
+            {importMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ListChecks className="h-4 w-4" />}
+            {t('scheduleEditor.importButton', 'Import scenes')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -1007,12 +1220,6 @@ const StatChip = ({ label, value }: { label: string; value: number | string }) =
     <div className="text-lg font-display font-medium text-text-primary tabular-nums leading-tight">{value}</div>
     <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary">{label}</div>
   </div>
-);
-
-const Tag = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex justify-center rounded bg-bg-raised border border-border-subtle px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-text-secondary">
-    {children}
-  </span>
 );
 
 const FormSection = ({
