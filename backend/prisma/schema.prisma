@@ -1962,6 +1962,7 @@ enum TransactionType {
   OWNER_DRAWING // Owner withdrawal - Debit Owner's Drawing, Credit Cash
 
   // ===== PURCHASE-TO-PAY TYPES =====
+  PURCHASE // Generic purchase (Pembelian) - DR Expense/Inventory, CR Cash/AP
   PO_APPROVED // PO commitment - DR Expense/Asset, CR PO Commitments
   PO_CANCELLED // Reverse PO commitment
   GOODS_RECEIVED // GR accrual - DR Inventory/Asset, CR GR Accruals

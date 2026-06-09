@@ -3084,7 +3084,8 @@
       "fiscalPeriodClosedTitle": "Periode fiskal sudah ditutup",
       "fiscalPeriodClosedDesc": "Periode fiskal ini sudah ditutup. Menyimpan atau memposting entri baru tidak dapat dilakukan. Hubungi administrator Anda untuk membukanya kembali.",
       "footerPeriodClosed": "Periode fiskal ditutup — pengeditan dinonaktifkan",
-      "transactionTypeAssetPurchase": "Pembelian & Aset"
+      "transactionTypeAssetPurchase": "Aset",
+      "transactionTypePurchase": "Pembelian"
     },
     "cashReceipts": {
       "title": "Penerimaan Kas",
@@ -3704,7 +3705,8 @@
       "colCredit": "Kredit",
       "typeExpense": "Beban",
       "typeReimbursement": "Reimbursement",
-      "typeAssetPurchase": "Pembelian & Aset"
+      "typeAssetPurchase": "Aset",
+      "typePurchase": "Pembelian"
     },
     "generalLedger": {
       "title": "Buku Besar",

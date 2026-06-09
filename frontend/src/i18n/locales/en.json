@@ -2993,7 +2993,8 @@
       "fiscalPeriodClosedTitle": "Fiscal period is closed",
       "fiscalPeriodClosedDesc": "This fiscal period has been closed. Saving or posting new entries is disabled. Contact your administrator to re-open it.",
       "footerPeriodClosed": "Fiscal period closed — editing disabled",
-      "transactionTypeAssetPurchase": "Purchase & Asset"
+      "transactionTypeAssetPurchase": "Assets",
+      "transactionTypePurchase": "Purchase"
     },
     "cashReceipts": {
       "title": "Cash Receipts",
@@ -3613,7 +3614,8 @@
       "colCredit": "Credit",
       "typeExpense": "Expense",
       "typeReimbursement": "Reimbursement",
-      "typeAssetPurchase": "Purchase & Asset"
+      "typeAssetPurchase": "Assets",
+      "typePurchase": "Purchase"
     },
     "generalLedger": {
       "title": "General Ledger",

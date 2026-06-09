@@ -77,6 +77,7 @@ type FormValues = z.infer<ReturnType<typeof makeFormSchema>>;
 
 const TRANSACTION_TYPE_KEYS: Record<string, string> = {
   ADJUSTMENT:           'accounting.journalEntryForm.transactionTypeAdjustment',
+  PURCHASE:             'accounting.journalEntryForm.transactionTypePurchase',
   ASSET_PURCHASE:       'accounting.journalEntryForm.transactionTypeAssetPurchase',
   CASH_RECEIPT:         'accounting.journalEntryForm.transactionTypeCashReceipt',
   CASH_DISBURSEMENT:    'accounting.journalEntryForm.transactionTypeCashDisbursement',
