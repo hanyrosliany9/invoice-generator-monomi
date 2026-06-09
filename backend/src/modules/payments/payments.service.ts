@@ -224,17 +224,18 @@ export class PaymentsService {
         );
         const servicesPaid = amt - reimbPaid;
 
-        const lineItems: any[] = [
-          {
-            accountCode: "1-1020",
+        // Split the receipt so the reimburse is a closed loop on Cash (1-1010):
+        // advanced via CR Cash at SENT, returned via DR Cash here. Services → Bank.
+        const lineItems: any[] = [];
+        if (servicesPaid > 0) {
+          lineItems.push({
+            accountCode: "1-1020", // DR Bank (services receipt)
             description: `Payment from ${invoice.client.name}`,
             descriptionId: `Pembayaran dari ${invoice.client.name}`,
-            debit: amt,
+            debit: servicesPaid,
             credit: 0,
             clientId: invoice.clientId,
-          },
-        ];
-        if (servicesPaid > 0) {
+          });
           lineItems.push({
             accountCode: "1-2010", // CR Accounts Receivable (services)
             description: `Settle AR - Invoice ${invoice.invoiceNumber}`,
@@ -245,6 +246,14 @@ export class PaymentsService {
           });
         }
         if (reimbPaid > 0) {
+          lineItems.push({
+            accountCode: "1-1010", // DR Cash (reimburse advance returned)
+            description: `Reimburse repaid - Invoice ${invoice.invoiceNumber}`,
+            descriptionId: `Pengembalian reimburse - ${invoice.invoiceNumber}`,
+            debit: reimbPaid,
+            credit: 0,
+            clientId: invoice.clientId,
+          });
           lineItems.push({
             accountCode: "1-2040", // CR Piutang Lain-lain (reimburse)
             description: `Settle reimbursable - Invoice ${invoice.invoiceNumber}`,

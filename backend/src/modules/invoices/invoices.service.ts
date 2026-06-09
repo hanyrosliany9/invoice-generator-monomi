@@ -1177,23 +1177,24 @@ export class InvoicesService {
     const amountToPay = Number(invoice.totalAmount) - alreadyPaid;
 
     if (amountToPay > 0) {
-      // Payment journal: DR Cash (full) / CR Trade AR (services) / CR Piutang
-      // Lain-lain 1-2040 (reimburse). The reimburse portion clears the
-      // receivable that was advanced — it was NEVER revenue, so it's settled
-      // straight out of 1-2040 here. Mark those reimbursables reimbursed too.
+      // Payment journal — split the cash receipt so the reimburse is a CLOSED LOOP
+      // on Cash (1-1010): it was advanced via CR Cash at invoice SENT, so the client's
+      // repayment returns to Cash via DR Cash here (Cash nets back to where it started,
+      // staying consistent with Piutang Lain-lain 1-2040 which also nets to zero).
+      //   • services portion → DR Bank 1-1020 / CR Trade AR 1-2010
+      //   • reimburse portion → DR Cash 1-1010 / CR Piutang Lain-lain 1-2040
       try {
         const reimbPaid = Math.min(reimbursePortion, amountToPay);
         const servicesPaid = amountToPay - reimbPaid;
-        const lineItems: any[] = [
-          {
-            accountCode: "1-1020", // DR Bank/Cash (full receipt)
-            debit: amountToPay,
+        const lineItems: any[] = [];
+        if (servicesPaid > 0) {
+          lineItems.push({
+            accountCode: "1-1020", // DR Bank (services receipt)
+            debit: servicesPaid,
             credit: 0,
             description: `Payment for Invoice ${invoice.invoiceNumber}`,
             clientId: invoice.clientId,
-          },
-        ];
-        if (servicesPaid > 0) {
+          });
           lineItems.push({
             accountCode: "1-2010", // CR Trade AR (services)
             debit: 0,
@@ -1203,6 +1204,13 @@ export class InvoicesService {
           });
         }
         if (reimbPaid > 0) {
+          lineItems.push({
+            accountCode: "1-1010", // DR Cash (reimburse advance returned)
+            debit: reimbPaid,
+            credit: 0,
+            description: `Reimburse repaid - Invoice ${invoice.invoiceNumber}`,
+            clientId: invoice.clientId,
+          });
           lineItems.push({
             accountCode: "1-2040", // CR Piutang Lain-lain (reimburse)
             debit: 0,
