@@ -151,6 +151,8 @@ export default function ProjectCreatePageV2() {
           }
           actions={
             <div className="flex items-center gap-2">
+              {/* Save lives in the form's own action bar (sticky on mobile) to
+                  avoid a duplicate Save button up here. */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -161,21 +163,6 @@ export default function ProjectCreatePageV2() {
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t('projectCreate.cancel', 'Cancel')}
-              </Button>
-              <Button
-                type="submit"
-                form={FORM_ID}
-                disabled={isSubmitting}
-                className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[120px]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('projectCreate.saving', 'Saving...')}
-                  </>
-                ) : (
-                  t('projectCreate.save', 'Save')
-                )}
               </Button>
             </div>
           }

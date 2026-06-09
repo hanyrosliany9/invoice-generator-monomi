@@ -178,8 +178,12 @@ export class PaymentsService {
       const invoiceForJournal = await this.prisma.invoice.findUnique({
         where: { id: existingPayment.invoiceId },
         select: {
+          id: true,
           invoiceNumber: true,
           clientId: true,
+          projectId: true,
+          totalAmount: true,
+          priceBreakdown: true,
           paymentJournalId: true,
           client: { select: { name: true } },
         },
@@ -196,6 +200,61 @@ export class PaymentsService {
         const journalCreatedBy = userId ?? "system";
         const invoice = invoiceForJournal;
 
+        // Split the payment: services settle Trade AR (1-2010); the reimbursable
+        // portion clears Piutang Lain-lain (1-2040) — it was never revenue/AR.
+        // Allocate services FIRST across prior payments so AR never goes negative.
+        const amt = Number(existingPayment.amount);
+        const products = (invoice.priceBreakdown as any)?.products;
+        const reimbursePortion = Array.isArray(products)
+          ? products
+              .filter((p: any) => typeof p?.name === "string" && p.name.startsWith("[Reimburse]"))
+              .reduce((s: number, p: any) => s + (Number(p?.subtotal) || Number(p?.price) * (Number(p?.quantity) || 1) || 0), 0)
+          : 0;
+        const servicesPortion = Number(invoice.totalAmount) - reimbursePortion;
+        const priorPaid = (
+          await this.prisma.payment.findMany({
+            where: { invoiceId: invoice.id, status: PaymentStatus.CONFIRMED, NOT: { id } },
+            select: { amount: true },
+          })
+        ).reduce((s, p) => s + Number(p.amount), 0);
+        const reimbPaid = Math.max(
+          0,
+          Math.max(0, priorPaid + amt - servicesPortion) -
+            Math.max(0, priorPaid - servicesPortion),
+        );
+        const servicesPaid = amt - reimbPaid;
+
+        const lineItems: any[] = [
+          {
+            accountCode: "1-1020",
+            description: `Payment from ${invoice.client.name}`,
+            descriptionId: `Pembayaran dari ${invoice.client.name}`,
+            debit: amt,
+            credit: 0,
+            clientId: invoice.clientId,
+          },
+        ];
+        if (servicesPaid > 0) {
+          lineItems.push({
+            accountCode: "1-2010", // CR Accounts Receivable (services)
+            description: `Settle AR - Invoice ${invoice.invoiceNumber}`,
+            descriptionId: `Pelunasan Piutang Usaha - ${invoice.invoiceNumber}`,
+            debit: 0,
+            credit: servicesPaid,
+            clientId: invoice.clientId,
+          });
+        }
+        if (reimbPaid > 0) {
+          lineItems.push({
+            accountCode: "1-2040", // CR Piutang Lain-lain (reimburse)
+            description: `Settle reimbursable - Invoice ${invoice.invoiceNumber}`,
+            descriptionId: `Pelunasan Piutang Lain-lain - ${invoice.invoiceNumber}`,
+            debit: 0,
+            credit: reimbPaid,
+            clientId: invoice.clientId,
+          });
+        }
+
         // Post journal FIRST — if this throws, the catch in the caller will see
         // the error and the payment status is never updated to CONFIRMED.
         const journalEntry = await this.journalService.createJournalEntry({
@@ -206,25 +265,29 @@ export class PaymentsService {
           transactionType: "PAYMENT_RECEIVED",
           createdBy: journalCreatedBy,
           autoPost: true,
-          lineItems: [
-            {
-              accountCode: "1-1020", // Bank Account
-              description: `Payment from ${invoice.client.name}`,
-              descriptionId: `Pembayaran dari ${invoice.client.name}`,
-              debit: Number(existingPayment.amount),
-              credit: 0,
-              clientId: invoice.clientId,
-            },
-            {
-              accountCode: "1-2010", // Accounts Receivable
-              description: `Payment for Invoice ${invoice.invoiceNumber}`,
-              descriptionId: `Pembayaran Faktur ${invoice.invoiceNumber}`,
-              debit: 0,
-              credit: Number(existingPayment.amount),
-              clientId: invoice.clientId,
-            },
-          ],
+          lineItems,
         });
+
+        // Settle the project's reimbursables this payment cleared.
+        if (reimbPaid > 0 && invoice.projectId) {
+          const outstanding = await this.prisma.expense.findMany({
+            where: { projectId: invoice.projectId, isBillable: true, reimbursedAt: null },
+            orderBy: { expenseDate: "asc" },
+            select: { id: true, totalAmount: true, billableAmount: true },
+          });
+          let remaining = reimbPaid + 0.01;
+          const toMark: string[] = [];
+          for (const e of outstanding) {
+            const v = Number(e.billableAmount ?? e.totalAmount);
+            if (v <= remaining) { toMark.push(e.id); remaining -= v; }
+          }
+          if (toMark.length > 0) {
+            await this.prisma.expense.updateMany({
+              where: { id: { in: toMark } },
+              data: { reimbursedAt: new Date(), reimbursementJournalId: journalEntry.id },
+            });
+          }
+        }
 
         journalEntryId = journalEntry.id;
         this.logger.log(`✅ Created and posted journal entry for payment ${id}`);

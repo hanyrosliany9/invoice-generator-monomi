@@ -101,7 +101,7 @@ export default function UserCreatePageV2() {
             title={t('users.denied.title', 'Akses ditolak')}
             description={t(
               'users.denied.desc',
-              'Hanya Super Admin yang dapat mengelola pengguna sistem.',
+              'Hanya Admin yang dapat mengelola pengguna sistem.',
             )}
             action={
               <Button

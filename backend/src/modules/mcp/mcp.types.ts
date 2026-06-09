@@ -44,7 +44,9 @@ export type RoleSet = ReadonlyArray<UserRole>;
 
 export const ALL_ROLES: RoleSet = ["SUPER_ADMIN", "ADMIN", "VIDEOGRAPHER"];
 export const ADMIN_ROLES: RoleSet = ["SUPER_ADMIN", "ADMIN"];
-export const SUPER_ADMIN_ONLY: RoleSet = ["SUPER_ADMIN"];
+// ADMIN == SUPER_ADMIN in the simplified model — there is no super-admin-only
+// tier, so this includes ADMIN too (equivalent to ADMIN_ROLES).
+export const SUPER_ADMIN_ONLY: RoleSet = ["SUPER_ADMIN", "ADMIN"];
 
 export function roleAllows(allowed: RoleSet, role: UserRole): boolean {
   return allowed.includes(role);

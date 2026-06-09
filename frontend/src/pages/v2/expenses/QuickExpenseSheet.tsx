@@ -27,8 +27,9 @@ export interface QuickExpenseSheetProps {
   projectLabel?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Seed the form from a planned (estimated) expense line. */
-  prefill?: { categoryId?: string; grossAmount?: number; description?: string };
+  /** Seed the form from a planned (estimated) expense line, or pre-mark it
+   *  reimbursable (pass-through to Piutang Lain-lain) via isBillable. */
+  prefill?: { categoryId?: string; grossAmount?: number; description?: string; isBillable?: boolean };
 }
 
 /**
@@ -136,22 +137,25 @@ export function QuickExpenseSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-xl p-0 gap-0 bg-bg-base border-border-subtle"
+        className="!w-screen !max-w-none sm:!max-w-none p-0 gap-0 bg-bg-base border-border-subtle"
       >
-        <SheetHeader className="border-b border-border-subtle">
-          <SheetTitle className="text-text-primary font-display">
-            {t('quickExpense.title', 'Record Expense')}
-          </SheetTitle>
-          <SheetDescription className="text-text-tertiary">
-            {projectLabel
-              ? t('quickExpense.subtitleNamed', 'For project: {{name}}', { name: projectLabel })
-              : t('quickExpense.subtitle', 'Recorded against this project.')}
-          </SheetDescription>
+        <SheetHeader className="border-b border-border-subtle px-0">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-1.5 px-6">
+            <SheetTitle className="text-text-primary font-display">
+              {t('quickExpense.title', 'Record Expense')}
+            </SheetTitle>
+            <SheetDescription className="text-text-tertiary">
+              {projectLabel
+                ? t('quickExpense.subtitleNamed', 'For project: {{name}}', { name: projectLabel })
+                : t('quickExpense.subtitle', 'Recorded against this project.')}
+            </SheetDescription>
+          </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6">
           <ExpenseForm
-            key={`${formKey}:${prefill ? `${prefill.categoryId ?? ''}|${prefill.grossAmount ?? ''}|${prefill.description ?? ''}` : ''}`}
+            key={`${formKey}:${prefill ? `${prefill.categoryId ?? ''}|${prefill.grossAmount ?? ''}|${prefill.description ?? ''}|${prefill.isBillable ? '1' : ''}` : ''}`}
             mode="create"
             embedded
             formId={FORM_ID}
@@ -162,9 +166,11 @@ export function QuickExpenseSheet({
             onSubmitAndApprove={handleSubmitAndApprove}
             onCancel={() => onOpenChange(false)}
           />
+          </div>
         </div>
 
-        <SheetFooter className="flex-row items-center justify-between border-t border-border-subtle">
+        <SheetFooter className="flex-row items-center justify-between border-t border-border-subtle px-0">
+          <div className="mx-auto flex w-full max-w-5xl flex-row items-center justify-between px-6">
           <button
             type="button"
             onClick={() => navigate(`/expenses/new?projectId=${projectId}`)}
@@ -211,6 +217,7 @@ export function QuickExpenseSheet({
                 t('quickExpense.save', 'Save Expense')
               )}
             </Button>
+          </div>
           </div>
         </SheetFooter>
       </SheetContent>

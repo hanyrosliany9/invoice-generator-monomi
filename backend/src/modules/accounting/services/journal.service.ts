@@ -848,7 +848,19 @@ export class JournalService {
       if (endDate) where.entryDate.lte = endDate;
     }
 
-    if (transactionType) where.transactionType = transactionType;
+    if (transactionType) {
+      // The UI offers grouped aliases (INVOICE, PAYMENT, ECL) as well as exact
+      // TransactionType values. Expand aliases to the matching set; pass exact
+      // values through unchanged.
+      const GROUPS: Record<string, string[]> = {
+        INVOICE: ["INVOICE_SENT", "INVOICE_PAID"],
+        PAYMENT: ["PAYMENT_RECEIVED", "PAYMENT_MADE"],
+        EXPENSE: ["EXPENSE_SUBMITTED", "EXPENSE_PAID", "EXPENSE_REIMBURSEMENT"],
+        ECL: ["ADJUSTMENT"],
+      };
+      const group = GROUPS[transactionType];
+      where.transactionType = group ? { in: group } : transactionType;
+    }
     if (status) where.status = status;
     if (isPosted !== undefined) where.isPosted = isPosted;
     if (fiscalPeriodId) where.fiscalPeriodId = fiscalPeriodId;

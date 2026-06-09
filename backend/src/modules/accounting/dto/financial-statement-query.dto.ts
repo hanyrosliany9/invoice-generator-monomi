@@ -7,15 +7,19 @@ import {
 } from "class-validator";
 import { Type } from "class-transformer";
 import { StatementType, AccountType } from "@prisma/client";
+import {
+  WibStartOfDay,
+  WibEndOfDay,
+} from "../../../common/transformers/wib-date.transform";
 
 export class FinancialStatementQueryDto {
   @IsDate()
   @IsOptional()
-  @Type(() => Date)
+  @WibStartOfDay()
   startDate?: Date;
 
   @IsDate()
-  @Type(() => Date)
+  @WibEndOfDay()
   endDate: Date;
 
   @IsEnum(StatementType)
@@ -48,12 +52,12 @@ export class LedgerQueryDto {
 
   @IsDate()
   @IsOptional()
-  @Type(() => Date)
+  @WibStartOfDay()
   startDate?: Date;
 
   @IsDate()
   @IsOptional()
-  @Type(() => Date)
+  @WibEndOfDay()
   endDate?: Date;
 
   @IsString()
@@ -69,11 +73,11 @@ export class LedgerQueryDto {
 export class TrialBalanceQueryDto {
   @IsDate()
   @IsOptional()
-  @Type(() => Date)
+  @WibStartOfDay()
   startDate?: Date;
 
   @IsDate()
-  @Type(() => Date)
+  @WibEndOfDay()
   endDate: Date;
 
   @IsString()

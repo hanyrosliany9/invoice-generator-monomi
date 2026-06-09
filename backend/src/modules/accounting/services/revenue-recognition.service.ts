@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { JournalService } from "./journal.service";
+import { servicesPortionOf } from "../../../common/utils/reimbursable.util";
 import {
   DeferredRevenueStatus,
   MilestoneStatus,
@@ -48,6 +49,18 @@ export class RevenueRecognitionService {
 
     if (!invoice) {
       throw new NotFoundException(`Invoice ${invoiceId} not found`);
+    }
+
+    // CRITICAL: This app recognizes revenue at invoice SENT (the SENT journal
+    // posts DR Accounts Receivable / CR Revenue, stamped on invoice.journalEntryId).
+    // Once revenue is recognized, a payment is an AR SETTLEMENT (DR Bank / CR AR),
+    // NOT an advance. Treating it as an advance would post a SECOND DR Bank / CR
+    // Deferred Revenue on top of the settlement — double-debiting cash and creating
+    // bogus deferred revenue. So if revenue is already recognized, it's never an
+    // advance. (A genuine advance would be cash received on a not-yet-SENT invoice,
+    // which the payment flows don't allow.)
+    if (invoice.journalEntryId) {
+      return false;
     }
 
     // Check if payment received
@@ -1049,8 +1062,9 @@ export class RevenueRecognitionService {
       },
     });
 
+    // Revenue excludes the reimbursable pass-through portion.
     const pendingRevenueAmount = invoicedNotRecognized.reduce(
-      (sum: number, inv: any) => sum + Number(inv.totalAmount),
+      (sum: number, inv: any) => sum + servicesPortionOf(inv),
       0,
     );
 

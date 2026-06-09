@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -84,7 +85,7 @@ export default function APAgingPageV2() {
   const user = useAuthStore((state) => state.user);
   const [asOfDate, setAsOfDate] = useState<Date>(new Date());
 
-  const isoDate = asOfDate.toISOString().slice(0, 10);
+  const isoDate = toLocalISODate(asOfDate);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['v2', 'ap-aging', isoDate],

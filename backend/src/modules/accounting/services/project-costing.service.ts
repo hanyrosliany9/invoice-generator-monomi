@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
+import { servicesPortionOf } from "../../../common/utils/reimbursable.util";
 import {
   WorkInProgress,
   ProjectCostAllocation,
@@ -212,8 +213,11 @@ export class ProjectCostingService {
     }
 
     // Calculate total contract value from invoices
+    // Contract value for revenue recognition = SERVICES portion only. The
+    // reimbursable portion is a pass-through (not contract revenue), so exclude it
+    // or POC revenue recognition over-recognises.
     const totalContractValue = project.invoices.reduce(
-      (sum, invoice) => sum + Number(invoice.totalAmount),
+      (sum, invoice) => sum + servicesPortionOf(invoice),
       0,
     );
 
@@ -318,8 +322,11 @@ export class ProjectCostingService {
         );
 
     // Calculate total revenue
+    // Contract value for revenue recognition = SERVICES portion only. The
+    // reimbursable portion is a pass-through (not contract revenue), so exclude it
+    // or POC revenue recognition over-recognises.
     const totalContractValue = project.invoices.reduce(
-      (sum, invoice) => sum + Number(invoice.totalAmount),
+      (sum, invoice) => sum + servicesPortionOf(invoice),
       0,
     );
 

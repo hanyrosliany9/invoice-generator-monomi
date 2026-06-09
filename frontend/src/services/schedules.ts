@@ -190,6 +190,19 @@ export const schedulesApi = {
     });
     return res.data;
   },
+
+  // Appends every scene from a shot list onto a shoot day as SCENE strips.
+  importFromShotList: async (
+    id: string,
+    shotListId: string,
+    shootDayId: string,
+  ): Promise<Schedule> => {
+    const res = await apiClient.post(`/schedules/${id}/import-from-shot-list`, {
+      shotListId,
+      shootDayId,
+    });
+    return res.data.data;
+  },
 };
 
 /* ------------------------------------------------------------------ */

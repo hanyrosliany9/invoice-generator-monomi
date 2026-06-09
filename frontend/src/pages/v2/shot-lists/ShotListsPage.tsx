@@ -105,7 +105,11 @@ export default function ShotListsPageV2() {
       for (const p of projects) {
         try {
           const result = await shotListsApi.getByProject(p.id);
-          lists.push(...result);
+          // getByProject doesn't embed the project, but we already have it here.
+          lists.push(...result.map((sl) => ({
+            ...sl,
+            project: sl.project ?? { id: p.id, number: p.number, description: p.description },
+          })));
         } catch {
           // ignore per-project failures; the list still renders
         }
@@ -145,7 +149,8 @@ export default function ShotListsPageV2() {
       const matchesSearch = !q
         || sl.name.toLowerCase().includes(q)
         || sl.description?.toLowerCase().includes(q)
-        || sl.project?.name?.toLowerCase().includes(q);
+        || sl.project?.number?.toLowerCase().includes(q)
+        || sl.project?.description?.toLowerCase().includes(q);
       const matchesProject = projectFilter === 'all' || sl.projectId === projectFilter;
       return matchesSearch && matchesProject;
     });
@@ -293,14 +298,14 @@ export default function ShotListsPageV2() {
                   {
                     id: 'project',
                     header: t('shotLists.colProject', 'Project'),
-                    accessorFn: (row) => row.project?.name ?? '',
+                    accessorFn: (row) => row.project?.number ?? row.project?.description ?? '',
                     cell: ({ row }) => {
                       const p = row.original.project;
                       if (!p) return <span className="text-text-tertiary">—</span>;
                       return (
                         <div className="min-w-0 max-w-[220px]">
-                          <div className="text-sm text-text-primary truncate">{p.name}</div>
-                          {p.description && (
+                          <div className="text-sm text-text-primary truncate">{p.number ?? p.description ?? '—'}</div>
+                          {p.number && p.description && (
                             <div className="text-xs text-text-tertiary truncate mt-0.5">
                               {p.description}
                             </div>

@@ -18,6 +18,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings, BarChart3,
@@ -110,8 +111,12 @@ const ENGAGEMENT_TREND = [
 ];
 
 const formatCompact = (n: number) => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}jt`;
-  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}rb`;
+  // Suffixes follow the active UI language: Indonesian uses "rb" (ribu) and
+  // "jt" (juta); English uses "K" and "M". Reading i18n.language at call time
+  // is fine — the page re-renders on language change via useTranslation().
+  const id = (i18n.language || '').startsWith('id');
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}${id ? 'jt' : 'M'}`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}${id ? 'rb' : 'K'}`;
   return String(n);
 };
 
@@ -194,8 +199,8 @@ export default function SocialMediaReportsPageV2() {
           <EmptyState
             icon={<BarChart3 className="h-12 w-12" />}
             title={t('socialMediaReports.error.title', 'Unable to load reports')}
-            description={error instanceof Error ? error.message : 'Terjadi kesalahan'}
-            action={<Button onClick={() => refetch()}>{t('common.retry', 'Coba Lagi')}</Button>}
+            description={error instanceof Error ? error.message : t('socialMediaReports.error.generic', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('common.retry', 'Try Again')}</Button>}
           />
         </PageContainer>
       </AppShell>
@@ -422,7 +427,7 @@ export default function SocialMediaReportsPageV2() {
                 </h2>
                 <p className="mt-0.5 text-xs text-text-tertiary">
                   {isLoading
-                    ? t('common.loading', 'Memuat…')
+                    ? t('common.loading', 'Loading…')
                     : t('socialMediaReports.saved.count', '{{count}} client reports', { count: reports.length })}
                 </p>
               </div>

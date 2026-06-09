@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -104,7 +105,9 @@ export default function AccountsReceivablePageV2() {
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [bucketFilter, setBucketFilter] = useState<string>('all');
 
-  const isoDate = asOfDate.toISOString().slice(0, 10);
+  // LOCAL (WIB) calendar date — see toLocalISODate. Never toISOString().slice
+  // (UTC shift drops same-day data for WIB users → "AR empty" bug).
+  const isoDate = toLocalISODate(asOfDate);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['v2', 'ar-report', isoDate],
@@ -141,10 +144,17 @@ export default function AccountsReceivablePageV2() {
       toNumber(summary.days61to90) +
       toNumber(summary.over90);
     const total = toNumber(summary.totalAR ?? summary.totalOutstanding);
+    // Piutang Lain-lain (Other Receivables, 1-2040) — reimbursable expenses
+    // advanced on behalf of clients. Tracked in GL separately from trade AR.
+    const otherReceivables = toNumber(
+      (data?.summary as any)?.otherReceivablesBalance ??
+        (data as any)?.otherReceivables?.balance,
+    );
     return {
       total,
       current,
       overdue,
+      otherReceivables,
       clientCount: data?.summary?.customerCount ?? data?.topCustomers?.length ?? 0,
     };
   }, [data]);
@@ -236,13 +246,16 @@ export default function AccountsReceivablePageV2() {
         />
 
         {/* ─────────────────────────────────────────────────────────────
-            KPI band — Total / Belum Jatuh Tempo / Jatuh Tempo / Klien.
-            "Jatuh Tempo" is the load-bearing alarm; "Total" frames it.
+            KPI band — Piutang Usaha / Piutang Lain-lain / Belum Jatuh
+            Tempo / Jatuh Tempo / Klien. Trade AR (1-2010) and Other
+            Receivables (1-2040, reimbursables) are shown as distinct lines;
+            "Jatuh Tempo" is the load-bearing alarm.
            ───────────────────────────────────────────────────────────── */}
         <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {isLoading ? (
               <>
+                <Skeleton className="h-[108px] rounded-lg" />
                 <Skeleton className="h-[108px] rounded-lg" />
                 <Skeleton className="h-[108px] rounded-lg" />
                 <Skeleton className="h-[108px] rounded-lg" />
@@ -251,9 +264,14 @@ export default function AccountsReceivablePageV2() {
             ) : (
               <>
                 <StatCard
-                  label={t('accounting.accountsReceivable.statTotalReceivable', 'Total Receivable')}
+                  label={t('accounting.accountsReceivable.statTotalReceivable', 'Trade Receivable (Piutang Usaha)')}
                   value={<MoneyDisplay amount={stats.total} />}
-                  sublabel={t('accounting.accountsReceivable.statTotalReceivableSub', 'open balance as of reporting date')}
+                  sublabel={t('accounting.accountsReceivable.statTotalReceivableSub', 'open invoices as of reporting date')}
+                />
+                <StatCard
+                  label={t('accounting.accountsReceivable.statOtherReceivable', 'Other Receivable (Piutang Lain-lain)')}
+                  value={<MoneyDisplay amount={stats.otherReceivables} />}
+                  sublabel={t('accounting.accountsReceivable.statOtherReceivableSub', 'reimbursable costs advanced for clients')}
                 />
                 <StatCard
                   label={t('accounting.accountsReceivable.statCurrent', 'Not Yet Due')}
@@ -369,6 +387,106 @@ export default function AccountsReceivablePageV2() {
             </div>
           )}
         </GlassPanel>
+
+        {/* Other Receivables (Piutang Lain-lain) — itemised outstanding
+            reimbursables, so each non-sales receivable is traceable to its
+            expense / client / project (a single GL number couldn't show this).
+            Collected reimbursements drop off automatically (reimbursedAt set). */}
+        {(() => {
+          const items: any[] = (data as any)?.otherReceivables?.items ?? [];
+          if (items.length === 0) return null;
+          return (
+            <GlassPanel surface="glass" padding="lg" className="mt-8">
+              <div className="mb-4">
+                <h2 className="text-base font-display font-semibold text-text-primary">
+                  {t('accounting.accountsReceivable.otherReceivablesTitle', 'Other Receivables · Piutang Lain-lain (1-2040)')}
+                </h2>
+                <p className="mt-0.5 text-xs text-text-tertiary">
+                  {t('accounting.accountsReceivable.otherReceivablesSub', 'Reimbursable costs advanced for clients, not yet collected.')}
+                </p>
+              </div>
+              <div className="overflow-hidden rounded-md border border-border-subtle">
+                <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-x-4 px-3 py-2 bg-bg-sunken/40 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
+                  <div>{t('accounting.accountsReceivable.colExpense', 'Expense')}</div>
+                  <div>{t('accounting.accountsReceivable.colClient', 'Client')}</div>
+                  <div>{t('accounting.accountsReceivable.colProject', 'Project')}</div>
+                  <div className="text-right">{t('accounting.accountsReceivable.colAmount', 'Amount')}</div>
+                </div>
+                <ul className="divide-y divide-border-subtle">
+                  {items.map((it) => (
+                    <li
+                      key={it.expenseId}
+                      className="grid grid-cols-[auto_1fr_1fr_auto] gap-x-4 items-center px-3 py-2 text-sm cursor-pointer hover:bg-bg-sunken/30 transition-colors"
+                      onClick={() => navigate(`/expenses/${it.expenseId}`)}
+                    >
+                      <div className="font-mono text-xs text-text-tertiary flex items-center gap-2">
+                        {it.expenseNumber}
+                        <span className={cn(
+                          'rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider',
+                          it.collected
+                            ? 'bg-success/15 text-success'
+                            : it.pending
+                              ? 'bg-bg-sunken text-text-tertiary'
+                              : 'bg-warning/15 text-warning',
+                        )}>
+                          {it.collected
+                            ? t('accounting.accountsReceivable.collected', 'Collected')
+                            : it.pending
+                              ? t('accounting.accountsReceivable.pending', 'Not billed')
+                              : t('accounting.accountsReceivable.outstanding', 'Outstanding')}
+                        </span>
+                      </div>
+                      <div className="truncate text-text-secondary">{it.client?.name ?? '—'}</div>
+                      <div className="truncate text-text-tertiary text-xs">
+                        {it.project?.number ?? '—'}
+                        {it.vendorName ? ` · ${it.vendorName}` : ''}
+                      </div>
+                      <MoneyDisplay
+                        amount={toNumber(it.amount)}
+                        className={cn('text-right tabular-nums', it.collected ? 'text-text-tertiary line-through' : it.pending ? 'text-text-tertiary' : 'text-text-primary')}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                {(() => {
+                  const orr: any = (data as any)?.otherReceivables ?? {};
+                  const itemsOutstanding = toNumber(orr.itemsOutstanding ?? stats.otherReceivables);
+                  const reconciling = toNumber(orr.reconcilingAdjustment ?? 0);
+                  const glBalance = toNumber(orr.balance ?? stats.otherReceivables);
+                  const hasRecon = Math.abs(reconciling) > 0.005;
+                  return (
+                    <>
+                      {hasRecon && (
+                        <>
+                          <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-x-4 px-3 py-2 border-t border-border-subtle text-sm">
+                            <div className="col-span-3 text-text-tertiary uppercase text-[10px] tracking-[0.14em] self-center">
+                              {t('accounting.accountsReceivable.itemsOutstanding', 'Itemised outstanding')}
+                            </div>
+                            <MoneyDisplay amount={itemsOutstanding} className="text-right text-text-secondary tabular-nums" />
+                          </div>
+                          <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-x-4 px-3 py-2 text-sm">
+                            <div className="col-span-3 text-text-tertiary uppercase text-[10px] tracking-[0.14em] self-center">
+                              {t('accounting.accountsReceivable.reconcilingAdjustment', 'Manual GL adjustments')}
+                            </div>
+                            <MoneyDisplay amount={reconciling} className="text-right text-warning tabular-nums" />
+                          </div>
+                        </>
+                      )}
+                      <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-x-4 px-3 py-2 border-t border-border-subtle bg-bg-sunken/20 text-sm">
+                        <div className="col-span-3 text-text-tertiary uppercase text-[10px] tracking-[0.14em] self-center">
+                          {hasRecon
+                            ? t('accounting.accountsReceivable.glBalance', 'GL balance (1-2040)')
+                            : t('accounting.accountsReceivable.outstandingTotal', 'Outstanding total')}
+                        </div>
+                        <MoneyDisplay amount={glBalance} className="text-right font-semibold text-text-primary tabular-nums" />
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </GlassPanel>
+          );
+        })()}
       </PageContainer>
     </AppShell>
   );

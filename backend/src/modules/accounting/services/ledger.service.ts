@@ -6,6 +6,7 @@ import {
 } from "../dto/financial-statement-query.dto";
 import { AccountType, BalanceType } from "@prisma/client";
 import { wibDateStr } from "../../../common/utils/wib-date.util";
+import { servicesPortionOf } from "../../../common/utils/reimbursable.util";
 
 @Injectable()
 export class LedgerService {
@@ -492,14 +493,18 @@ export class LedgerService {
       const eclRate = latestECL ? Number(latestECL.eclRate) : 0;
       const eclStatus = latestECL ? latestECL.provisionStatus : null;
 
-      // Outstanding AR = invoice total minus CONFIRMED payments (a partially
-      // paid SENT/OVERDUE invoice only carries its remaining balance in AR).
+      // Outstanding TRADE AR (1-2010) = SERVICES portion only, minus CONFIRMED
+      // payments applied services-first. The reimbursable portion is NOT trade AR
+      // — it lives in Other Receivables (1-2040) and is reported separately, so it
+      // must be excluded here or the aging double-counts it against trade AR.
       const confirmedPaid = (invoice.payments || []).reduce(
         (s: number, p: any) =>
           p.status === "CONFIRMED" ? s + Number(p.amount || 0) : s,
         0,
       );
-      const outstanding = Math.max(0, Number(invoice.totalAmount) - confirmedPaid);
+      const servicesAmount = servicesPortionOf(invoice);
+      const servicesPaid = Math.min(confirmedPaid, servicesAmount);
+      const outstanding = Math.max(0, servicesAmount - servicesPaid);
 
       return {
         invoiceId: invoice.id,

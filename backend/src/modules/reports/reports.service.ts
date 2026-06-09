@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { wibYear, wibMonth, wibParts } from "../../common/utils/wib-date.util";
+import { servicesPortionOf } from "../../common/utils/reimbursable.util";
 
 @Injectable()
 export class ReportsService {
@@ -21,6 +22,7 @@ export class ReportsService {
       },
       select: {
         totalAmount: true,
+        priceBreakdown: true,
         creationDate: true,
         // FIX 5: fetch markedPaidAt for cash-basis date resolution
         markedPaidAt: true,
@@ -28,12 +30,19 @@ export class ReportsService {
       },
     });
 
+    // Revenue excludes the reimbursable portion (pass-through, not income).
+    // Replace each invoice's amount with its SERVICES portion before aggregating.
+    const servicesInvoices = invoices.map((inv) => ({
+      ...inv,
+      totalAmount: servicesPortionOf(inv),
+    }));
+
     // Group by period
-    const revenueByPeriod = this.groupByPeriod(invoices, period || "monthly");
+    const revenueByPeriod = this.groupByPeriod(servicesInvoices, period || "monthly");
 
     // FIX 4 (precision): use Number() on Prisma Decimal to avoid parseFloat
     // string-round-trip drift; accumulate with integer-safe addition.
-    const totalRevenue = invoices.reduce(
+    const totalRevenue = servicesInvoices.reduce(
       (sum, invoice) => sum + Number(invoice.totalAmount),
       0,
     );

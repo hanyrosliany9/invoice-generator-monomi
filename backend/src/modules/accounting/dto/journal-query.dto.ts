@@ -8,22 +8,29 @@ import {
   Min,
 } from "class-validator";
 import { Type } from "class-transformer";
-import { TransactionType, JournalStatus } from "@prisma/client";
+import { JournalStatus } from "@prisma/client";
+import {
+  WibStartOfDay,
+  WibEndOfDay,
+} from "../../../common/transformers/wib-date.transform";
 
 export class JournalQueryDto {
   @IsDate()
   @IsOptional()
-  @Type(() => Date)
+  @WibStartOfDay()
   startDate?: Date;
 
   @IsDate()
   @IsOptional()
-  @Type(() => Date)
+  @WibEndOfDay()
   endDate?: Date;
 
-  @IsEnum(TransactionType)
+  // Accepts an exact TransactionType OR a UI group alias (INVOICE, PAYMENT, ECL)
+  // which the service expands to the matching set. Strict @IsEnum rejected those
+  // aliases and 400'd the journal-entries filter.
+  @IsString()
   @IsOptional()
-  transactionType?: TransactionType;
+  transactionType?: string;
 
   @IsEnum(JournalStatus)
   @IsOptional()

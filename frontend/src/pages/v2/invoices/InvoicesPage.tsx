@@ -735,7 +735,7 @@ function InvoiceTable({
                 className="text-text-primary"
               />
               {row.original.materaiRequired && !row.original.materaiApplied && (
-                <div className="mt-0.5 inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.12em] text-warning">
+                <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] uppercase tracking-[0.12em] text-warning">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   Materai
                 </div>

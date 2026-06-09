@@ -11,8 +11,14 @@ export interface SidebarItem {
   icon: ReactNode;
   href: string;
   children?: SidebarItem[];
-  /** When true the item is hidden for VIDEOGRAPHER users. */
+  /** When true the item is hidden for VIDEOGRAPHER users (ADMIN + SUPER_ADMIN see it). */
   requiresAdmin?: boolean;
+  /**
+   * When true the item is visible to SUPER_ADMIN only. Use this for pages
+   * whose backend is guarded with @RequireSuperAdmin() (Users, Settings) —
+   * otherwise a plain ADMIN sees the menu entry but every API call 403s.
+   */
+  requiresSuperAdmin?: boolean;
 }
 
 export interface SidebarSection {
@@ -25,6 +31,8 @@ export interface SidebarSection {
    * mixed sections.
    */
   requiresAdmin?: boolean;
+  /** When true the entire section is visible to SUPER_ADMIN only. */
+  requiresSuperAdmin?: boolean;
 }
 
 export interface SidebarProps {
@@ -51,26 +59,32 @@ export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = '
   // key like 'nav.foo' renders as 'nav.foo', making bugs obvious in dev.
   const tr = (k?: string) => (k ? t(k) : '');
 
-  // Role-based nav filtering — VIDEOGRAPHER sees only items without
-  // requiresAdmin; ADMIN and SUPER_ADMIN see everything.
-  const { isAdmin } = usePermissions();
+  // Role-based nav filtering. Two gates, applied to both sections and items:
+  //   requiresAdmin       → ADMIN + SUPER_ADMIN  (hidden from VIDEOGRAPHER)
+  //   requiresSuperAdmin  → SUPER_ADMIN only      (hidden from ADMIN too)
+  // The super-admin gate exists because some pages (Users, Settings) have
+  // backends guarded with @RequireSuperAdmin(); showing them to a plain
+  // ADMIN produced a navigable-but-403 page — the "role bug" we're fixing.
+  const { isAdmin, isSuperAdmin } = usePermissions();
   const adminUser = isAdmin();
+  const superAdminUser = isSuperAdmin();
+
+  const canSee = (entry: { requiresAdmin?: boolean; requiresSuperAdmin?: boolean }) =>
+    (!entry.requiresAdmin || adminUser) && (!entry.requiresSuperAdmin || superAdminUser);
 
   // Normalize: if sections passed, use them. Otherwise wrap flat items in a single
   // unlabeled section so the renderer has one code path.
   const rawSections: SidebarSection[] = sections
     ?? (items ? [{ label: 'Workspace', items }] : []);
 
-  // Strip admin-only sections and items for non-admin users.
-  const resolvedSections: SidebarSection[] = adminUser
-    ? rawSections
-    : rawSections
-        .filter(section => !section.requiresAdmin)
-        .map(section => ({
-          ...section,
-          items: section.items.filter(item => !item.requiresAdmin),
-        }))
-        .filter(section => section.items.length > 0);
+  // Strip sections and items the current role may not see.
+  const resolvedSections: SidebarSection[] = rawSections
+    .filter(canSee)
+    .map(section => ({
+      ...section,
+      items: section.items.filter(canSee),
+    }))
+    .filter(section => section.items.length > 0);
 
   const navItem = (item: SidebarItem) => (
     <NavLink

@@ -248,7 +248,10 @@ async function createDepreciationJournalEntry(
 
   const accumulatedDepreciationAccount =
     await prisma.chartOfAccounts.findUnique({
-      where: { code: "1-1510" }, // Accumulated Depreciation
+      // FIX: 1-1510 is "Inventory - Raw Materials" — accumulated depreciation is
+      // 1-4020 (matches depreciation.service.ts / assets.service.ts). The old code
+      // would have mis-posted accumulated depreciation into the inventory account.
+      where: { code: "1-4020" }, // Accumulated Depreciation
     });
 
   if (!depreciationExpenseAccount || !accumulatedDepreciationAccount) {

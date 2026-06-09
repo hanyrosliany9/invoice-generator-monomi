@@ -18,12 +18,11 @@ import {
  *
  * Features:
  * - Type-safe role checking using Prisma UserRole enum
- * - Legacy role mapping (ADMIN → SUPER_ADMIN, USER → STAFF)
  * - Clear error messages with role information
  * - ~0.1ms authorization time (no DB queries)
  *
  * Usage:
- * @Roles(UserRole.SUPER_ADMIN, UserRole.FINANCE_MANAGER)
+ * @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
  * async approveInvoice() { ... }
  */
 @Injectable()

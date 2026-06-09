@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -56,7 +57,14 @@ const endOfMonth = () => {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth() + 1, 0);
 };
-const toIsoDate = (d: Date) => d.toISOString().slice(0, 10);
+const toIsoDate = (d: Date) => toLocalISODate(d);
+
+/* Parse a yyyy-mm-dd query param into a Date, falling back when absent/invalid. */
+const parseDateParam = (v: string | null, fallback: () => Date): Date => {
+  if (!v) return fallback();
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? fallback() : d;
+};
 
 interface LedgerEntry {
   id: string;
@@ -81,10 +89,14 @@ export default function GeneralLedgerPageV2() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
-  const [startDate, setStartDate] = useState<Date>(startOfMonth());
-  const [endDate, setEndDate]     = useState<Date>(endOfMonth());
-  const [accountCode, setAccountCode] = useState<string>('all');
-  const [accountType, setAccountType] = useState<string>('all');
+  /* Honour deep-link query params on first load (e.g. from Cash & Bank
+   * Balance or Chart of Accounts): ?accountCode=&accountType=&startDate=&endDate=.
+   * Only the initial state is seeded — afterwards filters are user-controlled. */
+  const [searchParams] = useSearchParams();
+  const [startDate, setStartDate] = useState<Date>(() => parseDateParam(searchParams.get('startDate'), startOfMonth));
+  const [endDate, setEndDate]     = useState<Date>(() => parseDateParam(searchParams.get('endDate'), endOfMonth));
+  const [accountCode, setAccountCode] = useState<string>(() => searchParams.get('accountCode') ?? 'all');
+  const [accountType, setAccountType] = useState<string>(() => searchParams.get('accountType') ?? 'all');
   const [searchText, setSearchText]   = useState('');
 
   /* ----- data ----- */

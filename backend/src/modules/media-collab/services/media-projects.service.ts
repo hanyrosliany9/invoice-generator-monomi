@@ -97,7 +97,63 @@ export class MediaProjectsService {
       },
     });
 
+    // Media collaboration is the videographers' workspace, so every
+    // videographer is auto-granted EDITOR access to each project — no manual
+    // per-project invite needed. Guests stay invite-only via the guest flow.
+    await this.grantVideographersEditorAccess(mediaProject.id, userId);
+
     return mediaProject;
+  }
+
+  /**
+   * Add every active VIDEOGRAPHER as an EDITOR collaborator on a project.
+   * Idempotent — skips users who are already collaborators (e.g. the creator).
+   * `invitedBy` is the project owner/creator. Failures are logged, never
+   * thrown: auto-sharing must not break project creation.
+   */
+  private async grantVideographersEditorAccess(
+    projectId: string,
+    invitedBy: string,
+  ) {
+    try {
+      const videographers = await this.prisma.user.findMany({
+        where: { role: "VIDEOGRAPHER", isActive: true },
+        select: { id: true },
+      });
+      if (videographers.length === 0) return;
+
+      const existing = await this.prisma.mediaCollaborator.findMany({
+        where: {
+          projectId,
+          userId: { in: videographers.map((v) => v.id) },
+        },
+        select: { userId: true },
+      });
+      const existingIds = new Set(existing.map((e) => e.userId));
+
+      const toAdd = videographers
+        .filter((v) => !existingIds.has(v.id))
+        .map((v) => ({
+          projectId,
+          userId: v.id,
+          role: "EDITOR" as const,
+          invitedBy,
+        }));
+
+      if (toAdd.length > 0) {
+        await this.prisma.mediaCollaborator.createMany({
+          data: toAdd,
+          skipDuplicates: true,
+        });
+        this.logger.log(
+          `Auto-added ${toAdd.length} videographer(s) as EDITOR to media project ${projectId}`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Failed to auto-add videographers to media project ${projectId}: ${err}`,
+      );
+    }
   }
 
   /**

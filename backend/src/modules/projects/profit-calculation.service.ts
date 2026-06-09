@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
+import { servicesPortionOf } from "../../common/utils/reimbursable.util";
 
 export interface ProfitMetrics {
   totalDirectCosts: number;
@@ -83,23 +84,28 @@ export class ProfitCalculationService {
     projectId: string,
   ): Promise<{ invoiced: number; paid: number }> {
     const invoices = await this.prisma.invoice.findMany({
-      where: { projectId },
+      // EXCLUDE CANCELLED: a cancelled invoice is void — it must not count toward
+      // invoiced/paid revenue (otherwise project totals stay stuck at the old
+      // amount after a cancellation).
+      where: { projectId, status: { not: "CANCELLED" } },
       select: {
         totalAmount: true,
         status: true,
+        priceBreakdown: true,
       },
     });
 
-    // Total invoiced amount (all invoices)
+    // Revenue = SERVICES portion only. Reimbursables are a pass-through (zero
+    // margin) and must never inflate project revenue/profit, so subtract them.
     const invoiced = invoices.reduce(
-      (sum, inv) => sum + this.toNumber(inv.totalAmount),
+      (sum, inv) => sum + servicesPortionOf(inv),
       0,
     );
 
-    // Only count paid invoices for profit calculation
+    // Only count paid invoices' services portion for profit calculation
     const paid = invoices
       .filter((inv) => inv.status === "PAID")
-      .reduce((sum, inv) => sum + this.toNumber(inv.totalAmount), 0);
+      .reduce((sum, inv) => sum + servicesPortionOf(inv), 0);
 
     return { invoiced, paid };
   }
@@ -264,8 +270,9 @@ export class ProfitCalculationService {
     const [invoices, directAllocations, indirectAllocations, wipEntries] =
       await Promise.all([
         this.prisma.invoice.findMany({
-          where: { projectId: { in: projectIds } },
-          select: { projectId: true, totalAmount: true, status: true },
+          // EXCLUDE CANCELLED (void invoices must not count as revenue).
+          where: { projectId: { in: projectIds }, status: { not: "CANCELLED" } },
+          select: { projectId: true, totalAmount: true, status: true, priceBreakdown: true },
         }),
         this.prisma.projectCostAllocation.findMany({
           where: {
@@ -331,15 +338,15 @@ export class ProfitCalculationService {
     for (const project of projects) {
       const pid = project.id;
 
-      // Revenue
+      // Revenue = SERVICES portion only (exclude reimbursable pass-through).
       const projInvoices = invoicesByProject.get(pid) ?? [];
       const invoiced = projInvoices.reduce(
-        (sum, inv) => sum + this.toNumber(inv.totalAmount),
+        (sum, inv) => sum + servicesPortionOf(inv),
         0,
       );
       const paid = projInvoices
         .filter((inv) => inv.status === "PAID")
-        .reduce((sum, inv) => sum + this.toNumber(inv.totalAmount), 0);
+        .reduce((sum, inv) => sum + servicesPortionOf(inv), 0);
 
       // Direct costs
       const allocatedDirect = (directByProject.get(pid) ?? []).reduce(

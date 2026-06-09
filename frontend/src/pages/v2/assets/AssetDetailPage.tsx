@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -376,7 +377,7 @@ function DisposeDialog({ assetId, open, onOpenChange, onSuccess }: DisposeDialog
   const { t } = useTranslation();
   const [proceeds, setProceeds] = useState('');
   const [disposalDate, setDisposalDate] = useState(
-    () => new Date().toISOString().slice(0, 10),
+    () => toLocalISODate(new Date()),
   );
 
   const mutation = useMutation({
@@ -667,12 +668,12 @@ function LogMaintenanceDialog({
     mutationFn: () => {
       const payload: CreateMaintenanceRequest = {
         maintenanceType,
-        performedDate: performedDate.toISOString().slice(0, 10),
+        performedDate: toLocalISODate(performedDate),
         description: description.trim(),
         performedBy: performedBy.trim() || undefined,
         cost: cost ? Number(cost) : undefined,
         nextMaintenanceDate: nextMaintenanceDate
-          ? nextMaintenanceDate.toISOString().slice(0, 10)
+          ? toLocalISODate(nextMaintenanceDate)
           : undefined,
       };
       return assetService.addMaintenance(assetId, payload);

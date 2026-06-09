@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +26,7 @@ import { CreateClientModal } from '@/components/monomi/CreateClientModal';
 import { clientService } from '@/services/clients';
 import { projectService } from '@/services/projects';
 import { settingsService } from '@/services/settings';
+import { expenseService } from '@/services/expenses';
 import {
   invoiceService,
   type CreateInvoiceRequest,
@@ -126,10 +127,13 @@ export interface InvoiceFormProps {
   prefilledClientId?: string;
   prefilledProjectId?: string;
   prefilledQuotationId?: string;
+  /** Supplementary invoice: prefill ONLY outstanding reimbursables, not products. */
+  reimbursablesOnly?: boolean;
 }
 
 export const InvoiceForm = ({
   mode, invoice, prefilledClientId, prefilledProjectId, prefilledQuotationId,
+  reimbursablesOnly = false,
 }: InvoiceFormProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -206,7 +210,7 @@ export const InvoiceForm = ({
   // Reset form when invoice loads in edit mode (defaultValues are memoised)
   useEffect(() => { reset(defaultValues); }, [defaultValues, reset]);
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+  const { fields, append, remove, replace } = useFieldArray({ control, name: 'items' });
 
   // Inline "create client" so a missing client doesn't force leaving the form.
   const [addClientOpen, setAddClientOpen] = useState(false);
@@ -249,6 +253,58 @@ export const InvoiceForm = ({
     () => (clientId ? projects.filter((p) => p.clientId === clientId) : projects),
     [projects, clientId],
   );
+
+  // Prefill items from the selected project's products (create mode only).
+  // Mirrors QuotationForm: project products live in priceBreakdown.products,
+  // and were not flowing into a new invoice. Ref-guarded to hydrate once per
+  // project selection so we never overwrite the user's manual edits.
+  const projectIdWatch = watch('projectId');
+  // Outstanding reimbursables for the project — billed back to the client.
+  // Backend isBillable query filter doesn't parse the string param → filter
+  // client-side. Only pull reimbursables that are NOT yet billed: deferred
+  // posting stamps paymentJournalId when the reimburse is posted to 1-2040 at
+  // invoice SENT, so paymentJournalId != null means "already on an invoice".
+  // Excluding them (and already-reimbursed ones) prevents double-billing.
+  const { data: reimbData, isFetching: reimbFetching } = useQuery({
+    queryKey: ['project-reimbursables', projectIdWatch],
+    queryFn: () => expenseService.getExpenses({ projectId: projectIdWatch, limit: 100 }),
+    enabled: mode === 'create' && !!projectIdWatch,
+  });
+  const reimbursables = useMemo(
+    () => (reimbData?.data ?? []).filter(
+      (e: any) => e.isBillable && !e.reimbursedAt && !e.paymentJournalId,
+    ),
+    [reimbData],
+  );
+  const prefilledForProjectRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (mode !== 'create') return;
+    if (!projectIdWatch) { prefilledForProjectRef.current = null; return; }
+    if (prefilledForProjectRef.current === projectIdWatch) return;
+    if (reimbFetching) return; // wait for reimbursables before hydrating once
+    const project = projects.find((p) => p.id === projectIdWatch);
+    if (!project) return;
+    prefilledForProjectRef.current = projectIdWatch;
+    const products = (project as { priceBreakdown?: { products?: any[] } })?.priceBreakdown?.products;
+    // Supplementary reimbursables-only invoice: skip the project's products
+    // (already billed on the services invoice) — bill only the reimbursables.
+    const productLines = reimbursablesOnly || !Array.isArray(products)
+      ? []
+      : products.map((prod: any) => ({
+          name: prod?.name ?? '',
+          description: prod?.description ?? '',
+          quantity: Number(prod?.quantity) || 1,
+          price: Number(prod?.price) || 0,
+        }));
+    const reimbLines = reimbursables.map((e: any) => ({
+      name: `[Reimburse] ${e.vendorName || e.description || 'Biaya'}`,
+      description: e.description ?? '',
+      quantity: 1,
+      price: Number(e.billableAmount ?? e.totalAmount) || 0,
+    }));
+    const combined = [...productLines, ...reimbLines];
+    if (combined.length > 0) replace(combined);
+  }, [projectIdWatch, projects, mode, replace, reimbFetching, reimbursables, reimbursablesOnly]);
 
   /* ---------- mutations ---------- */
   const createMutation = useMutation({
@@ -293,6 +349,20 @@ export const InvoiceForm = ({
     const tax = values.includeTax ? subtotal * (TAX_RATE / 100) : 0;
     const total = subtotal + tax;
 
+    // Which billed reimbursable expenses are still on the invoice (matched by the
+    // generated "[Reimburse] …" label + amount). The backend uses these to
+    // reclassify the reimbursable portion out of revenue → clear Piutang
+    // Lain-lain (1-2040) and mark the expense reimbursed when the invoice is sent.
+    const reimbursableExpenseIds = reimbursables
+      .filter((e: any) =>
+        values.items.some(
+          (it) =>
+            it.name === `[Reimburse] ${e.vendorName || e.description || 'Biaya'}` &&
+            Math.round(toNumber(it.price)) === Math.round(Number(e.billableAmount ?? e.totalAmount)),
+        ),
+      )
+      .map((e: any) => e.id);
+
     const basePayload = {
       clientId:        values.clientId,
       projectId:       values.projectId,
@@ -311,6 +381,7 @@ export const InvoiceForm = ({
         products,
         total,
         calculatedAt: new Date().toISOString(),
+        ...(reimbursableExpenseIds.length > 0 ? { reimbursableExpenseIds } : {}),
       },
     } satisfies Partial<CreateInvoiceRequest>;
 

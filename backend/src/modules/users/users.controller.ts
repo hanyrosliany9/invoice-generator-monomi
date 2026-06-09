@@ -25,12 +25,14 @@ import {
 import { UsersService } from "./users.service";
 import { CreateUserDto, UpdateUserDto, UserResponseDto } from "./dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
-import { RequireSuperAdmin } from "../auth/decorators/auth.decorators";
+import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import * as bcrypt from "bcrypt";
 
 @ApiTags("Users")
 @Controller("users")
-@RequireSuperAdmin() // CRITICAL SECURITY: Only SUPER_ADMIN can manage users
+// User management is available to ADMIN and SUPER_ADMIN. Full CRUD incl. role
+// assignment — no super-admin-only carve-out (simplified access model).
+@RequireAdmin()
 @ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

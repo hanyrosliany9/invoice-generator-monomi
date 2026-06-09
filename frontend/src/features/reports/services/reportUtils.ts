@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import type { ReportStatus } from '../types/report.types';
 
 /**
@@ -21,10 +22,17 @@ export class ReportUtils {
   }
 
   /**
-   * Format period as localized string
+   * Format period as a localized string.
+   *
+   * When no explicit locale is passed, follow the user's active UI language
+   * (i18next) so month names match the EN/ID toggle — previously this always
+   * defaulted to 'id-ID', leaking Indonesian month names ("Juli 2025") into
+   * the English UI.
    */
-  static formatPeriod(month: number, year: number, locale: string = 'id-ID'): string {
-    return new Date(year, month - 1).toLocaleDateString(locale, {
+  static formatPeriod(month: number, year: number, locale?: string): string {
+    const resolved = locale
+      ?? ((i18n.language || '').startsWith('id') ? 'id-ID' : 'en-US');
+    return new Date(year, month - 1).toLocaleDateString(resolved, {
       month: 'long',
       year: 'numeric',
     });

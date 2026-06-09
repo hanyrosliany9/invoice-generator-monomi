@@ -50,6 +50,15 @@ export class SchedulesController {
     return this.service.autoSchedule(id, groupBy as any);
   }
 
+  @Post(":id/import-from-shot-list")
+  async importFromShotList(
+    @Param("id") id: string,
+    @Body("shotListId") shotListId: string,
+    @Body("shootDayId") shootDayId: string,
+  ) {
+    return this.service.importFromShotList(id, shotListId, shootDayId);
+  }
+
   @Get(":id")
   async findOne(@Param("id") id: string) {
     return this.service.findOne(id);

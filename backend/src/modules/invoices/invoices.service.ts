@@ -294,9 +294,11 @@ export class InvoicesService {
         }
       }
 
-      // Check if invoice already exists for this quotation
+      // Check if a LIVE invoice already exists for this quotation. A CANCELLED
+      // invoice must not block re-creation — exclude it so the quotation can be
+      // re-invoiced after a cancel.
       const existingInvoice = await this.prisma.invoice.findFirst({
-        where: { quotationId },
+        where: { quotationId, status: { not: "CANCELLED" } },
         include: {
           client: true,
           project: true,
@@ -715,52 +717,74 @@ export class InvoicesService {
     // Validate status transition
     this.validateStatusTransition(invoice.status, status);
 
-    // FIX 4 (MED) — SENT journal + journalEntryId must be written atomically:
-    // If we create+post the journal and then the invoice.update for status+journalEntryId
-    // fails, the journal is orphaned and markAsPaid will post a 2nd SENT journal later
-    // (double AR/Revenue). Solution: combine the status update AND journalEntryId
-    // persisting into a single write, done AFTER the journal is successfully created+posted.
+    // ACCRUAL: posting a SENT invoice books DR Accounts Receivable / CR Revenue
+    // — but ONLY for the services portion. Reimbursable "[Reimburse]" lines are
+    // cost recovery, already sitting in Piutang Lain-lain (1-2040); they are NOT
+    // revenue and must not be re-posted to AR/Revenue (that double-counted them).
+    // They stay in 1-2040 and are cleared when the invoice is paid.
     if (
       status === InvoiceStatus.SENT &&
       invoice.status !== InvoiceStatus.SENT
     ) {
       try {
-        const journalEntry =
-          await this.journalService.createInvoiceJournalEntry(
-            invoice.id,
-            invoice.invoiceNumber,
-            invoice.clientId,
-            Number(invoice.totalAmount),
-            "SENT",
+        const servicesAmount =
+          Number(invoice.totalAmount) - this.reimbursablePortionOf(invoice);
+
+        let journalEntryId: string | undefined;
+        if (servicesAmount > 0) {
+          const journalEntry =
+            await this.journalService.createInvoiceJournalEntry(
+              invoice.id,
+              invoice.invoiceNumber,
+              invoice.clientId,
+              servicesAmount,
+              "SENT",
+              userId || "system",
+            );
+          await this.journalService.postJournalEntry(
+            journalEntry.id,
             userId || "system",
           );
+          journalEntryId = journalEntry.id;
+        }
+        // (servicesAmount === 0 → a reimbursables-only invoice: no revenue/AR
+        //  journal; only the reimburse leg below is posted.)
 
-        // Post journal entry immediately
-        await this.journalService.postJournalEntry(
-          journalEntry.id,
-          userId || "system",
-        );
+        // DEFERRED REIMBURSE POSTING: book DR 1-2040 / CR Kas for the reimbursable
+        // portion now (it was intentionally NOT posted at expense-record time).
+        await this.postReimburseLegOnSent(invoice, userId || "system");
 
-        // Persist status AND journalEntryId in a single write so they are
-        // never out of sync (no partial-failure orphan window).
         const updated = await this.prisma.invoice.update({
           where: { id },
-          data: { status, journalEntryId: journalEntry.id },
+          data: { status, ...(journalEntryId ? { journalEntryId } : {}) },
           include: { client: true, project: true },
         });
-
         this.logger.log(
-          `✅ Created and posted SENT journal entry for invoice ${invoice.invoiceNumber}`,
+          `✅ SENT invoice ${invoice.invoiceNumber}: posted services revenue ${servicesAmount} (reimbursable kept in 1-2040)`,
         );
         return updated;
       } catch (error) {
         this.logger.error("Failed to create journal entry for invoice:", error);
-        // ✅ FIX: Don't update status if journal entry fails
-        // This prevents invoice being marked as SENT without AR being debited
         throw new BadRequestException(
           "Gagal membuat jurnal entry untuk invoice. Status tidak dapat diubah.",
         );
       }
+    }
+
+    // CANCELLED: auto-correct the General Ledger. A cancelled invoice must not
+    // leave its SENT revenue/AR, its deferred reimburse leg (1-2040), or any
+    // payment on the books. Reverse them all and return the project's reimbursable
+    // expenses to the unbilled pool so they can be re-billed on a new invoice.
+    if (
+      status === InvoiceStatus.CANCELLED &&
+      invoice.status !== InvoiceStatus.CANCELLED
+    ) {
+      await this.reverseInvoiceJournalsAndReimbursables(invoice, userId || "system");
+      return this.prisma.invoice.update({
+        where: { id },
+        data: { status },
+        include: { client: true, project: true },
+      });
     }
 
     return this.prisma.invoice.update({
@@ -771,6 +795,256 @@ export class InvoicesService {
         project: true,
       },
     });
+  }
+
+  /**
+   * The reimbursable portion of an invoice = sum of its "[Reimburse] …" line
+   * items (auto-generated when reimbursables are pulled onto an invoice). These
+   * are NOT revenue — they recover money already advanced for the client, which
+   * is sitting in Piutang Lain-lain (1-2040). So the services subtotal
+   * (total − reimbursable) is what drives Revenue/Trade-AR; the reimbursable
+   * stays in 1-2040 and is cleared on payment. This is what keeps reimbursables
+   * from being double-counted (once in 1-2040, once in revenue/AR).
+   */
+  reimbursablePortionOf(invoice: { priceBreakdown?: any }): number {
+    const products = invoice?.priceBreakdown?.products;
+    if (!Array.isArray(products)) return 0;
+    return products
+      .filter(
+        (p: any) =>
+          typeof p?.name === "string" && p.name.startsWith("[Reimburse]"),
+      )
+      .reduce(
+        (s: number, p: any) =>
+          s +
+          (Number(p?.subtotal) ||
+            Number(p?.price) * (Number(p?.quantity) || 1) ||
+            0),
+        0,
+      );
+  }
+
+  /**
+   * Mark a project's outstanding reimbursables (isBillable, not yet reimbursed)
+   * as reimbursed, oldest first, up to `amount` — called when an invoice that
+   * billed them is PAID, so the Piutang Lain-lain receivable is settled in
+   * lockstep with the cash that cleared it.
+   */
+  private async markProjectReimbursablesPaid(
+    projectId: string | null | undefined,
+    amount: number,
+    reimbursementJournalId: string,
+  ): Promise<void> {
+    if (!projectId || amount <= 0) return;
+    const outstanding = await this.prisma.expense.findMany({
+      where: { projectId, isBillable: true, reimbursedAt: null },
+      orderBy: { expenseDate: "asc" },
+      select: { id: true, totalAmount: true, billableAmount: true },
+    });
+    let remaining = amount + 0.01; // tolerance
+    const toMark: string[] = [];
+    for (const e of outstanding) {
+      const amt = Number(e.billableAmount ?? e.totalAmount);
+      if (amt <= remaining) {
+        toMark.push(e.id);
+        remaining -= amt;
+      }
+    }
+    if (toMark.length > 0) {
+      await this.prisma.expense.updateMany({
+        where: { id: { in: toMark } },
+        data: { reimbursedAt: new Date(), reimbursementJournalId },
+      });
+    }
+  }
+
+  /**
+   * DEFERRED REIMBURSE POSTING — the reimburse leg is NOT booked when the expense
+   * is recorded on the project (expenses.service create() skips the journal for
+   * billable expenses). It is booked HERE, when the invoice that bills it is SENT:
+   *   DR 1-2040 Piutang Lain-lain  (reimburse) / CR 1-1010 Kas
+   * i.e. the company is recognised as having advanced cash on the client's behalf
+   * at the moment it bills the client for it. The matched project reimbursable
+   * expenses get `paymentJournalId` stamped (= "posted, awaiting client payment");
+   * `reimbursedAt` stays null until the invoice is PAID (markProjectReimbursablesPaid).
+   *
+   * GUARANTEE: whenever an invoice carries a reimburse portion, that FULL portion
+   * is posted to 1-2040 here — the reimburse never silently disappears from the GL.
+   * The amount is driven by the invoice's [Reimburse] lines (reimbursablePortionOf),
+   * NOT by how many project expenses happen to match. Matching is only used to
+   * stamp/link the underlying expenses (so the project's "unbilled" view updates);
+   * if fewer expenses match than the billed amount, the leg still posts the full
+   * billed amount.
+   *
+   * Idempotent at the INVOICE level: if a posted EXPENSE_REIMBURSEMENT journal
+   * already exists for this invoice (transactionId = invoiceNumber), it is skipped,
+   * so re-SENT / markAsPaid-backfill never double-post.
+   */
+  private async postReimburseLegOnSent(
+    invoice: { id: string; invoiceNumber: string; clientId: string; projectId?: string | null; priceBreakdown?: any },
+    userId: string,
+  ): Promise<void> {
+    const reimbursePortion = this.reimbursablePortionOf(invoice);
+    if (reimbursePortion <= 0) return;
+
+    // INVOICE-LEVEL idempotency: already posted for this invoice → nothing to do.
+    const existingLeg = await this.prisma.journalEntry.findFirst({
+      where: {
+        transactionId: invoice.invoiceNumber,
+        transactionType: "EXPENSE_REIMBURSEMENT",
+        isPosted: true,
+      },
+      select: { id: true },
+    });
+    if (existingLeg) return;
+
+    // Best-effort: find the project's not-yet-posted reimbursables to stamp/link
+    // (so they leave the "unbilled" pool). This does NOT cap the posted amount.
+    const toPost: string[] = [];
+    if (invoice.projectId) {
+      const outstanding = await this.prisma.expense.findMany({
+        where: { projectId: invoice.projectId, isBillable: true, paymentJournalId: null },
+        orderBy: { expenseDate: "asc" },
+        select: { id: true, totalAmount: true, billableAmount: true },
+      });
+      let remaining = reimbursePortion + 0.01; // tolerance
+      for (const e of outstanding) {
+        const amt = Number(e.billableAmount ?? e.totalAmount);
+        if (amt <= remaining) {
+          toPost.push(e.id);
+          remaining -= amt;
+        }
+      }
+    }
+
+    // Always post the FULL billed reimburse portion to 1-2040.
+    const journal = await this.journalService.createJournalEntry({
+      description: `Reimburse advanced (billed on Invoice ${invoice.invoiceNumber})`,
+      entryDate: new Date(),
+      transactionId: invoice.invoiceNumber,
+      transactionType: "EXPENSE_REIMBURSEMENT",
+      createdBy: userId,
+      autoPost: true,
+      lineItems: [
+        {
+          accountCode: "1-2040", // DR Piutang Lain-lain (advance becomes a receivable)
+          debit: reimbursePortion,
+          credit: 0,
+          description: `Reimburse advanced - Invoice ${invoice.invoiceNumber}`,
+          projectId: invoice.projectId ?? undefined,
+          clientId: invoice.clientId,
+        },
+        {
+          accountCode: "1-1010", // CR Kas (cash advanced on client's behalf)
+          debit: 0,
+          credit: reimbursePortion,
+          description: `Cash advanced for reimbursables - Invoice ${invoice.invoiceNumber}`,
+          projectId: invoice.projectId ?? undefined,
+          clientId: invoice.clientId,
+        },
+      ],
+    });
+
+    if (toPost.length > 0) {
+      await this.prisma.expense.updateMany({
+        where: { id: { in: toPost } },
+        data: { paymentJournalId: journal.id },
+      });
+    }
+
+    this.logger.log(
+      `✅ Posted reimburse leg for invoice ${invoice.invoiceNumber}: ` +
+        `DR 1-2040 / CR 1-1010 ${reimbursePortion} (${toPost.length} expense(s) linked)`,
+    );
+  }
+
+  /**
+   * Reverse EVERY posted journal an invoice produced, and unwind its reimbursables.
+   * Used on CANCEL (and reusable on delete). Covers:
+   *   1. the SENT services journal (invoice.journalEntryId — DR AR / CR Revenue)
+   *   2. any payment journal (invoice.paymentJournalId — DR Cash / CR AR/1-2040)
+   *   3. the deferred reimburse leg(s) (transactionId = invoiceNumber, type
+   *      EXPENSE_REIMBURSEMENT — DR 1-2040 / CR Kas)
+   * Reversal is idempotent (skips unposted / already-reversed entries). The
+   * project's reimbursable expenses that were billed on this invoice are reset to
+   * the UNBILLED pool (paymentJournalId / reimbursedAt cleared) so they can be
+   * billed again on a replacement invoice.
+   */
+  private async reverseInvoiceJournalsAndReimbursables(
+    invoice: { id: string; invoiceNumber: string; journalEntryId?: string | null; paymentJournalId?: string | null; projectId?: string | null; paymentMilestoneId?: string | null },
+    userId: string,
+  ): Promise<void> {
+    // Collect the reimburse-leg journals for this invoice (linked by transactionId,
+    // not by an FK on the invoice) so we can both reverse them AND find which
+    // expenses to release.
+    const reimburseLegs = await this.prisma.journalEntry.findMany({
+      where: {
+        transactionId: invoice.invoiceNumber,
+        transactionType: "EXPENSE_REIMBURSEMENT",
+      },
+      select: { id: true },
+    });
+    const reimburseLegIds = reimburseLegs.map((j) => j.id);
+
+    const journalIds = [
+      invoice.journalEntryId,
+      invoice.paymentJournalId,
+      ...reimburseLegIds,
+    ].filter((x): x is string => !!x);
+
+    for (const journalId of journalIds) {
+      try {
+        const je = await this.prisma.journalEntry.findUnique({
+          where: { id: journalId },
+          select: { id: true, isPosted: true, entryNumber: true },
+        });
+        if (!je || !je.isPosted) continue;
+        const alreadyReversed = await this.prisma.journalEntry.findFirst({
+          where: { reversedEntryId: journalId },
+          select: { id: true },
+        });
+        if (alreadyReversed) continue;
+        await this.journalService.reverseJournalEntry(journalId, userId);
+        this.logger.log(
+          `✅ CANCEL: reversed journal ${je.entryNumber} for invoice ${invoice.invoiceNumber}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to reverse journal ${journalId} on cancel of invoice ${invoice.invoiceNumber}:`,
+          error,
+        );
+      }
+    }
+
+    // Release the reimbursable expenses billed on this invoice back to "unbilled"
+    // so they no longer sit in 1-2040 (now reversed) and can be re-billed.
+    if (reimburseLegIds.length > 0) {
+      await this.prisma.expense.updateMany({
+        where: { paymentJournalId: { in: reimburseLegIds } },
+        data: { paymentJournalId: null, reimbursedAt: null, reimbursementJournalId: null },
+      });
+    }
+    // Also release any reimbursables this invoice settled at PAID (matched by the
+    // payment journal), in case the invoice was paid then cancelled.
+    if (invoice.paymentJournalId) {
+      await this.prisma.expense.updateMany({
+        where: { reimbursementJournalId: invoice.paymentJournalId },
+        data: { reimbursedAt: null, reimbursementJournalId: null },
+      });
+    }
+
+    // Release the payment milestone so a replacement invoice can be issued from
+    // the same quotation. Without this, the milestone stays isInvoiced=true and
+    // "Semua milestone sudah diinvoice" blocks re-invoicing after a cancel.
+    if (invoice.paymentMilestoneId) {
+      await this.prisma.paymentMilestone.update({
+        where: { id: invoice.paymentMilestoneId },
+        data: { isInvoiced: false },
+      });
+      this.logger.log(
+        `✅ CANCEL: released milestone ${invoice.paymentMilestoneId} (isInvoiced=false) for invoice ${invoice.invoiceNumber}`,
+      );
+    }
   }
 
   async markAsPaid(
@@ -821,37 +1095,35 @@ export class InvoicesService {
     // We won the claim — re-read with full includes for downstream logic.
     const invoice = await this.findOne(id);
 
-    // ✅ FIX: Ensure SENT journal entry exists AND is posted before creating payment journal
-    // This prevents AR from going negative if SENT journal failed or wasn't posted
-    if (!invoice.journalEntryId) {
-      this.logger.warn(
-        `Invoice ${invoice.invoiceNumber} has no SENT journal entry. Creating it now...`,
-      );
+    // Reimbursable portion (cost recovery, lives in 1-2040) vs services portion
+    // (revenue/AR). Only the services portion is ever booked to AR/Revenue.
+    const reimbursePortion = this.reimbursablePortionOf(invoice);
+    const servicesAmount = Number(invoice.totalAmount) - reimbursePortion;
 
+    // Ensure the SENT journal exists for the SERVICES portion (AR debit /
+    // Revenue credit) before recording payment. Skip when services === 0
+    // (reimbursables-only invoice — nothing to book to AR/Revenue).
+    if (!invoice.journalEntryId && servicesAmount > 0) {
       try {
-        // Create and post the missing SENT journal entry (AR debit, Revenue credit)
         const sentJournalEntry =
           await this.journalService.createInvoiceJournalEntry(
             invoice.id,
             invoice.invoiceNumber,
             invoice.clientId,
-            Number(invoice.totalAmount),
+            servicesAmount,
             "SENT",
             userId || "system",
           );
-
         await this.journalService.postJournalEntry(
           sentJournalEntry.id,
           userId || "system",
         );
-
         await this.prisma.invoice.update({
           where: { id },
           data: { journalEntryId: sentJournalEntry.id },
         });
-
         this.logger.log(
-          `✅ Backfilled SENT journal entry for invoice ${invoice.invoiceNumber}`,
+          `✅ Backfilled SENT (services) journal for invoice ${invoice.invoiceNumber}`,
         );
       } catch (error) {
         this.logger.error(
@@ -862,37 +1134,32 @@ export class InvoicesService {
           "Gagal membuat jurnal entry untuk invoice SENT. Tidak dapat menandai sebagai lunas.",
         );
       }
-    } else {
-      // Verify that the SENT journal entry was actually posted
+    } else if (invoice.journalEntryId) {
       const sentJournal = await this.prisma.journalEntry.findUnique({
         where: { id: invoice.journalEntryId },
         select: { isPosted: true, entryNumber: true },
       });
-
       if (!sentJournal?.isPosted) {
-        this.logger.warn(
-          `Invoice ${invoice.invoiceNumber} has unposted SENT journal entry. Posting it now...`,
+        await this.journalService.postJournalEntry(
+          invoice.journalEntryId,
+          userId || "system",
         );
-
-        try {
-          await this.journalService.postJournalEntry(
-            invoice.journalEntryId,
-            userId || "system",
-          );
-
-          this.logger.log(
-            `✅ Posted SENT journal entry ${sentJournal?.entryNumber} for invoice ${invoice.invoiceNumber}`,
-          );
-        } catch (error) {
-          this.logger.error(
-            "Failed to post SENT journal entry during markAsPaid:",
-            error,
-          );
-          throw new BadRequestException(
-            "Gagal posting jurnal entry untuk invoice SENT. Tidak dapat menandai sebagai lunas.",
-          );
-        }
       }
+    }
+
+    // DEFERRED REIMBURSE POSTING backfill: if the invoice is being paid without
+    // having gone through SENT (or SENT predates this logic), post the reimburse
+    // leg DR 1-2040 / CR Kas now. Idempotent — skips reimbursables already posted.
+    try {
+      await this.postReimburseLegOnSent(invoice, userId || "system");
+    } catch (error) {
+      this.logger.error(
+        "Failed to post deferred reimburse leg during markAsPaid:",
+        error,
+      );
+      throw new BadRequestException(
+        "Gagal membuat jurnal reimburse untuk invoice. Tidak dapat menandai sebagai lunas.",
+      );
     }
 
     // FIX 1 (CRITICAL): Compute how much has already been paid via CONFIRMED
@@ -910,22 +1177,51 @@ export class InvoicesService {
     const amountToPay = Number(invoice.totalAmount) - alreadyPaid;
 
     if (amountToPay > 0) {
-      // Create journal entry for payment (Cash/Bank debit, AR credit)
+      // Payment journal: DR Cash (full) / CR Trade AR (services) / CR Piutang
+      // Lain-lain 1-2040 (reimburse). The reimburse portion clears the
+      // receivable that was advanced — it was NEVER revenue, so it's settled
+      // straight out of 1-2040 here. Mark those reimbursables reimbursed too.
       try {
-        const journalEntry = await this.journalService.createInvoiceJournalEntry(
-          invoice.id,
-          invoice.invoiceNumber,
-          invoice.clientId,
-          amountToPay,
-          "PAID",
-          userId || "system",
-        );
-
-        // Post journal entry immediately
-        await this.journalService.postJournalEntry(
-          journalEntry.id,
-          userId || "system",
-        );
+        const reimbPaid = Math.min(reimbursePortion, amountToPay);
+        const servicesPaid = amountToPay - reimbPaid;
+        const lineItems: any[] = [
+          {
+            accountCode: "1-1020", // DR Bank/Cash (full receipt)
+            debit: amountToPay,
+            credit: 0,
+            description: `Payment for Invoice ${invoice.invoiceNumber}`,
+            clientId: invoice.clientId,
+          },
+        ];
+        if (servicesPaid > 0) {
+          lineItems.push({
+            accountCode: "1-2010", // CR Trade AR (services)
+            debit: 0,
+            credit: servicesPaid,
+            description: `Settle AR - Invoice ${invoice.invoiceNumber}`,
+            clientId: invoice.clientId,
+          });
+        }
+        if (reimbPaid > 0) {
+          lineItems.push({
+            accountCode: "1-2040", // CR Piutang Lain-lain (reimburse)
+            debit: 0,
+            credit: reimbPaid,
+            description: `Settle reimbursable - Invoice ${invoice.invoiceNumber}`,
+            clientId: invoice.clientId,
+          });
+        }
+        const journalEntry = await this.journalService.createJournalEntry({
+          description: `Payment received - Invoice ${invoice.invoiceNumber}`,
+          entryDate: paymentData?.paymentDate
+            ? new Date(paymentData.paymentDate)
+            : new Date(),
+          transactionId: invoice.invoiceNumber,
+          transactionType: "PAYMENT_RECEIVED",
+          createdBy: userId || "system",
+          autoPost: true,
+          lineItems,
+        });
 
         // Update invoice with payment journal entry ID
         await this.prisma.invoice.update({
@@ -933,9 +1229,16 @@ export class InvoicesService {
           data: { paymentJournalId: journalEntry.id },
         });
 
+        // Settle the project's reimbursables that this payment cleared.
+        await this.markProjectReimbursablesPaid(
+          invoice.projectId,
+          reimbPaid,
+          journalEntry.id,
+        );
+
         this.logger.log(
-          `✅ markAsPaid: posted payment journal for ${invoice.invoiceNumber} ` +
-          `amount=${amountToPay} (totalAmount=${Number(invoice.totalAmount)}, alreadyPaid=${alreadyPaid})`,
+          `✅ markAsPaid: ${invoice.invoiceNumber} paid ${amountToPay} ` +
+          `(services ${servicesPaid} → AR, reimburse ${reimbPaid} → clear 1-2040)`,
         );
       } catch (error) {
         this.logger.error(
@@ -1901,6 +2204,20 @@ export class InvoicesService {
 
           // Update valid invoices
           if (validInvoices.length > 0) {
+            // CANCELLED must auto-correct the GL per invoice (reverse its SENT /
+            // payment / reimburse journals), so it can't go through a raw bulk
+            // updateMany. Process each, then flip status.
+            if (newStatus === InvoiceStatus.CANCELLED) {
+              for (const invId of validInvoices) {
+                const inv = await this.prisma.invoice.findUnique({
+                  where: { id: invId },
+                  select: { id: true, invoiceNumber: true, journalEntryId: true, paymentJournalId: true, projectId: true, paymentMilestoneId: true },
+                });
+                if (inv) {
+                  await this.reverseInvoiceJournalsAndReimbursables(inv, userId || "system");
+                }
+              }
+            }
             const updateResult = await this.prisma.invoice.updateMany({
               where: { id: { in: validInvoices } },
               data: {

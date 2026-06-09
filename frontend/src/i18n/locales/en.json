@@ -2463,7 +2463,7 @@
     },
     "denied": {
       "title": "Access Denied",
-      "desc": "Only Super Admins can manage system users."
+      "desc": "Only admins can manage system users."
     },
     "directory": "User Directory",
     "edit": {
@@ -2475,7 +2475,8 @@
       "title": "Edit User",
       "notFoundDesc": "The user you're trying to edit does not exist or has been deleted.",
       "subtitle": "Update {{name}}'s account information",
-      "success": "Changes for \"{{name}}\" saved."
+      "success": "Changes for \"{{name}}\" saved.",
+      "successPassword": "Changes for \"{{name}}\" saved. Password updated."
     },
     "empty": {
       "filtered": {
@@ -2508,6 +2509,7 @@
       "password": "Password",
       "passwordEditPlaceholder": "Leave blank to keep unchanged",
       "passwordNew": "New Password",
+      "passwordSet": "A password is already set. Leave blank to keep it.",
       "passwordPlaceholder": "Enter initial password",
       "requiredNote": "Fields marked * are required.",
       "role": "Role",
@@ -3296,8 +3298,8 @@
       "noMatchDesc": "Try changing your filters.",
       "noReceivablesDesc": "No open receivables for this period.",
       "resetFilter": "Reset Filter",
-      "statTotalReceivable": "Total Receivable",
-      "statTotalReceivableSub": "open balance as of reporting date",
+      "statTotalReceivable": "Trade Receivable (Piutang Usaha)",
+      "statTotalReceivableSub": "open invoices as of reporting date",
       "statCurrent": "Not Yet Due",
       "statCurrentSub": "still within payment period",
       "statOverdue": "Overdue",
@@ -3322,7 +3324,20 @@
       "bucket1to30": "1–30 Days",
       "bucket31to60": "31–60 Days",
       "bucket61to90": "61–90 Days",
-      "bucketOver90": "> 90 Days"
+      "bucketOver90": "> 90 Days",
+      "statOtherReceivable": "Other Receivable (Piutang Lain-lain)",
+      "statOtherReceivableSub": "reimbursable costs advanced for clients",
+      "otherReceivablesTitle": "Other Receivables · Piutang Lain-lain (1-2040)",
+      "otherReceivablesSub": "Reimbursable costs advanced for clients, not yet collected.",
+      "colExpense": "Expense",
+      "colProject": "Project",
+      "outstandingTotal": "Outstanding total",
+      "collected": "Collected",
+      "outstanding": "Outstanding",
+      "pending": "Not billed",
+      "itemsOutstanding": "Itemised outstanding",
+      "reconcilingAdjustment": "Manual GL adjustments",
+      "glBalance": "GL balance (1-2040)"
     },
     "accountsPayable": {
       "title": "Accounts Payable",
@@ -3588,7 +3603,9 @@
       "actionDelete": "Delete",
       "actionMenuAriaLabel": "Journal actions",
       "actionsAriaLabel": "Actions",
-      "resetFilter": "Reset"
+      "resetFilter": "Reset",
+      "colDebit": "Debit",
+      "colCredit": "Credit"
     },
     "generalLedger": {
       "title": "General Ledger",
@@ -3707,6 +3724,25 @@
     },
     "cashBankBalance": {
       "byAccountLabel": "Balances by account",
+      "closingFormula": "Closing = Opening + Inflow − Outflow",
+      "prevPeriodAria": "Previous period",
+      "nextPeriodAria": "Next period",
+      "coversLabel": "Covers",
+      "sourceLabel": "Source",
+      "sourceValue": "Posted journal entries",
+      "calcFreshLabel": "Last calculated",
+      "notCalculated": "Not yet calculated",
+      "subtotalCash": "Cash subtotal",
+      "subtotalBank": "Bank subtotal",
+      "accountsCount_one": "{{count}} account",
+      "accountsCount_other": "{{count}} accounts",
+      "viewLedger": "Ledger",
+      "viewLedgerAria": "View {{account}} in the general ledger",
+      "historyTitle": "Balance history",
+      "historySubtitle": "Cash & bank totals by period — click a row to view its breakdown.",
+      "viewingBadge": "Viewing",
+      "colPeriod": "Period",
+      "colTotal": "Total",
       "calcBalance": "Calculate Balance",
       "calcNewPeriod": "Calculate New Period",
       "calculating": "Calculating...",
@@ -4632,8 +4668,8 @@
       "projectHint": "Client will be auto-filled from the selected project.",
       "noProject": "No project",
       "billable": "Billable to Client",
-      "billableOn": "Cost will appear as a line item on the project invoice",
-      "billableOff": "Internal cost — not billed to client",
+      "billableOn": "Pass-through — booked to Piutang Lain-lain (1-2040), not an internal expense. Collected back from the client.",
+      "billableOff": "Internal cost — charged to the project expense account and reduces margin.",
       "nsfp": "Tax Invoice Serial Number (NSFP)",
       "nsfpHint": "Format XXX.XXX-XX.XXXXXXXX",
       "eFakturStatus": "e-Invoice Status",
@@ -4645,7 +4681,11 @@
       "projectSearch": "Search by name or number…",
       "noProjectsFound": "No projects found",
       "projectLocked": "Selected project",
-      "projectLockedHint": "This expense will be recorded against this project."
+      "projectLockedHint": "This expense will be recorded against this project.",
+      "billableExplain": "On save this posts DR Piutang Lain-lain (1-2040) / CR Cash — a receivable from the client, not a 5-xxx/6-xxx expense. When the client pays you back, record the reimbursement from the expense to reverse it (DR Cash / CR Piutang Lain-lain). The chosen category is kept for reference only.",
+      "classification": "Classification",
+      "reimbursableClassification": "Other Receivable · Piutang Lain-lain (1-2040)",
+      "reimbursableClassificationHint": "Reimbursable pass-through — no expense category needed."
     },
     "noCategories": "No expense categories yet",
     "submitNote": "Save as draft to review later, or submit immediately for approval.",
@@ -4660,7 +4700,9 @@
     "save": "Save",
     "sourceBank": "Bank",
     "sourceCash": "Cash",
-    "optional": "optional"
+    "optional": "optional",
+    "categoryNotResolved": "Expense category could not be resolved — please re-select it and try again.",
+    "fixErrors": "Please fix the highlighted fields before saving."
   },
   "expenseCreate": {
     "success": "Expense {{n}} created successfully.",
@@ -4816,8 +4858,8 @@
     "noQuotations": "No quotations yet",
     "noQuotationsDesc": "No quotations have been created for this project.",
     "expensesSection": "Related Expenses",
-    "noExpenses": "No expenses yet",
-    "noExpensesDesc": "No expenses have been recorded for this project.",
+    "noExpenses": "No internal costs yet",
+    "noExpensesDesc": "No internal expenses recorded yet. Mark a planned line as real, or add one. Reimbursable pass-through costs appear in their own section above.",
     "milestonesSection": "Project Milestones",
     "col": {
       "number": "Number",
@@ -4828,7 +4870,8 @@
       "date": "Date",
       "validUntil": "Valid Until",
       "value": "Value",
-      "description": "Description"
+      "description": "Description",
+      "category": "Category"
     },
     "addExpense": "Add Expense",
     "addFirstExpense": "Record Expense",
@@ -4874,8 +4917,21 @@
     "dayCount": "{{count}} days",
     "setCostPlan": "Set cost plan",
     "plannedFromEstimate": "Planned (from estimate)",
-    "recordPlanned": "Record",
-    "uncategorized": "Uncategorized"
+    "recordPlanned": "Mark as real",
+    "uncategorized": "Uncategorized",
+    "variance": "Variance",
+    "actualMargin": "Margin (actual)",
+    "reimbursable": "Reimbursable · Piutang Lain-lain (1-2040)",
+    "addReimbursable": "Add reimbursable",
+    "advanced": "Advanced",
+    "collected": "Collected",
+    "outstanding": "Outstanding",
+    "collectedBadge": "Collected",
+    "outstandingBadge": "Outstanding",
+    "reimbursableEmpty": "No pass-through costs. Use this for money you pay on the client’s behalf and bill back — it books to Piutang Lain-lain, not project expense.",
+    "billReimbursables": "Bill to client",
+    "billedBadge": "Billed",
+    "unbilledBadge": "Not billed"
   },
   "projectForm": {
     "identity": {
@@ -4958,8 +5014,11 @@
       "indirectTotal": "Indirect",
       "grandTotal": "Total Cost Estimate",
       "empty": "No estimated expenses yet.",
-      "emptyHint": "Add rows below to estimate direct and indirect costs."
-    }
+      "emptyHint": "Add rows below to estimate direct and indirect costs.",
+      "actualNote": "These are planned amounts. When a real expense is paid, record the actual here — it posts to the ledger immediately, separate from saving the project.",
+      "addActual": "Record real expense"
+    },
+    "fixErrors": "Please fix the highlighted fields before saving."
   },
   "projectCreate": {
     "success": "Project \"{{name}}\" created successfully.",
@@ -5055,7 +5114,9 @@
   "invoiceCreate": {
     "backToList": "Back to Invoices",
     "title": "New Invoice",
-    "desc": "Create a new invoice for a client — select project, fill in details, and save as draft."
+    "desc": "Create a new invoice for a client — select project, fill in details, and save as draft.",
+    "titleReimbursable": "New Reimbursement Invoice",
+    "descReimbursable": "Bill the client for outstanding reimbursable costs on this project."
   },
   "invoiceEdit": {
     "notFoundTitle": "Invoice not found",
@@ -7394,5 +7455,25 @@
     "fieldMoveTo": "To",
     "fieldMoveTravel": "Travel (min)",
     "fieldMoveNotes": "Notes"
+  },
+  "realizeExpense": {
+    "title": "Record actual expense",
+    "subtitle": "Confirm the real amount that was paid.",
+    "subtitleNamed": "{{name}} — planned {{amount}}",
+    "amount": "Actual amount paid",
+    "over": "Rp {{v}} over the estimate",
+    "under": "Rp {{v}} under the estimate",
+    "date": "Date",
+    "vendor": "Vendor (optional)",
+    "billable": "Reimbursable (bill back to client)",
+    "billableOn": "Pass-through to Piutang Lain-lain (1-2040), not a project cost.",
+    "billableOff": "Internal project cost.",
+    "cancel": "Cancel",
+    "save": "Mark as real expense",
+    "saving": "Saving...",
+    "success": "Recorded as a real expense ({{n}}).",
+    "error": "Failed to record the expense. Please try again.",
+    "noCategory": "Could not resolve the budget category.",
+    "badAmount": "Enter the actual amount."
   }
 }

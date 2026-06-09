@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -92,7 +93,7 @@ export default function SalaryPaymentFormPage() {
         allowances: Number(existing.allowances),
         deductions: Number(existing.deductions),
         paidAt: existing.paidAt
-          ? new Date(existing.paidAt).toISOString().slice(0, 10)
+          ? toLocalISODate(new Date(existing.paidAt))
           : undefined,
         notes: existing.notes ?? undefined,
       });

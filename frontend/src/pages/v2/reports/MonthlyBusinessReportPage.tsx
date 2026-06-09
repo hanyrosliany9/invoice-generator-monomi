@@ -187,7 +187,7 @@ export default function MonthlyBusinessReportPageV2() {
                     paymentsQ.refetch();
                   }}
                 >
-                  {t('common.retry', 'Coba Lagi')}
+                  {t('common.retry', 'Try Again')}
                 </Button>
               }
             />
@@ -245,7 +245,7 @@ export default function MonthlyBusinessReportPageV2() {
                   <BarChart data={revenueSeries}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a30" vertical={false} />
                     <XAxis dataKey="period" tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} />
-                    <YAxis tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}jt`} />
+                    <YAxis tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}${(i18n.language || '').startsWith('id') ? 'jt' : 'M'}`} />
                     <Tooltip formatter={(v: any) => `Rp ${Number(v).toLocaleString('id-ID')}`} contentStyle={{ background: '#22222A', border: '1px solid #2a2a30', borderRadius: 8 }} />
                     <Bar dataKey="amount" fill="#4988af" radius={[4, 4, 0, 0]} />
                   </BarChart>

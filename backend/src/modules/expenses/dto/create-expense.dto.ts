@@ -91,9 +91,10 @@ export class CreateExpenseDto {
   @ApiProperty({ description: "PSAK account code", example: "6-2050" })
   @IsString()
   // 5-xxxx = COGS / direct project costs (e.g. Sewa Lokasi 5-3030), 6-xxxx =
-  // operating expenses, 8-xxxx = other expenses. COGS categories were wrongly
-  // rejected by the old [6-8] class, blocking direct-cost expense entry.
-  @Matches(/^[5-8]-\d{4}$/, { message: "Invalid PSAK account code format" })
+  // operating expenses, 8-xxxx = other expenses. 1-2040 = Piutang Lain-lain
+  // (Other Receivable) for reimbursable pass-through "expenses", which are not
+  // beban at all. The old [5-8] class rejected reimbursables booked to 1-2040.
+  @Matches(/^[1-8]-\d{4}$/, { message: "Invalid PSAK account code format" })
   accountCode: string;
 
   @ApiProperty({

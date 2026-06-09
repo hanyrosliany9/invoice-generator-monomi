@@ -165,10 +165,10 @@ export class McpResourceRegistry {
 
 function roleCapabilities(role: string): string[] {
   switch (role) {
+    // ADMIN == SUPER_ADMIN — both get the full capability set.
     case "SUPER_ADMIN":
-      return ["sales", "procurement", "accounting", "production", "media", "users", "settings"];
     case "ADMIN":
-      return ["sales", "procurement", "production", "media"];
+      return ["sales", "procurement", "accounting", "production", "media", "users", "settings"];
     case "VIDEOGRAPHER":
       return ["production", "media"];
     default:

@@ -10,6 +10,7 @@
 
 import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -247,7 +248,7 @@ const RevenueView = ({ data }: { data: any }) => {
               <XAxis dataKey="period" tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }} />
               <YAxis
                 tick={{ fontSize: 11, fill: 'var(--text-tertiary)' }}
-                tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}jt`}
+                tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}${(i18n.language || '').startsWith('id') ? 'jt' : 'M'}`}
               />
               <Tooltip
                 formatter={(v: any) => `Rp ${Number(v).toLocaleString('id-ID')}`}

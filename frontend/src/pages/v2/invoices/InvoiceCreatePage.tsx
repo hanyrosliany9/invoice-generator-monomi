@@ -31,6 +31,10 @@ export default function InvoiceCreatePageV2() {
   const prefilledClientId    = searchParams.get('clientId')    ?? undefined;
   const prefilledProjectId   = searchParams.get('projectId')   ?? undefined;
   const prefilledQuotationId = searchParams.get('quotationId') ?? undefined;
+  // Supplementary "reimbursables only" invoice: bill outstanding reimbursable
+  // costs (e.g. incurred on D-Day after the services invoice was already sent)
+  // without re-billing the project's products.
+  const reimbursablesOnly    = searchParams.get('reimbursablesOnly') === '1';
 
   return (
     <AppShell
@@ -57,8 +61,12 @@ export default function InvoiceCreatePageV2() {
         </div>
 
         <PageHeader
-          title={t('invoiceCreate.title', 'New Invoice')}
-          description={t('invoiceCreate.desc', 'Create a new invoice for a client — select project, fill in details, and save as draft.')}
+          title={reimbursablesOnly
+            ? t('invoiceCreate.titleReimbursable', 'New Reimbursement Invoice')
+            : t('invoiceCreate.title', 'New Invoice')}
+          description={reimbursablesOnly
+            ? t('invoiceCreate.descReimbursable', 'Bill the client for outstanding reimbursable costs on this project.')
+            : t('invoiceCreate.desc', 'Create a new invoice for a client — select project, fill in details, and save as draft.')}
         />
 
         <InvoiceForm
@@ -66,6 +74,7 @@ export default function InvoiceCreatePageV2() {
           prefilledClientId={prefilledClientId}
           prefilledProjectId={prefilledProjectId}
           prefilledQuotationId={prefilledQuotationId}
+          reimbursablesOnly={reimbursablesOnly}
         />
       </PageContainer>
     </AppShell>

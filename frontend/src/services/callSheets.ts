@@ -137,17 +137,15 @@ export const callSheetsApi = {
   },
 
   // Address search via backend proxy (avoids CORS issues with Nominatim)
-  searchAddresses: async (query: string): Promise<Array<{ value: string; label: string }>> => {
+  searchAddresses: async (query: string): Promise<Array<{ value: string; label: string; lat?: number; lng?: number }>> => {
     try {
       const res = await apiClient.get(`/call-sheets/search/addresses`, {
         params: { q: query }
       });
       // Backend wraps response in ApiResponse: { data: [...], message, status, timestamp }
       const results = res.data?.data || res.data || [];
-      console.log('[callSheetsApi.searchAddresses] Raw response:', res.data);
       return Array.isArray(results) ? results : [];
-    } catch (error) {
-      console.error('[callSheetsApi.searchAddresses] Error:', error);
+    } catch {
       return [];
     }
   },

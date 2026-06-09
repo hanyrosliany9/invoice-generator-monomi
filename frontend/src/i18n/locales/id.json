@@ -2554,7 +2554,7 @@
     },
     "denied": {
       "title": "Akses ditolak",
-      "desc": "Hanya Super Admin yang dapat mengelola pengguna sistem."
+      "desc": "Hanya Admin yang dapat mengelola pengguna sistem."
     },
     "directory": "Daftar Pengguna",
     "edit": {
@@ -2566,7 +2566,8 @@
       "title": "Ubah Pengguna",
       "notFoundDesc": "Pengguna yang Anda coba ubah tidak ada atau telah dihapus.",
       "subtitle": "Perbarui informasi akun {{name}}",
-      "success": "Perubahan untuk \"{{name}}\" tersimpan."
+      "success": "Perubahan untuk \"{{name}}\" tersimpan.",
+      "successPassword": "Perubahan untuk \"{{name}}\" tersimpan. Kata sandi diperbarui."
     },
     "empty": {
       "filtered": {
@@ -2599,6 +2600,7 @@
       "password": "Kata Sandi",
       "passwordEditPlaceholder": "Kosongkan untuk tidak mengubah",
       "passwordNew": "Kata Sandi Baru",
+      "passwordSet": "Kata sandi sudah diatur. Kosongkan untuk mempertahankannya.",
       "passwordPlaceholder": "Masukkan kata sandi awal",
       "requiredNote": "Tanda * menandakan kolom wajib diisi.",
       "role": "Peran",
@@ -3387,8 +3389,8 @@
       "noMatchDesc": "Coba ubah filter Anda.",
       "noReceivablesDesc": "Tidak ada piutang terbuka untuk periode ini.",
       "resetFilter": "Reset Filter",
-      "statTotalReceivable": "Total Piutang",
-      "statTotalReceivableSub": "saldo terbuka per tanggal pelaporan",
+      "statTotalReceivable": "Piutang Usaha",
+      "statTotalReceivableSub": "faktur terbuka per tanggal pelaporan",
       "statCurrent": "Belum Jatuh Tempo",
       "statCurrentSub": "masih dalam periode pembayaran",
       "statOverdue": "Jatuh Tempo",
@@ -3413,7 +3415,20 @@
       "bucket1to30": "1–30 Hari",
       "bucket31to60": "31–60 Hari",
       "bucket61to90": "61–90 Hari",
-      "bucketOver90": "> 90 Hari"
+      "bucketOver90": "> 90 Hari",
+      "statOtherReceivable": "Piutang Lain-lain",
+      "statOtherReceivableSub": "biaya talangan yang ditagihkan ke klien",
+      "otherReceivablesTitle": "Piutang Lain-lain (1-2040)",
+      "otherReceivablesSub": "Biaya talangan untuk klien yang belum tertagih.",
+      "colExpense": "Pengeluaran",
+      "colProject": "Proyek",
+      "outstandingTotal": "Total belum tertagih",
+      "collected": "Tertagih",
+      "outstanding": "Belum Tertagih",
+      "pending": "Belum ditagih",
+      "itemsOutstanding": "Rincian belum tertagih",
+      "reconcilingAdjustment": "Penyesuaian jurnal manual",
+      "glBalance": "Saldo GL (1-2040)"
     },
     "accountsPayable": {
       "title": "Hutang Usaha",
@@ -3679,7 +3694,9 @@
       "actionDelete": "Hapus",
       "actionMenuAriaLabel": "Aksi jurnal",
       "actionsAriaLabel": "Aksi",
-      "resetFilter": "Reset"
+      "resetFilter": "Reset",
+      "colDebit": "Debit",
+      "colCredit": "Kredit"
     },
     "generalLedger": {
       "title": "Buku Besar",
@@ -3798,6 +3815,24 @@
     },
     "cashBankBalance": {
       "byAccountLabel": "Saldo per akun",
+      "closingFormula": "Saldo Akhir = Saldo Awal + Masuk − Keluar",
+      "prevPeriodAria": "Periode sebelumnya",
+      "nextPeriodAria": "Periode berikutnya",
+      "coversLabel": "Mencakup",
+      "sourceLabel": "Sumber",
+      "sourceValue": "Entri jurnal yang diposting",
+      "calcFreshLabel": "Terakhir dihitung",
+      "notCalculated": "Belum dihitung",
+      "subtotalCash": "Subtotal Kas",
+      "subtotalBank": "Subtotal Bank",
+      "accountsCount_other": "{{count}} akun",
+      "viewLedger": "Buku Besar",
+      "viewLedgerAria": "Lihat {{account}} di buku besar",
+      "historyTitle": "Riwayat saldo",
+      "historySubtitle": "Total kas & bank per periode — klik baris untuk melihat rinciannya.",
+      "viewingBadge": "Dilihat",
+      "colPeriod": "Periode",
+      "colTotal": "Total",
       "calcBalance": "Hitung Saldo",
       "calcNewPeriod": "Hitung Periode Baru",
       "calculating": "Menghitung...",
@@ -4723,8 +4758,8 @@
       "projectHint": "Klien akan terisi otomatis dari proyek yang dipilih.",
       "noProject": "Tanpa proyek",
       "billable": "Dapat Ditagihkan ke Klien",
-      "billableOn": "Biaya akan muncul sebagai item baris di faktur proyek",
-      "billableOff": "Biaya internal — tidak ditagihkan ke klien",
+      "billableOn": "Talangan — dibukukan ke Piutang Lain-lain (1-2040), bukan beban internal. Ditagihkan kembali ke klien.",
+      "billableOff": "Biaya internal — dibebankan ke akun beban proyek dan mengurangi margin.",
       "nsfp": "Nomor Seri Faktur Pajak (NSFP)",
       "nsfpHint": "Format XXX.XXX-XX.XXXXXXXX",
       "eFakturStatus": "Status e-Faktur",
@@ -4736,7 +4771,11 @@
       "projectSearch": "Cari berdasarkan nama atau nomor…",
       "noProjectsFound": "Proyek tidak ditemukan",
       "projectLocked": "Proyek terpilih",
-      "projectLockedHint": "Pengeluaran ini akan dicatat untuk proyek ini."
+      "projectLockedHint": "Pengeluaran ini akan dicatat untuk proyek ini.",
+      "billableExplain": "Saat disimpan, jurnal: D Piutang Lain-lain (1-2040) / K Kas — piutang dari klien, bukan beban 5-xxx/6-xxx. Saat klien membayar kembali, catat penagihan dari expense untuk membalik jurnal (D Kas / K Piutang Lain-lain). Kategori yang dipilih hanya sebagai referensi.",
+      "classification": "Klasifikasi",
+      "reimbursableClassification": "Piutang Lain-lain (1-2040)",
+      "reimbursableClassificationHint": "Talangan ke klien — tidak perlu kategori beban."
     },
     "noCategories": "Belum ada kategori pengeluaran",
     "submitNote": "Simpan sebagai draf untuk ditinjau nanti, atau kirim langsung untuk persetujuan.",
@@ -4751,7 +4790,9 @@
     "save": "Simpan",
     "sourceBank": "Bank",
     "sourceCash": "Kas",
-    "optional": "opsional"
+    "optional": "opsional",
+    "categoryNotResolved": "Kategori beban tidak dapat ditentukan — pilih ulang dan coba lagi.",
+    "fixErrors": "Perbaiki kolom yang ditandai sebelum menyimpan."
   },
   "expenseCreate": {
     "success": "Pengeluaran {{n}} berhasil dibuat.",
@@ -4907,8 +4948,8 @@
     "noQuotations": "Belum ada penawaran",
     "noQuotationsDesc": "Belum ada penawaran yang dibuat untuk proyek ini.",
     "expensesSection": "Pengeluaran Terkait",
-    "noExpenses": "Belum ada pengeluaran",
-    "noExpensesDesc": "Belum ada pengeluaran yang dicatat untuk proyek ini.",
+    "noExpenses": "Belum ada biaya internal",
+    "noExpensesDesc": "Belum ada biaya internal. Tandai baris rencana jadi nyata, atau tambah baru. Biaya talangan muncul di bagian tersendiri di atas.",
     "milestonesSection": "Tonggak Proyek",
     "col": {
       "number": "Nomor",
@@ -4919,7 +4960,8 @@
       "date": "Tanggal",
       "validUntil": "Berlaku Hingga",
       "value": "Nilai",
-      "description": "Deskripsi"
+      "description": "Deskripsi",
+      "category": "Kategori"
     },
     "addExpense": "Tambah Biaya",
     "addFirstExpense": "Catat Biaya",
@@ -4965,8 +5007,21 @@
     "dayCount": "{{count}} hari",
     "setCostPlan": "Atur rencana biaya",
     "plannedFromEstimate": "Direncanakan (dari estimasi)",
-    "recordPlanned": "Catat",
-    "uncategorized": "Tanpa kategori"
+    "recordPlanned": "Tandai jadi nyata",
+    "uncategorized": "Tanpa kategori",
+    "variance": "Selisih",
+    "actualMargin": "Margin (aktual)",
+    "reimbursable": "Talangan · Piutang Lain-lain (1-2040)",
+    "addReimbursable": "Tambah talangan",
+    "advanced": "Ditalangi",
+    "collected": "Tertagih",
+    "outstanding": "Belum Tertagih",
+    "collectedBadge": "Tertagih",
+    "outstandingBadge": "Belum Tertagih",
+    "reimbursableEmpty": "Belum ada biaya talangan. Gunakan ini untuk uang yang Anda bayarkan atas nama klien dan ditagihkan kembali — dibukukan ke Piutang Lain-lain, bukan beban proyek.",
+    "billReimbursables": "Tagih ke klien",
+    "billedBadge": "Ditagih",
+    "unbilledBadge": "Belum ditagih"
   },
   "projectForm": {
     "identity": {
@@ -5049,8 +5104,11 @@
       "indirectTotal": "Tidak Langsung",
       "grandTotal": "Total Estimasi Biaya",
       "empty": "Belum ada estimasi biaya.",
-      "emptyHint": "Tambah baris di bawah untuk mengisi estimasi biaya langsung dan tidak langsung."
-    }
+      "emptyHint": "Tambah baris di bawah untuk mengisi estimasi biaya langsung dan tidak langsung.",
+      "actualNote": "Ini angka rencana. Saat pengeluaran nyata dibayar, catat aktualnya di sini — langsung masuk ke buku besar, terpisah dari menyimpan proyek.",
+      "addActual": "Catat pengeluaran nyata"
+    },
+    "fixErrors": "Perbaiki kolom yang ditandai sebelum menyimpan."
   },
   "projectCreate": {
     "success": "Proyek \"{{name}}\" berhasil dibuat.",
@@ -5146,7 +5204,9 @@
   "invoiceCreate": {
     "backToList": "Kembali ke Tagihan",
     "title": "Faktur Baru",
-    "desc": "Buat faktur baru untuk klien — pilih proyek, isi detail, dan simpan sebagai draf."
+    "desc": "Buat faktur baru untuk klien — pilih proyek, isi detail, dan simpan sebagai draf.",
+    "titleReimbursable": "Faktur Reimburse Baru",
+    "descReimbursable": "Tagih klien untuk biaya talangan yang belum tertagih pada proyek ini."
   },
   "invoiceEdit": {
     "notFoundTitle": "Faktur tidak ditemukan",
@@ -7394,5 +7454,25 @@
     "fieldMoveTo": "Ke",
     "fieldMoveTravel": "Perjalanan (mnt)",
     "fieldMoveNotes": "Catatan"
+  },
+  "realizeExpense": {
+    "title": "Catat pengeluaran nyata",
+    "subtitle": "Konfirmasi jumlah nyata yang dibayar.",
+    "subtitleNamed": "{{name}} — rencana {{amount}}",
+    "amount": "Jumlah nyata dibayar",
+    "over": "Rp {{v}} di atas estimasi",
+    "under": "Rp {{v}} di bawah estimasi",
+    "date": "Tanggal",
+    "vendor": "Vendor (opsional)",
+    "billable": "Talangan (ditagih ke klien)",
+    "billableOn": "Talangan ke Piutang Lain-lain (1-2040), bukan biaya proyek.",
+    "billableOff": "Biaya proyek internal.",
+    "cancel": "Batal",
+    "save": "Tandai jadi pengeluaran nyata",
+    "saving": "Menyimpan...",
+    "success": "Tercatat sebagai pengeluaran nyata ({{n}}).",
+    "error": "Gagal mencatat pengeluaran. Coba lagi.",
+    "noCategory": "Kategori anggaran tidak dapat ditemukan.",
+    "badAmount": "Masukkan jumlah nyata."
   }
 }

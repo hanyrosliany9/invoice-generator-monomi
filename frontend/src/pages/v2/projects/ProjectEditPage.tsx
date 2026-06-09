@@ -27,9 +27,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/store/auth';
 import {
   projectService,
+  parseEstimatedExpenses,
   type ProductItem,
   type UpdateProjectRequest,
-  type EstimatedExpense,
 } from '@/services/projects';
 
 import {
@@ -37,33 +37,13 @@ import {
   emptyProjectFormValues,
   type ProjectFormValues,
 } from './ProjectForm';
+import { QuickExpenseSheet } from '@/pages/v2/expenses/QuickExpenseSheet';
 
 const FORM_ID = 'project-edit-form';
 
-// Parse estimatedExpenses from the project JSON field — it may be stored
-// as a raw JSON value (string or array) by the backend.
-const parseEstimatedExpenses = (raw: unknown): EstimatedExpense[] => {
-  if (!raw) return [];
-  let data: unknown = raw;
-  if (typeof raw === 'string') {
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      return [];
-    }
-  }
-  if (!Array.isArray(data)) return [];
-  return (data as any[])
-    .map((item: any) => ({
-      categoryId: typeof item?.categoryId === 'string' ? item.categoryId : '',
-      categoryName: item?.categoryName ?? '',
-      categoryNameId: item?.categoryNameId ?? '',
-      amount: Number(item?.amount) || 0,
-      notes: item?.notes ?? '',
-      costType: item?.costType === 'indirect' ? ('indirect' as const) : ('direct' as const),
-    }))
-    .filter((e) => e.categoryId);
-};
+// Estimates are parsed via the shared parseEstimatedExpenses() helper, which
+// handles the backend's bucketed `{ direct[], indirect[] }` storage shape —
+// the old local parser assumed a flat array and silently dropped every line.
 
 // Backend stores products under `priceBreakdown.products` as a JSON
 // blob (legacy shape; see classic ProjectEditPage). Decode defensively —
@@ -97,6 +77,7 @@ export default function ProjectEditPageV2() {
   const { id } = useParams<{ id: string }>();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quickExpenseOpen, setQuickExpenseOpen] = useState(false);
 
   const shell = {
     sidebar: {
@@ -338,6 +319,8 @@ export default function ProjectEditPageV2() {
           ]}
           actions={
             <div className="flex items-center gap-2">
+              {/* Save lives in the form's own action bar (sticky on mobile) to
+                  avoid a duplicate Save button up here. */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -347,21 +330,6 @@ export default function ProjectEditPageV2() {
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t('projectEdit.cancel', 'Cancel')}
-              </Button>
-              <Button
-                type="submit"
-                form={FORM_ID}
-                disabled={isSubmitting}
-                className="bg-brand-cream text-brand-black hover:bg-brand-cream/90 min-w-[120px]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('projectEdit.saving', 'Saving...')}
-                  </>
-                ) : (
-                  t('projectEdit.save', 'Save')
-                )}
               </Button>
             </div>
           }
@@ -373,8 +341,18 @@ export default function ProjectEditPageV2() {
           defaultValues={formDefaults}
           isSubmitting={isSubmitting}
           onSubmit={handleSubmit}
+          onAddActualExpense={id ? () => setQuickExpenseOpen(true) : undefined}
         />
       </PageContainer>
+
+      {id && (
+        <QuickExpenseSheet
+          projectId={id}
+          projectLabel={project.description}
+          open={quickExpenseOpen}
+          onOpenChange={setQuickExpenseOpen}
+        />
+      )}
     </AppShell>
   );
 }

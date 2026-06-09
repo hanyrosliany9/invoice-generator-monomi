@@ -37,7 +37,7 @@
 /*    - "Send Call Sheet" actual distribution (button stubs status)    */
 /* ------------------------------------------------------------------ */
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -77,12 +77,20 @@ import { cn } from '@/lib/utils';
 
 import { useAuthStore } from '@/store/auth';
 import { callSheetsApi } from '@/services/callSheets';
+import { useGoogleMapsLoader } from '@/hooks/useGoogleMapsLoader';
 import type {
   CallSheet, CallSheetStatus, CallSheetType, CallStatus,
   ModelArrivalType, WardrobeStatus, HMURole,
   MealType, SpecialReqType,
 } from '@/types/callSheet';
 import { DEPARTMENTS } from '@/constants/departments';
+
+// Google Maps is loaded at runtime via useGoogleMapsLoader; type the global loosely.
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical contract.                                      */
@@ -197,6 +205,8 @@ type CallSheetHeaderForm = {
   sunset: string;
   locationName: string;
   locationAddress: string;
+  locationLat: string;
+  locationLng: string;
   parkingNotes: string;
   weatherHigh: string;
   weatherLow: string;
@@ -441,7 +451,7 @@ export default function CallSheetEditorPageV2() {
       productionName: '', director: '', producer: '', callSheetType: 'PHOTO',
       crewCallTime: '', firstShotTime: '', lunchTime: '', estimatedWrap: '',
       sunrise: '', sunset: '',
-      locationName: '', locationAddress: '', parkingNotes: '',
+      locationName: '', locationAddress: '', locationLat: '', locationLng: '', parkingNotes: '',
       weatherHigh: '', weatherLow: '', weatherCondition: '',
       nearestHospital: '', hospitalAddress: '', hospitalPhone: '',
       generalNotes: '', productionNotes: '',
@@ -466,6 +476,8 @@ export default function CallSheetEditorPageV2() {
       sunset: callSheet.sunset ?? '',
       locationName: callSheet.locationName ?? '',
       locationAddress: callSheet.locationAddress ?? '',
+      locationLat: callSheet.locationLat != null ? String(callSheet.locationLat) : '',
+      locationLng: callSheet.locationLng != null ? String(callSheet.locationLng) : '',
       parkingNotes: callSheet.parkingNotes ?? '',
       weatherHigh: callSheet.weatherHigh != null ? String(callSheet.weatherHigh) : '',
       weatherLow: callSheet.weatherLow != null ? String(callSheet.weatherLow) : '',
@@ -618,37 +630,59 @@ export default function CallSheetEditorPageV2() {
   });
 
   /* ----- auto-fill mutations ----- */
+  // Surface the backend's real message (it throws BadRequestException with a
+  // specific reason) instead of a generic "failed" toast.
+  const serverError = (e: any, fallback: string): string => {
+    const msg = e?.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(', ');
+    return msg || e?.message || fallback;
+  };
+
+  // Persist the current location (address + Google coords) before an auto-fill
+  // so it always runs against what's on screen — not a stale saved value.
+  const persistLocationFirst = async () => {
+    const v = headerForm.getValues();
+    const lat = parseFloat(v.locationLat);
+    const lng = parseFloat(v.locationLng);
+    await callSheetsApi.update(id!, {
+      locationName: v.locationName || undefined,
+      locationAddress: v.locationAddress || undefined,
+      locationLat: Number.isFinite(lat) ? lat : undefined,
+      locationLng: Number.isFinite(lng) ? lng : undefined,
+    });
+  };
+
   const autoFillWeather = useMutation({
-    mutationFn: () => callSheetsApi.autoFillWeather(id!),
+    mutationFn: async () => { await persistLocationFirst(); return callSheetsApi.autoFillWeather(id!); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
       toast.success(t('callSheetEditor.autoFillWeatherDone', 'Cuaca terisi otomatis.'));
     },
-    onError: () => toast.error(t('callSheetEditor.autoFillWeatherFailed', 'Gagal mengisi cuaca otomatis.')),
+    onError: (e) => toast.error(serverError(e, t('callSheetEditor.autoFillWeatherFailed', 'Gagal mengisi cuaca otomatis.'))),
   });
   const autoFillSunTimes = useMutation({
-    mutationFn: () => callSheetsApi.autoFillSunTimes(id!),
+    mutationFn: async () => { await persistLocationFirst(); return callSheetsApi.autoFillSunTimes(id!); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
       toast.success(t('callSheetEditor.autoFillSunDone', 'Jam matahari terisi otomatis.'));
     },
-    onError: () => toast.error(t('callSheetEditor.autoFillSunFailed', 'Gagal mengisi jam matahari.')),
+    onError: (e) => toast.error(serverError(e, t('callSheetEditor.autoFillSunFailed', 'Gagal mengisi jam matahari.'))),
   });
   const autoFillHospital = useMutation({
-    mutationFn: () => callSheetsApi.autoFillHospital(id!),
+    mutationFn: async () => { await persistLocationFirst(); return callSheetsApi.autoFillHospital(id!); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
       toast.success(t('callSheetEditor.autoFillHospitalDone', 'Rumah sakit terisi otomatis.'));
     },
-    onError: () => toast.error(t('callSheetEditor.autoFillHospitalFailed', 'Gagal mengisi rumah sakit.')),
+    onError: (e) => toast.error(serverError(e, t('callSheetEditor.autoFillHospitalFailed', 'Gagal mengisi rumah sakit.'))),
   });
   const autoFillAll = useMutation({
-    mutationFn: () => callSheetsApi.autoFillAll(id!),
+    mutationFn: async () => { await persistLocationFirst(); return callSheetsApi.autoFillAll(id!); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['call-sheet', id] });
       toast.success(t('callSheetEditor.autoFillAllDone', 'Data lokasi terisi otomatis.'));
     },
-    onError: () => toast.error(t('callSheetEditor.autoFillAllFailed', 'Gagal mengisi data otomatis.')),
+    onError: (e) => toast.error(serverError(e, t('callSheetEditor.autoFillAllFailed', 'Gagal mengisi data otomatis.'))),
   });
   const autoFillPending =
     autoFillWeather.isPending || autoFillSunTimes.isPending ||
@@ -900,6 +934,12 @@ export default function CallSheetEditorPageV2() {
       const n = parseInt(v, 10);
       return Number.isFinite(n) ? n : undefined;
     };
+    // Coordinates are decimals — parseInt would truncate lat/lng to whole
+    // degrees (e.g. -6.21 → -6), pointing auto-fill at the wrong place.
+    const toFloatOrUndef = (v: string) => {
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : undefined;
+    };
     return {
       productionName: values.productionName || undefined,
       director: values.director || undefined,
@@ -913,6 +953,8 @@ export default function CallSheetEditorPageV2() {
       sunset: values.sunset || undefined,
       locationName: values.locationName || undefined,
       locationAddress: values.locationAddress || undefined,
+      locationLat: toFloatOrUndef(values.locationLat),
+      locationLng: toFloatOrUndef(values.locationLng),
       parkingNotes: values.parkingNotes || undefined,
       weatherHigh: toNumOrUndef(values.weatherHigh),
       weatherLow: toNumOrUndef(values.weatherLow),
@@ -1544,10 +1586,25 @@ export default function CallSheetEditorPageV2() {
                   />
                 </Field>
                 <Field label={t('callSheetEditor.fieldAddress', 'Address')}>
-                  <Input
-                    {...headerForm.register('locationAddress')}
+                  <AddressAutocomplete
+                    value={headerForm.watch('locationAddress')}
+                    onChange={(v) => {
+                      headerForm.setValue('locationAddress', v, { shouldDirty: true });
+                      // Free typing invalidates any previously captured coords.
+                      headerForm.setValue('locationLat', '', { shouldDirty: true });
+                      headerForm.setValue('locationLng', '', { shouldDirty: true });
+                    }}
+                    onSelect={(v, coords) => {
+                      headerForm.setValue('locationAddress', v, { shouldDirty: true });
+                      // Seed the location name from the address if it's still empty.
+                      if (!headerForm.getValues('locationName')) {
+                        headerForm.setValue('locationName', v.split(',')[0]?.trim() ?? '', { shouldDirty: true });
+                      }
+                      // Store precise Google coordinates for reliable auto-fill.
+                      headerForm.setValue('locationLat', coords ? String(coords.lat) : '', { shouldDirty: true });
+                      headerForm.setValue('locationLng', coords ? String(coords.lng) : '', { shouldDirty: true });
+                    }}
                     placeholder={t('callSheetEditor.addressPlaceholder', 'Jl. Sudirman No. 123, Jakarta')}
-                    className="bg-bg-sunken border-border-default"
                   />
                 </Field>
               </div>
@@ -2952,6 +3009,170 @@ const TimeInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     {...props}
   />
 );
+
+/* Address field with type-ahead suggestions (restores the v1 Google
+   Places lookup). Primary path: Google Places Autocomplete — picking a
+   suggestion fetches precise lat/lng (stored on the call sheet so
+   weather / sun-times / hospital auto-fill are reliable). Fallback when
+   no VITE_GOOGLE_MAPS_API_KEY / Google fails to load: the OSM/Nominatim
+   address search (GET /call-sheets/search/addresses); the backend then
+   geocodes the chosen address server-side. */
+type AddressSuggestion = { placeId: string; main: string; secondary: string; description: string; lat?: number; lng?: number };
+
+function AddressAutocomplete({
+  value, onChange, onSelect, placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSelect: (v: string, coords?: { lat: number; lng: number }) => void;
+  placeholder?: string;
+}) {
+  const { t } = useTranslation();
+  const { loaded, error } = useGoogleMapsLoader();
+  const googleReady = loaded && !error && !!window.google?.maps?.places;
+
+  const [query, setQuery] = useState(value ?? '');
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionTokenRef = useRef<any>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  // Keep the local field in sync when the form value changes externally
+  // (initial load, form reset after save / auto-fill).
+  useEffect(() => { setQuery(value ?? ''); }, [value]);
+
+  // Fresh Places session token (groups autocomplete + details billing).
+  useEffect(() => {
+    if (googleReady && window.google.maps.places.AutocompleteSessionToken) {
+      sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+    }
+  }, [googleReady]);
+
+  // Close the suggestion list on outside click.
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const searchGoogle = (q: string) => {
+    const svc = new window.google.maps.places.AutocompleteService();
+    svc.getPlacePredictions(
+      { input: q, componentRestrictions: { country: 'id' }, sessionToken: sessionTokenRef.current },
+      (predictions: any, status: any) => {
+        setLoading(false);
+        if (status !== 'OK' || !predictions) { setSuggestions([]); setOpen(false); return; }
+        setSuggestions(predictions.map((p: any) => ({
+          placeId: p.place_id || '',
+          main: p.structured_formatting?.main_text || p.description || '',
+          secondary: p.structured_formatting?.secondary_text || '',
+          description: p.description || '',
+        })));
+        setOpen(true);
+      },
+    );
+  };
+
+  const searchNominatim = async (q: string) => {
+    try {
+      const res = await callSheetsApi.searchAddresses(q);
+      setSuggestions(res.map((r) => ({ placeId: '', main: r.label, secondary: '', description: r.value, lat: r.lat, lng: r.lng })));
+      setOpen(res.length > 0);
+    } catch {
+      setSuggestions([]); setOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runSearch = (q: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (q.trim().length < 3) { setSuggestions([]); setOpen(false); return; }
+    setLoading(true);
+    debounceRef.current = setTimeout(() => {
+      if (googleReady) searchGoogle(q.trim());
+      else searchNominatim(q.trim());
+    }, 300);
+  };
+
+  const pick = (s: AddressSuggestion) => {
+    setQuery(s.description);
+    setSuggestions([]);
+    setOpen(false);
+
+    if (googleReady && s.placeId) {
+      const places = new window.google.maps.places.PlacesService(document.createElement('div'));
+      places.getDetails(
+        { placeId: s.placeId, fields: ['geometry', 'formatted_address'], sessionToken: sessionTokenRef.current },
+        (place: any, status: any) => {
+          if (status === 'OK' && place?.geometry?.location) {
+            onSelect(s.description, {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+            });
+          } else {
+            onSelect(s.description);
+          }
+          // Consume the session token; start a new one for the next search.
+          sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
+        },
+      );
+    } else {
+      // Nominatim fallback: the suggestion already carries lat/lng, so we still
+      // store coordinates (no second geocode needed during auto-fill).
+      onSelect(
+        s.description,
+        s.lat != null && s.lng != null ? { lat: s.lat, lng: s.lng } : undefined,
+      );
+    }
+  };
+
+  return (
+    <div className="relative" ref={boxRef}>
+      <div className="relative">
+        <Input
+          value={query}
+          autoComplete="off"
+          placeholder={placeholder}
+          className="bg-bg-sunken border-border-default pr-8"
+          onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); runSearch(e.target.value); }}
+          onFocus={() => { if (suggestions.length > 0) setOpen(true); }}
+        />
+        {loading
+          ? <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-text-tertiary" />
+          : <MapPin className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary" />}
+      </div>
+      {open && suggestions.length > 0 && (
+        <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border-default bg-bg-raised shadow-lg py-1">
+          {suggestions.map((s, i) => (
+            <li key={`${s.placeId || s.description}-${i}`}>
+              <button
+                type="button"
+                className="block w-full text-left px-3 py-2 hover:bg-bg-sunken leading-snug"
+                onClick={() => pick(s)}
+              >
+                <div className="text-xs font-medium text-text-primary truncate">{s.main}</div>
+                {s.secondary && <div className="text-[11px] text-text-tertiary truncate">{s.secondary}</div>}
+              </button>
+            </li>
+          ))}
+          {googleReady && (
+            <li className="px-3 py-1.5 text-right text-[10px] text-text-tertiary border-t border-border-subtle">
+              {t('callSheetEditor.poweredByGoogle', 'Powered by Google')}
+            </li>
+          )}
+        </ul>
+      )}
+      <p className="mt-1 text-[11px] text-text-tertiary">
+        {t('callSheetEditor.addressAutocompleteHint', 'Pick a suggestion so weather & sun-times auto-fill can locate the shoot.')}
+      </p>
+    </div>
+  );
+}
 
 /* Row actions — unsaved rows show a quiet "Unsaved" badge (Save All
    commits them). The per-row Save icon has been removed because it

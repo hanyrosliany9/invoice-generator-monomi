@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
-import { projectService, type Project, type ProjectMilestone } from '@/services/projects';
+import { projectService, parseEstimatedExpenses, type Project, type ProjectMilestone } from '@/services/projects';
 import { invoiceService, type Invoice } from '@/services/invoices';
 import { quotationService, type Quotation } from '@/services/quotations';
 import { expenseService } from '@/services/expenses';
@@ -39,6 +39,7 @@ import { shotListsApi } from '@/services/shotLists';
 import { schedulesApi } from '@/services/schedules';
 import type { Expense } from '@/types/expense';
 import { QuickExpenseSheet } from '@/pages/v2/expenses/QuickExpenseSheet';
+import { RealizeExpenseDialog, type PlannedLine } from './RealizeExpenseDialog';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical shape to the list page so navigation rhythm    */
@@ -188,9 +189,12 @@ export default function ProjectDetailPageV2() {
   const canAddExpense = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   // Quick-add slide-over so recording an expense never leaves the project page.
   const [quickExpenseOpen, setQuickExpenseOpen] = useState(false);
+  // Lightweight "make it real" dialog for realizing a single planned line.
+  const [realizeOpen, setRealizeOpen] = useState(false);
+  const [realizePlanned, setRealizePlanned] = useState<PlannedLine | null>(null);
   // When "realizing" a planned (estimated) expense line, seed the sheet's form.
   const [prefill, setPrefill] = useState<
-    { categoryId?: string; grossAmount?: number; description?: string } | undefined
+    { categoryId?: string; grossAmount?: number; description?: string; isBillable?: boolean } | undefined
   >(undefined);
   const queryClient = useQueryClient();
 
@@ -298,18 +302,70 @@ export default function ProjectDetailPageV2() {
   const totals = useMemo(() => {
     const invoiced = invoices.reduce((acc, i) => acc + toNumber(i.totalAmount), 0);
     const paid = toNumber(project?.totalPaidAmount) || toNumber(project?.totalInvoicedAmount);
-    const totalExpenses = expenses.reduce((acc, e) => acc + toNumber(e.totalAmount), 0);
+
+    // Split actuals: INTERNAL costs (hit margin) vs REIMBURSABLE pass-through
+    // (booked to Piutang Lain-lain 1-2040, collected from the client — never a
+    // project cost and never part of margin).
+    const internalExpenses = expenses.filter((e) => !e.isBillable);
+    const billableExpenses = expenses.filter((e) => e.isBillable);
+    const totalExpenses = internalExpenses.reduce((acc, e) => acc + toNumber(e.totalAmount), 0);
+
+    // Reimbursable (Piutang Lain-lain) tracking — advanced vs collected.
+    // Deferred posting: a reimbursable is only booked to 1-2040 when it is billed
+    // on an invoice (paymentJournalId set at invoice SENT). So:
+    //   • unbilled    — paymentJournalId null & not reimbursed: still to invoice.
+    //   • outstanding — advanced but not yet collected (reimbursedAt null).
+    // The "Bill to client" button must key off UNBILLED, not outstanding, or it
+    // would re-bill already-invoiced reimbursables into an empty supplementary.
+    const reimbursableAdvanced = billableExpenses.reduce((acc, e) => acc + toNumber(e.totalAmount), 0);
+    const reimbursableCollected = billableExpenses
+      .filter((e) => !!e.reimbursedAt)
+      .reduce((acc, e) => acc + toNumber(e.totalAmount), 0);
+    const reimbursableOutstanding = reimbursableAdvanced - reimbursableCollected;
+    const reimbursableUnbilled = billableExpenses
+      .filter((e) => !(e as any).paymentJournalId && !e.reimbursedAt)
+      .reduce((acc, e) => acc + toNumber(e.totalAmount), 0);
+
     const budget = toNumber(project?.estimatedBudget);
     const profit = paid - totalExpenses;
     const margin = paid > 0 ? (profit / paid) * 100 : 0;
+
     // Estimated cost budget = sum of the project's planned (estimated) expenses.
-    const estArr = Array.isArray((project as { estimatedExpenses?: unknown })?.estimatedExpenses)
-      ? ((project as { estimatedExpenses?: Array<{ amount?: number | string }> }).estimatedExpenses ?? [])
-      : [];
+    // Use the shared parser — estimates are stored as a bucketed object, not an
+    // array, so the old Array.isArray() check always read 0.
+    const estArr = parseEstimatedExpenses(project?.estimatedExpenses);
     const estimatedCost = estArr.reduce((acc, e) => acc + toNumber(e?.amount), 0);
     const costRemaining = estimatedCost - totalExpenses;
     const costUsedPct = estimatedCost > 0 ? (totalExpenses / estimatedCost) * 100 : 0;
-    return { invoiced, paid, totalExpenses, budget, profit, margin, estimatedCost, costRemaining, costUsedPct };
+
+    // Per-category Plan vs Actual (internal only). Merge estimate buckets with
+    // actual non-billable expenses keyed by category.
+    type CatRow = { categoryId: string; name: string; estimated: number; actual: number };
+    const byCat = new Map<string, CatRow>();
+    const keyOf = (id?: string, name?: string) => id || `name:${(name || '').toLowerCase()}` || 'uncategorized';
+    for (const e of estArr) {
+      const k = keyOf(e.categoryId, e.categoryName || e.categoryNameId);
+      const row = byCat.get(k) ?? { categoryId: e.categoryId, name: e.categoryName || e.categoryNameId || '', estimated: 0, actual: 0 };
+      row.estimated += toNumber(e.amount);
+      if (!row.name) row.name = e.categoryName || e.categoryNameId || '';
+      byCat.set(k, row);
+    }
+    for (const e of internalExpenses) {
+      const catName = e.category?.name || e.category?.nameId;
+      const k = keyOf(e.categoryId, catName);
+      const row = byCat.get(k) ?? { categoryId: e.categoryId ?? '', name: catName || '', estimated: 0, actual: 0 };
+      row.actual += toNumber(e.totalAmount);
+      if (!row.name) row.name = catName || '';
+      byCat.set(k, row);
+    }
+    const costRows = [...byCat.values()].sort((a, b) => (b.estimated + b.actual) - (a.estimated + a.actual));
+
+    return {
+      invoiced, paid, totalExpenses, budget, profit, margin,
+      estimatedCost, costRemaining, costUsedPct, costRows,
+      reimbursableAdvanced, reimbursableCollected, reimbursableOutstanding, reimbursableUnbilled,
+      billableExpenses, internalActuals: internalExpenses,
+    };
   }, [project, invoices, expenses]);
 
   /* ---------- loading ---------- */
@@ -911,7 +967,11 @@ export default function ProjectDetailPageV2() {
                 <span className="text-xs text-text-tertiary">{profitLabel}</span>
                 <span className="text-right">
                   <MoneyDisplay amount={profit} className={cn('text-base font-display font-semibold', profit >= 0 ? 'text-text-primary' : 'text-danger')} />
-                  <span className={cn('block text-[11px]', toneText(n))}>{statusOf(n)}</span>
+                  {/* A negative profit is a loss even when margin rounds to 0%
+                      (e.g. cost incurred before any revenue is recognised). */}
+                  <span className={cn('block text-[11px]', profit < 0 ? 'text-danger' : toneText(n))}>
+                    {profit < 0 ? t('projectDetail.profitLoss', 'Loss') : statusOf(n)}
+                  </span>
                 </span>
               </div>
             </div>
@@ -976,7 +1036,7 @@ export default function ProjectDetailPageV2() {
         <GlassPanel surface="glass" padding="lg">
           <SectionHeader
             title={t('projectDetail.expensesSection', 'Related Expenses')}
-            sublabel={expensesLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: expenses.length })}
+            sublabel={expensesLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: totals.internalActuals.length })}
             action={
               canAddExpense ? (
                 <Button
@@ -990,11 +1050,13 @@ export default function ProjectDetailPageV2() {
             }
           />
 
-          {/* Cost-budget summary bar — estimated vs. actual vs. remaining.
-              Merged here from the former standalone Cost Budget section. */}
-          {totals.estimatedCost > 0 ? (
+          {/* Cost plan vs. actual — INTERNAL costs only. Estimated budget vs.
+              real non-billable expenses, per category, with a "Record" action
+              that realizes a planned line into an actual. Reimbursable
+              pass-through costs are tracked separately below. */}
+          {totals.estimatedCost > 0 || totals.totalExpenses > 0 ? (
             <div className="mb-6">
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
                     {t('projectDetail.estimatedCost', 'Estimated')}
@@ -1009,29 +1071,95 @@ export default function ProjectDetailPageV2() {
                 </div>
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
-                    {t('projectDetail.remainingCost', 'Remaining')}
+                    {t('projectDetail.variance', 'Variance')}
                   </div>
                   <MoneyDisplay
                     amount={totals.costRemaining}
                     className={totals.costRemaining < 0 ? 'text-danger' : 'text-success'}
                   />
                 </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">
+                    {t('projectDetail.actualMargin', 'Margin (actual)')}
+                  </div>
+                  <div className={cn('text-sm font-medium tabular-nums', totals.margin < 0 ? 'text-danger' : 'text-text-primary')}>
+                    {totals.margin.toFixed(1)}%
+                  </div>
+                </div>
               </div>
-              <div className="h-2 rounded-full bg-bg-sunken overflow-hidden">
-                <div
-                  className={cn(
-                    'h-full transition-all',
-                    totals.costUsedPct > 100 ? 'bg-danger' : totals.costUsedPct > 80 ? 'bg-warning' : 'bg-brand-cream',
-                  )}
-                  style={{ width: `${Math.min(totals.costUsedPct, 100)}%` }}
-                />
-              </div>
-              <div className="mt-2 text-xs text-text-tertiary">
-                {t('projectDetail.budgetUsed', '{{pct}}% of budget used', { pct: totals.costUsedPct.toFixed(0) })}
-                {totals.costRemaining < 0 && (
-                  <span className="text-danger"> · {t('projectDetail.overBudget', 'over budget')}</span>
-                )}
-              </div>
+
+              {totals.estimatedCost > 0 && (
+                <>
+                  <div className="h-2 rounded-full bg-bg-sunken overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full transition-all',
+                        totals.costUsedPct > 100 ? 'bg-danger' : totals.costUsedPct > 80 ? 'bg-warning' : 'bg-brand-cream',
+                      )}
+                      style={{ width: `${Math.min(totals.costUsedPct, 100)}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 text-xs text-text-tertiary">
+                    {t('projectDetail.budgetUsed', '{{pct}}% of budget used', { pct: totals.costUsedPct.toFixed(0) })}
+                    {totals.costRemaining < 0 && (
+                      <span className="text-danger"> · {t('projectDetail.overBudget', 'over budget')}</span>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Per-category breakdown — estimate vs actual, with Record. */}
+              {totals.costRows.length > 0 && (
+                <div className="mt-5 rounded-md border border-border-subtle overflow-hidden">
+                  <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 px-3 py-2 bg-bg-sunken/40 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
+                    <div>{t('projectDetail.col.category', 'Category')}</div>
+                    <div className="text-right">{t('projectDetail.estimatedCost', 'Estimated')}</div>
+                    <div className="text-right">{t('projectDetail.actualCost', 'Actual')}</div>
+                    <div className="text-right">{t('projectDetail.variance', 'Variance')}</div>
+                  </div>
+                  <ul className="divide-y divide-border-subtle">
+                    {totals.costRows.map((r, i) => {
+                      const variance = r.estimated - r.actual;
+                      const canRecord = canAddExpense && r.estimated > r.actual;
+                      return (
+                        <li
+                          key={r.categoryId || `cat-${i}`}
+                          className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-center px-3 py-2 text-sm"
+                        >
+                          <div className="min-w-0 truncate text-text-secondary">
+                            {r.name || t('projectDetail.uncategorized', 'Uncategorized')}
+                          </div>
+                          <MoneyDisplay amount={r.estimated} className="text-right text-xs text-text-tertiary tabular-nums" />
+                          <MoneyDisplay amount={r.actual} className="text-right text-xs text-text-primary tabular-nums" />
+                          <div className="flex items-center justify-end gap-2">
+                            <MoneyDisplay
+                              amount={variance}
+                              className={cn('text-right text-xs tabular-nums', variance < 0 ? 'text-danger' : 'text-text-tertiary')}
+                            />
+                            {canRecord && (
+                              <Button
+                                variant="outline"
+                                size="xs"
+                                onClick={() => {
+                                  setRealizePlanned({
+                                    categoryId: r.categoryId,
+                                    categoryName: r.name,
+                                    estimatedAmount: Math.max(0, r.estimated - r.actual),
+                                    description: r.name,
+                                  });
+                                  setRealizeOpen(true);
+                                }}
+                              >
+                                {t('projectDetail.recordPlanned', 'Mark as real')}
+                              </Button>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
           ) : canAddExpense ? (
             <div className="mb-6 text-xs text-text-tertiary">
@@ -1046,69 +1174,107 @@ export default function ProjectDetailPageV2() {
             </div>
           ) : null}
 
-          {/* Planned (from estimate) — secondary muted list with a per-line
-              "Record" action that realizes the estimate into a real expense. */}
-          {(() => {
-            const planned = Array.isArray(
-              (project as { estimatedExpenses?: unknown }).estimatedExpenses,
-            )
-              ? ((project as {
-                  estimatedExpenses?: Array<{
-                    categoryId: string;
-                    categoryName?: string;
-                    categoryNameId?: string;
-                    amount: number | string;
-                    notes?: string;
-                  }>;
-                }).estimatedExpenses ?? [])
-              : [];
-            if (planned.length === 0) return null;
-            return (
-              <div className="mb-6 rounded-md border border-border-subtle bg-bg-sunken/30 p-3">
-                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-2">
-                  {t('projectDetail.plannedFromEstimate', 'Planned (from estimate)')}
+          {/* Reimbursable · Piutang Lain-lain (1-2040) — costs paid on the
+              client's behalf and billed back. Pass-through: DR Piutang
+              Lain-lain / CR Cash on entry, reversed when collected. NOT a
+              project cost and NOT part of margin. */}
+          {(totals.reimbursableAdvanced > 0 || canAddExpense) && (
+            <div className="mb-6 rounded-md border border-border-subtle bg-bg-sunken/30 p-3">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
+                  {t('projectDetail.reimbursable', 'Reimbursable · Piutang Lain-lain (1-2040)')}
                 </div>
-                <ul className="divide-y divide-border-subtle">
-                  {planned.map((line, i) => {
-                    const label =
-                      line.categoryName ||
-                      line.categoryNameId ||
-                      line.notes ||
-                      t('projectDetail.uncategorized', 'Uncategorized');
-                    return (
-                      <li
-                        key={line.categoryId ? `${line.categoryId}-${i}` : i}
-                        className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-sm text-text-secondary truncate">{label}</div>
-                        </div>
-                        <div className="shrink-0 flex items-center gap-3">
-                          <MoneyDisplay amount={toNumber(line.amount)} className="text-xs text-text-tertiary tabular-nums" />
-                          {canAddExpense && (
-                            <Button
-                              variant="outline"
-                              size="xs"
-                              onClick={() => {
-                                setPrefill({
-                                  categoryId: line.categoryId,
-                                  grossAmount: Number(line.amount) || 0,
-                                  description: line.notes || line.categoryName || '',
-                                });
-                                setQuickExpenseOpen(true);
-                              }}
-                            >
-                              {t('projectDetail.recordPlanned', 'Record')}
-                            </Button>
-                          )}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="flex items-center gap-2">
+                  {/* Bill UNBILLED reimbursables to the client as a supplementary
+                      invoice (services already invoiced). Keys off unbilled, not
+                      outstanding, so already-invoiced reimbursables aren't re-billed. */}
+                  {canAddExpense && totals.reimbursableUnbilled > 0 && (
+                    <Button
+                      size="xs"
+                      onClick={() =>
+                        navigate(
+                          `/invoices/new?projectId=${id}&clientId=${project.clientId}&reimbursablesOnly=1&from=${encodeURIComponent(`/projects/${id}`)}`,
+                        )
+                      }
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      {t('projectDetail.billReimbursables', 'Bill to client')}
+                    </Button>
+                  )}
+                  {canAddExpense && (
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => { setPrefill({ isBillable: true }); setQuickExpenseOpen(true); }}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {t('projectDetail.addReimbursable', 'Add reimbursable')}
+                    </Button>
+                  )}
+                </div>
               </div>
-            );
-          })()}
+              {totals.reimbursableAdvanced > 0 ? (
+                <>
+                  <div className="grid grid-cols-3 gap-4 mb-3">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">{t('projectDetail.advanced', 'Advanced')}</div>
+                      <MoneyDisplay amount={totals.reimbursableAdvanced} className="text-text-primary" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">{t('projectDetail.collected', 'Collected')}</div>
+                      <MoneyDisplay amount={totals.reimbursableCollected} className="text-success" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-1">{t('projectDetail.outstanding', 'Outstanding')}</div>
+                      <MoneyDisplay
+                        amount={totals.reimbursableOutstanding}
+                        className={totals.reimbursableOutstanding > 0 ? 'text-warning' : 'text-text-primary'}
+                      />
+                    </div>
+                  </div>
+                  <ul className="divide-y divide-border-subtle">
+                    {totals.billableExpenses.map((e) => (
+                      <li key={e.id}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/expenses/${e.id}?from=${encodeURIComponent(`/projects/${id}`)}`)}
+                          className="w-full flex items-center justify-between gap-3 py-2 text-left first:pt-0 last:pb-0 hover:opacity-80 transition-opacity"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm text-text-secondary truncate">{e.description || '—'}</div>
+                          </div>
+                          <div className="shrink-0 flex items-center gap-3">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'border-transparent px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
+                                e.reimbursedAt
+                                  ? 'bg-success/15 text-success'
+                                  : (e as any).paymentJournalId
+                                    ? 'bg-warning/15 text-warning'
+                                    : 'bg-bg-sunken text-text-tertiary',
+                              )}
+                            >
+                              {e.reimbursedAt
+                                ? t('projectDetail.collectedBadge', 'Collected')
+                                : (e as any).paymentJournalId
+                                  ? t('projectDetail.billedBadge', 'Billed')
+                                  : t('projectDetail.unbilledBadge', 'Not billed')}
+                            </Badge>
+                            <MoneyDisplay amount={toNumber(e.totalAmount)} className="text-xs text-text-tertiary tabular-nums" />
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="text-xs text-text-tertiary">
+                  {t('projectDetail.reimbursableEmpty', 'No pass-through costs. Use this for money you pay on the client’s behalf and bill back — it books to Piutang Lain-lain, not project expense.')}
+                </p>
+              )}
+            </div>
+          )}
 
           {expensesLoading ? (
             <div className="space-y-2">
@@ -1116,16 +1282,16 @@ export default function ProjectDetailPageV2() {
               <Skeleton className="h-12 rounded" />
               <Skeleton className="h-12 rounded" />
             </div>
-          ) : expenses.length === 0 ? (
+          ) : totals.internalActuals.length === 0 ? (
             <EmptyState
               icon={<CreditCard className="h-12 w-12" />}
-              title={t('projectDetail.noExpenses', 'No expenses yet')}
-              description={t('projectDetail.noExpensesDesc', 'No expenses have been recorded for this project.')}
+              title={t('projectDetail.noExpenses', 'No internal costs yet')}
+              description={t('projectDetail.noExpensesDesc', 'No internal expenses recorded yet. Mark a planned line as real, or add one. Reimbursable pass-through costs appear in their own section above.')}
               action={
                 canAddExpense ? (
                   <Button
                     size="sm"
-                    onClick={() => setQuickExpenseOpen(true)}
+                    onClick={() => { setPrefill(undefined); setQuickExpenseOpen(true); }}
                   >
                     <Plus className="h-4 w-4" />
                     {t('projectDetail.addFirstExpense', 'Record Expense')}
@@ -1135,9 +1301,9 @@ export default function ProjectDetailPageV2() {
             />
           ) : (
             <DataTable
-              data={expenses}
+              data={totals.internalActuals}
               columns={expenseColumns}
-              enablePagination={expenses.length > 10}
+              enablePagination={totals.internalActuals.length > 10}
               onRowClick={(row) => navigate(`/expenses/${row.id}`)}
             />
           )}
@@ -1365,6 +1531,19 @@ export default function ProjectDetailPageV2() {
             if (!o) setPrefill(undefined);
           }}
           prefill={prefill}
+        />
+      )}
+
+      {canAddExpense && id && (
+        <RealizeExpenseDialog
+          open={realizeOpen}
+          onOpenChange={(o) => {
+            setRealizeOpen(o);
+            if (!o) setRealizePlanned(null);
+          }}
+          projectId={id}
+          clientId={project?.clientId}
+          planned={realizePlanned}
         />
       )}
     </Shell>

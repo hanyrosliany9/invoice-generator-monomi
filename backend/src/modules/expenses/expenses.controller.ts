@@ -44,7 +44,7 @@ import { RequireAdmin } from "../auth/decorators/auth.decorators";
  * - Statistics and analytics
  *
  * All endpoints require JWT authentication.
- * Some endpoints require specific roles (ADMIN, FINANCE_MANAGER).
+ * Some endpoints require Admin access.
  */
 @ApiTags("expenses")
 @ApiBearerAuth()
@@ -146,7 +146,7 @@ export class ExpensesController {
   @ApiOperation({
     summary: "Create expense category",
     description:
-      "Create new expense category with PSAK account code (requires SUPER_ADMIN role)",
+      "Create new expense category with PSAK account code (requires Admin role)",
   })
   @ApiResponse({
     status: 201,
@@ -197,7 +197,7 @@ export class ExpensesController {
   @Patch("categories/:id")
   @ApiOperation({
     summary: "Update expense category",
-    description: "Update expense category (requires SUPER_ADMIN role)",
+    description: "Update expense category (requires Admin role)",
   })
   @ApiParam({ name: "id", description: "Category ID" })
   @ApiResponse({
@@ -229,7 +229,7 @@ export class ExpensesController {
   @ApiOperation({
     summary: "Delete expense category",
     description:
-      "Delete expense category (requires SUPER_ADMIN role, only if not used)",
+      "Delete expense category (requires Admin role, only if not used)",
   })
   @ApiParam({ name: "id", description: "Category ID" })
   @ApiResponse({
@@ -530,7 +530,7 @@ export class ExpensesController {
    * Records approver and approval date.
    * Creates approval history entry.
    *
-   * Requires ADMIN or FINANCE_MANAGER role.
+   * Requires Admin role.
    *
    * @param req - Request object with authenticated user
    * @param id - Expense ID
@@ -541,7 +541,7 @@ export class ExpensesController {
   @ApiOperation({
     summary: "Approve expense",
     description:
-      "Change status from SUBMITTED to APPROVED (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Change status from SUBMITTED to APPROVED (requires Admin role)",
   })
   @ApiParam({ name: "id", description: "Expense ID" })
   @ApiResponse({
@@ -576,7 +576,7 @@ export class ExpensesController {
    * Records rejection reason and approver.
    * Creates approval history entry.
    *
-   * Requires ADMIN or FINANCE_MANAGER role.
+   * Requires Admin role.
    *
    * @param req - Request object with authenticated user
    * @param id - Expense ID
@@ -587,7 +587,7 @@ export class ExpensesController {
   @ApiOperation({
     summary: "Reject expense",
     description:
-      "Change status from SUBMITTED to REJECTED (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Change status from SUBMITTED to REJECTED (requires Admin role)",
   })
   @ApiParam({ name: "id", description: "Expense ID" })
   @ApiResponse({
@@ -622,7 +622,7 @@ export class ExpensesController {
    * Records payment date, method, and reference.
    * Only APPROVED expenses can be marked as paid.
    *
-   * Requires ADMIN or FINANCE_MANAGER role.
+   * Requires Admin role.
    *
    * @param req - Request object with authenticated user
    * @param id - Expense ID
@@ -633,7 +633,7 @@ export class ExpensesController {
   @ApiOperation({
     summary: "Mark expense as paid",
     description:
-      "Change payment status to PAID (requires SUPER_ADMIN or FINANCE_MANAGER role)",
+      "Change payment status to PAID (requires Admin role)",
   })
   @ApiParam({ name: "id", description: "Expense ID" })
   @ApiResponse({

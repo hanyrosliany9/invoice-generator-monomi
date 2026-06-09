@@ -18,6 +18,7 @@
  * Charts use MonomiChart + token-mirrored colors so we never leak raw hex.
  */
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -242,7 +243,7 @@ export default function MilestoneAnalyticsPageV2() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `milestone-analytics-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `milestone-analytics-${toLocalISODate(new Date())}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

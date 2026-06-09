@@ -15,6 +15,7 @@
  *   saved social-media reports (the data-driven, project-scoped reports).
  */
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -159,7 +160,7 @@ export default function ReportsPageV2() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan-ringkasan-${new Date().toISOString().slice(0, 10)}.pdf`;
+      link.download = `laporan-ringkasan-${toLocalISODate(new Date())}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

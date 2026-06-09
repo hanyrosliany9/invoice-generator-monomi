@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -60,7 +61,7 @@ const yearsInUse = (purchaseDate?: string | null): number => {
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
 const endOfMonth   = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
 
-const fmt = (d: Date) => d.toISOString().slice(0, 10);
+const fmt = (d: Date) => toLocalISODate(d);
 
 /* ------------------------------------------------------------------ */
 /*  Asset row type (from DepreciationSummary.byAsset)                 */

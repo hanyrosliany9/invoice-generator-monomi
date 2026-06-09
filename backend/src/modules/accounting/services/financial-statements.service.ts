@@ -4,6 +4,7 @@ import { LedgerService } from "./ledger.service";
 import { JournalService } from "./journal.service";
 import { FinancialStatementQueryDto } from "../dto/financial-statement-query.dto";
 import { AccountType, StatementType, TransactionType } from "@prisma/client";
+import { servicesPortionOf } from "../../../common/utils/reimbursable.util";
 
 export interface CashFlowActivity {
   date: Date;
@@ -773,9 +774,14 @@ export class FinancialStatementsService {
   async getAccountsReceivableReport(query: FinancialStatementQueryDto) {
     const { endDate } = query;
 
+    // endDate already arrives as the INCLUSIVE end of the WIB calendar day (the
+    // DTO's @WibEndOfDay transform), so a `<= endDate` cutoff correctly keeps
+    // everything timestamped through the end of that WIB day.
+    const endDateInclusive = endDate;
+
     // Use ledger service for AR aging
     const aging = await this.ledgerService.getAccountsReceivableAging(
-      new Date(endDate),
+      endDateInclusive,
     );
 
     // Get AR account
@@ -791,7 +797,7 @@ export class FinancialStatementsService {
     const arBalance = await this.prisma.generalLedger.findMany({
       where: {
         accountId: arAccount.id,
-        entryDate: { lte: endDate },
+        entryDate: { lte: endDateInclusive },
         journalEntry: { isPosted: true },
       },
     });
@@ -800,6 +806,111 @@ export class FinancialStatementsService {
     const totalCredit = arBalance.reduce((sum, e) => sum + Number(e.credit), 0);
     const netARBalance = totalDebit - totalCredit;
 
+    // Other Receivables (1-2040) GL net — the AUTHORITATIVE balance, computed the
+    // same way as Trade AR so the AR page always reconciles with the journal
+    // entries / balance sheet. The Expense-derived itemisation below is supporting
+    // detail; manual journal activity on 1-2040 (e.g. a hand-written clearing
+    // entry) is captured here even though it touches no Expense row.
+    const orAccount = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: "1-2040" }, // Piutang Lain-lain / Other Receivables
+    });
+    // Fail loudly if the account is missing rather than silently reporting 0 —
+    // mirrors the Trade-AR (1-2010) guard above so a misconfigured COA surfaces.
+    if (!orAccount) {
+      throw new Error("Other Receivables account (1-2040) not found");
+    }
+    let glOtherReceivablesNet = 0;
+    {
+      const orLedger = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: orAccount.id,
+          entryDate: { lte: endDateInclusive },
+          journalEntry: { isPosted: true },
+        },
+      });
+      glOtherReceivablesNet = orLedger.reduce(
+        (sum, e) => sum + Number(e.debit) - Number(e.credit),
+        0,
+      );
+    }
+
+    // Piutang Lain-lain (Other Receivables, 1-2040) — NON-sales receivables from
+    // reimbursable pass-through expenses. Reported as a SEPARATE line from trade
+    // AR (1-2010): it must never be commingled with sales receivables.
+    //
+    // Derived from the EXPENSE table rather than the raw GL net so we can itemise
+    // WHICH expense/client/project each receivable belongs to (a single GL number
+    // can't). To keep the reported BALANCE reconciled with the 1-2040 GL account,
+    // the deferred-posting model matters: a reimbursable hits 1-2040 only when the
+    // invoice that bills it is SENT (paymentJournalId is then stamped). So:
+    //   • pending   — recorded on a project but not yet invoiced (paymentJournalId
+    //                 null): NOT in the GL, excluded from the owed balance.
+    //   • posted    — invoiced/SENT (paymentJournalId set), not yet reimbursed
+    //                 (reimbursedAt null): this IS the 1-2040 balance.
+    //   • collected — reimbursed (reimbursedAt set): cleared from 1-2040, shown
+    //                 for audit history only.
+    const reimbursables = await this.prisma.expense.findMany({
+      where: {
+        isBillable: true,
+        expenseDate: { lte: endDateInclusive },
+      },
+      select: {
+        id: true,
+        expenseNumber: true,
+        expenseDate: true,
+        vendorName: true,
+        description: true,
+        totalAmount: true,
+        billableAmount: true,
+        reimbursedAt: true,
+        paymentJournalId: true,
+        client: { select: { id: true, name: true } },
+        project: { select: { id: true, number: true, description: true } },
+      },
+      orderBy: { expenseDate: "desc" },
+    });
+    const otherReceivableItems = reimbursables.map((e) => {
+      const collected = e.reimbursedAt !== null;
+      const posted = e.paymentJournalId !== null;
+      return {
+        expenseId: e.id,
+        expenseNumber: e.expenseNumber,
+        date: e.expenseDate,
+        vendorName: e.vendorName,
+        description: e.description,
+        // Amount recoverable from the client (defaults to the full total).
+        amount: Number(e.billableAmount ?? e.totalAmount),
+        reimbursedAt: e.reimbursedAt,
+        collected,
+        // Posted to 1-2040 (invoiced) but not yet reimbursed — the owed balance.
+        posted,
+        // Recorded but not yet billed to the client (not in the GL yet).
+        pending: !posted && !collected,
+        client: e.client,
+        project: e.project,
+      };
+    });
+    // Expense-derived "owed" = posted to 1-2040 (invoiced) and not yet reimbursed.
+    // In the normal flow this equals the 1-2040 GL net. But a manual journal that
+    // touches 1-2040 without flipping an Expense flag (e.g. a hand-written clearing
+    // entry) makes them diverge — so the GL net is AUTHORITATIVE for the headline
+    // balance, and we surface the gap as a reconciling line.
+    const itemsOutstandingSum = otherReceivableItems
+      .filter((e) => e.posted && !e.collected)
+      .reduce((sum, e) => sum + e.amount, 0);
+    const otherReceivablesCollected = otherReceivableItems
+      .filter((e) => e.collected)
+      .reduce((sum, e) => sum + e.amount, 0);
+    // Headline balance = the 1-2040 GL net, so it ALWAYS ties out to the journal
+    // entries and the balance sheet.
+    const otherReceivablesBalance = glOtherReceivablesNet;
+    // Non-zero when manual GL adjustments on 1-2040 aren't reflected in the items
+    // (so the breakdown still ties to the headline). Positive = unexplained GL
+    // receivable; negative = items show more outstanding than the GL actually holds
+    // (e.g. a reimbursable cleared by a manual journal, not the "Record" button).
+    const otherReceivablesReconciling =
+      glOtherReceivablesNet - itemsOutstandingSum;
+
     // Get top customers by OUTSTANDING AR. groupBy _sum.totalAmount can't net
     // out payments, so it overstated per-client AR and disagreed with the net
     // AR balance above. Fetch invoices with payments and sum the remaining
@@ -807,11 +918,12 @@ export class FinancialStatementsService {
     const arInvoices = await this.prisma.invoice.findMany({
       where: {
         status: { in: ["SENT", "OVERDUE"] },
-        creationDate: { lte: endDate },
+        creationDate: { lte: endDateInclusive },
       },
       select: {
         clientId: true,
         totalAmount: true,
+        priceBreakdown: true,
         payments: { select: { amount: true, status: true } },
       },
     });
@@ -822,7 +934,10 @@ export class FinancialStatementsService {
         (s, p) => (p.status === "CONFIRMED" ? s + Number(p.amount || 0) : s),
         0,
       );
-      const outstanding = Math.max(0, Number(inv.totalAmount || 0) - paid);
+      // Trade-AR outstanding = SERVICES portion (reimburse lives in 1-2040), with
+      // payments applied services-first. Keeps top-customer AR off reimbursables.
+      const servicesAmount = servicesPortionOf(inv);
+      const outstanding = Math.max(0, servicesAmount - Math.min(paid, servicesAmount));
       if (outstanding <= 0) continue;
       const e = byClient.get(inv.clientId) || { outstanding: 0, count: 0 };
       e.outstanding += outstanding;
@@ -850,6 +965,29 @@ export class FinancialStatementsService {
     return {
       asOfDate: endDate,
       arBalance: netARBalance,
+      // Trade AR (1-2010, sales) and Other Receivables (1-2040, non-sales
+      // reimbursables) reported separately.
+      tradeReceivables: {
+        accountCode: "1-2010",
+        name: arAccount.name,
+        nameId: arAccount.nameId,
+        balance: netARBalance,
+      },
+      otherReceivables: {
+        accountCode: "1-2040",
+        name: "Other Receivables",
+        nameId: "Piutang Lain-Lain",
+        balance: otherReceivablesBalance, // GL 1-2040 net (authoritative)
+        collected: otherReceivablesCollected, // already reimbursed (history)
+        // Sum of outstanding itemised reimbursables; differs from `balance` only
+        // when a manual journal touched 1-2040 outside the expense flow.
+        itemsOutstanding: itemsOutstandingSum,
+        // GL − items. Non-zero ⇒ manual GL adjustment not tied to an expense.
+        reconcilingAdjustment: otherReceivablesReconciling,
+        // Itemised reimbursables (outstanding + collected, each flagged) so the
+        // AR page shows WHICH expense / client / project each belongs to.
+        items: otherReceivableItems,
+      },
       aging,
       topCustomers,
       summary: {
@@ -861,6 +999,10 @@ export class FinancialStatementsService {
           Number(aging.summary.days61to90) +
           Number(aging.summary.over90),
         customerCount: byClient.size,
+        // Receivable split (GL balances) + grand total of all receivables.
+        tradeReceivablesBalance: netARBalance,
+        otherReceivablesBalance,
+        totalReceivablesBalance: netARBalance + otherReceivablesBalance,
       },
     };
   }

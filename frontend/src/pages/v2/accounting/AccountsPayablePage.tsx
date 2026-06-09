@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toLocalISODate } from '@/utils/date';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -101,12 +102,12 @@ export default function AccountsPayablePageV2() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [bucketFilter, setBucketFilter] = useState<string>('all');
 
-  const isoDate = asOfDate.toISOString().slice(0, 10);
+  const isoDate = toLocalISODate(asOfDate);
   // The AP report endpoint expects an endDate (and optional startDate).
   // We pin startDate to the start of the year so we still get the full
   // period of unpaid expenses without arbitrary truncation.
   const startOfYear = useMemo(
-    () => new Date(asOfDate.getFullYear(), 0, 1).toISOString().slice(0, 10),
+    () => toLocalISODate(new Date(asOfDate.getFullYear(), 0, 1)),
     [asOfDate],
   );
 
