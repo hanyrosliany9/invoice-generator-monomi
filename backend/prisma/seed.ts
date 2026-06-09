@@ -2813,6 +2813,57 @@ async function main() {
   });
 
   console.log('📊 Chart of Accounts created: 160+ accounts (Comprehensive PSAK-compliant)');
+
+  // ── Backfill expense categories from EVERY expense-type COA account ──────────
+  // The expense form's category picker is driven by expense_categories. Rather
+  // than hand-curate a subset (which left most COA accounts unpickable), mirror
+  // the full chart: one category per active 5-xxx (COGS/direct), 6-xxx (OpEx),
+  // 8-xxx (other expense) account. Idempotent — skips accounts that already have
+  // a category. expenseClass is derived from the code prefix.
+  {
+    const expenseCoa = await prisma.chartOfAccounts.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { code: { startsWith: '5-' } },
+          { code: { startsWith: '6-' } },
+          { code: { startsWith: '8-' } },
+        ],
+      },
+      select: { code: true, name: true, nameId: true },
+    });
+    const classFor = (code: string): 'COGS' | 'SELLING' | 'GENERAL_ADMIN' | 'OTHER' =>
+      code.startsWith('5-') ? 'COGS'
+      : code.startsWith('6-1') ? 'SELLING'
+      : code.startsWith('8-') ? 'OTHER'
+      : 'GENERAL_ADMIN';
+    let made = 0;
+    for (const a of expenseCoa) {
+      const existing = await prisma.expenseCategory.findFirst({
+        where: { OR: [{ code: a.code }, { accountCode: a.code }] },
+        select: { id: true },
+      });
+      if (existing) continue;
+      await prisma.expenseCategory.create({
+        data: {
+          code: a.code,
+          accountCode: a.code,
+          expenseClass: classFor(a.code) as any,
+          name: a.name,
+          nameId: a.nameId,
+          defaultPPNRate: 0.11,
+          isActive: true,
+          isBillable: false,
+          requiresReceipt: false,
+          requiresEFaktur: false,
+          approvalRequired: false,
+        },
+      });
+      made++;
+    }
+    console.log(`💰 Expense categories backfilled from COA: +${made} (every expense account is now selectable)`);
+  }
+
   console.log('  🎨 DIGITAL CREATIVE AGENCY EDITION - ENHANCED');
   console.log('  ');
   console.log('  - ASET (Assets): 33 accounts');
