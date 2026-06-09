@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalidateAccountingQueries } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { ArrowUpRight, Loader2 } from 'lucide-react';
 
@@ -61,6 +62,8 @@ export function QuickExpenseSheet({
     submitted: boolean,
   ) => {
     queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    // A new expense posts a GL journal — refresh all accounting pages so it shows.
+    invalidateAccountingQueries(queryClient);
 
     if (addAnotherRef.current) {
       // Keep the sheet open and reset for rapid multi-expense entry.

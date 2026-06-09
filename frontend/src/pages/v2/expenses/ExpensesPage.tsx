@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateAccountingQueries } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -204,6 +205,7 @@ export default function ExpensesPageV2() {
         return old;
       });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      invalidateAccountingQueries(queryClient); // delete reverses the GL journal
     },
     onError: (err: unknown) => {
       const msg =

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateAccountingQueries } from '@/lib/queryClient';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Trash2, Pencil, CheckCircle2,
@@ -136,6 +137,7 @@ export default function ExpenseDetailPageV2() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['expense', id] });
     queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    invalidateAccountingQueries(queryClient); // expense changes post/adjust GL
   };
 
   const approveMutation = useMutation({
@@ -147,6 +149,7 @@ export default function ExpenseDetailPageV2() {
     mutationFn: () => expenseService.deleteExpense(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      invalidateAccountingQueries(queryClient); // delete reverses the GL journal
       navigate(backTo);
     },
   });
@@ -156,8 +159,7 @@ export default function ExpenseDetailPageV2() {
   const recoverMutation = useMutation({
     mutationFn: () => expenseService.recoverExpense(id!),
     onSuccess: () => {
-      invalidate();
-      queryClient.invalidateQueries({ queryKey: ['accounting'] });
+      invalidate(); // already refreshes accounting queries
       toast.success(t('expenseDetail.recoverSuccess', 'Reimbursement recorded — Piutang Lain-lain cleared.'));
     },
     onError: (e: unknown) => {

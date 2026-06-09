@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { invalidateAccountingQueries } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
@@ -70,6 +71,7 @@ export default function ExpenseCreatePageV2() {
     submitted: boolean,
   ) => {
     queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    invalidateAccountingQueries(queryClient); // new expense posts a GL journal
     const viewHref = `/expenses/${created.id}?from=${encodeURIComponent(backTo)}`;
     toast.success(
       submitted
