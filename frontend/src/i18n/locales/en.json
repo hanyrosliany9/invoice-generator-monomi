@@ -713,7 +713,9 @@
       "overdue": "Overdue",
       "overdueSub": "needs action",
       "paidThisMonth": "Paid This Month",
-      "paidThisMonthSub": "paid in current month"
+      "paidThisMonthSub": "paid in current month",
+      "revenueTag": "revenue",
+      "reimburseTag": "reimburse"
     },
     "new": "New Invoice",
     "search": {
@@ -3788,7 +3790,12 @@
       "statBankTotal": "Bank",
       "statCashTotal": "Cash",
       "statCombinedTotal": "Total Cash & Bank",
-      "validationPeriod": "Please select a period first"
+      "validationPeriod": "Please select a period first",
+      "txnDate": "Date",
+      "txnRef": "Reference",
+      "txnDesc": "Description",
+      "txnBalance": "Balance",
+      "noTransactions": "No transactions in this period."
     },
     "bankTransfers": {
       "actionApprove": "Approve",

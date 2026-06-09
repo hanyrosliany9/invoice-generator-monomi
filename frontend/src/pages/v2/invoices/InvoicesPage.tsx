@@ -76,6 +76,34 @@ const isThisMonth = (dateStr?: string | null) => {
   return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
 };
 
+/* KPI value that separates the revenue (services) portion from the reimbursable
+   (pass-through) portion — revenue is the headline, reimburse the quiet second line. */
+function SplitStat({
+  revenue, reimburse, revenueClass, t,
+}: {
+  revenue: number;
+  reimburse: number;
+  revenueClass?: string;
+  t: (key: string, fallback: string) => string;
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline gap-1.5">
+        <MoneyDisplay amount={revenue} className={revenueClass} />
+        <span className="text-[10px] font-normal uppercase tracking-wider text-text-tertiary">
+          {t('invoices.kpi.revenueTag', 'revenue')}
+        </span>
+      </div>
+      <div className="flex items-baseline gap-1.5 text-text-tertiary">
+        <MoneyDisplay amount={reimburse} className="text-sm font-medium text-text-secondary" />
+        <span className="text-[10px] font-normal uppercase tracking-wider">
+          {t('invoices.kpi.reimburseTag', 'reimburse')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
@@ -228,20 +256,53 @@ export default function InvoicesPageV2() {
 
   /* ----- derived: KPI band ----- */
   const stats = useMemo(() => {
-    const sum = (list: Invoice[]) => list.reduce((acc, i) => acc + toNumber(i.totalAmount), 0);
-    // Outstanding/overdue must use the REMAINING balance (total − confirmed
-    // payments), not the full total — a partially-paid invoice (termin/DP) stays
-    // SENT/OVERDUE and counting it in full overstates what's owed.
+    // Reimbursable (pass-through) portion of an invoice = sum of its "[Reimburse] …"
+    // line items. The rest is revenue (services). These must be reported separately
+    // — reimburse is Piutang Lain-lain, never revenue.
+    const reimburseOf = (i: Invoice) => {
+      const products = i.priceBreakdown?.products;
+      if (!Array.isArray(products)) return 0;
+      return products
+        .filter((p) => typeof p?.name === 'string' && p.name.startsWith('[Reimburse]'))
+        .reduce((s, p) => s + (toNumber(p.subtotal) || toNumber(p.price) * (toNumber(p.quantity) || 1)), 0);
+    };
     const remainingOf = (i: Invoice) => {
       const r = i.paymentSummary?.remainingAmount;
       return r != null && !Number.isNaN(Number(r)) ? Math.max(0, Number(r)) : toNumber(i.totalAmount);
     };
-    const sumRemaining = (list: Invoice[]) => list.reduce((acc, i) => acc + remainingOf(i), 0);
+    // Split an amount-still-owed (or paid) into {revenue, reimburse}. Payments apply
+    // services-first, so the reimburse portion is the LAST to settle.
+    const splitRemaining = (list: Invoice[]) =>
+      list.reduce(
+        (acc, i) => {
+          const total = toNumber(i.totalAmount);
+          const reimburse = reimburseOf(i);
+          const services = Math.max(0, total - reimburse);
+          const remaining = remainingOf(i);
+          const paid = Math.max(0, total - remaining);
+          const servicesPaid = Math.min(paid, services);
+          const reimbursePaid = paid - servicesPaid;
+          acc.revenue += Math.max(0, services - servicesPaid);
+          acc.reimburse += Math.max(0, reimburse - reimbursePaid);
+          return acc;
+        },
+        { revenue: 0, reimburse: 0 },
+      );
+    // For PAID invoices the whole amount is collected → full split.
+    const splitPaid = (list: Invoice[]) =>
+      list.reduce(
+        (acc, i) => {
+          const reimburse = reimburseOf(i);
+          acc.revenue += Math.max(0, toNumber(i.totalAmount) - reimburse);
+          acc.reimburse += reimburse;
+          return acc;
+        },
+        { revenue: 0, reimburse: 0 },
+      );
     return {
-      outstanding: sumRemaining(invoices.filter((i) => i.status === 'SENT' || i.status === 'OVERDUE')),
-      overdue:     sumRemaining(invoices.filter((i) => i.status === 'OVERDUE')),
-      paidThisMonth: sum(invoices.filter((i) => i.status === 'PAID' && isThisMonth(i.paidAt ?? i.updatedAt))),
-      draftCount:  invoices.filter((i) => i.status === 'DRAFT').length,
+      outstanding: splitRemaining(invoices.filter((i) => i.status === 'SENT' || i.status === 'OVERDUE')),
+      overdue:     splitRemaining(invoices.filter((i) => i.status === 'OVERDUE')),
+      paidThisMonth: splitPaid(invoices.filter((i) => i.status === 'PAID' && isThisMonth(i.paidAt ?? i.updatedAt))),
     };
   }, [invoices]);
 
@@ -317,10 +378,9 @@ export default function InvoicesPageV2() {
 
         {/* KPI band */}
         <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {isLoading ? (
               <>
-                <Skeleton className="h-[108px] rounded-lg" />
                 <Skeleton className="h-[108px] rounded-lg" />
                 <Skeleton className="h-[108px] rounded-lg" />
                 <Skeleton className="h-[108px] rounded-lg" />
@@ -329,23 +389,18 @@ export default function InvoicesPageV2() {
               <>
                 <StatCard
                   label={t('invoices.kpi.outstanding', 'Outstanding')}
-                  value={<MoneyDisplay amount={stats.outstanding} />}
+                  value={<SplitStat revenue={stats.outstanding.revenue} reimburse={stats.outstanding.reimburse} t={t} />}
                   sublabel={t('invoices.kpi.outstandingSub', 'sent & overdue')}
                 />
                 <StatCard
                   label={t('invoices.kpi.overdue', 'Overdue')}
-                  value={<MoneyDisplay amount={stats.overdue} className="text-danger" />}
+                  value={<SplitStat revenue={stats.overdue.revenue} reimburse={stats.overdue.reimburse} revenueClass="text-danger" t={t} />}
                   sublabel={t('invoices.kpi.overdueSub', 'needs action')}
                 />
                 <StatCard
                   label={t('invoices.kpi.paidThisMonth', 'Paid This Month')}
-                  value={<MoneyDisplay amount={stats.paidThisMonth} />}
+                  value={<SplitStat revenue={stats.paidThisMonth.revenue} reimburse={stats.paidThisMonth.reimburse} t={t} />}
                   sublabel={t('invoices.kpi.paidThisMonthSub', 'paid in current month')}
-                />
-                <StatCard
-                  label={t('invoices.kpi.drafts', 'Drafts')}
-                  value={stats.draftCount}
-                  sublabel={t('invoices.kpi.draftsSub', 'not yet sent')}
                 />
               </>
             )}

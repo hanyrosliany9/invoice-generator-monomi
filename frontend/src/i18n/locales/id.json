@@ -804,7 +804,9 @@
       "overdue": "Jatuh Tempo",
       "overdueSub": "perlu tindakan",
       "paidThisMonth": "Lunas Bulan Ini",
-      "paidThisMonthSub": "lunas pada bulan berjalan"
+      "paidThisMonthSub": "lunas pada bulan berjalan",
+      "revenueTag": "pendapatan",
+      "reimburseTag": "reimburse"
     },
     "new": "Tagihan Baru",
     "search": {
@@ -3878,7 +3880,12 @@
       "statBankTotal": "Bank",
       "statCashTotal": "Kas",
       "statCombinedTotal": "Total Kas & Bank",
-      "validationPeriod": "Silakan pilih periode terlebih dahulu"
+      "validationPeriod": "Silakan pilih periode terlebih dahulu",
+      "txnDate": "Tanggal",
+      "txnRef": "Referensi",
+      "txnDesc": "Keterangan",
+      "txnBalance": "Saldo",
+      "noTransactions": "Tidak ada transaksi pada periode ini."
     },
     "bankTransfers": {
       "actionApprove": "Setujui",

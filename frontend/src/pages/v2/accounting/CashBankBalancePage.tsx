@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, Fragment } from 'react';
 import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   BookOpen, Trash2, RefreshCw, Printer, Calculator,
-  ChevronLeft, ChevronRight, ExternalLink, Wallet, Landmark,
+  ChevronLeft, ChevronRight, ExternalLink, Wallet, Landmark, ChevronDown,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -38,6 +38,7 @@ import {
   recalculateAllCashBankBalances,
   type CashBankBalance,
 } from '@/services/cash-bank-balance';
+import { getAccountLedger } from '@/services/accounting';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -132,6 +133,15 @@ export default function CashBankBalancePage() {
   const [form, setForm]                 = useState<CreateForm>(EMPTY_FORM);
   /* Selected period key (year*100+month). null → default to latest available. */
   const [selectedKey, setSelectedKey]   = useState<number | null>(null);
+  // Which account rows are expanded to show their per-transaction inflow/outflow.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpand = (accountCode: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(accountCode)) next.delete(accountCode);
+      else next.add(accountCode);
+      return next;
+    });
 
   /* queries */
   const { data: balanceData, isLoading, error, refetch } = useQuery({
@@ -448,6 +458,9 @@ export default function CashBankBalancePage() {
                 Icon={Wallet}
                 accent="text-success"
                 rows={selected!.cashRows}
+                period={{ year: selected!.year, month: selected!.month }}
+                expanded={expanded}
+                onToggle={toggleExpand}
                 onDelete={setDeleteTarget}
                 onLedger={(code) => navigate(ledgerHref(code))}
                 t={t}
@@ -458,6 +471,9 @@ export default function CashBankBalancePage() {
                 Icon={Landmark}
                 accent="text-info"
                 rows={selected!.bankRows}
+                period={{ year: selected!.year, month: selected!.month }}
+                expanded={expanded}
+                onToggle={toggleExpand}
                 onDelete={setDeleteTarget}
                 onLedger={(code) => navigate(ledgerHref(code))}
                 t={t}
@@ -629,13 +645,16 @@ export default function CashBankBalancePage() {
 /* ------------------------------------------------------------------ */
 
 function BalanceGroup({
-  title, subtotalLabel, Icon, accent, rows, onDelete, onLedger, t,
+  title, subtotalLabel, Icon, accent, rows, period, expanded, onToggle, onDelete, onLedger, t,
 }: {
   title: string;
   subtotalLabel: string;
   Icon: React.ComponentType<{ className?: string }>;
   accent: string;
   rows: CashBankBalance[];
+  period: { year: number; month: number };
+  expanded: Set<string>;
+  onToggle: (accountCode: string) => void;
   onDelete: (b: CashBankBalance) => void;
   onLedger: (accountCode: string) => void;
   t: (key: string, fallback: string, opts?: Record<string, unknown>) => string;
@@ -658,11 +677,22 @@ function BalanceGroup({
         </td>
       </tr>
 
-      {rows.map((b) => (
-        <tr key={b.id} className="border-b border-border-subtle/50 hover:bg-bg-sunken/20 group">
+      {rows.map((b) => {
+        const isOpen = expanded.has(b.accountCode);
+        return (
+        <Fragment key={b.id}>
+        <tr
+          className="border-b border-border-subtle/50 hover:bg-bg-sunken/20 group cursor-pointer"
+          onClick={() => onToggle(b.accountCode)}
+        >
           <td className="px-5 py-3">
-            <div className="font-medium text-text-primary">{b.accountName}</div>
-            <div className="font-mono text-[11px] text-text-tertiary mt-0.5">{b.accountCode}</div>
+            <div className="flex items-center gap-2">
+              <ChevronDown className={cn('h-3.5 w-3.5 text-text-tertiary transition-transform', isOpen ? 'rotate-0' : '-rotate-90')} />
+              <div>
+                <div className="font-medium text-text-primary">{b.accountName}</div>
+                <div className="font-mono text-[11px] text-text-tertiary mt-0.5">{b.accountCode}</div>
+              </div>
+            </div>
           </td>
           <td className="px-3 py-3 text-right"><MoneyDisplay amount={toNumber(b.openingBalance)} /></td>
           <td className="px-3 py-3 text-right"><MoneyDisplay amount={toNumber(b.totalInflow)} className="text-success" /></td>
@@ -674,7 +704,7 @@ function BalanceGroup({
                 variant="ghost"
                 size="sm"
                 className="h-7 gap-1 px-2 text-xs text-text-tertiary hover:text-info opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                onClick={() => onLedger(b.accountCode)}
+                onClick={(e) => { e.stopPropagation(); onLedger(b.accountCode); }}
                 title={t('accounting.cashBankBalance.viewLedgerAria', 'View {{account}} in the general ledger', { account: b.accountName })}
               >
                 <ExternalLink className="h-3.5 w-3.5" /> {t('accounting.cashBankBalance.viewLedger', 'Ledger')}
@@ -683,7 +713,7 @@ function BalanceGroup({
                 variant="ghost"
                 size="icon-sm"
                 className="text-text-tertiary hover:text-danger"
-                onClick={() => onDelete(b)}
+                onClick={(e) => { e.stopPropagation(); onDelete(b); }}
                 aria-label={t('accounting.cashBankBalance.deleteBalance', 'Delete balance')}
               >
                 <Trash2 className="h-4 w-4" />
@@ -691,7 +721,16 @@ function BalanceGroup({
             </div>
           </td>
         </tr>
-      ))}
+        {isOpen && (
+          <tr>
+            <td colSpan={6} className="p-0">
+              <AccountTransactions accountCode={b.accountCode} year={period.year} month={period.month} t={t} />
+            </td>
+          </tr>
+        )}
+        </Fragment>
+        );
+      })}
 
       {/* subtotal */}
       <tr className="border-b border-border-subtle bg-bg-sunken/20 text-text-secondary">
@@ -703,5 +742,86 @@ function BalanceGroup({
         <td />
       </tr>
     </tbody>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Per-account transaction detail — the GL movements (inflow=debit,   */
+/*  outflow=credit) that make up an account's totals for the period.   */
+/* ------------------------------------------------------------------ */
+
+function AccountTransactions({
+  accountCode, year, month, t,
+}: {
+  accountCode: string;
+  year: number;
+  month: number;
+  t: (key: string, fallback: string, opts?: Record<string, unknown>) => string;
+}) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const lastDay = new Date(year, month, 0).getDate();
+  const startDate = `${year}-${pad(month)}-01`;
+  const endDate = `${year}-${pad(month)}-${pad(lastDay)}`;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['cash-account-ledger', accountCode, year, month],
+    queryFn: () => getAccountLedger(accountCode, { startDate, endDate }),
+  });
+
+  const entries: any[] = data?.entries ?? [];
+
+  return (
+    <div className="bg-bg-sunken/40 border-y border-border-subtle px-5 py-3">
+      {isLoading ? (
+        <div className="space-y-1.5">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-6 rounded" />)}
+        </div>
+      ) : entries.length === 0 ? (
+        <p className="text-xs text-text-tertiary py-2">
+          {t('accounting.cashBankBalance.noTransactions', 'No transactions in this period.')}
+        </p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary">
+              <th className="text-left font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.txnDate', 'Date')}</th>
+              <th className="text-left font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.txnRef', 'Reference')}</th>
+              <th className="text-left font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.txnDesc', 'Description')}</th>
+              <th className="text-right font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.colInflow', 'Total Inflow')}</th>
+              <th className="text-right font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.colOutflow', 'Total Outflow')}</th>
+              <th className="text-right font-medium py-1.5">{t('accounting.cashBankBalance.txnBalance', 'Balance')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((e, i) => {
+              const debit = toNumber(e.debit);
+              const credit = toNumber(e.credit);
+              return (
+                <tr key={e.id ?? i} className="border-t border-border-subtle/40">
+                  <td className="py-1.5 pr-3 whitespace-nowrap text-text-secondary">
+                    <DateDisplay date={e.entryDate} />
+                  </td>
+                  <td className="py-1.5 pr-3 font-mono text-[11px] text-text-tertiary whitespace-nowrap">
+                    {e.journalEntry?.entryNumber ?? '—'}
+                  </td>
+                  <td className="py-1.5 pr-3 text-text-secondary max-w-[320px] truncate">
+                    {e.description || e.journalEntry?.description || '—'}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums">
+                    {debit > 0 ? <MoneyDisplay amount={debit} className="text-success" /> : <span className="text-text-tertiary">—</span>}
+                  </td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums">
+                    {credit > 0 ? <MoneyDisplay amount={credit} className="text-danger" /> : <span className="text-text-tertiary">—</span>}
+                  </td>
+                  <td className="py-1.5 text-right tabular-nums font-medium text-text-primary">
+                    <MoneyDisplay amount={toNumber(e.runningBalance)} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }
