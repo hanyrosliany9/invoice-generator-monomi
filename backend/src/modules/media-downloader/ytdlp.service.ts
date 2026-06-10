@@ -119,7 +119,7 @@ export class YtdlpService {
     try {
       await execFileAsync(
         this.ytdlpPath,
-        ["--simulate", "--no-warnings", url],
+        ["--simulate", "--no-warnings", "--no-playlist", url],
         { timeout: 10000 },
       );
       return true;
@@ -168,7 +168,10 @@ export class YtdlpService {
     try {
       const { stdout } = await execFileAsync(
         this.ytdlpPath,
-        ["--dump-json", "--no-download", "--no-warnings", url],
+        // --no-playlist: a YouTube Mix/Radio URL (…&list=RD…&start_radio=1) is an
+        // INFINITE auto-generated playlist; without this flag --dump-json tries to
+        // enumerate the endless mix and hangs until the exec timeout → 400 error.
+        ["--dump-json", "--no-download", "--no-warnings", "--no-playlist", url],
         { timeout: 30000, maxBuffer: 10 * 1024 * 1024 },
       );
 
@@ -211,7 +214,14 @@ export class YtdlpService {
     const tempFile = path.join(tempDir, `${safeTitle}_${Date.now()}.%(ext)s`);
 
     // Build args array (no shell interpretation)
-    const args: string[] = ["--no-warnings", "--no-progress", "-o", tempFile];
+    // --no-playlist keeps a Mix/Radio or playlist URL to the single chosen video.
+    const args: string[] = [
+      "--no-warnings",
+      "--no-progress",
+      "--no-playlist",
+      "-o",
+      tempFile,
+    ];
 
     // Add format argument
     const formatString = this.getFormatString(options);
@@ -222,6 +232,11 @@ export class YtdlpService {
     // Add audio-only options
     if (options.audioOnly) {
       args.push("-x", "--audio-format", "mp3");
+    } else {
+      // Force MP4 container. yt-dlp otherwise defaults to MKV whenever it has
+      // to merge separate video+audio streams; --remux-video rewraps a
+      // non-mp4 single file into mp4 too (no re-encode, requires ffmpeg).
+      args.push("--merge-output-format", "mp4", "--remux-video", "mp4");
     }
 
     // Add URL (no quotes needed with execFile)
@@ -299,7 +314,12 @@ export class YtdlpService {
     const outputTemplate = path.join(outputDir, "%(title)s.%(ext)s");
 
     // Build args as an array — never interpolated into a shell string
-    const args: string[] = ["--no-warnings", "-o", outputTemplate];
+    const args: string[] = [
+      "--no-warnings",
+      "--no-playlist",
+      "-o",
+      outputTemplate,
+    ];
 
     const formatString = this.getFormatString(options);
     if (formatString) {
@@ -308,6 +328,9 @@ export class YtdlpService {
 
     if (options.audioOnly) {
       args.push("-x", "--audio-format", "mp3");
+    } else {
+      // Force MP4 container instead of yt-dlp's default MKV on merge.
+      args.push("--merge-output-format", "mp4", "--remux-video", "mp4");
     }
 
     args.push(url);
@@ -333,22 +356,25 @@ export class YtdlpService {
       return "bestaudio";
     }
 
+    // Prefer MP4-native streams (mp4 video + m4a audio) so the merge produces a
+    // clean MP4 without re-encoding; fall back to any best stream if a source
+    // only offers webm/VP9 (those get remuxed to MP4 via --merge-output-format).
     switch (options.quality) {
       case "1080p":
-        return "bestvideo[height<=1080]+bestaudio/best[height<=1080]";
+        return "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080]";
       case "720p":
-        return "bestvideo[height<=720]+bestaudio/best[height<=720]";
+        return "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720]";
       case "480p":
-        return "bestvideo[height<=480]+bestaudio/best[height<=480]";
+        return "bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best[height<=480]";
       case "360p":
-        return "bestvideo[height<=360]+bestaudio/best[height<=360]";
+        return "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=360]+bestaudio/best[height<=360]";
       case "worst":
         return "worst";
       case "audio":
         return "bestaudio";
       case "best":
       default:
-        return "bestvideo+bestaudio/best";
+        return "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best";
     }
   }
 

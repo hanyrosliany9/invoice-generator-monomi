@@ -9,6 +9,8 @@ import {
   UseGuards,
   HttpStatus,
   BadRequestException,
+  NotFoundException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { Response } from "express";
 import {
@@ -48,18 +50,35 @@ export class DeckExportController {
   @Get("pdf/status/:jobId")
   @ApiOperation({ summary: "Check PDF generation status" })
   @ApiResponse({ status: 200, description: "Job status and progress" })
-  async getPdfStatus(@Param("jobId") jobId: string) {
-    return this.exportService.getJobStatus(jobId);
+  async getPdfStatus(@Request() req: any, @Param("jobId") jobId: string) {
+    const job = this.exportService.getJobStatus(jobId);
+    if (!job) {
+      throw new NotFoundException("Job not found");
+    }
+    if (job.userId !== req.user.id) {
+      throw new ForbiddenException("Access denied");
+    }
+    return job;
   }
 
   @Get("pdf/download/:jobId")
   @ApiOperation({ summary: "Download generated PDF" })
   @ApiResponse({ status: 200, description: "PDF file" })
-  downloadPdf(@Param("jobId") jobId: string, @Res() res: Response) {
+  downloadPdf(
+    @Request() req: any,
+    @Param("jobId") jobId: string,
+    @Res() res: Response,
+  ) {
     const result = this.exportService.getJobResult(jobId);
 
-    if (!result || !result.filePath) {
-      throw new BadRequestException("PDF not ready or job not found");
+    if (!result) {
+      throw new NotFoundException("Job not found");
+    }
+    if (result.userId !== req.user.id) {
+      throw new ForbiddenException("Access denied");
+    }
+    if (!result.filePath) {
+      throw new BadRequestException("PDF not ready");
     }
 
     (res as any).download(result.filePath, result.filename, (err: any) => {

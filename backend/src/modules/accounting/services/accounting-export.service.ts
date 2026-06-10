@@ -7,6 +7,9 @@ import {
 } from "../../reports/indonesian-pdf-formatter";
 import { LedgerService } from "./ledger.service";
 import { FinancialStatementsService } from "./financial-statements.service";
+import { JournalService } from "./journal.service";
+import { CashBankBalanceService } from "./cash-bank-balance.service";
+import { DepreciationService } from "./depreciation.service";
 import { CompanySettingsService } from "../../company/company-settings.service";
 
 @Injectable()
@@ -14,6 +17,9 @@ export class AccountingExportService {
   constructor(
     private readonly ledgerService: LedgerService,
     private readonly financialStatementsService: FinancialStatementsService,
+    private readonly journalService: JournalService,
+    private readonly cashBankBalanceService: CashBankBalanceService,
+    private readonly depreciationService: DepreciationService,
     private readonly companySettings: CompanySettingsService,
   ) {}
 
@@ -849,5 +855,395 @@ export class AccountingExportService {
 
     html += "</div>";
     return html;
+  }
+
+  // ============ JOURNAL ENTRIES EXPORT ============
+  async exportJournalEntriesPDF(
+    params: {
+      startDate?: string;
+      endDate?: string;
+      transactionType?: string;
+      status?: string;
+      search?: string;
+    },
+    options: PdfFormattingOptions = {},
+  ): Promise<Buffer> {
+    const result = await this.journalService.getJournalEntries({
+      page: 1,
+      limit: 1000,
+      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      endDate: params.endDate ? new Date(params.endDate) : undefined,
+      transactionType: params.transactionType,
+      status: params.status as any,
+      search: params.search,
+      sortBy: "entryDate",
+      sortOrder: "desc",
+    });
+    const companyInfo = await this.getCompanyInfo();
+
+    const periodText =
+      params.startDate && params.endDate
+        ? `Periode: ${this.formatDate(params.startDate)} - ${this.formatDate(params.endDate)}`
+        : params.startDate
+          ? `Mulai: ${this.formatDate(params.startDate)}`
+          : params.endDate
+            ? `s/d: ${this.formatDate(params.endDate)}`
+            : "Semua Periode";
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "JURNAL UMUM / JOURNAL ENTRIES",
+      reportSubtitle: "CATATAN TRANSAKSI AKUNTANSI",
+      reportPeriod: periodText,
+      preparationDate: new Date(),
+      reportType: "JOURNAL_ENTRIES",
+    };
+
+    const tableHtml = this.generateJournalEntriesTableHtml(result.data);
+    const completeHtml = IndonesianPdfFormatter.generateCompleteReportHtml(
+      companyInfo,
+      reportHeader,
+      tableHtml,
+      options,
+    );
+
+    return await IndonesianPdfFormatter.generatePdfBuffer(completeHtml, options);
+  }
+
+  private generateJournalEntriesTableHtml(entries: any[]): string {
+    const headers = [
+      "No. Jurnal",
+      "Tanggal",
+      "Tipe",
+      "Deskripsi",
+      "Debit (IDR)",
+      "Kredit (IDR)",
+      "Status",
+    ];
+    const tableData: any[][] = [];
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    entries.forEach((entry: any) => {
+      const debit = Number(entry.totalDebit) || 0;
+      const credit = Number(entry.totalCredit) || 0;
+      totalDebit += debit;
+      totalCredit += credit;
+      tableData.push([
+        entry.entryNumber,
+        this.formatDate(entry.entryDate),
+        (entry.transactionType || "").replace(/_/g, " "),
+        entry.descriptionId || entry.description || "-",
+        debit > 0 ? debit : "-",
+        credit > 0 ? credit : "-",
+        entry.status || "-",
+      ]);
+    });
+
+    const summaryRow = ["", "", "", "TOTAL", totalDebit, totalCredit, ""];
+
+    const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
+      headers,
+      tableData,
+      "journalEntries",
+      { showSummary: true, summaryRow },
+    );
+
+    return `<div class="report-section">${tableHtml}</div>`;
+  }
+
+  // ============ CASH & BANK BALANCES EXPORT ============
+  async exportCashBankBalancesPDF(
+    options: PdfFormattingOptions = {},
+  ): Promise<Buffer> {
+    const result = await this.cashBankBalanceService.findAll({
+      limit: 500,
+      page: 1,
+      sortBy: "periodDate",
+      sortOrder: "desc",
+    });
+    const companyInfo = await this.getCompanyInfo();
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "SALDO KAS & BANK / CASH & BANK BALANCES",
+      reportSubtitle: "LAPORAN POSISI KAS DAN BANK",
+      reportPeriod: `Per Tanggal: ${this.formatDate(new Date())}`,
+      preparationDate: new Date(),
+      reportType: "CASH_BANK_BALANCES",
+    };
+
+    const tableHtml = this.generateCashBankBalancesTableHtml(result.data);
+    const completeHtml = IndonesianPdfFormatter.generateCompleteReportHtml(
+      companyInfo,
+      reportHeader,
+      tableHtml,
+      options,
+    );
+
+    return await IndonesianPdfFormatter.generatePdfBuffer(completeHtml, options);
+  }
+
+  private generateCashBankBalancesTableHtml(rows: any[]): string {
+    const headers = ["Kode Akun", "Nama Akun", "Saldo (IDR)"];
+    const tableData: any[][] = [];
+    let totalBalance = 0;
+
+    rows.forEach((row: any) => {
+      const closing = Number(row.closingBalance) || 0;
+      totalBalance += closing;
+      tableData.push([
+        row.accountCode || "-",
+        row.accountName || "-",
+        closing,
+      ]);
+    });
+
+    const summaryRow = ["", "TOTAL", totalBalance];
+
+    const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
+      headers,
+      tableData,
+      "cashBankBalances",
+      { showSummary: true, summaryRow },
+    );
+
+    return `<div class="report-section">${tableHtml}</div>`;
+  }
+
+  // ============ DEPRECIATION EXPORT ============
+  async exportDepreciationPDF(
+    params: {
+      startDate: string;
+      endDate: string;
+    },
+    options: PdfFormattingOptions = {},
+  ): Promise<Buffer> {
+    const data = await this.depreciationService.getDepreciationSummary({
+      startDate: new Date(params.startDate),
+      endDate: new Date(params.endDate),
+    });
+    const companyInfo = await this.getCompanyInfo();
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "PENYUSUTAN ASET / ASSET DEPRECIATION",
+      reportSubtitle: "LAPORAN PENYUSUTAN AKTIVA TETAP",
+      reportPeriod: `Periode: ${this.formatDate(params.startDate)} - ${this.formatDate(params.endDate)}`,
+      preparationDate: new Date(),
+      reportType: "DEPRECIATION",
+    };
+
+    const tableHtml = this.generateDepreciationTableHtml(data);
+    const completeHtml = IndonesianPdfFormatter.generateCompleteReportHtml(
+      companyInfo,
+      reportHeader,
+      tableHtml,
+      options,
+    );
+
+    return await IndonesianPdfFormatter.generatePdfBuffer(completeHtml, options);
+  }
+
+  private generateDepreciationTableHtml(data: any): string {
+    const headers = [
+      "Kode Aset",
+      "Nama Aset",
+      "Harga Perolehan (IDR)",
+      "Penyusutan Periode (IDR)",
+      "Akumulasi Penyusutan (IDR)",
+      "Nilai Buku (IDR)",
+    ];
+    const tableData: any[][] = [];
+
+    (data.byAsset || []).forEach((asset: any) => {
+      tableData.push([
+        asset.assetCode,
+        asset.assetName,
+        asset.purchasePrice,
+        asset.depreciationAmount,
+        asset.accumulatedDepreciation,
+        asset.netBookValue,
+      ]);
+    });
+
+    const summaryRow = [
+      "",
+      "TOTAL",
+      "",
+      data.totalDepreciation,
+      data.totalAccumulatedDepreciation,
+      "",
+    ];
+
+    const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
+      headers,
+      tableData,
+      "depreciation",
+      { showSummary: true, summaryRow },
+    );
+
+    return `<div class="report-section">${tableHtml}</div>`;
+  }
+
+  // ============ PURCHASES EXPORT ============
+  async exportPurchasesPDF(
+    params: {
+      startDate?: string;
+      endDate?: string;
+    },
+    options: PdfFormattingOptions = {},
+  ): Promise<Buffer> {
+    const rows = await this.journalService.getPurchases({
+      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      endDate: params.endDate ? new Date(params.endDate) : undefined,
+    });
+    const companyInfo = await this.getCompanyInfo();
+
+    const periodText =
+      params.startDate && params.endDate
+        ? `Periode: ${this.formatDate(params.startDate)} - ${this.formatDate(params.endDate)}`
+        : params.startDate
+          ? `Mulai: ${this.formatDate(params.startDate)}`
+          : params.endDate
+            ? `s/d: ${this.formatDate(params.endDate)}`
+            : "Semua Periode";
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "LAPORAN PEMBELIAN / PURCHASE REPORT",
+      reportSubtitle: "LAPORAN TRANSAKSI PEMBELIAN",
+      reportPeriod: periodText,
+      preparationDate: new Date(),
+      reportType: "PURCHASES",
+    };
+
+    const tableHtml = this.generatePurchasesTableHtml(rows);
+    const completeHtml = IndonesianPdfFormatter.generateCompleteReportHtml(
+      companyInfo,
+      reportHeader,
+      tableHtml,
+      options,
+    );
+
+    return await IndonesianPdfFormatter.generatePdfBuffer(completeHtml, options);
+  }
+
+  async exportSalesPDF(
+    params: {
+      startDate?: string;
+      endDate?: string;
+    },
+    options: PdfFormattingOptions = {},
+  ): Promise<Buffer> {
+    const rows = await this.journalService.getSales({
+      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      endDate: params.endDate ? new Date(params.endDate) : undefined,
+    });
+    const companyInfo = await this.getCompanyInfo();
+
+    const periodText =
+      params.startDate && params.endDate
+        ? `Periode: ${this.formatDate(params.startDate)} - ${this.formatDate(params.endDate)}`
+        : params.startDate
+          ? `Mulai: ${this.formatDate(params.startDate)}`
+          : params.endDate
+            ? `s/d: ${this.formatDate(params.endDate)}`
+            : "Semua Periode";
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "LAPORAN PENJUALAN / SALES REPORT",
+      reportSubtitle: "LAPORAN TRANSAKSI PENJUALAN",
+      reportPeriod: periodText,
+      preparationDate: new Date(),
+      reportType: "SALES",
+    };
+
+    const tableHtml = this.generateSalesTableHtml(rows);
+    const completeHtml = IndonesianPdfFormatter.generateCompleteReportHtml(
+      companyInfo,
+      reportHeader,
+      tableHtml,
+      options,
+    );
+
+    return await IndonesianPdfFormatter.generatePdfBuffer(completeHtml, options);
+  }
+
+  private generateSalesTableHtml(rows: any[]): string {
+    const headers = [
+      "Nomor",
+      "Pelanggan",
+      "Keterangan",
+      "Tgl Terbit",
+      "Jatuh Tempo",
+      "Jumlah (IDR)",
+      "Status",
+    ];
+    const tableData: any[][] = [];
+    let totalAmount = 0;
+
+    rows.forEach((row: any) => {
+      const amount = Number(row.amount) || 0;
+      totalAmount += amount;
+      tableData.push([
+        row.number || row.journalEntryNumber || "-",
+        row.clientName || "-",
+        row.description || "-",
+        this.formatDate(row.issuedDate),
+        this.formatDate(row.dueDate),
+        amount,
+        row.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas",
+      ]);
+    });
+
+    const summaryRow = ["", "", "", "", "TOTAL", totalAmount, ""];
+
+    const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
+      headers,
+      tableData,
+      "sales",
+      { showSummary: true, summaryRow },
+    );
+
+    return `<div class="report-section">${tableHtml}</div>`;
+  }
+
+  private generatePurchasesTableHtml(rows: any[]): string {
+    const headers = [
+      "Nomor",
+      "Tanggal",
+      "Vendor",
+      "Kategori",
+      "Deskripsi",
+      "Jumlah (IDR)",
+      "Status",
+    ];
+    const tableData: any[][] = [];
+    let totalAmount = 0;
+
+    rows.forEach((row: any) => {
+      const amount = Number(row.amount) || 0;
+      totalAmount += amount;
+      const category = [row.categoryCode, row.categoryName]
+        .filter(Boolean)
+        .join(" - ");
+      tableData.push([
+        row.number || row.journalEntryNumber || "-",
+        this.formatDate(row.date),
+        row.vendorName || "-",
+        category || "-",
+        row.description || "-",
+        amount,
+        row.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas",
+      ]);
+    });
+
+    const summaryRow = ["", "", "", "", "TOTAL", totalAmount, ""];
+
+    const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
+      headers,
+      tableData,
+      "purchases",
+      { showSummary: true, summaryRow },
+    );
+
+    return `<div class="report-section">${tableHtml}</div>`;
   }
 }

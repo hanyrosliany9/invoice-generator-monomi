@@ -116,6 +116,16 @@ export default function JournalEntryFormPageV2() {
     | Partial<FormValues> & { lineItems?: Array<{ accountCode: string; descriptionId?: string; debit: number; credit: number }> }
     | undefined;
 
+  // A `?type=` query param presets the transaction type when creating a new
+  // entry — e.g. the sidebar "+ Pembelian" opens this form with PURCHASE
+  // preselected. Only honoured for valid enum values (others fall back below).
+  const presetType = useMemo(() => {
+    const raw = new URLSearchParams(location.search).get('type');
+    if (!raw) return undefined;
+    const upper = raw.toUpperCase();
+    return TRANSACTION_TYPE_VALUES.includes(upper) ? upper : undefined;
+  }, [location.search]);
+
   /* ----- supporting data ----- */
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['chart-of-accounts'],
@@ -172,7 +182,7 @@ export default function JournalEntryFormPageV2() {
     }
     return {
       entryDate:       new Date(),
-      transactionType: 'ADJUSTMENT',
+      transactionType: presetType ?? 'ADJUSTMENT',
       descriptionId:   '',
       description:     '',
       documentNumber:  '',
@@ -182,7 +192,7 @@ export default function JournalEntryFormPageV2() {
         { accountCode: '', descriptionId: '', debit: 0, credit: 0 },
       ],
     };
-  }, [isEdit, existing, prefilled]);
+  }, [isEdit, existing, prefilled, presetType]);
 
   const {
     register, handleSubmit, control, watch, reset, formState: { errors, isSubmitting },
@@ -709,7 +719,7 @@ function Shell({ user, children }: { user: any; children: React.ReactNode }) {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+      topbar={{}}
     >
       {children}
     </AppShell>

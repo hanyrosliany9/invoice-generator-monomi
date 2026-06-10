@@ -19,6 +19,13 @@ export enum SlideTemplate {
   SCHEDULE = "SCHEDULE",
   COMPARISON = "COMPARISON",
   BLANK = "BLANK",
+  STORYBOARD = "STORYBOARD",
+  LOCATION = "LOCATION",
+  SCRIPT_BREAKDOWN = "SCRIPT_BREAKDOWN",
+  CALL_SHEET = "CALL_SHEET",
+  GRID_4 = "GRID_4",
+  GRID_6 = "GRID_6",
+  TIMELINE = "TIMELINE",
 }
 
 export class CreateSlideDto {

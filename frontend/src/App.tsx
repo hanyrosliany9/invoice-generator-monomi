@@ -98,6 +98,10 @@ const V2TrialBalancePage = lazy(() => import('./pages/v2/accounting/TrialBalance
 const V2GeneralLedgerPage = lazy(() => import('./pages/v2/accounting/GeneralLedgerPage'))
 const V2AccountsReceivablePage = lazy(() => import('./pages/v2/accounting/AccountsReceivablePage'))
 const V2AccountsPayablePage = lazy(() => import('./pages/v2/accounting/AccountsPayablePage'))
+const V2PurchaseReportPage = lazy(() => import('./pages/v2/accounting/PurchaseReportPage'))
+const V2PurchaseCreatePage = lazy(() => import('./pages/v2/accounting/PurchaseCreatePage'))
+const V2SalesReportPage = lazy(() => import('./pages/v2/accounting/SalesReportPage'))
+const V2SalesCreatePage = lazy(() => import('./pages/v2/accounting/SalesCreatePage'))
 const V2ARAgingPage = lazy(() => import('./pages/v2/accounting/ARAgingPage'))
 const V2APAgingPage = lazy(() => import('./pages/v2/accounting/APAgingPage'))
 const V2CashReceiptsPage = lazy(() => import('./pages/v2/accounting/CashReceiptsPage'))
@@ -176,7 +180,8 @@ function StripV2Redirect() {
  */
 function AuthenticatedCommandPalette() {
   const [paletteOpen, setPaletteOpen] = useState(false)
-  useCommandPaletteShortcut(() => setPaletteOpen(true))
+  // Toggle (not just open) so Ctrl-K closes an open palette too.
+  useCommandPaletteShortcut(() => setPaletteOpen((o) => !o))
   return (
     <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
   )
@@ -381,6 +386,10 @@ function App() {
                       <Route path='/accounting/general-ledger' element={<AdminRoute><V2GeneralLedgerPage /></AdminRoute>} />
                       <Route path='/accounting/accounts-receivable' element={<AdminRoute><V2AccountsReceivablePage /></AdminRoute>} />
                       <Route path='/accounting/accounts-payable' element={<AdminRoute><V2AccountsPayablePage /></AdminRoute>} />
+                      <Route path='/accounting/purchases' element={<AdminRoute><V2PurchaseReportPage /></AdminRoute>} />
+                      <Route path='/accounting/purchases/new' element={<AdminRoute><V2PurchaseCreatePage /></AdminRoute>} />
+                      <Route path='/accounting/sales' element={<AdminRoute><V2SalesReportPage /></AdminRoute>} />
+                      <Route path='/accounting/sales/new' element={<AdminRoute><V2SalesCreatePage /></AdminRoute>} />
                       <Route path='/accounting/ar-aging' element={<AdminRoute><V2ARAgingPage /></AdminRoute>} />
                       <Route path='/accounting/ap-aging' element={<AdminRoute><V2APAgingPage /></AdminRoute>} />
                       <Route path='/accounting/cash-receipts' element={<AdminRoute><V2CashReceiptsPage /></AdminRoute>} />

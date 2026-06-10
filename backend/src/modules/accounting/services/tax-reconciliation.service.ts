@@ -27,6 +27,53 @@ export class TaxReconciliationService {
    * - PPN Creditable: Input - Output (if negative, company has tax credit)
    */
   async getPPNReconciliation(startDate: Date, endDate: Date) {
+    // ── GL-authoritative balances for PPN accounts ─────────────────────────
+    // These are queried up-front so the return object can surface them
+    // alongside the operational-table figures. Manual journal entries posted
+    // directly to these accounts are ONLY visible here — the expense/invoice
+    // rows below can never see them.
+
+    // 2-2010  Hutang PPN (CREDIT-normal LIABILITY): net = sum(credit) - sum(debit)
+    const ppnPayableAccount = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: '2-2010' },
+    });
+    let glPPNPayableBalance = 0;
+    if (ppnPayableAccount) {
+      const rows = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: ppnPayableAccount.id,
+          entryDate: { lte: endDate },
+          journalEntry: { isPosted: true },
+        },
+        select: { debit: true, credit: true },
+      });
+      glPPNPayableBalance = rows.reduce(
+        (sum, r) => sum + Number(r.credit) - Number(r.debit),
+        0,
+      );
+    }
+
+    // 1-2530  PPN Masukan / Prepaid PPN (DEBIT-normal ASSET): net = sum(debit) - sum(credit)
+    const ppnInputAccount = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: '1-2530' },
+    });
+    let glPPNInputBalance = 0;
+    if (ppnInputAccount) {
+      const rows = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: ppnInputAccount.id,
+          entryDate: { lte: endDate },
+          journalEntry: { isPosted: true },
+        },
+        select: { debit: true, credit: true },
+      });
+      glPPNInputBalance = rows.reduce(
+        (sum, r) => sum + Number(r.debit) - Number(r.credit),
+        0,
+      );
+    }
+    // ── end GL balances ────────────────────────────────────────────────────
+
     // Get PPN Input (from Expenses - purchases)
     // FIX 3: Only APPROVED/PAID expenses yield creditable input VAT (drop SUBMITTED)
     const expensesWithPPN = await this.prisma.expense.findMany({
@@ -199,12 +246,26 @@ export class TaxReconciliationService {
         ppnCreditable: !isPPNPayable ? Math.abs(ppnPayable) : 0,
         netPosition: ppnPayable,
         status: isPPNPayable ? "PAYABLE" : "CREDITABLE",
+        // GL-authoritative balance for 2-2010 Hutang PPN (CREDIT-normal).
+        // This is the headline figure that ties to the Balance Sheet / Trial Balance.
+        // A non-zero reconcilingAdjustment means a manual journal was posted directly
+        // to 2-2010 outside the invoice/expense flow (e.g. a tax payment entry).
+        glPPNPayableBalance,
+        reconcilingAdjustmentPPNPayable: glPPNPayableBalance - (isPPNPayable ? ppnPayable : 0),
+        // GL-authoritative balance for 1-2530 PPN Masukan (DEBIT-normal asset).
+        // Non-zero reconcilingAdjustment means a manual journal touched 1-2530
+        // without a corresponding creditable expense row.
+        glPPNInputBalance,
+        reconcilingAdjustmentPPNInput: glPPNInputBalance - totalPPNInput,
       },
       summary: {
         totalPPNInput,
         totalPPNOutput,
         netPPNPayable: ppnPayable,
         isPPNPayable,
+        // GL-authoritative balances — always reconcile with Balance Sheet.
+        glPPNPayableBalance,
+        glPPNInputBalance,
       },
     };
   }
@@ -218,6 +279,70 @@ export class TaxReconciliationService {
    * - PPh Pasal 15: Specific activities
    */
   async getPPhSummary(startDate: Date, endDate: Date) {
+    // ── GL-authoritative balances for PPh accounts ─────────────────────────
+    // 2-2020  Hutang PPh (CREDIT-normal LIABILITY): net = sum(credit) - sum(debit)
+    // glBalance is AUTHORITATIVE; it includes manual journal entries that the
+    // expense rows below cannot see (e.g. a PPh payment or adjusting entry).
+    const pphPayableAccount = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: '2-2020' },
+    });
+    let glPPhPayableBalance = 0;
+    if (pphPayableAccount) {
+      const rows = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: pphPayableAccount.id,
+          entryDate: { lte: endDate },
+          journalEntry: { isPosted: true },
+        },
+        select: { debit: true, credit: true },
+      });
+      glPPhPayableBalance = rows.reduce(
+        (sum, r) => sum + Number(r.credit) - Number(r.debit),
+        0,
+      );
+    }
+
+    // 1-2510  Prepaid PPh 23 (DEBIT-normal ASSET): net = sum(debit) - sum(credit)
+    const prepaidPPh23Account = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: '1-2510' },
+    });
+    let glPrepaidPPh23Balance = 0;
+    if (prepaidPPh23Account) {
+      const rows = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: prepaidPPh23Account.id,
+          entryDate: { lte: endDate },
+          journalEntry: { isPosted: true },
+        },
+        select: { debit: true, credit: true },
+      });
+      glPrepaidPPh23Balance = rows.reduce(
+        (sum, r) => sum + Number(r.debit) - Number(r.credit),
+        0,
+      );
+    }
+
+    // 1-2520  Prepaid PPh 25 (DEBIT-normal ASSET): net = sum(debit) - sum(credit)
+    const prepaidPPh25Account = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: '1-2520' },
+    });
+    let glPrepaidPPh25Balance = 0;
+    if (prepaidPPh25Account) {
+      const rows = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: prepaidPPh25Account.id,
+          entryDate: { lte: endDate },
+          journalEntry: { isPosted: true },
+        },
+        select: { debit: true, credit: true },
+      });
+      glPrepaidPPh25Balance = rows.reduce(
+        (sum, r) => sum + Number(r.debit) - Number(r.credit),
+        0,
+      );
+    }
+    // ── end GL balances ────────────────────────────────────────────────────
+
     // FIX 3 (PPh side): Only APPROVED/PAID expenses are settled; drop SUBMITTED
     const expensesWithPPh = await this.prisma.expense.findMany({
       where: {
@@ -326,6 +451,16 @@ export class TaxReconciliationService {
         totalWithholdingTax,
         transactionCount: expensesWithPPh.length,
         typeCount: Object.keys(byType).length,
+        // GL-authoritative balance for 2-2020 Hutang PPh (CREDIT-normal).
+        // This is the headline figure that ties to the Balance Sheet / Trial Balance.
+        // A non-zero reconcilingAdjustment means a manual journal was posted
+        // to 2-2020 outside the expense flow (e.g. a PPh payment entry).
+        glPPhPayableBalance,
+        reconcilingAdjustmentPPh: glPPhPayableBalance - totalWithholdingTax,
+        // GL-authoritative balances for Prepaid PPh asset accounts (DEBIT-normal).
+        // Non-zero values indicate PPh installments or pre-payments posted via journal.
+        glPrepaidPPh23Balance,
+        glPrepaidPPh25Balance,
       },
     };
   }
@@ -367,12 +502,21 @@ export class TaxReconciliationService {
       pph: pphReport,
       eFaktur: eFakturStatus,
       summary: {
+        // Operational totals (from invoice/expense rows) — retained as supporting detail.
         ppnPayable: ppnReport.reconciliation.ppnPayable,
         pphWithheld: pphReport.summary.totalWithholdingTax,
         totalTaxLiability:
           ppnReport.reconciliation.ppnPayable +
           pphReport.summary.totalWithholdingTax,
         eFakturCompletionRate: eFakturStatus.summary.validationRate,
+        // GL-authoritative totals — always reconcile with Balance Sheet / Trial Balance.
+        // Non-zero reconcilingAdjustment values mean a manual journal was posted to
+        // the tax accounts outside the normal invoice/expense flow.
+        glPPNPayableBalance: ppnReport.reconciliation.glPPNPayableBalance,
+        glPPhPayableBalance: pphReport.summary.glPPhPayableBalance,
+        glTotalTaxLiability:
+          ppnReport.reconciliation.glPPNPayableBalance +
+          pphReport.summary.glPPhPayableBalance,
       },
     };
   }
@@ -559,13 +703,25 @@ export class TaxReconciliationService {
 
     const reminders = [];
 
+    // Use GL-authoritative balances as the headline amounts for reminders.
+    // glPPNPayableBalance (2-2010) and glPPhPayableBalance (2-2020) include any
+    // manual journal entries posted outside the invoice/expense flow; the
+    // operational totals are kept as additional detail fields so the source of
+    // each amount remains auditable.
+    const glPPNDue = ppnReport.reconciliation.glPPNPayableBalance;
+    const glPPhDue = pphReport.summary.glPPhPayableBalance;
+
     // PPN reminder
-    if (ppnReport.reconciliation.ppnPayable > 0 && daysUntilPPNDeadline <= 10) {
+    if (glPPNDue > 0 && daysUntilPPNDeadline <= 10) {
       reminders.push({
         type: "PPN",
         deadline: ppnDeadline,
         daysUntil: daysUntilPPNDeadline,
-        amount: ppnReport.reconciliation.ppnPayable,
+        // GL-authoritative amount (authoritative — ties to Balance Sheet).
+        amount: glPPNDue,
+        // Operational total retained as supporting detail.
+        operationalAmount: ppnReport.reconciliation.ppnPayable,
+        reconcilingAdjustment: ppnReport.reconciliation.reconcilingAdjustmentPPNPayable,
         status: daysUntilPPNDeadline <= 3 ? "URGENT" : "UPCOMING",
         period: {
           month: previousMonth + 1,
@@ -575,15 +731,16 @@ export class TaxReconciliationService {
     }
 
     // PPh reminder
-    if (
-      pphReport.summary.totalWithholdingTax > 0 &&
-      daysUntilPPhDeadline <= 10
-    ) {
+    if (glPPhDue > 0 && daysUntilPPhDeadline <= 10) {
       reminders.push({
         type: "PPh",
         deadline: pphDeadline,
         daysUntil: daysUntilPPhDeadline,
-        amount: pphReport.summary.totalWithholdingTax,
+        // GL-authoritative amount (authoritative — ties to Balance Sheet).
+        amount: glPPhDue,
+        // Operational total retained as supporting detail.
+        operationalAmount: pphReport.summary.totalWithholdingTax,
+        reconcilingAdjustment: pphReport.summary.reconcilingAdjustmentPPh,
         status: daysUntilPPhDeadline <= 3 ? "URGENT" : "UPCOMING",
         period: {
           month: previousMonth + 1,
@@ -598,6 +755,7 @@ export class TaxReconciliationService {
       summary: {
         totalReminders: reminders.length,
         urgentCount: reminders.filter((r) => r.status === "URGENT").length,
+        // GL-authoritative total due amount.
         totalAmountDue: reminders.reduce((sum, r) => sum + r.amount, 0),
       },
     };

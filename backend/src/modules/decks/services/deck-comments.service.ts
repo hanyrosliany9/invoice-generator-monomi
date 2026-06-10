@@ -39,6 +39,22 @@ export class DeckCommentsService {
   }
 
   async findBySlide(slideId: string, userId: string) {
+    // Verify the caller has access to the slide's deck before returning comments.
+    // Re-use the same slide/deck lookup used by create/resolve/remove.
+    const slide = await this.prisma.deckSlide.findUnique({
+      where: { id: slideId },
+      include: { deck: { include: { collaborators: true } } },
+    });
+
+    if (!slide) throw new NotFoundException("Slide not found");
+
+    const collaborator = slide.deck.collaborators.find(
+      (c) => c.userId === userId,
+    );
+    if (!collaborator) {
+      throw new ForbiddenException("Access denied to this deck");
+    }
+
     return this.prisma.deckSlideComment.findMany({
       where: { slideId, parentId: null },
       include: {

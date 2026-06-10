@@ -20,16 +20,11 @@ export { default as AssetGrid } from './AssetGrid';
 // Properties
 export { default as PropertiesPanel } from './PropertiesPanel';
 export { default as PropertiesPanelToggle } from './PropertiesPanelToggle';
-export { default as TextPropertiesPanel } from './TextPropertiesPanel';
 
 // Templates & Slides
 export { default as TemplatePicker } from './TemplatePicker';
 export { default as NewSlideButton } from './NewSlideButton';
 export { default as SlideContextMenu } from './SlideContextMenu';
-
-// Text Editing
-export { default as RichTextEditor } from './RichTextEditor';
-export { default as InlineTextEditor } from './InlineTextEditor';
 
 // Presentation
 export { default as PresentButton } from './PresentButton';
@@ -48,6 +43,15 @@ export { default as CommentMarker } from './collaboration/CommentMarker';
 export { default as CommentsOverlay } from './collaboration/CommentsOverlay';
 export { default as AddCommentButton } from './collaboration/AddCommentButton';
 
+// Find & Replace
+export { default as FindReplacePanel } from './FindReplacePanel';
+export type { FindReplacePanelProps } from './FindReplacePanel';
+
 // Help & Info
 export { default as KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 export { default as KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+
+// Editor shell
+export { default as SlideThumbnail } from './SlideThumbnail';
+export { default as SpeakerNotesPanel } from './SpeakerNotesPanel';
+export { default as ZoomControls } from './ZoomControls';

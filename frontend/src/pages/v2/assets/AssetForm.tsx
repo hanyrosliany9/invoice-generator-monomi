@@ -73,6 +73,8 @@ const makeAssetFormSchema = (t: (key: string, fallback: string) => string) => z
     condition: z.enum(CONDITION_VALUES).optional(),
 
     // 06 · Penyusutan
+    // Kelompok fiscal (I-IV) — drives the straight-line useful life.
+    depreciationGroup: z.string().optional().or(z.literal('')),
     usefulLifeYears: z.coerce
       .number()
       .min(0, 'Min. 0')
@@ -119,6 +121,7 @@ export const emptyAssetFormValues: AssetFormValues = {
   location: '',
   status: 'AVAILABLE',
   condition: 'GOOD',
+  depreciationGroup: '',
   usefulLifeYears: undefined,
   residualValue: undefined,
   notes: '',
@@ -299,6 +302,7 @@ export const AssetForm = ({
     control,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<AssetFormValues>({
     resolver: zodResolver(makeAssetFormSchema(t)),
@@ -813,6 +817,43 @@ export const AssetForm = ({
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+          <FieldShell
+            id="af-dep-group"
+            label={t('assets.form.depGroup', 'Kelompok Penyusutan')}
+            hint={t(
+              'assets.form.depGroupHint',
+              'Kelompok fiskal (I-IV) menentukan umur ekonomis garis lurus.',
+            )}
+            error={errors.depreciationGroup?.message}
+          >
+            <Controller
+              control={control}
+              name="depreciationGroup"
+              render={({ field }) => (
+                <Select
+                  value={field.value || ''}
+                  onValueChange={(v) => {
+                    field.onChange(v);
+                    // Picking a Kelompok sets the useful life (I=4, II=8, III=16, IV=20).
+                    const years: Record<string, number> = { I: 4, II: 8, III: 16, IV: 20 };
+                    if (years[v]) setValue('usefulLifeYears', years[v], { shouldValidate: true });
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger id="af-dep-group" className={cn('w-full', fieldInputClass)}>
+                    <SelectValue placeholder={t('assets.form.depGroupPlaceholder', 'Pilih kelompok...')} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-bg-raised border-border-subtle">
+                    <SelectItem value="I">{t('assets.form.depGroupI', 'Kelompok I — 4 tahun')}</SelectItem>
+                    <SelectItem value="II">{t('assets.form.depGroupII', 'Kelompok II — 8 tahun')}</SelectItem>
+                    <SelectItem value="III">{t('assets.form.depGroupIII', 'Kelompok III — 16 tahun')}</SelectItem>
+                    <SelectItem value="IV">{t('assets.form.depGroupIV', 'Kelompok IV — 20 tahun')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </FieldShell>
+
           <FieldShell
             id="af-useful-life"
             label={t('assets.form.usefulLife', 'Umur Ekonomis (Tahun)')}

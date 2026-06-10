@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
+import { useAuthStore } from '../store/auth';
 
 export interface Collaborator {
   id: string;
@@ -122,9 +123,15 @@ export const useCollaborationStore = create<CollaborationState>((set, get) => ({
     }
 
     const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:5000';
+    // Pass the JWT access token in the socket.io auth object so the gateway
+    // can cryptographically verify the caller's identity. The deckId/userId
+    // query params are kept for compatibility but the gateway now derives the
+    // authoritative userId from the verified token's `sub` claim.
+    const accessToken = useAuthStore.getState().getAccessToken();
     // Note: Socket.io namespaces are specified in the URL path, not as a config option
     const socket = io(`${wsUrl}/decks`, {
       query: { deckId, userId },
+      auth: { token: accessToken ?? '' },
       transports: ['websocket'],
     });
 

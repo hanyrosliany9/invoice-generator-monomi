@@ -52,7 +52,6 @@ export default function UserEditPageV2() {
       footer: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
     },
     topbar: {
-      right: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
     },
   };
 

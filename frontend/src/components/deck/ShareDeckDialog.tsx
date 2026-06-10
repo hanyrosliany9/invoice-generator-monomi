@@ -18,7 +18,41 @@ import {
 } from '@/components/ui/select';
 
 import { decksApi, collaboratorsApi } from '@/services/decks';
-import type { Deck, DeckCollaborator, CollaboratorRole } from '@/types/deck';
+import type { Deck, DeckCollaborator, CollaboratorRole, PublicAccessLevel } from '@/types/deck';
+
+/* ------------------------------------------------------------------ */
+/*  Public access level options                                        */
+/* ------------------------------------------------------------------ */
+
+const PUBLIC_ACCESS_OPTIONS: {
+  value: PublicAccessLevel;
+  key: string;
+  fallback: string;
+  hint: string;
+  hintKey: string;
+}[] = [
+  {
+    value: 'VIEW_ONLY',
+    key: 'deckShare.accessViewOnly',
+    fallback: 'Can view',
+    hintKey: 'deckShare.accessViewOnlyHint',
+    hint: 'Viewers can only browse slides.',
+  },
+  {
+    value: 'DOWNLOAD',
+    key: 'deckShare.accessDownload',
+    fallback: 'Can view & download',
+    hintKey: 'deckShare.accessDownloadHint',
+    hint: 'Viewers can browse and export a PDF.',
+  },
+  {
+    value: 'COMMENT',
+    key: 'deckShare.accessComment',
+    fallback: 'Can view & comment',
+    hintKey: 'deckShare.accessCommentHint',
+    hint: 'Viewers can browse and leave comments.',
+  },
+];
 
 /* ------------------------------------------------------------------ */
 /*  Role options shared across the invite form + the per-row selector  */
@@ -41,6 +75,9 @@ export function ShareDeckDialog({ deck, open, onOpenChange }: ShareDeckDialogPro
   const queryClient = useQueryClient();
 
   const [copied, setCopied] = useState(false);
+  const [accessLevel, setAccessLevel] = useState<PublicAccessLevel>(
+    deck.publicAccessLevel ?? 'VIEW_ONLY',
+  );
 
   /* ---------- public link ---------- */
   const publicUrl = useMemo(() => {
@@ -58,7 +95,9 @@ export function ShareDeckDialog({ deck, open, onOpenChange }: ShareDeckDialogPro
 
   const togglePublicMutation = useMutation({
     mutationFn: (enable: boolean) =>
-      enable ? decksApi.enablePublicSharing(deck.id) : decksApi.disablePublicSharing(deck.id),
+      enable
+        ? decksApi.enablePublicSharing(deck.id, accessLevel)
+        : decksApi.disablePublicSharing(deck.id),
     onSuccess: (_data, enable) => {
       invalidateDeck();
       toast.success(
@@ -70,6 +109,24 @@ export function ShareDeckDialog({ deck, open, onOpenChange }: ShareDeckDialogPro
     onError: (err: Error) =>
       toast.error(err.message || t('deckShare.publicToggleError', 'Failed to update sharing')),
   });
+
+  const setAccessLevelMutation = useMutation({
+    mutationFn: (level: PublicAccessLevel) =>
+      decksApi.setPublicAccessLevel(deck.id, level),
+    onSuccess: () => {
+      invalidateDeck();
+      toast.success(t('deckShare.accessLevelUpdated', 'Access level updated'));
+    },
+    onError: (err: Error) =>
+      toast.error(err.message || t('deckShare.accessLevelUpdateError', 'Failed to update access level')),
+  });
+
+  const handleAccessLevelChange = (level: PublicAccessLevel) => {
+    setAccessLevel(level);
+    if (deck.isPublic) {
+      setAccessLevelMutation.mutate(level);
+    }
+  };
 
   const handleCopy = async () => {
     if (!publicUrl) return;
@@ -178,23 +235,54 @@ export function ShareDeckDialog({ deck, open, onOpenChange }: ShareDeckDialogPro
             </div>
 
             {deck.isPublic && publicUrl && (
-              <div className="flex items-center gap-2">
-                <Input
-                  readOnly
-                  value={publicUrl}
-                  onFocus={(e) => e.currentTarget.select()}
-                  className="bg-bg-sunken border-border-default text-text-secondary text-xs h-9"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopy}
-                  className="shrink-0"
-                >
-                  {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copied ? t('deckShare.copied', 'Copied') : t('common.copy', 'Copy')}
-                </Button>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={publicUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="bg-bg-sunken border-border-default text-text-secondary text-xs h-9"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopy}
+                    className="shrink-0"
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? t('deckShare.copied', 'Copied') : t('common.copy', 'Copy')}
+                  </Button>
+                </div>
+
+                {/* Access level selector */}
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-text-tertiary shrink-0">
+                    {t('deckShare.accessLevel', 'Anyone with link')}
+                  </Label>
+                  <Select
+                    value={accessLevel}
+                    onValueChange={(v) => handleAccessLevelChange(v as PublicAccessLevel)}
+                    disabled={setAccessLevelMutation.isPending}
+                  >
+                    <SelectTrigger className="h-8 flex-1 text-xs bg-bg-sunken border-border-default text-text-secondary">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PUBLIC_ACCESS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {t(opt.key, opt.fallback)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-[11px] text-text-tertiary">
+                  {t(
+                    PUBLIC_ACCESS_OPTIONS.find((o) => o.value === accessLevel)?.hintKey ?? '',
+                    PUBLIC_ACCESS_OPTIONS.find((o) => o.value === accessLevel)?.hint ?? '',
+                  )}
+                </p>
               </div>
             )}
           </section>

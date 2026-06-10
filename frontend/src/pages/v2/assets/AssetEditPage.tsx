@@ -64,7 +64,6 @@ export default function AssetEditPageV2() {
       footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
     },
     topbar: {
-      right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
     },
   };
 

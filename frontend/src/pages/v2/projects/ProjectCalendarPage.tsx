@@ -249,7 +249,7 @@ export default function ProjectCalendarPage() {
           sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
-        topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState icon={<CalendarDays />} title={t('projectCalendar.noProjectId.title', 'Project ID required')} description={t('projectCalendar.noProjectId.desc', 'Open this page via the projects list.')} />
@@ -266,9 +266,7 @@ export default function ProjectCalendarPage() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>
         {/* Breadcrumb */}
@@ -368,7 +366,7 @@ export default function ProjectCalendarPage() {
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors',
                 filterType === tab.value
-                  ? 'border-accent/60 bg-accent/10 text-accent'
+                  ? 'border-accent-navy-ring bg-accent-navy-wash text-text-primary'
                   : 'border-border-subtle bg-bg-sunken text-text-tertiary hover:text-text-secondary hover:border-border-default',
               )}
             >

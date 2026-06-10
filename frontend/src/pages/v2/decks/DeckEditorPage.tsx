@@ -6,14 +6,29 @@ import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { safeUrl } from '@/utils/safeUrl';
 import {
   FileText,
-  ArrowLeft, Save, Loader2, ChevronLeft, ChevronRight, Plus, Trash2,
-  Copy, Settings, Maximize2, Check, CircleDashed, Share2, MessageSquare,
+  ArrowLeft, Save, Loader2, ChevronLeft, ChevronRight, Plus,
+  Settings, Check, CircleDashed, Share2, MessageSquare,
+  FileText as NotesIcon, Search,
 } from 'lucide-react';
 import type { Canvas as FabricCanvas } from 'fabric';
 import { App as AntdApp } from 'antd';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -32,7 +47,13 @@ import { Combobox } from '@/components/ui/combobox';
 import { useAuthStore } from '@/store/auth';
 import { decksApi, slidesApi, elementsApi, commentsApi } from '@/services/decks';
 import { projectService } from '@/services/projects';
-import { fabricObjectToElement } from '@/utils/deckCanvasUtils';
+import {
+  fabricObjectToElement,
+  generateElementId,
+  buildTableObject,
+  buildChartObject,
+  buildIconObject,
+} from '@/utils/deckCanvasUtils';
 import type { Deck, DeckSlide, DeckSlideElement, DeckStatus, SlideTemplate } from '@/types/deck';
 
 import {
@@ -51,7 +72,12 @@ import {
   CanvasContextMenu,
   KeyboardShortcutsModal,
   ShareDeckDialog,
+  SlideThumbnail,
+  SpeakerNotesPanel,
+  ZoomControls,
+  FindReplacePanel,
 } from '@/components/deck';
+import IconPicker from '@/components/deck/IconPicker';
 import { CommentsOverlay } from '@/components/deck/collaboration/CommentsOverlay';
 import { CommentsPanel } from '@/components/deck/collaboration/CommentsPanel';
 import { PresentationView } from '@/components/deck/presentation/PresentationView';
@@ -59,7 +85,8 @@ import { useDeckCanvasStore } from '@/stores/deckCanvasStore';
 import { usePresentationStore } from '@/stores/presentationStore';
 import { useCollaborationStore, mapApiComment } from '@/stores/collaborationStore';
 import { useDeckKeyboardShortcuts } from '@/hooks/useDeckKeyboardShortcuts';
-import { useSlideTemplates } from '@/hooks/useSlideTemplates';
+import { getTemplate } from '@/templates/templateDefinitions';
+import { templateToElements } from '@/utils/templateToElements';
 import type { SlideTemplateType } from '@/templates/templateTypes';
 import { PresenceIndicator } from '@/components/deck/collaboration/PresenceIndicator';
 import { CollaboratorCursors } from '@/components/deck/collaboration/CollaboratorCursors';
@@ -76,6 +103,15 @@ const STATUS_OPTIONS: { value: DeckStatus; labelKey: string; labelFallback: stri
   { value: 'PUBLISHED', labelKey: 'decks.statusPublished', labelFallback: 'Published' },
   { value: 'ARCHIVED',  labelKey: 'decks.statusArchived',  labelFallback: 'Archived' },
 ];
+
+const TRANSITION_OPTIONS = [
+  { value: 'none',       label: 'None' },
+  { value: 'fade',       label: 'Fade' },
+  { value: 'slide-left', label: 'Slide Left' },
+  { value: 'slide-right','label': 'Slide Right' },
+  { value: 'zoom',       label: 'Zoom' },
+] as const;
+type TransitionType = typeof TRANSITION_OPTIONS[number]['value'];
 
 const metaSchema = z.object({
   title:       z.string().min(2, 'Title must be at least 2 characters'),
@@ -117,6 +153,14 @@ export default function DeckEditorPage() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [findReplaceMode, setFindReplaceMode] = useState<'find' | 'replace'>('find');
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  // Inline title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [inlineTitleValue, setInlineTitleValue] = useState('');
+  const inlineTitleInputRef = useRef<HTMLInputElement | null>(null);
   const canvasRef = useRef<FabricCanvas | null>(null);
 
   useEffect(() => {
@@ -167,8 +211,8 @@ export default function DeckEditorPage() {
   const canvas = useDeckCanvasStore((s) => s.canvas);
   const isDirty = useDeckCanvasStore((s) => s.isDirty);
   const setIsDirty = useDeckCanvasStore((s) => s.setIsDirty);
+  const pushHistory = useDeckCanvasStore((s) => s.pushHistory);
   const { isPresenting, startPresentation, endPresentation } = usePresentationStore();
-  const { applyTemplate } = useSlideTemplates();
 
   /* ---------- save state ---------- */
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -209,9 +253,21 @@ export default function DeckEditorPage() {
 
     setSaveState('saving');
     try {
-      await elementsApi.bulkSaveForSlide(slideId, elements);
+      const savedSlide = await elementsApi.bulkSaveForSlide(slideId, elements);
       setIsDirty(false);
       setSaveState('saved');
+      // Write the saved elements back into local slides state so that switching
+      // away and back to this slide doesn't reload stale page-load data.
+      // Because SlideCanvas keys its element-loading effect on slide.id (not
+      // elements), updating elements here will NOT trigger a canvas reload —
+      // safe to do for both silent autosave and manual save.
+      setSlides((prev) =>
+        prev.map((s) =>
+          s.id === slideId
+            ? { ...s, elements: savedSlide.elements ?? s.elements }
+            : s,
+        ),
+      );
       // Refresh the cached deck so reload/present/export see the saved elements,
       // but only after a manual save — autosave avoids churning the canvas.
       if (!opts?.silent) {
@@ -284,6 +340,12 @@ export default function DeckEditorPage() {
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
+  // NOTE: in-app navigation flushing intentionally NOT done via useBlocker —
+  // this app uses a declarative BrowserRouter, not a data router, so useBlocker
+  // throws ("must be used within a data router"). The main data-loss paths
+  // (slide switch / add / duplicate / delete) already flush the pending save
+  // before changing slides, and beforeunload covers tab close/refresh.
+
   const handleDelete = useCallback(() => {
     if (!canvas) return;
     const active = canvas.getActiveObjects();
@@ -297,6 +359,29 @@ export default function DeckEditorPage() {
     onSave: handleSave,
     onDelete: handleDelete,
   });
+
+  /* ---------- Find / Replace keyboard shortcuts (Ctrl+F, Ctrl+H) ---------- */
+  useEffect(() => {
+    const handleFindReplaceKey = (e: KeyboardEvent) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (!ctrl) return;
+
+      const key = e.key.toLowerCase();
+
+      if (key === 'f') {
+        e.preventDefault();
+        setFindReplaceMode('find');
+        setShowFindReplace(true);
+      } else if (key === 'h') {
+        e.preventDefault();
+        setFindReplaceMode('replace');
+        setShowFindReplace(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleFindReplaceKey);
+    return () => window.removeEventListener('keydown', handleFindReplaceKey);
+  }, []);
 
   // Switch the active slide, but first flush any pending/unsaved edits so the
   // current slide's changes aren't lost when SlideCanvas reloads the next slide
@@ -343,23 +428,68 @@ export default function DeckEditorPage() {
 
   /* ---------- slide operations ---------- */
   const addSlideMutation = useMutation({
-    mutationFn: (templateType?: SlideTemplateType) =>
-      slidesApi.create({
+    // Create the slide, then scaffold the template's predefined elements
+    // through the bulk-save API (percent-based, same conventions the canvas
+    // saves with). Persisting data directly — rather than painting the fabric
+    // canvas and waiting for autosave — avoids racing SlideCanvas's async
+    // slide-load, which clears the canvas when the active slide switches.
+    mutationFn: async (templateType?: SlideTemplateType) => {
+      // Flush any pending edits on the current slide BEFORE creating the new
+      // one so the debounce timer can't fire against the wrong slide later.
+      await flushSave();
+
+      const created = await slidesApi.create({
         deckId:   id!,
         template: (templateType ?? 'BLANK') as SlideTemplate,
         order:    slides.length,
-      }),
+      });
+
+      const def = getTemplate(templateType ?? 'BLANK');
+      if (!def) return created;
+
+      let slide = created;
+      if (def.elements.length > 0) {
+        const canvasWidth = deckWidth * getCanvasScale(deckWidth);
+        const withElements = await elementsApi.bulkSaveForSlide(
+          created.id,
+          templateToElements(def, canvasWidth),
+        );
+        slide = { ...slide, elements: withElements.elements ?? [] };
+      }
+      if (
+        def.backgroundColor &&
+        def.backgroundColor.toLowerCase() !== (created.backgroundColor ?? '#ffffff').toLowerCase()
+      ) {
+        await slidesApi.update(created.id, { backgroundColor: def.backgroundColor });
+        slide = { ...slide, backgroundColor: def.backgroundColor };
+      }
+      return slide;
+    },
     onSuccess: (newSlide) => {
       setSlides((prev) => [...prev, newSlide]);
       setActiveSlideIndex(slides.length);
-      // Apply template to canvas if one was chosen
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const duplicateSlideMutation = useMutation({
-    mutationFn: (slideId: string) => slidesApi.duplicate(slideId),
-    onSuccess: (newSlide, _, ctx) => {
+    mutationFn: async (slideId: string) => {
+      // Flush pending edits so the duplicated slide gets the latest content.
+      await flushSave();
+      return slidesApi.duplicate(slideId);
+    },
+    onSuccess: (newSlide) => {
+      // Insert the duplicated slide immediately after the original in local
+      // state and switch to it, instead of doing a full deck invalidation
+      // (which would clobber any canvas state that's already been written back).
+      setSlides((prev) => {
+        const srcIdx = prev.findIndex((s) => s.id === newSlide.id.replace(/-copy$/, '') /* best-effort */);
+        const insertAt = srcIdx >= 0 ? srcIdx + 1 : prev.length;
+        const next = [...prev];
+        next.splice(insertAt, 0, newSlide);
+        return next;
+      });
+      // Fall back to query invalidation so the order + IDs are always correct.
       queryClient.invalidateQueries({ queryKey: ['deck', id] });
       toast.success(t('deckEditor.slideDuplicated', 'Slide duplicated'));
     },
@@ -367,7 +497,13 @@ export default function DeckEditorPage() {
   });
 
   const deleteSlideMutation = useMutation({
-    mutationFn: (slideId: string) => slidesApi.delete(slideId),
+    mutationFn: async (slideId: string) => {
+      // Flush any pending edits on the current slide first. If the slide being
+      // deleted IS the active slide the save is a no-op once the slide is gone,
+      // but for adjacent slides we must not lose the in-flight timer data.
+      await flushSave();
+      return slidesApi.delete(slideId);
+    },
     onSuccess: (_, slideId) => {
       setSlides((prev) => {
         const next = prev.filter((s) => s.id !== slideId);
@@ -377,6 +513,95 @@ export default function DeckEditorPage() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  /* ---------- slide reorder (drag-and-drop) ---------- */
+  const reorderSlides = useCallback(async (newOrder: DeckSlide[]) => {
+    // Flush pending autosave so the API isn't racing the reorder.
+    await flushSave();
+    // Optimistically update local state immediately.
+    setSlides(newOrder);
+    // Fix the active index to point at the same slide after reorder.
+    const currentId = slides[activeSlideIndex]?.id;
+    if (currentId) {
+      const newIdx = newOrder.findIndex((s) => s.id === currentId);
+      if (newIdx >= 0) setActiveSlideIndex(newIdx);
+    }
+    try {
+      await slidesApi.reorder(id!, newOrder.map((s) => s.id));
+    } catch (err) {
+      // Rollback to server state on error
+      toast.error(err instanceof Error ? err.message : t('deckEditor.reorderError', 'Failed to reorder slides'));
+      queryClient.invalidateQueries({ queryKey: ['deck', id] });
+    }
+  }, [flushSave, slides, activeSlideIndex, id, queryClient, t]);
+
+  /* ---------- per-slide notes (speaker notes debounce-save) ---------- */
+  const handleSlideNotesChange = useCallback((slideId: string, notes: string) => {
+    setSlides((prev) =>
+      prev.map((s) => (s.id === slideId ? { ...s, notes } : s)),
+    );
+  }, []);
+
+  /* ---------- per-slide transition ---------- */
+  const handleTransitionChange = useCallback(
+    async (slideId: string, transition: string, transitionDuration?: number) => {
+      // Optimistic local update
+      setSlides((prev) =>
+        prev.map((s) =>
+          s.id === slideId
+            ? { ...s, transition, transitionDuration: transitionDuration ?? s.transitionDuration }
+            : s,
+        ),
+      );
+      try {
+        await slidesApi.update(slideId, {
+          transition,
+          ...(transitionDuration !== undefined ? { transitionDuration } : {}),
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t('deckEditor.transitionError', 'Failed to save transition'));
+      }
+    },
+    [t],
+  );
+
+  /* ---------- inline deck title editing ---------- */
+  const startEditingTitle = useCallback(() => {
+    setInlineTitleValue(deck?.title ?? '');
+    setIsEditingTitle(true);
+  }, [deck?.title]);
+
+  const commitTitleEdit = useCallback(async () => {
+    setIsEditingTitle(false);
+    const trimmed = inlineTitleValue.trim();
+    if (!trimmed || trimmed === deck?.title) return;
+    try {
+      await decksApi.update(id!, { title: trimmed });
+      queryClient.invalidateQueries({ queryKey: ['deck', id] });
+      toast.success(t('deckEditor.titleUpdated', 'Deck title updated'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('deckEditor.titleUpdateError', 'Failed to update title'));
+    }
+  }, [inlineTitleValue, deck?.title, id, queryClient, t]);
+
+  const handleTitleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        void commitTitleEdit();
+      } else if (e.key === 'Escape') {
+        setIsEditingTitle(false);
+      }
+    },
+    [commitTitleEdit],
+  );
+
+  // Focus the input as soon as it appears
+  useEffect(() => {
+    if (isEditingTitle && inlineTitleInputRef.current) {
+      inlineTitleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
 
   /* ---------- element persistence ---------- */
   const createElement = useCallback(async (element: Partial<DeckSlideElement>) => {
@@ -443,6 +668,102 @@ export default function DeckEditorPage() {
     [t],
   );
 
+  /* ---------- insert: Table, Chart, Icon ---------- */
+
+  // Helpers: compute the canvas dimensions at the current scale (same formula
+  // saveSlide uses so percent ↔ pixel conversion is consistent).
+  const insertCanvasWidth = deckWidth * getCanvasScale(deckWidth);
+  const insertCanvasHeight = deckHeight * getCanvasScale(deckWidth);
+
+  const handleInsertTable = useCallback(async () => {
+    if (!canvas) return;
+    const defaultWidthPx = Math.round(insertCanvasWidth * 0.5);
+    const defaultHeightPx = Math.round(insertCanvasHeight * 0.35);
+    const content = {
+      rows: 3,
+      cols: 3,
+      cells: [
+        ['Header 1', 'Header 2', 'Header 3'],
+        ['Cell A',   'Cell B',   'Cell C'],
+        ['Cell D',   'Cell E',   'Cell F'],
+      ],
+      headerRow: true,
+      borderColor: '#d1d5db',
+      headerBg: '#374151',
+      textColor: '#111827',
+      fontSize: 14,
+    };
+    const obj = await buildTableObject(content, defaultWidthPx, defaultHeightPx, {});
+    const center = canvas.getCenter();
+    obj.set({
+      left: center.left,
+      top: center.top,
+      originX: 'center',
+      originY: 'center',
+    });
+    obj.set('id', generateElementId());
+    obj.set('elementType', 'TABLE');
+    canvas.add(obj);
+    canvas.setActiveObject(obj);
+    canvas.renderAll();
+    pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementType'])));
+  }, [canvas, insertCanvasWidth, insertCanvasHeight, pushHistory]);
+
+  const handleInsertChart = useCallback(async () => {
+    if (!canvas) return;
+    const defaultWidthPx = Math.round(insertCanvasWidth * 0.55);
+    const defaultHeightPx = Math.round(insertCanvasHeight * 0.45);
+    const content = {
+      chartType: 'bar' as const,
+      labels: ['Jan', 'Feb', 'Mar'],
+      series: [
+        { name: 'Series 1', color: '#6366f1', values: [30, 55, 40] },
+      ],
+      title: 'Chart Title',
+      showLegend: true,
+    };
+    const obj = await buildChartObject(content, defaultWidthPx, defaultHeightPx, {});
+    const center = canvas.getCenter();
+    obj.set({
+      left: center.left,
+      top: center.top,
+      originX: 'center',
+      originY: 'center',
+    });
+    obj.set('id', generateElementId());
+    obj.set('elementType', 'CHART');
+    canvas.add(obj);
+    canvas.setActiveObject(obj);
+    canvas.renderAll();
+    pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementType'])));
+  }, [canvas, insertCanvasWidth, insertCanvasHeight, pushHistory]);
+
+  const handleInsertIcon = useCallback(async (iconData: { svg: string; name?: string }) => {
+    if (!canvas) return;
+    const defaultWidthPx = 80;
+    const defaultHeightPx = 80;
+    const content = {
+      svg: iconData.svg,
+      name: iconData.name,
+      color: '#374151',
+    };
+    const obj = await buildIconObject(content, defaultWidthPx, defaultHeightPx, {});
+    const center = canvas.getCenter();
+    obj.set({
+      left: center.left,
+      top: center.top,
+      originX: 'center',
+      originY: 'center',
+    });
+    obj.set('id', generateElementId());
+    obj.set('elementType', 'ICON');
+    canvas.add(obj);
+    canvas.setActiveObject(obj);
+    canvas.renderAll();
+    pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementType'])));
+    setShowIconPicker(false);
+  }, [canvas, pushHistory]);
+
   /* ---------- guards ---------- */
   if (isLoading) {
     return (
@@ -499,7 +820,7 @@ export default function DeckEditorPage() {
       <Shell user={user}>
         {/* ── Top bar ─────────────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-3 px-4 h-12 border-b border-border-subtle bg-bg-base shrink-0">
-          {/* Left: back + title */}
+          {/* Left: back + inline-editable title */}
           <div className="flex items-center gap-3 min-w-0">
             <Link
               to="/decks"
@@ -509,7 +830,26 @@ export default function DeckEditorPage() {
               {t('deckEditor.backToDecks', 'Back')}
             </Link>
             <span className="text-border-subtle select-none hidden sm:block">|</span>
-            <span className="text-sm font-medium text-text-primary truncate hidden sm:block">{deck.title}</span>
+            {/* Inline title: click to edit, Enter/blur to save, Escape to cancel */}
+            {isEditingTitle ? (
+              <input
+                ref={inlineTitleInputRef}
+                value={inlineTitleValue}
+                onChange={(e) => setInlineTitleValue(e.target.value)}
+                onBlur={() => void commitTitleEdit()}
+                onKeyDown={handleTitleKeyDown}
+                className="text-sm font-medium bg-bg-sunken border border-brand-cream rounded px-2 h-7 text-text-primary focus:outline-none hidden sm:block"
+                style={{ minWidth: 120, maxWidth: 260 }}
+              />
+            ) : (
+              <button
+                onClick={startEditingTitle}
+                className="text-sm font-medium text-text-primary truncate hidden sm:block hover:text-text-secondary transition-colors max-w-[200px]"
+                title={t('deckEditor.clickToRename', 'Click to rename')}
+              >
+                {deck.title}
+              </button>
+            )}
             <button
               onClick={() => setShowMeta((v) => !v)}
               className="flex-shrink-0 p-1 rounded text-text-tertiary hover:text-text-secondary transition-colors"
@@ -527,9 +867,84 @@ export default function DeckEditorPage() {
                 <ShapePicker canvas={canvas} />
                 <LineTool canvas={canvas} />
                 <InsertImageButton />
+                {/* ── Table insert ── */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-text-tertiary hover:text-text-primary"
+                  title={t('deckEditor.insertTable', 'Insert Table')}
+                  onClick={() => void handleInsertTable()}
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="1" y="1" width="14" height="14" rx="1" />
+                    <line x1="1" y1="5.5" x2="15" y2="5.5" />
+                    <line x1="1" y1="10.5" x2="15" y2="10.5" />
+                    <line x1="5.5" y1="1" x2="5.5" y2="15" />
+                    <line x1="10.5" y1="1" x2="10.5" y2="15" />
+                  </svg>
+                  <span className="hidden lg:inline">{t('deckEditor.table', 'Table')}</span>
+                </Button>
+                {/* ── Chart insert ── */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-text-tertiary hover:text-text-primary"
+                  title={t('deckEditor.insertChart', 'Insert Chart')}
+                  onClick={() => void handleInsertChart()}
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <line x1="1" y1="15" x2="1" y2="1" />
+                    <line x1="1" y1="15" x2="15" y2="15" />
+                    <rect x="3" y="9" width="2.5" height="6" fill="currentColor" stroke="none" />
+                    <rect x="6.75" y="5" width="2.5" height="10" fill="currentColor" stroke="none" />
+                    <rect x="10.5" y="7" width="2.5" height="8" fill="currentColor" stroke="none" />
+                  </svg>
+                  <span className="hidden lg:inline">{t('deckEditor.chart', 'Chart')}</span>
+                </Button>
+                {/* ── Icon insert ── */}
+                <div className="relative">
+                  <Button
+                    variant={showIconPicker ? 'default' : 'ghost'}
+                    size="sm"
+                    className={showIconPicker ? '' : 'text-text-tertiary hover:text-text-primary'}
+                    title={t('deckEditor.insertIcon', 'Insert Icon')}
+                    onClick={() => setShowIconPicker((v) => !v)}
+                  >
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <circle cx="8" cy="8" r="6" />
+                      <path d="M8 5v3l2 2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className="hidden lg:inline">{t('deckEditor.icon', 'Icon')}</span>
+                  </Button>
+                  {showIconPicker && (
+                    <div className="absolute top-full left-0 mt-1 z-50">
+                      <IconPicker
+                        onSelect={(icon: { svg: string; name?: string }) => void handleInsertIcon(icon)}
+                        onClose={() => setShowIconPicker(false)}
+                      />
+                    </div>
+                  )}
+                </div>
                 <AlignmentTools canvas={canvas} />
               </>
             )}
+            {/* Find & Replace toggle */}
+            <Button
+              variant={showFindReplace ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                if (showFindReplace) {
+                  setShowFindReplace(false);
+                } else {
+                  setFindReplaceMode('find');
+                  setShowFindReplace(true);
+                }
+              }}
+              className={showFindReplace ? '' : 'text-text-tertiary hover:text-text-primary'}
+              title={t('deckEditor.findReplace', 'Find & Replace (Ctrl+F / Ctrl+H)')}
+            >
+              <Search className="h-3.5 w-3.5" />
+            </Button>
           </div>
 
           {/* Right: actions */}
@@ -552,6 +967,17 @@ export default function DeckEditorPage() {
                 ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 : <Save className="h-3.5 w-3.5" />}
               {t('common.save', 'Save')}
+            </Button>
+            {/* Speaker notes toggle */}
+            <Button
+              variant={showNotes ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setShowNotes((v) => !v)}
+              className={showNotes ? '' : 'text-text-tertiary hover:text-text-primary'}
+              title={t('deckEditor.toggleNotes', 'Speaker Notes')}
+            >
+              <NotesIcon className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">{t('deckEditor.speakerNotes', 'Notes')}</span>
             </Button>
             {/* Comment-mode toggle */}
             <Button
@@ -684,91 +1110,147 @@ export default function DeckEditorPage() {
         )}
 
         {/* ── Main editor area ─────────────────────────────────────── */}
-        <div className="flex-1 flex min-h-0">
-          {/* Slides rail (left) */}
-          <SlideRail
-            slides={slides}
-            activeIndex={activeSlideIndex}
-            deckWidth={deck.slideWidth || CANVAS_WIDTH}
-            deckHeight={deck.slideHeight || CANVAS_HEIGHT}
-            onSelectSlide={selectSlide}
-            onAddSlide={(templateType) => addSlideMutation.mutate(templateType)}
-            onDuplicateSlide={(slideId) => duplicateSlideMutation.mutate(slideId)}
-            onDeleteSlide={(slideId) => deleteSlideMutation.mutate(slideId)}
-          />
-
-          {/* Canvas center */}
-          <div className="flex-1 flex flex-col items-center justify-center bg-bg-sunken overflow-auto p-6 relative">
-            {slides.length === 0 ? (
-              <div className="text-center space-y-3">
-                <p className="text-sm text-text-tertiary">
-                  {t('deckEditor.noSlides', 'No slides yet. Add a slide to start editing.')}
-                </p>
-                <Button size="sm" variant="outline" onClick={() => addSlideMutation.mutate(undefined)}>
-                  <Plus className="h-3.5 w-3.5" />
-                  {t('deckEditor.addFirstSlide', 'Add first slide')}
-                </Button>
-              </div>
-            ) : activeSlide ? (
-              <>
-                {/* Slide canvas */}
-                <div className="shadow-2xl relative">
-                  <CanvasContextMenu canvas={canvas ?? null}>
-                    <SlideCanvas
-                      slide={activeSlide}
-                      deckWidth={deck.slideWidth || CANVAS_WIDTH}
-                      deckHeight={deck.slideHeight || CANVAS_HEIGHT}
-                      scale={getCanvasScale(deck.slideWidth || CANVAS_WIDTH)}
-                      onElementUpdate={updateElement}
-                      onElementCreate={createElement}
-                    />
-                  </CanvasContextMenu>
-                  {/* Collaborator cursors — pointer-events-none overlay */}
-                  <CollaboratorCursors currentSlideId={activeSlide.id} />
-                  {/* Comment pins overlay (only interactive in comment mode) */}
-                  {showComments && (
-                    <CommentsOverlay slideId={activeSlide.id} onCreate={handleCreateComment} />
-                  )}
-                </div>
-
-                {/* Slide nav dots */}
-                <div className="flex items-center gap-2 mt-4">
-                  <button
-                    onClick={() => selectSlide((i) => Math.max(0, i - 1))}
-                    disabled={activeSlideIndex === 0}
-                    className="p-1 text-text-tertiary hover:text-text-primary disabled:opacity-30 transition-colors"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <span className="text-xs text-text-tertiary tabular-nums">
-                    {activeSlideIndex + 1} / {slides.length}
-                  </span>
-                  <button
-                    onClick={() => selectSlide((i) => Math.min(slides.length - 1, i + 1))}
-                    disabled={activeSlideIndex === slides.length - 1}
-                    className="p-1 text-text-tertiary hover:text-text-primary disabled:opacity-30 transition-colors"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </div>
-
-          {/* Properties panel (right) */}
-          <div className="w-64 shrink-0 border-l border-border-subtle overflow-y-auto bg-bg-base">
-            <PropertiesPanel />
-          </div>
-
-          {/* Comments panel (right-most, toggled) */}
-          {showComments && activeSlide && (
-            <CommentsPanel
-              slideId={activeSlide.id}
-              onClose={() => setShowComments(false)}
-              onResolve={handleResolveComment}
-              onDelete={handleDeleteComment}
+        <div className="flex-1 flex min-h-0 flex-col">
+          <div className="flex-1 flex min-h-0">
+            {/* Slides rail (left) */}
+            <SlideRail
+              slides={slides}
+              activeIndex={activeSlideIndex}
+              deckId={id!}
+              deckWidth={deck.slideWidth || CANVAS_WIDTH}
+              deckHeight={deck.slideHeight || CANVAS_HEIGHT}
+              onSelectSlide={selectSlide}
+              onAddSlide={(templateType) => addSlideMutation.mutate(templateType)}
+              onDuplicateSlide={(slideId) => duplicateSlideMutation.mutate(slideId)}
+              onDeleteSlide={(slideId) => deleteSlideMutation.mutate(slideId)}
+              onReorderSlides={reorderSlides}
             />
-          )}
+
+            {/* Canvas center */}
+            <div className="flex-1 flex flex-col items-center justify-start bg-bg-sunken overflow-auto p-6 relative">
+              {slides.length === 0 ? (
+                <div className="text-center space-y-3 mt-20">
+                  <p className="text-sm text-text-tertiary">
+                    {t('deckEditor.noSlides', 'No slides yet. Add a slide to start editing.')}
+                  </p>
+                  <Button size="sm" variant="outline" onClick={() => addSlideMutation.mutate(undefined)}>
+                    <Plus className="h-3.5 w-3.5" />
+                    {t('deckEditor.addFirstSlide', 'Add first slide')}
+                  </Button>
+                </div>
+              ) : activeSlide ? (
+                <>
+                  {/* Per-slide transition selector */}
+                  <div className="flex items-center gap-2 mb-3 w-full max-w-[800px]">
+                    <span className="text-[10px] uppercase tracking-wide text-text-tertiary font-medium">
+                      {t('deckEditor.transition', 'Transition')}
+                    </span>
+                    <select
+                      value={activeSlide.transition ?? 'none'}
+                      onChange={(e) =>
+                        void handleTransitionChange(activeSlide.id, e.target.value as TransitionType)
+                      }
+                      className="text-xs h-6 rounded border border-border-subtle bg-bg-base text-text-secondary px-1.5 focus:outline-none focus:ring-1 focus:ring-brand-cream"
+                    >
+                      {TRANSITION_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    {activeSlide.transition && activeSlide.transition !== 'none' && (
+                      <>
+                        <span className="text-[10px] text-text-tertiary">
+                          {t('deckEditor.duration', 'Duration')}
+                        </span>
+                        <input
+                          type="number"
+                          min={100}
+                          max={2000}
+                          step={100}
+                          value={activeSlide.transitionDuration ?? 500}
+                          onChange={(e) =>
+                            void handleTransitionChange(
+                              activeSlide.id,
+                              activeSlide.transition ?? 'none',
+                              parseInt(e.target.value, 10),
+                            )
+                          }
+                          className="text-xs h-6 rounded border border-border-subtle bg-bg-base text-text-secondary px-1.5 w-16 focus:outline-none focus:ring-1 focus:ring-brand-cream"
+                        />
+                        <span className="text-[10px] text-text-tertiary">ms</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Slide canvas */}
+                  <div className="shadow-2xl relative">
+                    <CanvasContextMenu canvas={canvas ?? null}>
+                      <SlideCanvas
+                        slide={activeSlide}
+                        deckWidth={deck.slideWidth || CANVAS_WIDTH}
+                        deckHeight={deck.slideHeight || CANVAS_HEIGHT}
+                        scale={getCanvasScale(deck.slideWidth || CANVAS_WIDTH)}
+                        onElementUpdate={updateElement}
+                        onElementCreate={createElement}
+                      />
+                    </CanvasContextMenu>
+                    {/* Collaborator cursors — pointer-events-none overlay */}
+                    <CollaboratorCursors currentSlideId={activeSlide.id} />
+                    {/* Comment pins overlay (only interactive in comment mode) */}
+                    {showComments && (
+                      <CommentsOverlay slideId={activeSlide.id} onCreate={handleCreateComment} />
+                    )}
+                  </div>
+
+                  {/* Bottom bar: slide nav + zoom controls */}
+                  <div className="flex items-center gap-4 mt-4">
+                    <button
+                      onClick={() => selectSlide((i) => Math.max(0, i - 1))}
+                      disabled={activeSlideIndex === 0}
+                      className="p-1 text-text-tertiary hover:text-text-primary disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="text-xs text-text-tertiary tabular-nums">
+                      {activeSlideIndex + 1} / {slides.length}
+                    </span>
+                    <button
+                      onClick={() => selectSlide((i) => Math.min(slides.length - 1, i + 1))}
+                      disabled={activeSlideIndex === slides.length - 1}
+                      className="p-1 text-text-tertiary hover:text-text-primary disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+
+                    {/* Zoom controls */}
+                    <ZoomControls className="ml-2" />
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            {/* Properties panel (right) */}
+            <div className="w-64 shrink-0 border-l border-border-subtle overflow-y-auto bg-bg-base">
+              <PropertiesPanel />
+            </div>
+
+            {/* Comments panel (right-most, toggled) */}
+            {showComments && activeSlide && (
+              <CommentsPanel
+                slideId={activeSlide.id}
+                onClose={() => setShowComments(false)}
+                onResolve={handleResolveComment}
+                onDelete={handleDeleteComment}
+              />
+            )}
+          </div>
+
+          {/* Speaker notes panel — below the canvas row, collapsible */}
+          <SpeakerNotesPanel
+            activeSlide={activeSlide}
+            onNotesChange={handleSlideNotesChange}
+            open={showNotes}
+            onToggle={() => setShowNotes((v) => !v)}
+          />
         </div>
 
         {/* Asset browser (global modal driven by store) */}
@@ -779,90 +1261,101 @@ export default function DeckEditorPage() {
 
         {/* Share & collaborators dialog */}
         <ShareDeckDialog deck={deck} open={showShare} onOpenChange={setShowShare} />
+
+        {/* Find & Replace panel */}
+        <FindReplacePanel
+          open={showFindReplace}
+          mode={findReplaceMode}
+          slides={slides}
+          setSlides={setSlides}
+          activeSlideIndex={activeSlideIndex}
+          canvas={canvas ?? null}
+          onSelectSlide={selectSlide}
+          onClose={() => setShowFindReplace(false)}
+        />
       </Shell>
     </AntdApp>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Slide rail                                                          */
+/*  Slide rail — with drag-to-reorder (@dnd-kit) + real thumbnails     */
 /* ------------------------------------------------------------------ */
 
-function SlideRail({
-  slides, activeIndex, deckWidth, deckHeight,
-  onSelectSlide, onAddSlide, onDuplicateSlide, onDeleteSlide,
-}: {
+interface SlideRailProps {
   slides: DeckSlide[];
   activeIndex: number;
+  deckId: string;
   deckWidth: number;
   deckHeight: number;
   onSelectSlide: (i: number) => void;
   onAddSlide: (templateType?: SlideTemplateType) => void;
   onDuplicateSlide: (slideId: string) => void;
   onDeleteSlide: (slideId: string) => void;
-}) {
-  const { t } = useTranslation();
+  onReorderSlides: (newOrder: DeckSlide[]) => Promise<void>;
+}
+
+function SlideRail({
+  slides, activeIndex, deckWidth, deckHeight,
+  onSelectSlide, onAddSlide, onDuplicateSlide, onDeleteSlide, onReorderSlides,
+}: SlideRailProps) {
   const THUMB_W = 128;
   const THUMB_H = Math.round(THUMB_W * (deckHeight / deckWidth));
-  const scale = THUMB_W / deckWidth;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        // Require 6px movement before activating drag, so clicks still select.
+        distance: 6,
+      },
+    }),
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = slides.findIndex((s) => s.id === active.id);
+      const newIndex = slides.findIndex((s) => s.id === over.id);
+      if (oldIndex < 0 || newIndex < 0) return;
+
+      const reordered = arrayMove(slides, oldIndex, newIndex);
+      void onReorderSlides(reordered);
+    },
+    [slides, onReorderSlides],
+  );
 
   return (
     <div className="w-44 shrink-0 border-r border-border-subtle bg-bg-base flex flex-col overflow-y-auto">
-      <div className="flex-1 py-3 space-y-2 px-2">
-        {slides.map((slide, idx) => (
-          <SlideContextMenu
-            key={slide.id}
-            onDuplicate={() => onDuplicateSlide(slide.id)}
-            onDelete={() => onDeleteSlide(slide.id)}
-          >
-            <button
-              onClick={() => onSelectSlide(idx)}
-              className={`w-full rounded border-2 transition-colors text-left ${
-                idx === activeIndex
-                  ? 'border-brand-cream'
-                  : 'border-border-subtle hover:border-border-default'
-              }`}
-              style={{ height: THUMB_H + 20 }}
-            >
-              {/* Thumbnail area — colour from slide background */}
-              <div
-                style={{
-                  width: '100%',
-                  height: THUMB_H,
-                  background: slide.backgroundColor || '#ffffff',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                {slide.backgroundImage && (
-                  <img
-                    src={slide.backgroundImage}
-                    alt=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                )}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <span style={{ fontSize: 10, color: '#888', fontFamily: 'sans-serif' }}>
-                    {slide.title || `Slide ${idx + 1}`}
-                  </span>
-                </div>
-              </div>
-              {/* Slide number */}
-              <div className="flex items-center justify-center h-5 text-[10px] text-text-tertiary tabular-nums">
-                {idx + 1}
-              </div>
-            </button>
-          </SlideContextMenu>
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={slides.map((s) => s.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="flex-1 py-3 space-y-2 px-2">
+            {slides.map((slide, idx) => (
+              <SortableSlideThumbnailItem
+                key={slide.id}
+                slide={slide}
+                index={idx}
+                isActive={idx === activeIndex}
+                thumbW={THUMB_W}
+                thumbH={THUMB_H}
+                deckWidth={deckWidth}
+                deckHeight={deckHeight}
+                onSelect={() => onSelectSlide(idx)}
+                onDuplicate={() => onDuplicateSlide(slide.id)}
+                onDelete={() => onDeleteSlide(slide.id)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Add slide */}
       <div className="px-2 py-3 border-t border-border-subtle">
@@ -870,6 +1363,78 @@ function SlideRail({
           onAddSlide={(templateType) => onAddSlide(templateType)}
         />
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Single sortable item in the slide rail                              */
+/* ------------------------------------------------------------------ */
+
+interface SortableSlideThumbnailItemProps {
+  slide: DeckSlide;
+  index: number;
+  isActive: boolean;
+  thumbW: number;
+  thumbH: number;
+  deckWidth: number;
+  deckHeight: number;
+  onSelect: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+}
+
+function SortableSlideThumbnailItem({
+  slide, index, isActive,
+  thumbW, thumbH, deckWidth, deckHeight,
+  onSelect, onDuplicate, onDelete,
+}: SortableSlideThumbnailItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition: dndTransition,
+    isDragging,
+  } = useSortable({ id: slide.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition: dndTransition ?? undefined,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab',
+    touchAction: 'none',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <SlideContextMenu
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+      >
+        <button
+          onClick={onSelect}
+          className={`w-full rounded border-2 transition-colors text-left focus:outline-none ${
+            isActive
+              ? 'border-brand-cream'
+              : 'border-border-subtle hover:border-border-default'
+          }`}
+          style={{ height: thumbH + 20, cursor: isDragging ? 'grabbing' : undefined }}
+        >
+          {/* Real slide thumbnail */}
+          <SlideThumbnail
+            slide={slide}
+            width={thumbW}
+            height={thumbH}
+            deckWidth={deckWidth}
+            deckHeight={deckHeight}
+          />
+          {/* Slide number */}
+          <div className="flex items-center justify-center h-5 text-[10px] text-text-tertiary tabular-nums">
+            {index + 1}
+          </div>
+        </button>
+      </SlideContextMenu>
     </div>
   );
 }
@@ -948,9 +1513,7 @@ function Shell({
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <div className="flex flex-col h-full">
         {children}

@@ -158,11 +158,7 @@ export default function QuotationCreatePageV2() {
           <UserChip name={user.name} role={user.role} size="sm" />
         ) : null,
       }}
-      topbar={{
-        right: user ? (
-          <UserChip name={user.name} role={user.role} size="sm" />
-        ) : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>
         <QuotationForm

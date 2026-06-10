@@ -193,7 +193,7 @@ export default function SocialMediaReportsPageV2() {
           sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
-        topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState
@@ -214,7 +214,7 @@ export default function SocialMediaReportsPageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader

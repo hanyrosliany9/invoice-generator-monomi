@@ -60,6 +60,12 @@ export class CreateAssetDto {
   @IsOptional()
   usefulLifeYears?: number;
 
+  // Indonesian fiscal depreciation group (Kelompok I-IV). When set, drives the
+  // straight-line useful life (I=4, II=8, III=16, IV=20 years).
+  @IsString()
+  @IsOptional()
+  depreciationGroup?: string;
+
   @IsOptional()
   residualValue?: number;
 

@@ -72,11 +72,17 @@ const BUCKET_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant
 /* ------------------------------------------------------------------ */
 
 interface APRow {
-  expenseId?: string;
-  category?: { code?: string; name?: string; nameId?: string };
-  expenseDate?: string;
+  // GL-derived payable line (one per journal entry posting to 2-1010).
+  journalEntryId?: string;
+  reference?: string;            // journal entry number, e.g. JE-2026-06-0024
+  vendorName?: string | null;    // from the linked AccountsPayable record, if any
+  transactionType?: string | null;
+  category?: { code?: string; name?: string; nameId?: string } | null; // legacy, now null
+  expenseDate?: string;          // = entry date
   dueDate?: string;
-  amount?: number | string;
+  amount?: number | string;       // payable originally raised (register view)
+  outstanding?: number | string;  // still owed (0 when settled)
+  paymentStatus?: 'PAID' | 'UNPAID';
   description?: string;
   daysOverdue?: number;
   agingBucket?: string;
@@ -99,7 +105,6 @@ export default function AccountsPayablePageV2() {
 
   const [asOfDate, setAsOfDate] = useState<Date>(new Date());
   const [searchText, setSearchText] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [bucketFilter, setBucketFilter] = useState<string>('all');
 
   const isoDate = toLocalISODate(asOfDate);
@@ -119,50 +124,51 @@ export default function AccountsPayablePageV2() {
   /* ----- derived: rows + filtering ----- */
   const rows: APRow[] = useMemo(() => data?.aging?.aging ?? [], [data]);
 
-  const categories = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const r of rows) {
-      const code = r.category?.code;
-      const name = r.category?.nameId || r.category?.name;
-      if (code && name) m.set(code, name);
-    }
-    return Array.from(m.entries()).map(([code, name]) => ({ code, name }));
-  }, [rows]);
-
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     return rows.filter((r) => {
       const matchesSearch = !q
         || (r.description ?? '').toLowerCase().includes(q)
-        || (r.category?.nameId ?? r.category?.name ?? '').toLowerCase().includes(q);
-      const matchesCategory = categoryFilter === 'all' || r.category?.code === categoryFilter;
+        || (r.reference ?? '').toLowerCase().includes(q)
+        || (r.vendorName ?? '').toLowerCase().includes(q);
       const matchesBucket = bucketFilter === 'all' || r.agingBucket === bucketFilter;
-      return matchesSearch && matchesCategory && matchesBucket;
+      return matchesSearch && matchesBucket;
     });
-  }, [rows, searchText, categoryFilter, bucketFilter]);
+  }, [rows, searchText, bucketFilter]);
 
   /* ----- derived: KPI band ----- */
   const stats = useMemo(() => {
-    const summary = data?.aging?.summary ?? data?.summary ?? {};
-    const current = toNumber(summary.current);
+    const agingSummary = data?.aging?.summary ?? {};
+    const current = toNumber(agingSummary.current);
     const overdue =
-      toNumber(summary.days1to30) +
-      toNumber(summary.days31to60) +
-      toNumber(summary.days61to90) +
-      toNumber(summary.over90);
-    const total = toNumber(summary.totalAP ?? summary.totalOutstanding);
+      toNumber(agingSummary.days1to30) +
+      toNumber(agingSummary.days31to60) +
+      toNumber(agingSummary.days61to90) +
+      toNumber(agingSummary.over90);
+    // Itemised expenses subtotal — what the table rows add up to.
+    const itemsOutstanding = toNumber(agingSummary.totalAP);
+    // GL-authoritative headline (2-1010 net). Ties to the journal entries and the
+    // balance sheet, so a payable posted via a manual journal ("hutang pembelian")
+    // is included even though it has no expense row.
+    const total = toNumber(
+      data?.summary?.payableBalance ?? data?.apBalance ?? data?.summary?.totalOutstanding ?? itemsOutstanding,
+    );
+    // GL − items: payable in the GL with no itemised expense behind it.
+    const reconciling = total - itemsOutstanding;
     return {
       total,
       current,
       overdue,
-      categoryCount: data?.summary?.categoryCount ?? data?.topCategories?.length ?? 0,
+      itemsOutstanding,
+      reconciling,
+      // Number of open payable documents (journal entries posting to 2-1010).
+      openItems: (data?.aging?.aging ?? []).length,
     };
   }, [data]);
 
-  const hasActiveFilters = !!searchText || categoryFilter !== 'all' || bucketFilter !== 'all';
+  const hasActiveFilters = !!searchText || bucketFilter !== 'all';
   const resetFilters = () => {
     setSearchText('');
-    setCategoryFilter('all');
     setBucketFilter('all');
   };
 
@@ -192,7 +198,7 @@ export default function AccountsPayablePageV2() {
           sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
-        topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState
@@ -213,7 +219,7 @@ export default function AccountsPayablePageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader
@@ -271,9 +277,9 @@ export default function AccountsPayablePageV2() {
                   sublabel={t('accounting.accountsPayable.statOverdueSub', 'requires immediate settlement')}
                 />
                 <StatCard
-                  label={t('accounting.accountsPayable.statCategoryCount', 'Category Count')}
-                  value={stats.categoryCount}
-                  sublabel={t('accounting.accountsPayable.statCategoryCountSub', 'with open balance')}
+                  label={t('accounting.accountsPayable.statOpenItems', 'Open Items')}
+                  value={stats.openItems}
+                  sublabel={t('accounting.accountsPayable.statOpenItemsSub', 'journal entries with a balance')}
                 />
               </>
             )}
@@ -287,27 +293,12 @@ export default function AccountsPayablePageV2() {
               <Input
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                placeholder={t('accounting.accountsPayable.searchPlaceholder', 'Search by category or expense description...')}
+                placeholder={t('accounting.accountsPayable.searchPlaceholder', 'Search by reference, vendor or description...')}
                 className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
               />
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger
-                  size="sm"
-                  className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[180px]"
-                >
-                  <SelectValue placeholder={t('accounting.accountsPayable.filterCategoryLabel', 'Category')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('accounting.accountsPayable.filterAllCategories', 'All Categories')}</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
               <Select value={bucketFilter} onValueChange={setBucketFilter}>
                 <SelectTrigger
                   size="sm"
@@ -345,7 +336,7 @@ export default function AccountsPayablePageV2() {
               <Skeleton className="h-10 rounded" />
               <Skeleton className="h-10 rounded" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : filtered.length === 0 && Math.abs(stats.reconciling) < 1 ? (
             <EmptyState
               icon={<BookOpen />}
               title={hasActiveFilters ? t('accounting.accountsPayable.noMatch') : t('accounting.accountsPayable.noPayables')}
@@ -365,7 +356,8 @@ export default function AccountsPayablePageV2() {
               <APTable
                 rows={filtered}
                 total={stats.total}
-                onRowClick={(row) => row.expenseId && navigate(`/expenses/${row.expenseId}`)}
+                reconciling={hasActiveFilters ? 0 : stats.reconciling}
+                onRowClick={() => navigate('/accounting/journal-entries')}
               />
             </div>
           )}
@@ -382,11 +374,14 @@ export default function AccountsPayablePageV2() {
 interface APTableProps {
   rows: APRow[];
   total: number;
+  /** GL-posted payable not itemised as an expense (e.g. "hutang pembelian" journal). */
+  reconciling?: number;
   onRowClick: (row: APRow) => void;
 }
 
-function APTable({ rows, total, onRowClick }: APTableProps) {
+function APTable({ rows, total, reconciling = 0, onRowClick }: APTableProps) {
   const { t } = useTranslation();
+  const showReconciling = Math.abs(reconciling) >= 1;
   return (
     <div className="space-y-3">
       <DataTable<APRow>
@@ -395,27 +390,32 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
         enablePagination
         columns={[
           {
-            id: 'category',
-            header: t('accounting.accountsPayable.colCategory', 'Category'),
-            accessorFn: (row) => row.category?.nameId ?? row.category?.name ?? '',
+            id: 'reference',
+            header: t('accounting.accountsPayable.colReference', 'Reference'),
+            accessorFn: (row) => row.reference ?? '',
             cell: ({ row }) => (
-              <div className="min-w-0 text-sm text-text-primary truncate">
-                {row.original.category?.nameId || row.original.category?.name || '—'}
+              <div className="min-w-0 text-sm font-medium text-text-primary truncate tabular-nums">
+                {row.original.reference || '—'}
               </div>
             ),
           },
           {
             accessorKey: 'description',
-            header: t('accounting.accountsPayable.colDescription', 'Description'),
+            header: t('accounting.accountsPayable.colVendorDesc', 'Vendor / Description'),
             cell: ({ row }) => (
-              <span className="text-text-secondary text-sm truncate">
-                {row.original.description || '—'}
-              </span>
+              <div className="min-w-0">
+                {row.original.vendorName && (
+                  <div className="text-text-primary text-sm truncate">{row.original.vendorName}</div>
+                )}
+                <div className="text-text-secondary text-sm truncate">
+                  {row.original.description || '—'}
+                </div>
+              </div>
             ),
           },
           {
             accessorKey: 'expenseDate',
-            header: t('accounting.accountsPayable.colExpenseDate', 'Expense Date'),
+            header: t('accounting.accountsPayable.colDate', 'Date'),
             cell: ({ row }) => (
               <span className="text-text-tertiary">
                 <DateDisplay date={row.original.expenseDate} />
@@ -474,8 +474,36 @@ function APTable({ rows, total, onRowClick }: APTableProps) {
               </div>
             ),
           },
+          {
+            id: 'status',
+            header: () => <span className="block text-right">{t('accounting.accountsPayable.colStatus', 'Status')}</span>,
+            cell: ({ row }) => {
+              const paid = row.original.paymentStatus === 'PAID';
+              return (
+                <div className="text-right">
+                  <Badge
+                    variant={paid ? 'secondary' : 'destructive'}
+                    className={paid ? 'bg-success/15 text-success border-success/20' : undefined}
+                  >
+                    {paid
+                      ? t('accounting.accountsPayable.statusPaid2', 'Paid')
+                      : t('accounting.accountsPayable.statusUnpaid2', 'Unpaid')}
+                  </Badge>
+                </div>
+              );
+            },
+          },
         ]}
       />
+      {showReconciling && (
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-md border border-dashed border-border-subtle bg-bg-sunken/60">
+          <span className="flex items-center gap-1.5 text-xs text-text-secondary">
+            <BookOpen className="h-3.5 w-3.5 text-text-tertiary" />
+            {t('accounting.accountsPayable.reconcilingLabel', 'Journal entries (no expense itemised)')}
+          </span>
+          <MoneyDisplay amount={reconciling} className="text-text-secondary tabular-nums" />
+        </div>
+      )}
       <div className="flex items-center justify-between px-4 py-3 rounded-md border border-border-subtle bg-bg-sunken">
         <span className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
           {t('accounting.accountsPayable.footerTotalPayable', 'Total Payable')}

@@ -3,6 +3,7 @@ import { Menu, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { COMMAND_PALETTE_EVENT } from './CommandPalette';
 
 export interface TopbarProps {
   left?: ReactNode;
@@ -40,11 +41,11 @@ export const Topbar = ({ left, center, right, className, onMenuClick }: TopbarPr
     {center && <div className="flex items-center">{center}</div>}
     <div className="flex items-center gap-3">
       {/* ⌘K affordance hint — subtle button that reminds users of the
-       * global command palette shortcut. Clicking it fires Ctrl-K so the
-       * palette's own keydown handler picks it up. */}
+       * global command palette shortcut. Dispatches the palette's custom
+       * toggle event (no synthetic KeyboardEvent hacks). */}
       <button
         type="button"
-        onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))}
+        onClick={() => window.dispatchEvent(new CustomEvent(COMMAND_PALETTE_EVENT))}
         aria-label="Open command palette (Ctrl+K)"
         className="hidden sm:flex items-center gap-1.5 rounded-md border border-border-subtle bg-bg-raised/60 px-2.5 py-1 text-xs text-text-tertiary hover:text-text-secondary hover:bg-bg-raised transition-colors"
       >

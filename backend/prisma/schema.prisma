@@ -917,12 +917,21 @@ model Asset {
   currentValue    Decimal? @db.Decimal(15, 2)
   residualValue   Decimal? @db.Decimal(15, 2)
   usefulLifeYears Int?
+  // Indonesian fiscal depreciation group (Kelompok harta berwujud). Drives the
+  // straight-line useful life: I=4yr, II=8yr, III=16yr, IV=20yr. "I".."IV".
+  depreciationGroup String?
   notesFinancial  String?  @db.Text
 
   // Status and condition
   status    AssetStatus    @default(AVAILABLE)
   condition AssetCondition @default(GOOD)
   location  String?
+
+  // Acquisition link: the journal entry (a Pembelian / manual purchase) whose
+  // fixed-asset cost debit created this asset. Lets the depreciation report tie
+  // an auto-registered asset back to its GL posting so it isn't double-counted
+  // as an "unregistered" fixed-asset purchase.
+  acquisitionJournalId String?
 
   // Disposal fields
   disposalDate      DateTime? // Date the asset was disposed
@@ -1963,6 +1972,7 @@ enum TransactionType {
 
   // ===== PURCHASE-TO-PAY TYPES =====
   PURCHASE // Generic purchase (Pembelian) - DR Expense/Inventory, CR Cash/AP
+  SALE // Direct sale (Penjualan) - DR Cash/AR, CR Revenue
   PO_APPROVED // PO commitment - DR Expense/Asset, CR PO Commitments
   PO_CANCELLED // Reverse PO commitment
   GOODS_RECEIVED // GR accrual - DR Inventory/Asset, CR GR Accruals
@@ -4466,6 +4476,13 @@ enum SlideTemplate {
   SCHEDULE // Timeline/stripboard view
   COMPARISON // Side-by-side comparison
   BLANK // Empty canvas
+  STORYBOARD // Sequential frames with captions
+  LOCATION // Location scout (image + details)
+  SCRIPT_BREAKDOWN // Script breakdown table
+  CALL_SHEET // Call sheet summary
+  GRID_4 // 2x2 image grid
+  GRID_6 // 3x2 image grid
+  TIMELINE // Horizontal timeline
 }
 
 enum DeckStatus {

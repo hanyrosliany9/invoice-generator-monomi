@@ -25,43 +25,44 @@ export class DeckSlidesService {
    */
   async create(userId: string, dto: CreateSlideDto) {
     // Verify deck access
-    const deck = await this.verifyDeckAccess(dto.deckId, userId, [
-      "OWNER",
-      "EDITOR",
-    ]);
+    await this.verifyDeckAccess(dto.deckId, userId, ["OWNER", "EDITOR"]);
 
-    // Get max order
-    const maxOrder = await this.prisma.deckSlide.aggregate({
-      where: { deckId: dto.deckId },
-      _max: { order: true },
-    });
-    const order = dto.order ?? (maxOrder._max.order ?? -1) + 1;
-
-    // Shift existing slides if inserting
-    if (dto.order !== undefined) {
-      await this.prisma.deckSlide.updateMany({
-        where: { deckId: dto.deckId, order: { gte: order } },
-        data: { order: { increment: 1 } },
+    // Wrap the order-shift + create in a transaction to prevent duplicate
+    // order values from concurrent slide creation.
+    return this.prisma.$transaction(async (tx) => {
+      // Get max order
+      const maxOrder = await tx.deckSlide.aggregate({
+        where: { deckId: dto.deckId },
+        _max: { order: true },
       });
-    }
+      const order = dto.order ?? (maxOrder._max.order ?? -1) + 1;
 
-    return this.prisma.deckSlide.create({
-      data: {
-        deckId: dto.deckId,
-        order,
-        template: dto.template || "BLANK",
-        title: dto.title,
-        subtitle: dto.subtitle,
-        content: dto.content || {},
-        backgroundColor: dto.backgroundColor,
-        backgroundImage: dto.backgroundImage,
-        backgroundImageKey: dto.backgroundImageKey,
-        notes: dto.notes,
-      },
-      include: {
-        elements: true,
-        _count: { select: { comments: true } },
-      },
+      // Shift existing slides if inserting at a specific position
+      if (dto.order !== undefined) {
+        await tx.deckSlide.updateMany({
+          where: { deckId: dto.deckId, order: { gte: order } },
+          data: { order: { increment: 1 } },
+        });
+      }
+
+      return tx.deckSlide.create({
+        data: {
+          deckId: dto.deckId,
+          order,
+          template: dto.template || "BLANK",
+          title: dto.title,
+          subtitle: dto.subtitle,
+          content: dto.content || {},
+          backgroundColor: dto.backgroundColor,
+          backgroundImage: dto.backgroundImage,
+          backgroundImageKey: dto.backgroundImageKey,
+          notes: dto.notes,
+        },
+        include: {
+          elements: true,
+          _count: { select: { comments: true } },
+        },
+      });
     });
   }
 
@@ -186,42 +187,46 @@ export class DeckSlidesService {
       throw new ForbiddenException("Edit permission required");
     }
 
-    // Shift slides after original
-    await this.prisma.deckSlide.updateMany({
-      where: { deckId: original.deckId, order: { gt: original.order } },
-      data: { order: { increment: 1 } },
-    });
+    // Wrap the order-shift + create in a transaction to prevent duplicate
+    // order values from concurrent slide operations.
+    return this.prisma.$transaction(async (tx) => {
+      // Shift slides after original
+      await tx.deckSlide.updateMany({
+        where: { deckId: original.deckId, order: { gt: original.order } },
+        data: { order: { increment: 1 } },
+      });
 
-    // Create duplicate
-    return this.prisma.deckSlide.create({
-      data: {
-        deckId: original.deckId,
-        order: original.order + 1,
-        template: original.template,
-        title: original.title,
-        subtitle: original.subtitle,
-        content: original.content as any,
-        backgroundColor: original.backgroundColor,
-        backgroundImage: original.backgroundImage,
-        backgroundImageKey: original.backgroundImageKey,
-        notes: original.notes,
-        transition: original.transition,
-        transitionDuration: original.transitionDuration,
-        elements: {
-          create: original.elements.map((el) => ({
-            type: el.type,
-            x: el.x,
-            y: el.y,
-            width: el.width,
-            height: el.height,
-            rotation: el.rotation,
-            zIndex: el.zIndex,
-            content: el.content as any,
-            isLocked: el.isLocked,
-          })),
+      // Create duplicate
+      return tx.deckSlide.create({
+        data: {
+          deckId: original.deckId,
+          order: original.order + 1,
+          template: original.template,
+          title: original.title,
+          subtitle: original.subtitle,
+          content: original.content as any,
+          backgroundColor: original.backgroundColor,
+          backgroundImage: original.backgroundImage,
+          backgroundImageKey: original.backgroundImageKey,
+          notes: original.notes,
+          transition: original.transition,
+          transitionDuration: original.transitionDuration,
+          elements: {
+            create: original.elements.map((el) => ({
+              type: el.type,
+              x: el.x,
+              y: el.y,
+              width: el.width,
+              height: el.height,
+              rotation: el.rotation,
+              zIndex: el.zIndex,
+              content: el.content as any,
+              isLocked: el.isLocked,
+            })),
+          },
         },
-      },
-      include: { elements: true },
+        include: { elements: true },
+      });
     });
   }
 

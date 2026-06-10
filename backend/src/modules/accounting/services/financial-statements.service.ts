@@ -331,8 +331,19 @@ export class FinancialStatementsService {
       (b) => Math.abs(b.balance) > 0.01,
     );
 
-    // Separate by account type
-    const assets = nonZeroBalances.filter((b) => b.accountType === "ASSET");
+    // Separate by account type. Within assets, present the COST accounts first
+    // (by code) and push contra-assets (Accumulated Depreciation) to the bottom —
+    // the conventional fixed-asset layout (Equipment, Furniture, …, then less
+    // Accumulated Depreciation). This ordering flows through to both the flat
+    // `accounts` list and the grouped `byType` buckets below.
+    const assets = nonZeroBalances
+      .filter((b) => b.accountType === "ASSET")
+      .sort((a, b) => {
+        const ca = a.isContraAccount ? 1 : 0;
+        const cb = b.isContraAccount ? 1 : 0;
+        if (ca !== cb) return ca - cb;
+        return a.accountCode.localeCompare(b.accountCode);
+      });
     const liabilities = nonZeroBalances.filter(
       (b) => b.accountType === "LIABILITY",
     );
@@ -364,20 +375,18 @@ export class FinancialStatementsService {
       {} as Record<string, typeof liabilities>,
     );
 
-    // ✅ FIX: Calculate Undistributed Earnings (Laba Rugi Belum Dibagi)
-    // If no year-end closing has been performed, all revenue and expenses since
-    // the beginning of time are still "open" in their respective accounts.
-    // We must sum ALL GL entries up to endDate for revenue/expense accounts —
-    // not just the current fiscal year — because prior-year amounts have not
-    // been closed to Retained Earnings yet.
-    //
-    // After a year-end closing, the closing entry zeroes out revenue/expense
-    // accounts and credits Retained Earnings (3-2010), so the all-time sum
-    // naturally reflects only the unclosed post-closing balance.
+    // Equity earnings split. Without a year-end closing, all revenue/expense since
+    // inception is still "open". We DON'T dump it all into "Current Year P/L" —
+    // that made the balance sheet show a loss while the Income Statement (which
+    // defaults to the current year) showed a profit, because prior-year catch-up
+    // depreciation was being counted as current-year. Instead we split:
+    //   • Current Year P/L (3-3010)  = revenue − expenses for THIS fiscal year
+    //                                  → matches the Income Statement for the year.
+    //   • Retained Earnings (3-2010) = cumulative PRIOR-year P/L (+ any real 3-2010
+    //                                  GL balance) → where un-closed prior P/L lives.
+    // Their sum still equals the all-time P/L, so the sheet stays balanced.
+    const fiscalYearStart = new Date(endDate.getFullYear(), 0, 1);
 
-    const fiscalYearStart = new Date(endDate.getFullYear(), 0, 1); // kept for reporting only
-
-    // Get revenue and expense accounts
     const revenueExpenseAccounts = await this.prisma.chartOfAccounts.findMany({
       where: {
         accountType: { in: ["REVENUE", "EXPENSE"] },
@@ -385,26 +394,70 @@ export class FinancialStatementsService {
       },
     });
 
-    // FIX 1 (N+1): reuse the glSumsBS map already computed above (same filter:
-    // entryDate <= endDate AND isPosted = true) — no additional DB queries needed.
-    // This is the all-time cumulative net income calculation for the balance sheet.
+    // All-time cumulative P/L (from the bsSumMap already computed: entryDate <= endDate).
     let totalRevenue = 0;
     let totalExpenses = 0;
-
     for (const account of revenueExpenseAccounts) {
       const sums = bsSumMap.get(account.id) ?? { totalDebit: 0, totalCredit: 0 };
-      const { totalDebit: debit, totalCredit: credit } = sums;
-
       if (account.accountType === "REVENUE") {
-        totalRevenue += credit - debit; // Revenue increases with credits
+        totalRevenue += sums.totalCredit - sums.totalDebit;
       } else {
-        totalExpenses += debit - credit; // Expenses increase with debits
+        totalExpenses += sums.totalDebit - sums.totalCredit;
       }
     }
+    const allTimeEarnings = totalRevenue - totalExpenses;
 
-    const currentYearEarnings = totalRevenue - totalExpenses;
+    // Current fiscal-year P/L — revenue/expense GL restricted to [Jan 1 .. endDate].
+    type GlSumCY = {
+      accountId: string;
+      totalDebit: string;
+      totalCredit: string;
+    };
+    const glSumsCY: GlSumCY[] = await this.prisma.$queryRaw`
+      SELECT gl."accountId",
+             CAST(SUM(gl.debit)  AS TEXT) AS "totalDebit",
+             CAST(SUM(gl.credit) AS TEXT) AS "totalCredit"
+      FROM   general_ledger gl
+      JOIN   journal_entries je ON je.id = gl."journalEntryId"
+      WHERE  je."isPosted" = true
+        AND  gl."entryDate" >= ${fiscalYearStart}
+        AND  gl."entryDate" <= ${endDate}
+      GROUP BY gl."accountId"
+    `;
+    const cyMap = new Map(
+      glSumsCY.map((r) => [
+        r.accountId,
+        { d: Number(r.totalDebit), c: Number(r.totalCredit) },
+      ]),
+    );
+    let cyRevenue = 0;
+    let cyExpenses = 0;
+    for (const account of revenueExpenseAccounts) {
+      const s = cyMap.get(account.id) ?? { d: 0, c: 0 };
+      if (account.accountType === "REVENUE") cyRevenue += s.c - s.d;
+      else cyExpenses += s.d - s.c;
+    }
+    const currentYearEarnings = cyRevenue - cyExpenses;
 
-    // ✅ Add Current Year Earnings as virtual equity account
+    // Everything before this fiscal year is un-closed prior-year P/L → Retained
+    // Earnings, folded in with any real 3-2010 GL balance.
+    const priorYearEarnings = allTimeEarnings - currentYearEarnings;
+    const existingRetained = equity.find((e) => e.accountCode === "3-2010");
+    const equityCapital = equity.filter((e) => e.accountCode !== "3-2010");
+    const retainedEarnings =
+      (existingRetained ? existingRetained.balance : 0) + priorYearEarnings;
+
+    const retainedEarningsAccount = {
+      accountCode: "3-2010",
+      accountName: "Retained Earnings",
+      accountNameId: "Laba Ditahan",
+      accountType: "EQUITY" as const,
+      accountSubType: "RETAINED_EARNINGS" as const,
+      normalBalance: "CREDIT" as const,
+      balance: retainedEarnings,
+      totalDebit: 0,
+      totalCredit: retainedEarnings,
+    };
     const currentYearEarningsAccount = {
       accountCode: "3-3010",
       accountName: "Current Year Profit/Loss",
@@ -417,20 +470,24 @@ export class FinancialStatementsService {
       totalCredit: currentYearEarnings,
     };
 
-    // Add to equity accounts if net income is non-zero
-    const equityWithEarnings =
-      Math.abs(currentYearEarnings) > 0.01
-        ? [...equity, currentYearEarningsAccount]
-        : equity;
+    const equityWithEarnings = [
+      ...equityCapital,
+      ...(Math.abs(retainedEarnings) > 0.01 ? [retainedEarningsAccount] : []),
+      ...(Math.abs(currentYearEarnings) > 0.01
+        ? [currentYearEarningsAccount]
+        : []),
+    ];
 
     // Calculate totals
     const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
     const totalLiabilities = liabilities.reduce((sum, l) => sum + l.balance, 0);
-    const totalEquityBeforeEarnings = equity.reduce(
+    // Capital = real equity accounts excluding Retained Earnings (folded below).
+    const totalEquityBeforeEarnings = equityCapital.reduce(
       (sum, e) => sum + e.balance,
       0,
     );
-    const totalEquity = totalEquityBeforeEarnings + currentYearEarnings;
+    const totalEquity =
+      totalEquityBeforeEarnings + retainedEarnings + currentYearEarnings;
 
     // Get depreciation details (PSAK 16)
     const depreciationDetails =
@@ -453,16 +510,20 @@ export class FinancialStatementsService {
         total: totalEquity,
         // ✅ Breakdown of equity components
         capitalAccounts: totalEquityBeforeEarnings,
+        retainedEarnings,
         currentYearEarnings: currentYearEarnings,
       },
       depreciation: depreciationDetails,
-      // Cumulative income statement summary (all-time, no closing entries run yet)
+      // Income summary. Revenue/expenses are cumulative since inception; the
+      // current-year net income (3-3010) matches the Income Statement for the year.
       incomeStatement: {
         fiscalYearStart,
         totalRevenue,
         totalExpenses,
-        netIncome: currentYearEarnings,
-        note: "Cumulative revenue and expenses since inception (no year-end closing performed)",
+        netIncome: allTimeEarnings,
+        currentYearNetIncome: currentYearEarnings,
+        priorYearEarnings,
+        note: "totalRevenue/totalExpenses are cumulative since inception; currentYearNetIncome (3-3010) matches the Income Statement for the current fiscal year, prior-year P/L sits in Retained Earnings (3-2010).",
       },
       summary: {
         totalAssets,
@@ -911,56 +972,37 @@ export class FinancialStatementsService {
     const otherReceivablesReconciling =
       glOtherReceivablesNet - itemsOutstandingSum;
 
-    // Get top customers by OUTSTANDING AR. groupBy _sum.totalAmount can't net
-    // out payments, so it overstated per-client AR and disagreed with the net
-    // AR balance above. Fetch invoices with payments and sum the remaining
-    // (total − CONFIRMED payments) per client instead.
-    const arInvoices = await this.prisma.invoice.findMany({
-      where: {
-        status: { in: ["SENT", "OVERDUE"] },
-        creationDate: { lte: endDateInclusive },
-      },
-      select: {
-        clientId: true,
-        totalAmount: true,
-        priceBreakdown: true,
-        payments: { select: { amount: true, status: true } },
-      },
-    });
-
-    const byClient = new Map<string, { outstanding: number; count: number }>();
-    for (const inv of arInvoices) {
-      const paid = inv.payments.reduce(
-        (s, p) => (p.status === "CONFIRMED" ? s + Number(p.amount || 0) : s),
-        0,
-      );
-      // Trade-AR outstanding = SERVICES portion (reimburse lives in 1-2040), with
-      // payments applied services-first. Keeps top-customer AR off reimbursables.
-      const servicesAmount = servicesPortionOf(inv);
-      const outstanding = Math.max(0, servicesAmount - Math.min(paid, servicesAmount));
+    // Top customers by OUTSTANDING AR — derived from the aging REGISTER above so
+    // it includes direct PIUTANG sales (not just invoices) and never disagrees
+    // with the listed rows. Each register row carries its client + outstanding.
+    const byClient = new Map<
+      string,
+      { client: any; outstanding: number; count: number }
+    >();
+    for (const row of aging.aging as any[]) {
+      const outstanding = Number(row.outstanding ?? 0);
       if (outstanding <= 0) continue;
-      const e = byClient.get(inv.clientId) || { outstanding: 0, count: 0 };
+      const clientId = row.client?.id;
+      if (!clientId) continue;
+      const e =
+        byClient.get(clientId) || { client: row.client, outstanding: 0, count: 0 };
       e.outstanding += outstanding;
       e.count += 1;
-      byClient.set(inv.clientId, e);
+      byClient.set(clientId, e);
     }
 
-    const topCustomers = await Promise.all(
-      [...byClient.entries()]
-        .sort((a, b) => b[1].outstanding - a[1].outstanding)
-        .slice(0, 10)
-        .map(async ([clientId, agg]) => {
-          const client = await this.prisma.client.findUnique({
-            where: { id: clientId },
-            select: { id: true, name: true, email: true },
-          });
-          return {
-            client,
-            outstandingAmount: agg.outstanding,
-            invoiceCount: agg.count,
-          };
-        }),
-    );
+    const topCustomers = [...byClient.values()]
+      .sort((a, b) => b.outstanding - a.outstanding)
+      .slice(0, 10)
+      .map((agg) => ({
+        client: {
+          id: agg.client?.id,
+          name: agg.client?.name,
+          email: agg.client?.email,
+        },
+        outstandingAmount: agg.outstanding,
+        invoiceCount: agg.count,
+      }));
 
     return {
       asOfDate: endDate,
@@ -1075,13 +1117,32 @@ export class FinancialStatementsService {
         }),
     );
 
+    // Expense-derived itemisation total (what the aging rows add up to). This is
+    // supporting detail only — it CANNOT see a payable posted straight to 2-1010
+    // via a manual journal ("hutang pembelian"), an opening balance, or a vendor
+    // bill entered outside the expense flow.
+    const itemsOutstanding = aging.summary.totalAP;
+    // The 2-1010 GL net is the AUTHORITATIVE Accounts Payable balance — it ALWAYS
+    // ties out to the journal entries, trial balance and balance sheet (mirrors
+    // the Trade-AR / Other-Receivables treatment in getAccountsReceivableReport).
+    const payableBalance = netAPBalance;
+    // GL − items. Non-zero ⇒ a payable lives in the GL with no expense behind it
+    // (manual journal / vendor bill), so the breakdown still ties to the headline.
+    const reconcilingAdjustment = netAPBalance - itemsOutstanding;
+
     return {
       asOfDate: endDate,
       apBalance: netAPBalance,
       aging,
       topCategories,
       summary: {
-        totalOutstanding: aging.summary.totalAP,
+        // GL-authoritative headline — reconciles with journal entries & balance sheet.
+        totalOutstanding: payableBalance,
+        payableBalance,
+        // Sum of the itemised unpaid expenses (the aging rows).
+        itemsOutstanding,
+        // GL − items. Non-zero ⇒ payable posted via journal without an expense row.
+        reconcilingAdjustment,
         currentOutstanding: aging.summary.current,
         overdueOutstanding:
           Number(aging.summary.days1to30) +

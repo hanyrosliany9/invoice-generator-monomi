@@ -10,6 +10,8 @@ import TransformProperties from './properties/TransformProperties';
 import FillStrokeProperties from './properties/FillStrokeProperties';
 import TextProperties from './properties/TextProperties';
 import ImageProperties from './properties/ImageProperties';
+import TableProperties from './properties/TableProperties';
+import ChartProperties from './properties/ChartProperties';
 
 export default function PropertiesPanel() {
   const { t } = useTranslation();
@@ -50,13 +52,11 @@ export default function PropertiesPanel() {
     canvas.on('selection:created', handleSelection);
     canvas.on('selection:updated', handleSelection);
     canvas.on('selection:cleared', handleClear);
-    canvas.on('object:modified', handleSelection);
 
     return () => {
       canvas.off('selection:created', handleSelection);
       canvas.off('selection:updated', handleSelection);
       canvas.off('selection:cleared', handleClear);
-      canvas.off('object:modified', handleSelection);
     };
   }, [canvas, setSelectedObject, setSelectedCount]);
 
@@ -97,6 +97,17 @@ export default function PropertiesPanel() {
 
         {elementType === 'line' && (
           <FillStrokeProperties object={selectedObject} />
+        )}
+
+        {/* ICON has no bespoke panel beyond Transform — re-pick replaces it via
+            the toolbar's IconPicker; color is baked into the stored SVG. */}
+
+        {elementType === 'table' && (
+          <TableProperties object={selectedObject} />
+        )}
+
+        {elementType === 'chart' && (
+          <ChartProperties object={selectedObject} />
         )}
 
         {elementType === 'multiple' && (

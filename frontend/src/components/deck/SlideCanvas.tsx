@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas as FabricCanvas, FabricObject } from 'fabric';
 import DeckCanvas from './DeckCanvas';
 import { useDeckCanvasStore } from '../../stores/deckCanvasStore';
@@ -35,6 +35,10 @@ export default function SlideCanvas({
 }: SlideCanvasProps) {
   const { canvas, setIsLoadingElements, setIsDirty } = useDeckCanvasStore();
   const [isLoading, setIsLoading] = useState(true);
+  // Monotonic load counter. Each load run captures its sequence number; if a
+  // newer run starts (rapid slide switch / dimension change) the older run
+  // bails out instead of racing on the shared canvas + isLoadingElements flag.
+  const loadSeqRef = useRef(0);
 
   const canvasWidth = deckWidth * scale;
   const canvasHeight = deckHeight * scale;
@@ -45,6 +49,9 @@ export default function SlideCanvas({
       devLog('[SlideCanvas] Canvas or slide not ready:', { canvas: !!canvas, slide: !!slide });
       return;
     }
+
+    const mySeq = ++loadSeqRef.current;
+    const isStale = () => loadSeqRef.current !== mySeq;
 
     const loadElements = async () => {
       setIsLoading(true);
@@ -66,6 +73,13 @@ export default function SlideCanvas({
           canvasWidth,
           canvasHeight
         );
+        // A newer load superseded us while awaiting an async element (e.g. an
+        // image). Abandon this run so we don't add objects to / clear the flag
+        // for a slide that's no longer active.
+        if (isStale()) {
+          devLog('[SlideCanvas] Load superseded, aborting stale run for', slide.id);
+          return;
+        }
         if (fabricObj) {
           devLog('[SlideCanvas] Successfully loaded element:', element.id);
           canvas.add(fabricObj);
@@ -74,18 +88,49 @@ export default function SlideCanvas({
         }
       }
 
+      if (isStale()) return;
       canvas.renderAll();
+      // Re-enable rubber-band selection in case a prior text-edit/line-draw left
+      // canvas.selection disabled and its restore handler never fired.
+      canvas.selection = true;
       devLog('[SlideCanvas] Finished loading elements. Canvas has', canvas.getObjects().length, 'objects');
       setIsLoading(false);
+      // Seed this slide's undo baseline and make it the active history target so
+      // undo/redo can never paint another slide's snapshot onto this canvas.
+      useDeckCanvasStore
+        .getState()
+        .ensureSlideHistory(
+          slide.id,
+          JSON.stringify(
+            (canvas as any).toJSON([
+              'id',
+              'elementId',
+              'elementType',
+              'assetId',
+              'assetUrl',
+              'zIndex',
+            ])
+          )
+        );
       // Programmatic load is complete: clear the dirty flag set by load-time
       // history pushes, then re-enable autosave on the next tick so the
       // object:added events fired during load have already been ignored.
       setIsDirty(false);
-      setTimeout(() => setIsLoadingElements(false), 0);
+      setTimeout(() => {
+        if (!isStale()) setIsLoadingElements(false);
+      }, 0);
     };
 
     loadElements();
-  }, [canvas, slide?.id, slide?.elements, canvasWidth, canvasHeight, setIsLoadingElements, setIsDirty]);
+    // NOTE: intentionally keyed on slide.id, NOT slide.elements. The parent
+    // rebuilds the `slides` array (new object identities) on every deck refetch
+    // even when element data is unchanged; depending on slide.elements here made
+    // this effect wipe + rebuild the whole canvas on every autosave/refetch,
+    // destroying the live selection mid-drag and covering the canvas with the
+    // "Loading…" overlay — i.e. "can't move/modify elements after a template".
+    // Reload only when the slide identity or canvas dimensions actually change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvas, slide?.id, canvasWidth, canvasHeight]);
 
   // Handle object modification
   const handleObjectModified = useCallback(

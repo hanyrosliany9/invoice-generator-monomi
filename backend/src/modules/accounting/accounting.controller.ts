@@ -33,6 +33,8 @@ import { RevenueRecognitionService } from "./services/revenue-recognition.servic
 import { CashBankBalanceService } from "./services/cash-bank-balance.service";
 import { TaxReconciliationService } from "./services/tax-reconciliation.service";
 import { CreateJournalEntryDto } from "./dto/create-journal-entry.dto";
+import { CreatePurchaseDto } from "./dto/create-purchase.dto";
+import { CreateSaleDto } from "./dto/create-sale.dto";
 import { UpdateJournalEntryDto } from "./dto/update-journal-entry.dto";
 import { JournalQueryDto } from "./dto/journal-query.dto";
 import { CreateCashTransactionDto } from "./dto/create-cash-transaction.dto";
@@ -143,6 +145,79 @@ export class AccountingController {
   @Get("journal-entries/:id")
   async getJournalEntry(@Param("id") id: string) {
     return this.journalService.getJournalEntry(id);
+  }
+
+  // ============ PURCHASES (Laporan Pembelian) ============
+  @Get("purchases")
+  async getPurchases(
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.journalService.getPurchases({
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+    });
+  }
+
+  @Get("purchases/next-number")
+  async getNextPurchaseNumber() {
+    return { nextNumber: await this.journalService.getNextPurchaseNumber() };
+  }
+
+  @Post("purchases")
+  async createPurchase(
+    @Body() dto: CreatePurchaseDto,
+    @Request() req: any,
+  ) {
+    return this.journalService.createPurchase(dto, req.user.id);
+  }
+
+  @Post("purchases/:id/mark-paid")
+  async markPurchasePaid(
+    @Param("id") id: string,
+    @Body() body: { cashAccountCode?: string },
+    @Request() req: any,
+  ) {
+    return this.journalService.markPurchaseAsPaid(
+      id,
+      req.user.id,
+      body?.cashAccountCode,
+    );
+  }
+
+  // ============ SALES (Laporan Penjualan) ============
+  @Get("sales")
+  async getSales(
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
+    return this.journalService.getSales({
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+    });
+  }
+
+  @Get("sales/next-number")
+  async getNextSaleNumber() {
+    return { nextNumber: await this.journalService.getNextSaleNumber() };
+  }
+
+  @Post("sales")
+  async createSale(@Body() dto: CreateSaleDto, @Request() req: any) {
+    return this.journalService.createSale(dto, req.user.id);
+  }
+
+  @Post("sales/:id/mark-paid")
+  async markSalePaid(
+    @Param("id") id: string,
+    @Body() body: { cashAccountCode?: string },
+    @Request() req: any,
+  ) {
+    return this.journalService.markSaleAsPaid(
+      id,
+      req.user.id,
+      body?.cashAccountCode,
+    );
   }
 
   @Patch("journal-entries/:id")
@@ -1303,6 +1378,283 @@ export class AccountingController {
         "Content-Disposition",
         `attachment; filename="${filename}"`,
       );
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating Excel",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/journal-entries/pdf")
+  async exportJournalEntriesPDF(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Query("transactionType") transactionType: string,
+    @Query("status") status: string,
+    @Query("search") search: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.exportService.exportJournalEntriesPDF({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        transactionType: transactionType || undefined,
+        status: status || undefined,
+        search: search || undefined,
+      });
+      const start = startDate || "all";
+      const end = endDate || "all";
+      const filename = `jurnal-umum-${start}-${end}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating PDF",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/journal-entries/excel")
+  async exportJournalEntriesExcel(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Query("transactionType") transactionType: string,
+    @Query("status") status: string,
+    @Query("search") search: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportJournalEntriesExcel({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        transactionType: transactionType || undefined,
+        status: status || undefined,
+        search: search || undefined,
+      });
+      const start = startDate || "all";
+      const end = endDate || "all";
+      const filename = `jurnal-umum-${start}-${end}.xlsx`;
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating Excel",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/cash-bank-balances/pdf")
+  async exportCashBankBalancesPDF(@Res() res: Response) {
+    try {
+      const buffer = await this.exportService.exportCashBankBalancesPDF();
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `saldo-kas-bank-${date}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating PDF",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/cash-bank-balances/excel")
+  async exportCashBankBalancesExcel(@Res() res: Response) {
+    try {
+      const buffer = await this.excelExportService.exportCashBankBalancesExcel();
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `saldo-kas-bank-${date}.xlsx`;
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating Excel",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/depreciation/pdf")
+  async exportDepreciationPDF(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.exportService.exportDepreciationPDF({
+        startDate,
+        endDate,
+      });
+      const filename = `penyusutan-${startDate}-${endDate}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating PDF",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/depreciation/excel")
+  async exportDepreciationExcel(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportDepreciationExcel({
+        startDate,
+        endDate,
+      });
+      const filename = `penyusutan-${startDate}-${endDate}.xlsx`;
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating Excel",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/purchases/pdf")
+  async exportPurchasesPDF(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.exportService.exportPurchasesPDF({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+      const start = startDate || "all";
+      const end = endDate || "all";
+      const filename = `laporan-pembelian-${start}-${end}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating PDF",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/purchases/excel")
+  async exportPurchasesExcel(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportPurchasesExcel({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+      const start = startDate || "all";
+      const end = endDate || "all";
+      const filename = `laporan-pembelian-${start}-${end}.xlsx`;
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating Excel",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/sales/pdf")
+  async exportSalesPDF(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.exportService.exportSalesPDF({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+      const start = startDate || "all";
+      const end = endDate || "all";
+      const filename = `laporan-penjualan-${start}-${end}.pdf`;
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating PDF",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/sales/excel")
+  async exportSalesExcel(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportSalesExcel({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+      const start = startDate || "all";
+      const end = endDate || "all";
+      const filename = `laporan-penjualan-${start}-${end}.xlsx`;
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
       res.setHeader("Content-Length", buffer.length);
       res.send(buffer);
     } catch (error) {

@@ -1,6 +1,7 @@
 import { Button, Tooltip, Space } from 'antd';
 import { Canvas as FabricCanvas, Rect, Circle, IText } from 'fabric';
 import { useDeckCanvasStore } from '../../stores/deckCanvasStore';
+import { generateElementId } from '../../utils/deckCanvasUtils';
 
 interface QuickShapeBarProps {
   canvas: FabricCanvas | null;
@@ -31,7 +32,9 @@ export default function QuickShapeBar({ canvas, disabled }: QuickShapeBarProps) 
           originX: 'center',
           originY: 'center',
         });
-        obj.set('elementType', 'shape');
+        obj.set('id', generateElementId());
+        obj.set('elementType', 'SHAPE');
+        obj.set('shapeType', 'RECT');
         obj.set('shapeId', 'rect');
         break;
 
@@ -46,7 +49,9 @@ export default function QuickShapeBar({ canvas, disabled }: QuickShapeBarProps) 
           originX: 'center',
           originY: 'center',
         });
-        obj.set('elementType', 'shape');
+        obj.set('id', generateElementId());
+        obj.set('elementType', 'SHAPE');
+        obj.set('shapeType', 'CIRCLE');
         obj.set('shapeId', 'circle');
         break;
 
@@ -60,7 +65,8 @@ export default function QuickShapeBar({ canvas, disabled }: QuickShapeBarProps) 
           originX: 'center',
           originY: 'center',
         });
-        obj.set('elementType', 'text');
+        obj.set('id', generateElementId());
+        obj.set('elementType', 'TEXT');
         break;
 
       default:

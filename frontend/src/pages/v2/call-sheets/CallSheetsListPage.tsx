@@ -322,9 +322,7 @@ export default function CallSheetsListPageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>{children}</PageContainer>
     </AppShell>

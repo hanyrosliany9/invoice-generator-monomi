@@ -7,6 +7,11 @@ import {
 import { PrismaService } from "../../prisma/prisma.service";
 import { JournalService } from "./journal.service";
 import {
+  assetCoaForCategory,
+  assetCodeForCoa,
+  usefulLifeYearsForCoa,
+} from "../../assets/asset-coa.util";
+import {
   DepreciationMethod,
   DepreciationStatus,
   TransactionType,
@@ -632,56 +637,320 @@ export class DepreciationService {
     endDate: Date;
     assetId?: string;
   }) {
-    const where: any = {
-      periodDate: {
-        gte: data.startDate,
-        lte: data.endDate,
-      },
-    };
-
-    if (data.assetId) {
-      where.assetId = data.assetId;
-    }
-
-    const entries = await this.prisma.depreciationEntry.findMany({
-      where,
-      include: {
-        asset: true,
-        schedule: true,
+    // List EVERY depreciable asset — NOT just those with a depreciation entry in
+    // the window — so a freshly-bought asset (purchase journalled, but depreciation
+    // not run yet) still appears (with 0 accumulated, NBV = cost) and the asset
+    // totals tie to the fixed-asset GL. Each asset is enriched with its
+    // depreciation state AS OF endDate.
+    const assets = await this.prisma.asset.findMany({
+      where: {
+        purchaseDate: { lte: data.endDate },
+        status: { notIn: ["RETIRED", "DISPOSED"] },
+        ...(data.assetId ? { id: data.assetId } : {}),
       },
     });
 
-    const totalDepreciation = entries.reduce(
-      (sum, entry) => sum + Number(entry.depreciationAmount),
+    // All depreciation entries up to endDate for these assets (one query),
+    // chronological so the last one carries the cumulative accumulated total.
+    const allEntries = assets.length
+      ? await this.prisma.depreciationEntry.findMany({
+          where: {
+            assetId: { in: assets.map((a) => a.id) },
+            periodDate: { lte: data.endDate },
+          },
+          orderBy: { periodDate: "asc" },
+        })
+      : [];
+    const entriesByAsset = new Map<string, typeof allEntries>();
+    for (const e of allEntries) {
+      const list = entriesByAsset.get(e.assetId) ?? [];
+      list.push(e);
+      entriesByAsset.set(e.assetId, list);
+    }
+
+    let totalDepreciation = 0; // depreciation charged WITHIN [startDate, endDate]
+    const byAsset: Record<string, any> = {};
+    for (const a of assets) {
+      const cost = Number(a.purchasePrice) || 0;
+      const entries = entriesByAsset.get(a.id) ?? [];
+      // Accumulated as of endDate = the latest entry's cumulative total (else 0).
+      const latest = entries[entries.length - 1];
+      const accumulated = latest ? Number(latest.accumulatedDepreciation) : 0;
+      // Period depreciation = entries dated within the requested window.
+      const periodDep = entries
+        .filter(
+          (e) =>
+            e.periodDate >= data.startDate && e.periodDate <= data.endDate,
+        )
+        .reduce((s, e) => s + Number(e.depreciationAmount), 0);
+      totalDepreciation += periodDep;
+      byAsset[a.assetCode] = {
+        assetId: a.id,
+        assetCode: a.assetCode,
+        assetName: a.name,
+        purchasePrice: cost,
+        purchaseDate: a.purchaseDate,
+        usefulLifeYears: a.usefulLifeYears,
+        depreciationGroup: (a as any).depreciationGroup ?? null,
+        // Fixed-asset COA this asset is booked under (for grouping).
+        coaCode: assetCoaForCategory(a.category),
+        depreciationAmount: periodDep,
+        accumulatedDepreciation: accumulated,
+        netBookValue: cost - accumulated,
+        entryCount: entries.length,
+        unregistered: false,
+      };
+    }
+
+    // Surface fixed-asset acquisitions that hit the GL but were never registered
+    // as an Asset record — the disintegration where buying a fixed asset through
+    // the Pembelian / manual-journal flow debits a 1-4xxx cost account yet creates
+    // no asset (so it can't be depreciated and was invisible here). Listing them
+    // makes the page's asset total tie to the fixed-asset GL and exposes the gap.
+    // Fixed-asset COST accounts are ASSET + DEBIT-normal under 1-4xxx (this
+    // excludes the CREDIT-normal Accumulated Depreciation contra accounts).
+    const fixedAssetAccounts = await this.prisma.chartOfAccounts.findMany({
+      where: {
+        accountType: "ASSET",
+        normalBalance: "DEBIT",
+        code: { startsWith: "1-4" },
+      },
+      select: { id: true, code: true, name: true, nameId: true },
+    });
+    if (fixedAssetAccounts.length && !data.assetId) {
+      const faAcctIds = fixedAssetAccounts.map((a) => a.id);
+      const faAcctById = new Map(fixedAssetAccounts.map((a) => [a.id, a]));
+      const allAssets = await this.prisma.asset.findMany({
+        select: { id: true, acquisitionJournalId: true },
+      });
+      const allAssetIds = allAssets.map((a) => a.id);
+      // Journals that already produced a registered asset via the Pembelian flow
+      // (asset.acquisitionJournalId) — exclude them too, else an auto-registered
+      // purchase shows up BOTH as the asset AND as an "unregistered" GL posting.
+      const acquisitionJournalIds = allAssets
+        .map((a) => a.acquisitionJournalId)
+        .filter((id): id is string => !!id);
+      // GL postings to fixed-asset cost accounts whose journal isn't tied to a
+      // registered asset (transactionId not an asset id, and not an acquisition
+      // journal of a registered asset) → unregistered purchases.
+      const unregGl = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: { in: faAcctIds },
+          entryDate: { lte: data.endDate },
+          journalEntry: {
+            isPosted: true,
+            transactionId: { notIn: allAssetIds.length ? allAssetIds : ["_none_"] },
+            ...(acquisitionJournalIds.length
+              ? { id: { notIn: acquisitionJournalIds } }
+              : {}),
+          },
+        },
+        select: {
+          accountId: true,
+          journalEntryId: true,
+          journalEntryNumber: true,
+          entryDate: true,
+          debit: true,
+          credit: true,
+          description: true,
+          journalEntry: { select: { description: true } },
+        },
+      });
+      const unregByJe = new Map<string, any>();
+      for (const r of unregGl) {
+        const cur =
+          unregByJe.get(r.journalEntryId) ?? {
+            reference: r.journalEntryNumber,
+            date: r.entryDate,
+            name:
+              r.description || r.journalEntry?.description || "—",
+            account: faAcctById.get(r.accountId),
+            net: 0,
+          };
+        cur.net += Number(r.debit) - Number(r.credit);
+        unregByJe.set(r.journalEntryId, cur);
+      }
+      // Whole months between two dates (clamped at 0). The acquisition month
+      // counts as elapsed once the next month begins.
+      const monthsBetween = (from: Date, to: Date): number => {
+        const f = new Date(from);
+        const t = new Date(to);
+        const m =
+          (t.getFullYear() - f.getFullYear()) * 12 + (t.getMonth() - f.getMonth());
+        return Math.max(0, m);
+      };
+
+      let unregIdx = 0;
+      for (const u of unregByJe.values()) {
+        if (u.net <= 0.005) continue; // net additions only
+        unregIdx += 1;
+        const coa: string | null = u.account?.code ?? null;
+
+        // Useful life auto-assigned from the fixed-asset COA (1-4410 Office
+        // Furniture → 8yr; General/Photography/Video-Audio/Lighting/Computers →
+        // 4yr) and a PROJECTED straight-line depreciation, so the purchase no
+        // longer shows a 0-year life / no depreciation. Residual assumed 0 for an
+        // unregistered purchase. This is an estimate (not posted to the GL until
+        // the asset is registered) — flagged `projected` so the GL-tied headline
+        // totals exclude it (see itemsAccumulatedDepreciation below).
+        const lifeYears = coa ? usefulLifeYearsForCoa(coa) : 4;
+        const lifeMonths = lifeYears * 12;
+        const depreciable = Math.max(0, u.net); // residual 0
+        const monthly = lifeMonths > 0 ? depreciable / lifeMonths : 0;
+        const elapsedAtEnd = Math.min(lifeMonths, monthsBetween(u.date, data.endDate));
+        const elapsedAtStart = Math.min(
+          lifeMonths,
+          monthsBetween(u.date, data.startDate),
+        );
+        const accumulated = Math.min(depreciable, monthly * elapsedAtEnd);
+        const periodDep = Math.max(0, elapsedAtEnd - elapsedAtStart) * monthly;
+
+        byAsset[`__unreg_${u.reference}_${unregIdx}`] = {
+          assetId: null,
+          // assetCode stays the JE-… reference here; it is replaced with the
+          // COA-style code (PHE-4510-00N) in the by-COA grouping pass below,
+          // which also preserves the JE number in `journalRef`.
+          assetCode: u.reference,
+          assetName: u.name,
+          category: u.account?.nameId || u.account?.name || null,
+          coaCode: coa,
+          purchasePrice: u.net,
+          purchaseDate: u.date,
+          usefulLifeYears: lifeYears,
+          depreciationGroup: null,
+          depreciationAmount: Math.round(periodDep),
+          accumulatedDepreciation: Math.round(accumulated),
+          netBookValue: Math.round(u.net - accumulated),
+          entryCount: 0,
+          // Flag: bought via purchase/journal, not registered as an asset, so the
+          // depreciation above is a straight-line PROJECTION, not posted to the GL.
+          // Register it from the Assets page to actually depreciate it.
+          unregistered: true,
+          projected: true,
+        };
+      }
+    }
+
+    // GL-authoritative accumulated depreciation as of endDate. The per-asset
+    // figures above come from depreciation_entries (detail); a manual journal
+    // posted straight to an accumulated-depreciation account, or entries outside
+    // this [startDate, endDate] window, make them diverge — so the GL net is the
+    // authoritative headline (ties to the balance sheet & journal entries).
+    // Accumulated-depreciation accounts are contra-assets (ASSET / CREDIT-normal);
+    // we match them by name so the ECL allowance (also a contra-asset) is excluded.
+    const accumDepAccounts = await this.prisma.chartOfAccounts.findMany({
+      where: {
+        OR: [
+          { name: { startsWith: "Accumulated Depreciation" } },
+          { nameId: { startsWith: "Akumulasi Penyusutan" } },
+        ],
+      },
+      select: { id: true },
+    });
+    let glAccumulatedDepreciation = 0;
+    if (accumDepAccounts.length > 0) {
+      const glRows = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: { in: accumDepAccounts.map((a) => a.id) },
+          entryDate: { lte: data.endDate },
+          journalEntry: { isPosted: true },
+        },
+        select: { debit: true, credit: true },
+      });
+      // Contra-asset, CREDIT-normal: net = credit − debit.
+      glAccumulatedDepreciation = glRows.reduce(
+        (sum, e) => sum + Number(e.credit) - Number(e.debit),
+        0,
+      );
+    }
+    // Sum of the per-asset accumulated depreciation (the itemised detail).
+    // Exclude `projected` rows (unregistered purchases): their straight-line
+    // depreciation is an estimate not posted to the GL, so counting it would
+    // wrongly skew the GL-vs-items reconciling adjustment below.
+    const itemsAccumulatedDepreciation = (
+      Object.values(byAsset) as Array<{
+        accumulatedDepreciation: number;
+        projected?: boolean;
+      }>
+    ).reduce(
+      (sum, a) => sum + (a.projected ? 0 : Number(a.accumulatedDepreciation || 0)),
       0,
     );
+    // GL − items. Non-zero ⇒ a manual journal touched an accum-dep account, or
+    // there are posted entries outside the reporting window.
+    const accumulatedReconcilingAdjustment =
+      glAccumulatedDepreciation - itemsAccumulatedDepreciation;
 
-    const byAsset = entries.reduce(
-      (acc, entry) => {
-        const assetCode = entry.asset.assetCode;
-        if (!acc[assetCode]) {
-          acc[assetCode] = {
-            assetId: entry.asset.id,
-            assetCode,
-            assetName: entry.asset.name,
-            purchasePrice: Number(entry.asset.purchasePrice) || 0,
-            purchaseDate: entry.asset.purchaseDate,
-            usefulLifeYears: entry.asset.usefulLifeYears,
-            depreciationAmount: 0,
-            accumulatedDepreciation: 0,
-            netBookValue: Number(entry.asset.purchasePrice) || 0,
-            entryCount: 0,
-          };
+    // Names for the fixed-asset COA codes referenced by the rows (for group headers).
+    const coaCodes = [
+      ...new Set(
+        (Object.values(byAsset) as any[]).map((r) => r.coaCode).filter(Boolean),
+      ),
+    ] as string[];
+    const coaNameByCode = new Map<string, string>();
+    if (coaCodes.length) {
+      const coaRows = await this.prisma.chartOfAccounts.findMany({
+        where: { code: { in: coaCodes } },
+        select: { code: true, name: true, nameId: true },
+      });
+      for (const c of coaRows) {
+        coaNameByCode.set(c.code, c.nameId || c.name);
+      }
+    }
+    for (const r of Object.values(byAsset) as any[]) {
+      r.coaName = r.coaCode ? coaNameByCode.get(r.coaCode) ?? r.coaCode : null;
+    }
+
+    // Asset rows sorted by COA so the page can render them grouped by account.
+    const byAssetList = (Object.values(byAsset) as any[]).sort((a, b) =>
+      String(a.coaCode ?? "").localeCompare(String(b.coaCode ?? "")) ||
+      String(a.assetCode ?? "").localeCompare(String(b.assetCode ?? "")),
+    );
+
+    // Grouped-by-COA view with per-group subtotals.
+    const byCoa: Record<string, any> = {};
+    for (const r of byAssetList) {
+      const code = r.coaCode ?? "—";
+      if (!byCoa[code]) {
+        byCoa[code] = {
+          coaCode: code,
+          coaName: r.coaName ?? code,
+          assets: [],
+          totalCost: 0,
+          totalAccumulated: 0,
+          totalNetBookValue: 0,
+        };
+      }
+      const g = byCoa[code];
+      g.assets.push(r);
+      g.totalCost += Number(r.purchasePrice) || 0;
+      g.totalAccumulated += Number(r.accumulatedDepreciation) || 0;
+      g.totalNetBookValue += Number(r.netBookValue) || 0;
+    }
+
+    // In the Asset & Depreciation listing, give unregistered purchases a COA-style
+    // code (e.g. PHE-4510-003) instead of the raw journal number (JE-xxxx) — only
+    // here; the underlying journal keeps its number. Numbered within each COA group
+    // after the registered assets. The journal reference is kept for drill-down.
+    for (const g of Object.values(byCoa) as any[]) {
+      let seq = g.assets.filter((a: any) => !a.unregistered).length;
+      for (const a of g.assets) {
+        if (a.unregistered) {
+          seq += 1;
+          a.journalRef = a.assetCode; // preserve the JE-xxxx reference
+          a.assetCode = assetCodeForCoa(g.coaCode, seq);
         }
-        acc[assetCode].depreciationAmount += Number(entry.depreciationAmount);
-        acc[assetCode].accumulatedDepreciation = Number(
-          entry.accumulatedDepreciation,
-        );
-        acc[assetCode].netBookValue = Number(entry.bookValue);
-        acc[assetCode].entryCount++;
-        return acc;
-      },
-      {} as Record<string, any>,
+      }
+    }
+
+    // Grand totals for the page KPIs (image: Total Cost + Net Book Value).
+    const totalCost = byAssetList.reduce(
+      (s, a) => s + (Number(a.purchasePrice) || 0),
+      0,
+    );
+    const totalNetBookValue = byAssetList.reduce(
+      (s, a) => s + (Number(a.netBookValue) || 0),
+      0,
     );
 
     return {
@@ -690,8 +959,19 @@ export class DepreciationService {
         endDate: data.endDate,
       },
       totalDepreciation,
-      assetCount: Object.keys(byAsset).length,
-      byAsset: Object.values(byAsset),
+      // Grand totals across all listed assets (registered + unregistered).
+      totalCost,
+      totalNetBookValue,
+      // GL-authoritative accumulated depreciation (contra-asset family) as of endDate.
+      totalAccumulatedDepreciation: glAccumulatedDepreciation,
+      // Per-asset accumulated depreciation summed (supporting detail).
+      itemsAccumulatedDepreciation,
+      // GL − items: surfaces manual journals / out-of-window entries.
+      accumulatedReconcilingAdjustment,
+      assetCount: byAssetList.length,
+      byAsset: byAssetList,
+      // Grouped by fixed-asset COA (account) for the Asset & Depreciation page.
+      byCoa: Object.values(byCoa),
       byMethod: {}, // Can be enhanced later if needed
     };
   }

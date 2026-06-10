@@ -34,6 +34,14 @@ interface PresentationState {
   // Slide overview (grid view)
   showOverview: boolean;
   toggleOverview: () => void;
+
+  // Presenter view (in-page layout with current + next + notes + timer)
+  showPresenterView: boolean;
+  togglePresenterView: () => void;
+
+  // Notes caption toggle (shown in audience view controls)
+  showNotesCaption: boolean;
+  toggleNotesCaption: () => void;
 }
 
 export const usePresentationStore = create<PresentationState>((set, get) => ({
@@ -45,9 +53,14 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
     document.documentElement.requestFullscreen?.().catch(console.error);
   },
   endPresentation: () => {
-    set({ isPresenting: false, showOverview: false });
-    // Exit fullscreen
-    document.exitFullscreen?.().catch(console.error);
+    set({ isPresenting: false, showOverview: false, showPresenterView: false });
+    // FIX 5: Only request exitFullscreen when we are actually in fullscreen,
+    // so the fullscreenchange listener in PresentationView doesn't cause a
+    // double-exit loop (listener fires → endPresentation → exitFullscreen on
+    // a null fullscreenElement would throw/warn).
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(console.error);
+    }
   },
 
   // Current slide
@@ -91,6 +104,14 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
   // Overview
   showOverview: false,
   toggleOverview: () => set((state) => ({ showOverview: !state.showOverview })),
+
+  // Presenter view
+  showPresenterView: false,
+  togglePresenterView: () => set((state) => ({ showPresenterView: !state.showPresenterView })),
+
+  // Notes caption
+  showNotesCaption: false,
+  toggleNotesCaption: () => set((state) => ({ showNotesCaption: !state.showNotesCaption })),
 }));
 
 export default usePresentationStore;

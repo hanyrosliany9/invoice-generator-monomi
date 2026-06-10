@@ -4,13 +4,22 @@
  * Keyboard behaviour mirrors src/components/ui/combobox.tsx:
  *   ↑/↓ move the active row, Enter navigates, Esc closes.
  *
- * Data is fetched lazily (only after the palette is first opened) via
- * TanStack Query, re-using the same cache keys the rest of the app uses.
+ * Sources, in display order:
+ *   1. Quick actions (admin only — create quotation/invoice/client/project)
+ *   2. Pages — derived from v2SidebarSections (the sidebar's single source of
+ *      truth, nested children included) with the same role gating the Sidebar
+ *      applies, so every navigable page is always searchable for every role.
+ *   3. Entities (admin only) — clients, projects, quotations, invoices,
+ *      vendors, users. Fetched lazily after first open via TanStack Query.
+ *
+ * The popup body is a real Radix Dialog.Content (not a bare div) so Esc,
+ * outside-click dismissal, focus trapping, and scroll locking all work.
  */
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { Dialog as DialogPrimitive } from 'radix-ui';
 import {
   Search,
   Users,
@@ -18,6 +27,7 @@ import {
   FileText,
   Receipt,
   UserCog,
+  Building2,
   Plus,
   ArrowRight,
 } from 'lucide-react';
@@ -25,10 +35,13 @@ import {
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
+import { v2SidebarSections } from '@/pages/v2/sidebar-items';
+import type { SidebarItem, SidebarSection } from '@/components/monomi/Sidebar';
 import { clientService } from '@/services/clients';
 import { projectService } from '@/services/projects';
 import { quotationService } from '@/services/quotations';
 import { invoiceService } from '@/services/invoices';
+import { vendorService } from '@/services/vendors';
 import { usersService } from '@/services/users';
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -45,6 +58,9 @@ interface PaletteItem {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
+// Entity groups are capped so one noisy collection can't drown the list.
+// Pages are NOT capped — it's a small bounded set and "jump to page" is the
+// palette's primary job.
 const MAX_PER_GROUP = 5;
 
 function matches(item: PaletteItem, q: string): boolean {
@@ -63,12 +79,14 @@ export interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  // The palette only surfaces admin entities (clients, projects, quotations,
-  // invoices, users). Gate everything behind admin access so a VIDEOGRAPHER
-  // doesn't fire 403s (and the global "Access denied" toast) or see admin
-  // destinations. ADMIN == SUPER_ADMIN.
-  const { isAdmin } = usePermissions();
+  // Entity search only surfaces admin collections (clients, projects,
+  // quotations, invoices, vendors, users). Gate those behind admin access so a
+  // VIDEOGRAPHER doesn't fire 403s (and the global "Access denied" toast).
+  // Pages below are role-filtered individually — every role gets the pages it
+  // can actually open. ADMIN == SUPER_ADMIN for requiresAdmin gates.
+  const { isAdmin, isSuperAdmin } = usePermissions();
   const adminUser = isAdmin();
+  const superAdminUser = isSuperAdmin();
 
   const [query, setQuery] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -109,12 +127,58 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     staleTime: 60_000,
   });
 
+  const { data: vendorsResp } = useQuery({
+    // Distinct key — the vendors pages cache a different param shape under
+    // ['vendors', …]; don't collide with it.
+    queryKey: ['vendors', 'command-palette'],
+    queryFn: () => vendorService.getVendors({ limit: 100 }),
+    enabled: everOpened && adminUser,
+    staleTime: 60_000,
+  });
+  const vendors = vendorsResp?.data ?? [];
+
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersService.getUsers(),
     enabled: everOpened && adminUser,
     staleTime: 60_000,
   });
+
+  // ── pages: flatten the sidebar config with the Sidebar's own role gating ────
+
+  const pageItems: PaletteItem[] = React.useMemo(() => {
+    const canSee = (e: { requiresAdmin?: boolean; requiresSuperAdmin?: boolean }) =>
+      (!e.requiresAdmin || adminUser) && (!e.requiresSuperAdmin || superAdminUser);
+    const group = t('commandPalette.groupPages', 'Pages');
+    const out: PaletteItem[] = [];
+
+    const walk = (items: SidebarItem[], sectionLabel: string) => {
+      for (const item of items) {
+        if (!canSee(item)) continue;
+        if (item.children?.length) walk(item.children, sectionLabel);
+        // '#…' hrefs are collapsible group parents, not destinations.
+        if (!item.href || item.href.startsWith('#')) continue;
+        out.push({
+          id: `page-${item.href}`,
+          group,
+          label: t(item.label),
+          sublabel: sectionLabel,
+          route: item.href,
+          icon: item.icon,
+        });
+      }
+    };
+
+    for (const section of v2SidebarSections as SidebarSection[]) {
+      if (!canSee(section)) continue;
+      walk(section.items, section.label ? t(section.label) : '');
+    }
+
+    // The same route can appear in two sidebar spots (e.g. /invoices lives
+    // under Workspace and under Sales); keep the first occurrence only.
+    const seen = new Set<string>();
+    return out.filter((p) => (seen.has(p.route) ? false : (seen.add(p.route), true)));
+  }, [adminUser, superAdminUser, t]);
 
   // ── build flat item list ─────────────────────────────────────────────────────
 
@@ -161,6 +225,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     const projectGroup = t('commandPalette.groupProjects', 'Projects');
     const quotationGroup = t('commandPalette.groupQuotations', 'Quotations');
     const invoiceGroup = t('commandPalette.groupInvoices', 'Invoices');
+    const vendorGroup = t('commandPalette.groupVendors', 'Vendors');
     const userGroup = t('commandPalette.groupUsers', 'Users');
 
     return [
@@ -196,6 +261,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         route: `/invoices/${inv.id}`,
         icon: <Receipt className="h-4 w-4" />,
       })),
+      ...vendors.map((v) => ({
+        id: `vendor-${v.id}`,
+        group: vendorGroup,
+        label: v.name,
+        sublabel: v.email ?? v.phone,
+        route: `/vendors/${v.id}`,
+        icon: <Building2 className="h-4 w-4" />,
+      })),
       ...users.map((u) => ({
         id: `user-${u.id}`,
         group: userGroup,
@@ -205,13 +278,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         icon: <UserCog className="h-4 w-4" />,
       })),
     ];
-  }, [clients, projects, quotations, invoices, users, t]);
+  }, [clients, projects, quotations, invoices, vendors, users, t]);
 
   // ── filter + cap per group ───────────────────────────────────────────────────
 
   const filteredActions = React.useMemo(
     () => quickActions.filter((item) => matches(item, query)),
     [quickActions, query],
+  );
+
+  const filteredPages = React.useMemo(
+    () => pageItems.filter((item) => matches(item, query)),
+    [pageItems, query],
   );
 
   const filteredEntities = React.useMemo(() => {
@@ -230,9 +308,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     return Array.from(grouped.values()).flat();
   }, [entityItems, query]);
 
+  // Order here MUST match the render order in renderItems() — activeIndex is
+  // a flat index across all visible rows.
   const allItems: PaletteItem[] = React.useMemo(
-    () => [...filteredActions, ...filteredEntities],
-    [filteredActions, filteredEntities],
+    () => [...filteredActions, ...filteredPages, ...filteredEntities],
+    [filteredActions, filteredPages, filteredEntities],
   );
 
   // ── keyboard nav ─────────────────────────────────────────────────────────────
@@ -259,6 +339,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       const item = allItems[activeIndex];
       if (item) commit(item);
     }
+    // Escape is handled by Radix Dialog.Content (closes the palette).
   };
 
   const commit = (item: PaletteItem) => {
@@ -267,21 +348,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     setQuery('');
   };
 
-  // ── focus input when palette opens ──────────────────────────────────────────
-
+  // Clear the query whenever the palette closes so it reopens fresh.
   React.useEffect(() => {
-    if (open) {
-      // Small timeout lets Radix finish its open animation before focusing
-      const id = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(id);
-    } else {
-      setQuery('');
-    }
+    if (!open) setQuery('');
   }, [open]);
 
   // ── render ───────────────────────────────────────────────────────────────────
 
-  // Group headers for the entity section
+  // Sections with group headers; pages and entities share the header-on-change
+  // logic, actions render first.
   const renderItems = () => {
     const nodes: React.ReactNode[] = [];
     let lastGroup: string | null = null;
@@ -302,8 +377,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       }
     }
 
-    // Entity sections
-    for (const item of filteredEntities) {
+    // Pages + entity sections (same flat order as allItems)
+    for (const item of [...filteredPages, ...filteredEntities]) {
       if (item.group !== lastGroup) {
         nodes.push(
           <div key={`group-${item.group}`} className="px-2 pt-3 pb-1">
@@ -334,20 +409,29 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay />
-        {/* Custom positioning: top-aligned, wider, no gap-4 default padding */}
-        <div
+        {/* Real Radix Content (NOT a bare div) so Esc, outside-click dismissal,
+          * focus trapping, and scroll locking work. Custom top-aligned
+          * positioning instead of ui/dialog's centered DialogContent. */}
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          onOpenAutoFocus={(e) => {
+            // Focus the search input instead of Radix's default first-element
+            e.preventDefault();
+            inputRef.current?.focus();
+          }}
           className={cn(
             'fixed left-1/2 top-[15vh] z-50 w-full max-w-xl -translate-x-1/2',
             'rounded-xl border border-border-subtle bg-bg-raised shadow-2xl',
-            'overflow-hidden',
+            'overflow-hidden outline-none',
             'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
             'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
           )}
-          data-state={open ? 'open' : 'closed'}
-          role="dialog"
-          aria-label={t('commandPalette.title', 'Command Palette')}
           onKeyDown={onKeyDown}
         >
+          <DialogPrimitive.Title className="sr-only">
+            {t('commandPalette.title', 'Command Palette')}
+          </DialogPrimitive.Title>
+
           {/* Search input */}
           <div className="flex items-center gap-3 border-b border-border-subtle px-4">
             <Search className="h-4 w-4 shrink-0 text-text-tertiary" />
@@ -385,7 +469,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               {t('commandPalette.hintClose', 'close')}
             </span>
           </div>
-        </div>
+        </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>
   );
@@ -431,18 +515,37 @@ function Row({ item, index, active, onSelect, onHover }: RowProps) {
 // ─── global keyboard hook — export so the mount site can use it ───────────────
 
 /**
- * Mounts a global keydown listener that opens the palette on Ctrl-K / Cmd-K.
- * Call once at the top of the authenticated shell.
+ * Custom event that programmatically toggles the palette (used by the Topbar
+ * search button — no synthetic KeyboardEvent hacks).
  */
-export function useCommandPaletteShortcut(onOpen: () => void) {
+export const COMMAND_PALETTE_EVENT = 'monomi:command-palette';
+
+/**
+ * Mounts a global listener that TOGGLES the palette on Ctrl-K / Cmd-K (works
+ * with Shift/CapsLock too) or on the COMMAND_PALETTE_EVENT custom event.
+ * Call once at the top of the authenticated shell with a toggle callback.
+ */
+export function useCommandPaletteShortcut(onToggle: () => void) {
+  // Keep the latest callback in a ref so the window listeners are attached
+  // exactly once instead of re-subscribing on every parent render.
+  const callbackRef = React.useRef(onToggle);
   React.useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    callbackRef.current = onToggle;
+  });
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && !e.repeat) {
         e.preventDefault();
-        onOpen();
+        callbackRef.current();
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onOpen]);
+    const onCustomEvent = () => callbackRef.current();
+    window.addEventListener('keydown', onKey);
+    window.addEventListener(COMMAND_PALETTE_EVENT, onCustomEvent);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(COMMAND_PALETTE_EVENT, onCustomEvent);
+    };
+  }, []);
 }

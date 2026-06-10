@@ -12,6 +12,7 @@ import { DeckElementsService } from "./services/deck-elements.service";
 import { DeckCommentsService } from "./services/deck-comments.service";
 import { DeckCollaboratorsService } from "./services/deck-collaborators.service";
 import { DeckExportService } from "./services/deck-export.service";
+import { DeckImportService } from "./services/deck-import.service";
 
 // Controllers
 import { DecksController } from "./controllers/decks.controller";
@@ -82,6 +83,7 @@ import { DeckCollaborationGateway } from "./deck-collaboration.gateway";
     DeckCommentsService,
     DeckCollaboratorsService,
     DeckExportService,
+    DeckImportService,
     DeckCollaborationGateway,
   ],
   exports: [

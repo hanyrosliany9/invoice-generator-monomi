@@ -1,7 +1,17 @@
 import { create } from 'zustand';
 import type { FabricObject } from 'fabric';
 
-export type ElementType = 'text' | 'shape' | 'image' | 'line' | 'group' | 'multiple' | null;
+export type ElementType =
+  | 'text'
+  | 'shape'
+  | 'image'
+  | 'line'
+  | 'group'
+  | 'icon'
+  | 'table'
+  | 'chart'
+  | 'multiple'
+  | null;
 
 interface PropertiesPanelState {
   // Panel visibility
@@ -39,6 +49,22 @@ export const usePropertiesPanelStore = create<PropertiesPanelState>((set) => ({
     // Determine element type
     let type: ElementType = null;
     const objType = obj.type;
+
+    // ICON/TABLE/CHART are fabric Groups tagged with a custom elementType — check
+    // that first so they don't fall through to the generic 'group' branch.
+    const elementTag = (obj as any).get?.('elementType') as string | undefined;
+    if (elementTag === 'ICON') {
+      set({ selectedObject: obj, elementType: 'icon' });
+      return;
+    }
+    if (elementTag === 'TABLE') {
+      set({ selectedObject: obj, elementType: 'table' });
+      return;
+    }
+    if (elementTag === 'CHART') {
+      set({ selectedObject: obj, elementType: 'chart' });
+      return;
+    }
 
     if (objType === 'i-text' || objType === 'text' || objType === 'textbox') {
       type = 'text';

@@ -29,6 +29,7 @@ const FORM_ID = 'asset-create-form';
 type CreateAssetExtended = CreateAssetRequest & {
   invoiceNumber?: string;
   warrantyExpiration?: string;
+  depreciationGroup?: string;
   usefulLifeYears?: number;
   residualValue?: number;
 };
@@ -82,6 +83,7 @@ export default function AssetCreatePageV2() {
       warrantyExpiration: values.warrantyExpiration
         ? values.warrantyExpiration.toISOString()
         : undefined,
+      depreciationGroup: values.depreciationGroup || undefined,
       usefulLifeYears:
         values.usefulLifeYears !== undefined && values.usefulLifeYears !== null
           ? Number(values.usefulLifeYears)
@@ -104,9 +106,7 @@ export default function AssetCreatePageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader

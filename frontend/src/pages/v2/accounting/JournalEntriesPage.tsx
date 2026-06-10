@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toLocalISODate } from '@/utils/date';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   BookOpen, Plus, Search, X, MoreHorizontal,
-  Eye, Pencil, Trash2, RotateCcw, Wand2,
+  Eye, Pencil, Trash2, RotateCcw, Wand2, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -37,6 +37,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import {
   deleteJournalEntry, getJournalEntries, reverseJournalEntry,
+  exportJournalEntriesPDF, exportJournalEntriesExcel,
   type JournalEntry,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
@@ -119,11 +120,35 @@ export default function JournalEntriesPageV2() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
 
-  const [searchText, setSearchText] = useState('');
+  // A `?type=` query param (e.g. the sidebar "Laporan Pembelian" → ?type=PURCHASE)
+  // pre-filters the list to that transaction type. Changing query string does NOT
+  // remount this page, so we sync the filter to the param via an effect below.
+  const [searchParams] = useSearchParams();
+  const urlType = searchParams.get('type');
+  // A `?search=` param (e.g. a Purchase Report row → its PUR-… transactionId)
+  // pre-fills the search box, surfacing every related journal at once.
+  const urlSearch = searchParams.get('search');
+
+  const [searchText, setSearchText] = useState(urlSearch ?? '');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter]     = useState<string>('all');
+  const [typeFilter, setTypeFilter]     = useState<string>(urlType ? urlType.toUpperCase() : 'all');
   const [startDate, setStartDate]       = useState<Date | undefined>(undefined);
   const [endDate, setEndDate]           = useState<Date | undefined>(undefined);
+
+  // Follow the URL: ?type=PURCHASE → Pembelian filter; no param → All.
+  useEffect(() => {
+    setTypeFilter(urlType ? urlType.toUpperCase() : 'all');
+  }, [urlType]);
+  useEffect(() => {
+    if (urlSearch !== null) setSearchText(urlSearch);
+  }, [urlSearch]);
+
+  // "New Journal" / "+Pembelian" carries the active type so the create form
+  // opens preset to it (e.g. on the Purchases view → New Journal = Pembelian).
+  const createHref =
+    typeFilter !== 'all'
+      ? `/accounting/journal-entries/create?type=${typeFilter}`
+      : '/accounting/journal-entries/create';
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['journal-entries', searchText, statusFilter, typeFilter, startDate, endDate],
@@ -183,6 +208,36 @@ export default function JournalEntriesPageV2() {
     setEndDate(undefined);
   };
 
+  const handleExportPDF = async () => {
+    try {
+      await exportJournalEntriesPDF({
+        search: searchText || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        transactionType: typeFilter !== 'all' ? typeFilter : undefined,
+        startDate: startDate ? toLocalISODate(startDate) : undefined,
+        endDate: endDate ? toLocalISODate(endDate) : undefined,
+      });
+      toast.success(t('accounting.journalEntries.exportPdfSuccess', 'PDF exported successfully.'));
+    } catch {
+      toast.error(t('accounting.journalEntries.exportPdfFail', 'Failed to export PDF.'));
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      await exportJournalEntriesExcel({
+        search: searchText || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        transactionType: typeFilter !== 'all' ? typeFilter : undefined,
+        startDate: startDate ? toLocalISODate(startDate) : undefined,
+        endDate: endDate ? toLocalISODate(endDate) : undefined,
+      });
+      toast.success(t('accounting.journalEntries.exportExcelSuccess', 'Excel exported successfully.'));
+    } catch {
+      toast.error(t('accounting.journalEntries.exportExcelFail', 'Failed to export Excel.'));
+    }
+  };
+
   const handleDelete = (e: JournalEntry) => {
     if (confirm(t('accounting.journalEntries.deleteConfirm', { number: e.entryNumber }))) {
       deleteMutation.mutate(e.id);
@@ -198,7 +253,7 @@ export default function JournalEntriesPageV2() {
           sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
-        topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState
@@ -219,7 +274,7 @@ export default function JournalEntriesPageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader
@@ -227,6 +282,14 @@ export default function JournalEntriesPageV2() {
           description={t('accounting.journalEntries.description')}
           actions={
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportExcel}>
+                <Download className="h-4 w-4" />
+                Excel
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -237,10 +300,12 @@ export default function JournalEntriesPageV2() {
               </Button>
               <Button
                 size="sm"
-                onClick={() => navigate('/accounting/journal-entries/create')}
+                onClick={() => navigate(createHref)}
               >
                 <Plus className="h-4 w-4" />
-                {t('accounting.journalEntries.newJournal', 'New Journal')}
+                {typeFilter === 'PURCHASE'
+                  ? t('accounting.journalEntries.newPurchase', '+ Pembelian')
+                  : t('accounting.journalEntries.newJournal', 'New Journal')}
               </Button>
             </div>
           }
@@ -353,7 +418,7 @@ export default function JournalEntriesPageV2() {
                 hasActiveFilters ? (
                   <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.journalEntries.resetFilter', 'Reset')}</Button>
                 ) : (
-                  <Button size="sm" onClick={() => navigate('/accounting/journal-entries/create')}>
+                  <Button size="sm" onClick={() => navigate(createHref)}>
                     <Plus className="h-4 w-4" /> {t('accounting.journalEntries.newJournal', 'New Journal')}
                   </Button>
                 )

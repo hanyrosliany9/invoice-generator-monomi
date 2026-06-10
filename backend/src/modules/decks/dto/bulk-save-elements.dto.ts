@@ -27,6 +27,12 @@ export class BulkSaveElementItemDto {
   @IsOptional() @IsNumber() rotation?: number;
   @IsOptional() @IsNumber() zIndex?: number;
 
+  // Horizontal/vertical flip state — serialized on every element so Shift+H /
+  // Shift+V flips survive save → reload. Must be whitelisted here or the global
+  // forbidNonWhitelisted validation pipe rejects the whole bulk save.
+  @IsOptional() @IsBoolean() flipX?: boolean;
+  @IsOptional() @IsBoolean() flipY?: boolean;
+
   @IsOptional() @IsObject() content?: Record<string, any>;
   @IsOptional() @IsBoolean() isLocked?: boolean;
 }

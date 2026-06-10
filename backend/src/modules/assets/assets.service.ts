@@ -15,6 +15,16 @@ import { CreateAssetDto } from "./dto/create-asset.dto";
 import { UpdateAssetDto } from "./dto/update-asset.dto";
 import { CreateMaintenanceDto } from "./dto/create-maintenance.dto";
 import {
+  normaliseGroup,
+  usefulLifeYearsForGroup,
+} from "./depreciation-group.util";
+import {
+  assetCoaForCategory,
+  assetCodeForCoa,
+  ASSET_COA_PREFIX,
+} from "./asset-coa.util";
+import { defaultGroupForCategory } from "./depreciation-group.util";
+import {
   AssetStatus,
   AssetCondition,
   TransactionType,
@@ -37,11 +47,29 @@ export class AssetsService {
     const assetCode = await this.generateAssetCode(createAssetDto.category);
     const qrCode = await this.generateQRCode(assetCode);
 
+    // Useful life is auto-derived from the asset's COA category (straight-line)
+    // when not given: General/Photo/Video-Audio/Lighting/Computers = 4yr, Office
+    // Furniture = 8yr, etc. An explicit Kelompok still wins. So a new asset is
+    // always depreciated over the right masa manfaat without manual entry.
+    const group =
+      normaliseGroup(createAssetDto.depreciationGroup) ??
+      defaultGroupForCategory(createAssetDto.category);
+    const groupYears = usefulLifeYearsForGroup(group) ?? undefined;
+    const effectiveLifeYears =
+      createAssetDto.usefulLifeYears ?? groupYears;
+
+    // `paymentSource` is a DTO-only field (it picks the purchase journal's credit
+    // account) — it is NOT an Asset column, so it must be stripped before the
+    // create or Prisma rejects the whole insert ("Unknown argument paymentSource").
+    const { paymentSource: _paymentSource, ...assetData } = createAssetDto;
+
     let asset: any;
     try {
       asset = await this.prisma.asset.create({
         data: {
-          ...createAssetDto,
+          ...assetData,
+          depreciationGroup: group ?? undefined,
+          usefulLifeYears: effectiveLifeYears,
           assetCode,
           qrCode,
         },
@@ -140,9 +168,17 @@ export class AssetsService {
           `✅ Created and posted asset purchase journal entry ${journalEntry.entryNumber} for ${asset.assetCode}`,
         );
 
-        // Auto-create default depreciation schedule for the asset
-        const residualValue = purchasePrice * 0.1; // 10% residual value
-        const usefulLifeYears = 5; // Default 5 years
+        // Auto-create the straight-line depreciation schedule using the asset's
+        // OWN useful life (from the Kelompok / form) and residual — not a
+        // hardcoded 5yr/10%, which is what previously disconnected the schedule
+        // from the entered fiscal group.
+        const residualValue =
+          asset.residualValue != null
+            ? Number(asset.residualValue)
+            : purchasePrice * 0.1;
+        const usefulLifeYears =
+          effectiveLifeYears ??
+          (asset.usefulLifeYears ? Number(asset.usefulLifeYears) : 5);
         const usefulLifeMonths = usefulLifeYears * 12;
 
         await this.prisma.depreciationSchedule.create({
@@ -442,21 +478,16 @@ export class AssetsService {
   }
 
   async generateAssetCode(category: string): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, "0");
-    const categoryPrefix = category.substring(0, 3).toUpperCase();
-
+    // Asset code follows the fixed-asset COA with a 3-letter prefix, e.g.
+    // PHE-4510-001 (Photography Equipment / 1-4510) — the code itself tells you
+    // which Chart-of-Accounts the asset is booked under.
+    const coa = assetCoaForCategory(category);
+    const prefix = ASSET_COA_PREFIX[coa] ?? "AST";
+    const coaNum = coa.replace(/^1-/, "");
     const existingAssets = await this.prisma.asset.count({
-      where: {
-        assetCode: {
-          startsWith: `${categoryPrefix}-${year}${month}-`,
-        },
-      },
+      where: { assetCode: { startsWith: `${prefix}-${coaNum}-` } },
     });
-
-    const sequence = (existingAssets + 1).toString().padStart(3, "0");
-    return `${categoryPrefix}-${year}${month}-${sequence}`;
+    return assetCodeForCoa(coa, existingAssets + 1);
   }
 
   async generateQRCode(code: string): Promise<string> {
@@ -780,10 +811,11 @@ export class AssetsService {
       credit: purchasePrice,
     });
 
-    // Cr Gain on disposal (if proceeds > book value)
+    // Cr Gain on disposal → Pendapatan Lain-Lain (other income) when the sale
+    // price exceeds book value. (Loss above → 8-2010 Beban Lain-Lain.)
     if (gainLoss > 0) {
       lineItems.push({
-        accountCode: "4-8030",
+        accountCode: "4-9010",
         description: `Gain on disposal of ${asset.name}`,
         descriptionId: `Keuntungan pelepasan ${asset.name}`,
         debit: 0,

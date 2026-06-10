@@ -76,11 +76,14 @@ const BUCKET_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant
 
 interface ARRow {
   invoiceId?: string;
+  sourceType?: 'INVOICE' | 'SALE';
   invoiceNumber?: string;
   client?: { id?: string; name?: string; email?: string };
   invoiceDate?: string;
   dueDate?: string;
-  amount?: number | string;
+  amount?: number | string;       // full receivable (register view)
+  outstanding?: number | string;  // still owed (0 when collected)
+  paymentStatus?: 'PAID' | 'UNPAID';
   daysOverdue?: number;
   agingBucket?: string;
 }
@@ -193,7 +196,7 @@ export default function AccountsReceivablePageV2() {
           sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
-        topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState
@@ -214,7 +217,7 @@ export default function AccountsReceivablePageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader
@@ -594,6 +597,25 @@ function ARTable({ rows, total, onRowClick }: ARTableProps) {
                 />
               </div>
             ),
+          },
+          {
+            id: 'status',
+            header: () => <span className="block text-right">{t('accounting.accountsReceivable.colStatus', 'Status')}</span>,
+            cell: ({ row }) => {
+              const paid = row.original.paymentStatus === 'PAID';
+              return (
+                <div className="text-right">
+                  <Badge
+                    variant={paid ? 'secondary' : 'destructive'}
+                    className={paid ? 'bg-success/15 text-success border-success/20' : undefined}
+                  >
+                    {paid
+                      ? t('accounting.accountsReceivable.statusPaid', 'Paid')
+                      : t('accounting.accountsReceivable.statusUnpaid', 'Unpaid')}
+                  </Badge>
+                </div>
+              );
+            },
           },
         ]}
       />

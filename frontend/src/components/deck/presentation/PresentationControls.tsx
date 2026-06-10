@@ -9,6 +9,8 @@ import {
   AimOutlined,
   PlayCircleOutlined,
   PauseCircleOutlined,
+  DesktopOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { usePresentationStore } from '../../../stores/presentationStore';
 
@@ -29,6 +31,10 @@ export const PresentationControls: React.FC<PresentationControlsProps> = ({ visi
     togglePointer,
     autoPlay,
     setAutoPlay,
+    showPresenterView,
+    togglePresenterView,
+    showNotesCaption,
+    toggleNotesCaption,
   } = usePresentationStore();
 
   const isFirstSlide = currentSlideIndex === 0;
@@ -87,6 +93,24 @@ export const PresentationControls: React.FC<PresentationControlsProps> = ({ visi
             icon={autoPlay ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
             onClick={() => setAutoPlay(!autoPlay)}
             className={`text-white hover:bg-white/20 ${autoPlay ? 'bg-green-500/50' : ''}`}
+          />
+        </Tooltip>
+
+        <Tooltip title={t('deckPresent.notesCaption', 'Speaker notes caption (N)')}>
+          <Button
+            type="text"
+            icon={<MessageOutlined />}
+            onClick={toggleNotesCaption}
+            className={`text-white hover:bg-white/20 ${showNotesCaption ? 'bg-blue-500/50' : ''}`}
+          />
+        </Tooltip>
+
+        <Tooltip title={showPresenterView ? t('deckPresent.audienceView', 'Audience view') : t('deckPresent.presenterView', 'Presenter view (S)')}>
+          <Button
+            type="text"
+            icon={<DesktopOutlined />}
+            onClick={togglePresenterView}
+            className={`text-white hover:bg-white/20 ${showPresenterView ? 'bg-purple-500/50' : ''}`}
           />
         </Tooltip>
 

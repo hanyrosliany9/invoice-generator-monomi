@@ -67,7 +67,7 @@ export default function LineTool({ canvas, disabled }: LineToolProps) {
     let tempLine: Line | null = null;
 
     const onMouseDown = (opt: any) => {
-      const pointer = canvas.getPointer(opt.e);
+      const pointer = canvas.getScenePoint(opt.e);
       startPoint = { x: pointer.x, y: pointer.y };
 
       tempLine = new Line([pointer.x, pointer.y, pointer.x, pointer.y], {
@@ -84,7 +84,7 @@ export default function LineTool({ canvas, disabled }: LineToolProps) {
     const onMouseMove = (opt: any) => {
       if (!startPoint || !tempLine) return;
 
-      const pointer = canvas.getPointer(opt.e);
+      const pointer = canvas.getScenePoint(opt.e);
       tempLine.set({ x2: pointer.x, y2: pointer.y });
       canvas.renderAll();
     };
@@ -92,7 +92,7 @@ export default function LineTool({ canvas, disabled }: LineToolProps) {
     const onMouseUp = (opt: any) => {
       if (!startPoint || !tempLine) return;
 
-      const pointer = canvas.getPointer(opt.e);
+      const pointer = canvas.getScenePoint(opt.e);
 
       // Remove temp line
       canvas.remove(tempLine);

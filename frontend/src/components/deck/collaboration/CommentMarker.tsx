@@ -21,8 +21,8 @@ export const CommentMarker: React.FC<CommentMarkerProps> = ({
           isSelected ? 'scale-125 z-20' : 'z-10'
         }`}
         style={{
-          left: comment.x,
-          top: comment.y,
+          left: `${comment.x}%`,
+          top: `${comment.y}%`,
           transform: 'translate(-50%, -50%)',
         }}
         onClick={onClick}

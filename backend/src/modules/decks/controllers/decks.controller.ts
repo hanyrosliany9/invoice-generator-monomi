@@ -9,10 +9,19 @@ import {
   Query,
   UseGuards,
   Request,
+  UploadedFile,
+  UseInterceptors,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { FileInterceptor } from "@nestjs/platform-express";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiConsumes,
+} from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import { DecksService } from "../services/decks.service";
+import { DeckImportService } from "../services/deck-import.service";
 import { CreateDeckDto } from "../dto/create-deck.dto";
 import { UpdateDeckDto } from "../dto/update-deck.dto";
 
@@ -21,12 +30,38 @@ import { UpdateDeckDto } from "../dto/update-deck.dto";
 @UseGuards(JwtAuthGuard)
 @Controller("decks")
 export class DecksController {
-  constructor(private readonly decksService: DecksService) {}
+  constructor(
+    private readonly decksService: DecksService,
+    private readonly deckImportService: DeckImportService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: "Create a new deck" })
   create(@Request() req: any, @Body() dto: CreateDeckDto) {
     return this.decksService.create(req.user.id, dto);
+  }
+
+  @Post("import/pptx")
+  @ApiOperation({
+    summary:
+      "Import a .pptx file (PowerPoint or Google Slides export) as a new deck",
+  })
+  @ApiConsumes("multipart/form-data")
+  @UseInterceptors(
+    FileInterceptor("file", { limits: { fileSize: 100 * 1024 * 1024 } }),
+  )
+  importPptx(
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+    @Body("title") title?: string,
+    @Body("clientId") clientId?: string,
+    @Body("projectId") projectId?: string,
+  ) {
+    return this.deckImportService.importPptx(req.user.id, file, {
+      title,
+      clientId,
+      projectId,
+    });
   }
 
   @Get()
@@ -90,5 +125,15 @@ export class DecksController {
   @ApiOperation({ summary: "Disable public sharing" })
   disablePublicSharing(@Request() req: any, @Param("id") id: string) {
     return this.decksService.disablePublicSharing(id, req.user.id);
+  }
+
+  @Post(":id/set-public-access-level")
+  @ApiOperation({ summary: "Set public access level (VIEW_ONLY | DOWNLOAD | COMMENT)" })
+  setPublicAccessLevel(
+    @Request() req: any,
+    @Param("id") id: string,
+    @Body("accessLevel") accessLevel: string,
+  ) {
+    return this.decksService.setPublicAccessLevel(id, req.user.id, accessLevel);
   }
 }

@@ -20,6 +20,7 @@ export type SlideTemplate =
 export type DeckStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export type CollaboratorRole = 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
 export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+export type PublicAccessLevel = 'VIEW_ONLY' | 'DOWNLOAD' | 'COMMENT';
 
 export interface DeckTheme {
   primaryColor?: string;
@@ -41,13 +42,14 @@ export interface Deck {
   clientId?: string;
   client?: { id: string; name: string };
   projectId?: string;
-  project?: { id: string; name: string; projectNumber?: string };
+  project?: { id: string; number?: string; description?: string };
   mediaProjectId?: string;
   mediaProject?: { id: string; name: string; assets?: any[] };
   isPublic: boolean;
   publicShareToken?: string;
   publicShareUrl?: string;
   publicViewCount: number;
+  publicAccessLevel?: PublicAccessLevel;
   slides: DeckSlide[];
   collaborators: DeckCollaborator[];
   _count?: { slides: number; collaborators: number };
@@ -78,7 +80,7 @@ export interface DeckSlide {
 export interface DeckSlideElement {
   id: string;
   slideId: string;
-  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHAPE' | 'ICON';
+  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHAPE' | 'ICON' | 'TABLE' | 'CHART';
   x: number;
   y: number;
   width: number;
@@ -159,7 +161,7 @@ export interface UpdateSlideDto extends Partial<Omit<CreateSlideDto, 'deckId'>> 
 
 export interface CreateElementDto {
   slideId: string;
-  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHAPE' | 'ICON';
+  type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'SHAPE' | 'ICON' | 'TABLE' | 'CHART';
   x?: number;
   y?: number;
   width?: number;

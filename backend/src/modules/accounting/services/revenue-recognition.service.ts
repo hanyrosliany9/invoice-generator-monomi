@@ -632,8 +632,42 @@ export class RevenueRecognitionService {
       summary.byStatus[dr.status].amount += Number(dr.remainingAmount);
     });
 
+    // GL reconciliation for 2-1020 (Deferred Revenue / Pendapatan Diterima Dimuka).
+    // CREDIT-normal liability: glBalance = sum(credit) - sum(debit).
+    // This is AUTHORITATIVE — manual journal activity on 2-1020 (e.g. a
+    // hand-written adjustment) is captured here even if no DeferredRevenue row
+    // reflects it. endDate defaults to "now" when not provided.
+    const endDateForGL = data.endDate ?? new Date();
+    let glBalance = 0;
+    let reconcilingAdjustment = 0;
+    const drAccount = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: "2-1020" }, // Deferred Revenue / Pendapatan Diterima Dimuka
+    });
+    if (drAccount) {
+      const glEntries = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: drAccount.id,
+          entryDate: { lte: endDateForGL },
+          journalEntry: { isPosted: true },
+        },
+      });
+      glBalance = glEntries.reduce(
+        (sum, e) => sum + Number(e.credit) - Number(e.debit),
+        0,
+      );
+      // reconcilingAdjustment > 0: unexplained GL liability (manual DR 2-1020);
+      // < 0: DeferredRevenue rows show more remaining than the GL actually holds.
+      reconcilingAdjustment = glBalance - summary.totalRemaining;
+    }
+
     return {
-      summary,
+      summary: {
+        ...summary,
+        // GL net of 2-1020 — authoritative balance that ties to balance sheet.
+        glBalance,
+        // Non-zero when manual GL activity on 2-1020 isn't reflected in DeferredRevenue rows.
+        reconcilingAdjustment,
+      },
       deferredRevenues: deferredRevenues.map((dr) => ({
         id: dr.id,
         invoiceNumber: dr.invoice.invoiceNumber,
@@ -1068,6 +1102,33 @@ export class RevenueRecognitionService {
       0,
     );
 
+    // GL reconciliation for 2-1020 (Deferred Revenue / Pendapatan Diterima Dimuka).
+    // CREDIT-normal liability: glBalance = sum(credit) - sum(debit).
+    // Scope to `end` date so the dashboard figure is period-consistent.
+    const operationalDeferredTotal = Number(
+      deferredRevenue._sum.remainingAmount || 0,
+    );
+    let deferredGlBalance = 0;
+    let deferredReconcilingAdjustment = 0;
+    const drAcct = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: "2-1020" }, // Deferred Revenue / Pendapatan Diterima Dimuka
+    });
+    if (drAcct) {
+      const glEntries = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: drAcct.id,
+          entryDate: { lte: end },
+          journalEntry: { isPosted: true },
+        },
+      });
+      deferredGlBalance = glEntries.reduce(
+        (sum, e) => sum + Number(e.credit) - Number(e.debit),
+        0,
+      );
+      deferredReconcilingAdjustment =
+        deferredGlBalance - operationalDeferredTotal;
+    }
+
     return {
       period: {
         startDate: start,
@@ -1078,8 +1139,12 @@ export class RevenueRecognitionService {
         count: 0, // Could add count if needed
       },
       deferredRevenue: {
-        total: Number(deferredRevenue._sum.remainingAmount || 0),
+        total: operationalDeferredTotal,
         count: 0,
+        // GL net of 2-1020 as of endDate — authoritative balance.
+        glBalance: deferredGlBalance,
+        // Non-zero when manual GL activity on 2-1020 isn't reflected in DeferredRevenue rows.
+        reconcilingAdjustment: deferredReconcilingAdjustment,
       },
       pendingRevenue: {
         total: pendingRevenueAmount,
@@ -1088,12 +1153,12 @@ export class RevenueRecognitionService {
       summary: {
         totalInvoiced:
           Number(recognizedRevenue._sum.recognizedRevenue || 0) +
-          Number(deferredRevenue._sum.remainingAmount || 0) +
+          operationalDeferredTotal +
           pendingRevenueAmount,
         recognitionRate: this.calculateRecognitionRate(
           Number(recognizedRevenue._sum.recognizedRevenue || 0),
           Number(recognizedRevenue._sum.recognizedRevenue || 0) +
-            Number(deferredRevenue._sum.remainingAmount || 0) +
+            operationalDeferredTotal +
             pendingRevenueAmount,
         ),
       },

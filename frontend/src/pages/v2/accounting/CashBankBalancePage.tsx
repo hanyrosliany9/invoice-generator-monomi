@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  BookOpen, Trash2, RefreshCw, Printer, Calculator,
+  BookOpen, Trash2, RefreshCw, Printer, Calculator, Download,
   ChevronLeft, ChevronRight, ExternalLink, Wallet, Landmark, ChevronDown,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -38,7 +38,7 @@ import {
   recalculateAllCashBankBalances,
   type CashBankBalance,
 } from '@/services/cash-bank-balance';
-import { getAccountLedger } from '@/services/accounting';
+import { getAccountLedger, exportCashBankBalancesPDF, exportCashBankBalancesExcel } from '@/services/accounting';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -104,7 +104,7 @@ function PageShell({ user, children }: { user: { name: string; role: string } | 
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+      topbar={{}}
     >
       <PageContainer>{children}</PageContainer>
     </AppShell>
@@ -283,6 +283,24 @@ export default function CashBankBalancePage() {
 
   const hasData = !isLoading && periods.length > 0 && !!selected;
 
+  const handleExportPDF = async () => {
+    try {
+      await exportCashBankBalancesPDF();
+      toast.success(t('accounting.cashBankBalance.exportPdfSuccess', 'PDF exported successfully.'));
+    } catch {
+      toast.error(t('accounting.cashBankBalance.exportPdfFail', 'Failed to export PDF.'));
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      await exportCashBankBalancesExcel();
+      toast.success(t('accounting.cashBankBalance.exportExcelSuccess', 'Excel exported successfully.'));
+    } catch {
+      toast.error(t('accounting.cashBankBalance.exportExcelFail', 'Failed to export Excel.'));
+    }
+  };
+
   return (
     <PageShell user={user}>
       <PageHeader
@@ -290,6 +308,14 @@ export default function CashBankBalancePage() {
         description={t('cashBankBalance.pageDesc', 'Summary of cash and bank positions per period, automatically calculated from journal entries.')}
         actions={
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportPDF}>
+              <Download className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+              <Download className="h-4 w-4" />
+              Excel
+            </Button>
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               <Printer className="h-4 w-4" /> {t('accounting.cashBankBalance.print', 'Print')}
             </Button>

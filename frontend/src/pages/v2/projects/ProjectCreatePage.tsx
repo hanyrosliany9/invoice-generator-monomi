@@ -129,9 +129,7 @@ export default function ProjectCreatePageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader

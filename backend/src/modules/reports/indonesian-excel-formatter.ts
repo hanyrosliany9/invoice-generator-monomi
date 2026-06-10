@@ -30,7 +30,12 @@ export interface IndonesianReportHeader {
     | "PIUTANG_USAHA"
     | "HUTANG_USAHA"
     | "AGING_PIUTANG"
-    | "AGING_HUTANG";
+    | "AGING_HUTANG"
+    | "JURNAL_UMUM"
+    | "SALDO_KAS_BANK"
+    | "PENYUSUTAN_ASET"
+    | "LAPORAN_PEMBELIAN"
+    | "LAPORAN_PENJUALAN";
 }
 
 export class IndonesianExcelFormatter {

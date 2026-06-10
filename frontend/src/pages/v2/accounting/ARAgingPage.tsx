@@ -162,7 +162,7 @@ export default function ARAgingPageV2() {
           sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
-        topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState
@@ -183,7 +183,7 @@ export default function ARAgingPageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{ right: <Button variant="ghost" size="sm">{user?.name || 'User'}</Button> }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader

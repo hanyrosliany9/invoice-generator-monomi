@@ -3,6 +3,9 @@ import { PrismaService } from "../../prisma/prisma.service";
 import * as ExcelJS from "exceljs";
 import { LedgerService } from "./ledger.service";
 import { FinancialStatementsService } from "./financial-statements.service";
+import { JournalService } from "./journal.service";
+import { CashBankBalanceService } from "./cash-bank-balance.service";
+import { DepreciationService } from "./depreciation.service";
 import {
   IndonesianExcelFormatter,
   IndonesianCompanyInfo,
@@ -27,6 +30,9 @@ export class AccountingExcelExportService {
     private readonly prisma: PrismaService,
     private readonly ledgerService: LedgerService,
     private readonly financialStatementsService: FinancialStatementsService,
+    private readonly journalService: JournalService,
+    private readonly cashBankBalanceService: CashBankBalanceService,
+    private readonly depreciationService: DepreciationService,
     private readonly companySettings: CompanySettingsService,
   ) {}
 
@@ -1189,6 +1195,373 @@ export class AccountingExcelExportService {
       "Sistem Akuntansi Digital",
       "Manajer Keuangan",
     );
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  // ============ JOURNAL ENTRIES EXCEL EXPORT ============
+  async exportJournalEntriesExcel(params: {
+    startDate?: string;
+    endDate?: string;
+    transactionType?: string;
+    status?: string;
+    search?: string;
+  }): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const companyInfo = await this.getIndonesianCompanyInfo();
+
+    const result = await this.journalService.getJournalEntries({
+      page: 1,
+      limit: 1000,
+      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      endDate: params.endDate ? new Date(params.endDate) : undefined,
+      transactionType: params.transactionType,
+      status: params.status as any,
+      search: params.search,
+      sortBy: "entryDate",
+      sortOrder: "desc",
+    });
+
+    const worksheet = workbook.addWorksheet("Jurnal Umum");
+
+    const periodText =
+      params.startDate && params.endDate
+        ? `${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`
+        : params.startDate
+          ? `Mulai: ${this.formatIndonesianDate(params.startDate)}`
+          : params.endDate
+            ? `s/d: ${this.formatIndonesianDate(params.endDate)}`
+            : "Semua Periode";
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "JURNAL UMUM",
+      reportSubtitle: "JOURNAL ENTRIES",
+      reportPeriod: `Periode: ${periodText}`,
+      preparationDate: new Date(),
+      reportType: "JURNAL_UMUM",
+    };
+
+    IndonesianExcelFormatter.formatIndonesianLetterhead(worksheet, companyInfo, reportHeader);
+
+    const headers = [
+      "No. Jurnal",
+      "Tanggal",
+      "Tipe",
+      "Deskripsi",
+      "Debit",
+      "Kredit",
+      "Status",
+    ];
+    worksheet.addRow(headers);
+    const headerRowIndex = worksheet.rowCount;
+
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    result.data.forEach((entry: any) => {
+      const debit = Number(entry.totalDebit) || 0;
+      const credit = Number(entry.totalCredit) || 0;
+      totalDebit += debit;
+      totalCredit += credit;
+      worksheet.addRow([
+        entry.entryNumber,
+        this.formatIndonesianDate(entry.entryDate),
+        (entry.transactionType || "").replace(/_/g, " "),
+        entry.descriptionId || entry.description || "-",
+        debit || 0,
+        credit || 0,
+        entry.status || "-",
+      ]);
+    });
+
+    const summaryRowIndex = worksheet.rowCount + 1;
+    worksheet.addRow(["", "", "", "TOTAL", totalDebit, totalCredit, ""]);
+
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet, headerRowIndex, summaryRowIndex, 1, 7, "JurnalUmum", true,
+    );
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [5, 6]);
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 7);
+    IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
+    IndonesianExcelFormatter.addIndonesianFooter(worksheet, companyInfo, "Sistem Akuntansi Digital", "Manajer Keuangan");
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  // ============ CASH & BANK BALANCES EXCEL EXPORT ============
+  async exportCashBankBalancesExcel(): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const companyInfo = await this.getIndonesianCompanyInfo();
+
+    const result = await this.cashBankBalanceService.findAll({
+      limit: 500,
+      page: 1,
+      sortBy: "periodDate",
+      sortOrder: "desc",
+    });
+
+    const worksheet = workbook.addWorksheet("Saldo Kas Bank");
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "SALDO KAS & BANK",
+      reportSubtitle: "CASH & BANK BALANCES",
+      reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(new Date())}`,
+      preparationDate: new Date(),
+      reportType: "SALDO_KAS_BANK",
+    };
+
+    IndonesianExcelFormatter.formatIndonesianLetterhead(worksheet, companyInfo, reportHeader);
+
+    const headers = ["Kode Akun", "Nama Akun", "Saldo"];
+    worksheet.addRow(headers);
+    const headerRowIndex = worksheet.rowCount;
+
+    let totalBalance = 0;
+    result.data.forEach((row: any) => {
+      const closing = Number(row.closingBalance) || 0;
+      totalBalance += closing;
+      worksheet.addRow([
+        row.accountCode || "-",
+        row.accountName || "-",
+        closing,
+      ]);
+    });
+
+    const summaryRowIndex = worksheet.rowCount + 1;
+    worksheet.addRow(["", "TOTAL", totalBalance]);
+
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet, headerRowIndex, summaryRowIndex, 1, 3, "SaldoKasBank", true,
+    );
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [3]);
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 3);
+    IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
+    IndonesianExcelFormatter.addIndonesianFooter(worksheet, companyInfo, "Sistem Akuntansi Digital", "Manajer Keuangan");
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  // ============ DEPRECIATION EXCEL EXPORT ============
+  async exportDepreciationExcel(params: {
+    startDate: string;
+    endDate: string;
+  }): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const companyInfo = await this.getIndonesianCompanyInfo();
+
+    const data = await this.depreciationService.getDepreciationSummary({
+      startDate: new Date(params.startDate),
+      endDate: new Date(params.endDate),
+    });
+
+    const worksheet = workbook.addWorksheet("Penyusutan");
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "PENYUSUTAN ASET",
+      reportSubtitle: "ASSET DEPRECIATION",
+      reportPeriod: `Periode: ${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`,
+      preparationDate: new Date(),
+      reportType: "PENYUSUTAN_ASET",
+    };
+
+    IndonesianExcelFormatter.formatIndonesianLetterhead(worksheet, companyInfo, reportHeader);
+
+    const headers = [
+      "Kode Aset",
+      "Nama Aset",
+      "Harga Perolehan",
+      "Penyusutan Periode",
+      "Akumulasi Penyusutan",
+      "Nilai Buku",
+    ];
+    worksheet.addRow(headers);
+    const headerRowIndex = worksheet.rowCount;
+
+    (data.byAsset || []).forEach((asset: any) => {
+      worksheet.addRow([
+        asset.assetCode,
+        asset.assetName,
+        Number(asset.purchasePrice) || 0,
+        Number(asset.depreciationAmount) || 0,
+        Number(asset.accumulatedDepreciation) || 0,
+        Number(asset.netBookValue) || 0,
+      ]);
+    });
+
+    const summaryRowIndex = worksheet.rowCount + 1;
+    worksheet.addRow([
+      "",
+      "TOTAL",
+      "",
+      data.totalDepreciation,
+      data.totalAccumulatedDepreciation,
+      "",
+    ]);
+
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet, headerRowIndex, summaryRowIndex, 1, 6, "Penyusutan", true,
+    );
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [3, 4, 5, 6]);
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 6);
+    IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
+    IndonesianExcelFormatter.addIndonesianFooter(worksheet, companyInfo, "Sistem Akuntansi Digital", "Manajer Keuangan");
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  // ============ PURCHASES EXCEL EXPORT ============
+  async exportPurchasesExcel(params: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const companyInfo = await this.getIndonesianCompanyInfo();
+
+    const rows = await this.journalService.getPurchases({
+      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      endDate: params.endDate ? new Date(params.endDate) : undefined,
+    });
+
+    const worksheet = workbook.addWorksheet("Laporan Pembelian");
+
+    const periodText =
+      params.startDate && params.endDate
+        ? `${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`
+        : params.startDate
+          ? `Mulai: ${this.formatIndonesianDate(params.startDate)}`
+          : params.endDate
+            ? `s/d: ${this.formatIndonesianDate(params.endDate)}`
+            : "Semua Periode";
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "LAPORAN PEMBELIAN",
+      reportSubtitle: "PURCHASE REPORT",
+      reportPeriod: `Periode: ${periodText}`,
+      preparationDate: new Date(),
+      reportType: "LAPORAN_PEMBELIAN",
+    };
+
+    IndonesianExcelFormatter.formatIndonesianLetterhead(worksheet, companyInfo, reportHeader);
+
+    const headers = [
+      "Nomor",
+      "Tanggal",
+      "Vendor",
+      "Kategori",
+      "Deskripsi",
+      "Jumlah",
+      "Status",
+    ];
+    worksheet.addRow(headers);
+    const headerRowIndex = worksheet.rowCount;
+
+    let totalAmount = 0;
+    rows.forEach((row: any) => {
+      const amount = Number(row.amount) || 0;
+      totalAmount += amount;
+      const category = [row.categoryCode, row.categoryName].filter(Boolean).join(" - ");
+      worksheet.addRow([
+        row.number || row.journalEntryNumber || "-",
+        this.formatIndonesianDate(row.date),
+        row.vendorName || "-",
+        category || "-",
+        row.description || "-",
+        amount,
+        row.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas",
+      ]);
+    });
+
+    const summaryRowIndex = worksheet.rowCount + 1;
+    worksheet.addRow(["", "", "", "", "TOTAL", totalAmount, ""]);
+
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet, headerRowIndex, summaryRowIndex, 1, 7, "LaporanPembelian", true,
+    );
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [6]);
+    IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [2]);
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 7);
+    IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
+    IndonesianExcelFormatter.addIndonesianFooter(worksheet, companyInfo, "Sistem Akuntansi Digital", "Manajer Keuangan");
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  async exportSalesExcel(params: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const companyInfo = await this.getIndonesianCompanyInfo();
+
+    const rows = await this.journalService.getSales({
+      startDate: params.startDate ? new Date(params.startDate) : undefined,
+      endDate: params.endDate ? new Date(params.endDate) : undefined,
+    });
+
+    const worksheet = workbook.addWorksheet("Laporan Penjualan");
+
+    const periodText =
+      params.startDate && params.endDate
+        ? `${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`
+        : params.startDate
+          ? `Mulai: ${this.formatIndonesianDate(params.startDate)}`
+          : params.endDate
+            ? `s/d: ${this.formatIndonesianDate(params.endDate)}`
+            : "Semua Periode";
+
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "LAPORAN PENJUALAN",
+      reportSubtitle: "SALES REPORT",
+      reportPeriod: `Periode: ${periodText}`,
+      preparationDate: new Date(),
+      reportType: "LAPORAN_PENJUALAN",
+    };
+
+    IndonesianExcelFormatter.formatIndonesianLetterhead(worksheet, companyInfo, reportHeader);
+
+    const headers = [
+      "Nomor",
+      "Pelanggan",
+      "Keterangan",
+      "Tgl Terbit",
+      "Jatuh Tempo",
+      "Jumlah",
+      "Status",
+    ];
+    worksheet.addRow(headers);
+    const headerRowIndex = worksheet.rowCount;
+
+    let totalAmount = 0;
+    rows.forEach((row: any) => {
+      const amount = Number(row.amount) || 0;
+      totalAmount += amount;
+      worksheet.addRow([
+        row.number || row.journalEntryNumber || "-",
+        row.clientName || "-",
+        row.description || "-",
+        this.formatIndonesianDate(row.issuedDate),
+        this.formatIndonesianDate(row.dueDate),
+        amount,
+        row.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas",
+      ]);
+    });
+
+    const summaryRowIndex = worksheet.rowCount + 1;
+    worksheet.addRow(["", "", "", "", "TOTAL", totalAmount, ""]);
+
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet, headerRowIndex, summaryRowIndex, 1, 7, "LaporanPenjualan", true,
+    );
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [6]);
+    IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [4, 5]);
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 7);
+    IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
+    IndonesianExcelFormatter.addIndonesianFooter(worksheet, companyInfo, "Sistem Akuntansi Digital", "Manajer Keuangan");
 
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);

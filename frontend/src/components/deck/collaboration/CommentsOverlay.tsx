@@ -27,8 +27,9 @@ export const CommentsOverlay: React.FC<CommentsOverlayProps> = ({ slideId, onCre
       if (!isAddingComment) return;
 
       const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      // Store as percentages (0–100) so the pin survives canvas resizes.
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
 
       const content = window.prompt('Enter your comment:');
       if (content && content.trim()) {

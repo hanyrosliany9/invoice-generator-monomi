@@ -367,6 +367,84 @@ export class ProjectCostingService {
       : 0;
     const isCompleted = latestWIP ? latestWIP.isCompleted : false;
 
+    // GL reconciliation for 4-1010 (Revenue / Pendapatan, CREDIT-normal) and
+    // 1-2020 (Unbilled Revenue / WIP, DEBIT-normal), scoped to this project
+    // via the projectId stored on GeneralLedger line items where available.
+    // These are AUTHORITATIVE — manual journal activity is captured even if no
+    // WIP row reflects it. Falls back to org-wide net if no project-tagged rows.
+    let glRecognizedRevenue = 0;
+    let glRecognizedRevenueReconcilingAdjustment = 0;
+    let glUnbilledRevenue = 0;
+    let glUnbilledRevenueReconcilingAdjustment = 0;
+
+    // 4-1010 Revenue
+    const revAcct4 = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: "4-1010" }, // Revenue / Pendapatan
+    });
+    if (revAcct4) {
+      const projectGl4 = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: revAcct4.id,
+          projectId: project.id,
+          journalEntry: { isPosted: true },
+        },
+      });
+      if (projectGl4.length > 0) {
+        glRecognizedRevenue = projectGl4.reduce(
+          (sum, e) => sum + Number(e.credit) - Number(e.debit),
+          0,
+        );
+      } else {
+        // NOTE: no project-tagged GL rows for 4-1010 — org-wide fallback.
+        const orgGl4 = await this.prisma.generalLedger.findMany({
+          where: {
+            accountId: revAcct4.id,
+            journalEntry: { isPosted: true },
+          },
+        });
+        glRecognizedRevenue = orgGl4.reduce(
+          (sum, e) => sum + Number(e.credit) - Number(e.debit),
+          0,
+        );
+      }
+      glRecognizedRevenueReconcilingAdjustment =
+        glRecognizedRevenue - recognizedRevenue;
+    }
+
+    // 1-2020 Unbilled Revenue (DEBIT-normal asset): glNet = sum(debit) - sum(credit).
+    const revAcct1 = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: "1-2020" }, // Unbilled Revenue / Work in Progress
+    });
+    if (revAcct1) {
+      const projectGl1 = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: revAcct1.id,
+          projectId: project.id,
+          journalEntry: { isPosted: true },
+        },
+      });
+      if (projectGl1.length > 0) {
+        glUnbilledRevenue = projectGl1.reduce(
+          (sum, e) => sum + Number(e.debit) - Number(e.credit),
+          0,
+        );
+      } else {
+        // NOTE: no project-tagged GL rows for 1-2020 — org-wide fallback.
+        const orgGl1 = await this.prisma.generalLedger.findMany({
+          where: {
+            accountId: revAcct1.id,
+            journalEntry: { isPosted: true },
+          },
+        });
+        glUnbilledRevenue = orgGl1.reduce(
+          (sum, e) => sum + Number(e.debit) - Number(e.credit),
+          0,
+        );
+      }
+      glUnbilledRevenueReconcilingAdjustment =
+        glUnbilledRevenue - unbilledRevenue;
+    }
+
     return {
       projectId: project.id,
       projectNumber: project.number,
@@ -406,6 +484,15 @@ export class ProjectCostingService {
           totalContractValue > 0
             ? (recognizedRevenue / totalContractValue) * 100
             : 0,
+        // GL net of 4-1010 for this project (falls back to org-wide if no
+        // project-tagged rows exist) — authoritative recognized-revenue balance.
+        glRecognizedRevenue,
+        // Non-zero when manual GL activity on 4-1010 isn't reflected in WIP rows.
+        glRecognizedRevenueReconcilingAdjustment,
+        // GL net of 1-2020 (DEBIT-normal) for this project — authoritative unbilled balance.
+        glUnbilledRevenue,
+        // Non-zero when manual GL activity on 1-2020 isn't reflected in WIP rows.
+        glUnbilledRevenueReconcilingAdjustment,
       },
 
       // Profitability Metrics

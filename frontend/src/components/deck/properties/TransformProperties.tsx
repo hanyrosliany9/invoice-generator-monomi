@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { InputNumber, Slider, Space, Button, Tooltip } from 'antd';
-import { LockOutlined, UnlockOutlined } from '@ant-design/icons';
+import { LockOutlined, UnlockOutlined, SwapOutlined } from '@ant-design/icons';
 import type { FabricObject } from 'fabric';
 import PropertySection from './PropertySection';
 import PropertyRow from './PropertyRow';
 import { useDeckCanvasStore } from '../../../stores/deckCanvasStore';
+import { DECK_TOJSON_PROPS, applyLockState } from '../../../utils/deckCanvasUtils';
 
 interface TransformPropertiesProps {
   object: FabricObject;
@@ -18,6 +19,7 @@ export default function TransformProperties({ object }: TransformPropertiesProps
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [rotation, setRotation] = useState(0);
   const [opacity, setOpacity] = useState(100);
+  const [locked, setLocked] = useState(false);
 
   // Sync state with object
   useEffect(() => {
@@ -34,6 +36,7 @@ export default function TransformProperties({ object }: TransformPropertiesProps
       });
       setRotation(Math.round(object.angle || 0));
       setOpacity(Math.round(((object.opacity || 1) * 100)));
+      setLocked(!!(object as any).isLocked || !!object.lockMovementX);
     };
 
     updateFromObject();
@@ -56,8 +59,38 @@ export default function TransformProperties({ object }: TransformPropertiesProps
   const updateObject = (changes: Record<string, any>) => {
     if (!object || !canvas) return;
     object.set(changes);
+    object.setCoords();
     canvas.renderAll();
-    pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
+    pushHistory(JSON.stringify((canvas as any).toJSON(DECK_TOJSON_PROPS)));
+    canvas.fire('object:modified', { target: object });
+  };
+
+  const handleFlip = (axis: 'x' | 'y') => {
+    if (!object) return;
+    const key = axis === 'x' ? 'flipX' : 'flipY';
+    updateObject({ [key]: !object.get(key) });
+  };
+
+  const handleLockToggle = () => {
+    if (!object || !canvas) return;
+    const next = !locked;
+    setLocked(next);
+    (object as any).isLocked = next;
+    applyLockState(object, next);
+    if (!next) {
+      // Unlock: restore interactivity.
+      object.set({
+        lockMovementX: false,
+        lockMovementY: false,
+        lockScalingX: false,
+        lockScalingY: false,
+        lockRotation: false,
+        hasControls: true,
+      });
+    }
+    canvas.renderAll();
+    pushHistory(JSON.stringify((canvas as any).toJSON(DECK_TOJSON_PROPS)));
+    canvas.fire('object:modified', { target: object });
   };
 
   const handlePositionChange = (axis: 'x' | 'y', value: number | null) => {
@@ -70,29 +103,28 @@ export default function TransformProperties({ object }: TransformPropertiesProps
   const handleSizeChange = (dimension: 'width' | 'height', value: number | null) => {
     if (value === null || !object) return;
 
-    const originalWidth = (object.width || 1) * (object.scaleX || 1);
-    const originalHeight = (object.height || 1) * (object.scaleY || 1);
-    const aspectRatio = originalWidth / originalHeight;
+    // Use live unrounded fabric dimensions to derive ratio and compute scales,
+    // avoiding rounding-error accumulation from repeated edits.
+    const liveWidth = (object.width || 1) * (object.scaleX || 1);
+    const liveHeight = (object.height || 1) * (object.scaleY || 1);
+    const aspectRatio = liveWidth / liveHeight;
 
-    let newWidth = size.width;
-    let newHeight = size.height;
+    let newWidth: number;
+    let newHeight: number;
 
     if (dimension === 'width') {
       newWidth = value;
-      if (lockAspect) {
-        newHeight = Math.round(value / aspectRatio);
-      }
+      newHeight = lockAspect ? value / aspectRatio : liveHeight;
     } else {
       newHeight = value;
-      if (lockAspect) {
-        newWidth = Math.round(value * aspectRatio);
-      }
+      newWidth = lockAspect ? value * aspectRatio : liveWidth;
     }
 
     const scaleX = newWidth / (object.width || 1);
     const scaleY = newHeight / (object.height || 1);
 
-    setSize({ width: newWidth, height: newHeight });
+    // Display rounded values; actual scales are kept precise.
+    setSize({ width: Math.round(newWidth), height: Math.round(newHeight) });
     updateObject({ scaleX, scaleY });
   };
 
@@ -201,6 +233,30 @@ export default function TransformProperties({ object }: TransformPropertiesProps
             suffix="%"
             style={{ width: 65 }}
           />
+        </Space>
+      </PropertyRow>
+
+      {/* Flip & Lock */}
+      <PropertyRow label="Arrange" inline>
+        <Space size={4}>
+          <Tooltip title="Flip horizontal (Shift+H)">
+            <Button size="small" icon={<SwapOutlined />} onClick={() => handleFlip('x')} />
+          </Tooltip>
+          <Tooltip title="Flip vertical (Shift+V)">
+            <Button
+              size="small"
+              icon={<SwapOutlined rotate={90} />}
+              onClick={() => handleFlip('y')}
+            />
+          </Tooltip>
+          <Tooltip title={locked ? 'Unlock element' : 'Lock element'}>
+            <Button
+              size="small"
+              type={locked ? 'primary' : 'default'}
+              icon={locked ? <LockOutlined /> : <UnlockOutlined />}
+              onClick={handleLockToggle}
+            />
+          </Tooltip>
         </Space>
       </PropertyRow>
     </PropertySection>

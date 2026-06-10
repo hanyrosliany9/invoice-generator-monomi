@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, ChevronLeft, ChevronRight, Eye, Layout as LayoutIcon } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  AlertTriangle, ChevronLeft, ChevronRight, Eye, Layout as LayoutIcon,
+  Download, Loader2, MessageSquare, Send,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { AuroraBackground } from '@/components/monomi/AuroraBackground';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { decksApi } from '@/services/decks';
-import type { DeckSlide } from '@/types/deck';
+import type { DeckSlide, DeckSlideComment } from '@/types/deck';
 import { cn } from '@/lib/utils';
 import { safeUrl } from '@/utils/safeUrl';
 
@@ -28,6 +33,9 @@ export const PublicDeckViewPage = () => {
   const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [exportJobId, setExportJobId] = useState<string | null>(null);
+  const [exportStatus, setExportStatus] = useState<'idle' | 'pending' | 'processing' | 'completed' | 'failed'>('idle');
+  const queryClient = useQueryClient();
 
   /* ----- data ----- */
   const {
@@ -40,6 +48,46 @@ export const PublicDeckViewPage = () => {
     enabled: !!token,
     retry: false,
   });
+
+  /* ----- PDF export (DOWNLOAD level) ----- */
+  const exportMutation = useMutation({
+    mutationFn: () => decksApi.startPublicExportPdf(token!),
+    onSuccess: (data) => {
+      setExportJobId(data.jobId);
+      setExportStatus('pending');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || t('deckPublic.exportFailed', 'Export failed'));
+    },
+  });
+
+  // Poll export job status until complete
+  useEffect(() => {
+    if (!exportJobId || exportStatus === 'idle' || exportStatus === 'completed' || exportStatus === 'failed') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const status = await decksApi.getPublicExportPdfStatus(token!, exportJobId);
+        setExportStatus(status.status as typeof exportStatus);
+        if (status.status === 'completed') {
+          clearInterval(interval);
+          toast.success(t('deckPublic.exportReady', 'PDF is ready — check your downloads'));
+          // Open authenticated download URL — the job lives on the server briefly
+          // Redirect to the backend download endpoint (public download via jobId)
+          window.open(`/api/decks/${deck?.id}/export/pdf/download/${exportJobId}`, '_blank');
+        } else if (status.status === 'failed') {
+          clearInterval(interval);
+          toast.error(t('deckPublic.exportFailed', 'Export failed'));
+        }
+      } catch {
+        clearInterval(interval);
+        setExportStatus('failed');
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportJobId, exportStatus, token]);
 
   /* ----- keyboard navigation ----- */
   useEffect(() => {
@@ -112,7 +160,7 @@ export const PublicDeckViewPage = () => {
             )}
           </div>
 
-          {/* Right rail: slide count + view count */}
+          {/* Right rail: slide count + view count + download */}
           <div className="flex items-center gap-2">
             {deck && (
               <>
@@ -130,6 +178,26 @@ export const PublicDeckViewPage = () => {
                   <Eye className="h-3 w-3" />
                   {t('deckPublic.viewCount', '{{count}} views', { count: deck.publicViewCount ?? 0 })}
                 </Badge>
+
+                {/* Download button — only when DOWNLOAD access level */}
+                {deck.publicAccessLevel === 'DOWNLOAD' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={exportMutation.isPending || exportStatus === 'pending' || exportStatus === 'processing'}
+                    onClick={() => {
+                      setExportStatus('idle');
+                      setExportJobId(null);
+                      exportMutation.mutate();
+                    }}
+                    className="gap-1.5 text-xs h-8"
+                  >
+                    {(exportMutation.isPending || exportStatus === 'pending' || exportStatus === 'processing')
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Download className="h-3.5 w-3.5" />}
+                    {t('deckPublic.exportPdf', 'Export PDF')}
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -250,6 +318,15 @@ export const PublicDeckViewPage = () => {
           </div>
         )}
 
+        {/* Comment panel — only when COMMENT access level */}
+        {deck && deck.publicAccessLevel === 'COMMENT' && activeSlide && token && (
+          <PublicCommentPanel
+            token={token}
+            slideId={activeSlide.id}
+            onInvalidate={() => queryClient.invalidateQueries({ queryKey: ['public-deck-comments', token, activeSlide.id] })}
+          />
+        )}
+
         <div className="mt-8 text-center text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
           Powered by Monomi · Deck Viewer
         </div>
@@ -257,6 +334,118 @@ export const PublicDeckViewPage = () => {
     </div>
   );
 };
+
+/* ------------------------------------------------------------------ */
+/*  PublicCommentPanel — comment list + form for COMMENT access level. */
+/* ------------------------------------------------------------------ */
+
+function PublicCommentPanel({
+  token,
+  slideId,
+  onInvalidate,
+}: {
+  token: string;
+  slideId: string;
+  onInvalidate: () => void;
+}) {
+  const { t } = useTranslation();
+  const [guestName, setGuestName] = useState('');
+  const [commentText, setCommentText] = useState('');
+
+  const { data: comments = [], isLoading } = useQuery<DeckSlideComment[]>({
+    queryKey: ['public-deck-comments', token, slideId],
+    queryFn: () => decksApi.getPublicComments(token, slideId),
+    retry: false,
+  });
+
+  const postMutation = useMutation({
+    mutationFn: () =>
+      decksApi.createPublicComment(token, {
+        slideId,
+        content: commentText.trim(),
+        guestName: guestName.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setCommentText('');
+      onInvalidate();
+      toast.success(t('deckPublic.commentPosted', 'Comment posted'));
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || t('deckPublic.commentFailed', 'Failed to post comment'));
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    postMutation.mutate();
+  };
+
+  return (
+    <GlassPanel surface="subtle" padding="md" className="mt-5">
+      <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium mb-3 flex items-center gap-1.5">
+        <MessageSquare className="h-3 w-3" />
+        {t('deckPublic.commentsTitle', 'Comments')}
+        <span className="ml-1 text-text-tertiary/60">— {t('deckPublic.currentSlide', 'this slide')}</span>
+      </div>
+
+      {/* Existing comments */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-4 text-text-tertiary">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      ) : comments.length === 0 ? (
+        <p className="text-xs text-text-tertiary py-2 mb-3">
+          {t('deckPublic.noComments', 'No comments yet. Be the first!')}
+        </p>
+      ) : (
+        <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+          {comments.map((c) => (
+            <div key={c.id} className="rounded-md border border-border-subtle bg-bg-sunken/40 px-3 py-2">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-medium text-text-primary">
+                  {c.user?.name || c.guestName || t('deckPublic.guest', 'Guest')}
+                </span>
+                <span className="text-[10px] text-text-tertiary">
+                  {new Date(c.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary leading-relaxed">{c.content}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Comment form */}
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <Input
+          value={guestName}
+          onChange={(e) => setGuestName(e.target.value)}
+          placeholder={t('deckPublic.namePlaceholder', 'Your name (optional)')}
+          className="bg-bg-sunken border-border-default text-text-primary h-8 text-xs"
+        />
+        <div className="flex gap-2">
+          <Input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder={t('deckPublic.commentPlaceholder', 'Leave a comment…')}
+            className="flex-1 bg-bg-sunken border-border-default text-text-primary h-8 text-xs"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!commentText.trim() || postMutation.isPending}
+            className="shrink-0 h-8"
+          >
+            {postMutation.isPending
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Send className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
+      </form>
+    </GlassPanel>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  SlideCanvas — read-only rendering of a single slide.               */

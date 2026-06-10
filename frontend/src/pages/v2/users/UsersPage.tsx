@@ -264,9 +264,7 @@ export default function UsersPageV2() {
           sections: v2SidebarSections,
           footer: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
         }}
-        topbar={{
-          right: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
-        }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState
@@ -298,9 +296,7 @@ export default function UsersPageV2() {
           sections: v2SidebarSections,
           footer: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
         }}
-        topbar={{
-          right: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
-        }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState
@@ -321,9 +317,7 @@ export default function UsersPageV2() {
         sections: v2SidebarSections,
         footer: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: currentUser ? <UserChip name={currentUser.name} role={currentUser.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader

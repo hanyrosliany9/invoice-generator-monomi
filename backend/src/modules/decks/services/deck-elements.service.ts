@@ -70,7 +70,14 @@ export class DeckElementsService {
               height: el.height ?? 100,
               rotation: el.rotation ?? 0,
               zIndex: el.zIndex ?? idx,
-              content: el.content ?? {},
+              // flipX/flipY aren't columns on DeckSlideElement — fold them into
+              // the content JSON so a flip survives save → reload (the frontend
+              // reads content.flipX/flipY back when rebuilding the object).
+              content: {
+                ...(el.content ?? {}),
+                ...(el.flipX ? { flipX: true } : {}),
+                ...(el.flipY ? { flipY: true } : {}),
+              },
               isLocked: el.isLocked ?? false,
             })),
           });
@@ -163,14 +170,18 @@ export class DeckElementsService {
       throw new ForbiddenException("Edit permission required");
     }
 
-    const maxZ = await this.prisma.deckSlideElement.aggregate({
-      where: { slideId: element.slideId },
-      _max: { zIndex: true },
-    });
+    // Wrap the read-then-write in a transaction to prevent z-order corruption
+    // from interleaving concurrent operations.
+    return this.prisma.$transaction(async (tx) => {
+      const maxZ = await tx.deckSlideElement.aggregate({
+        where: { slideId: element.slideId },
+        _max: { zIndex: true },
+      });
 
-    return this.prisma.deckSlideElement.update({
-      where: { id: elementId },
-      data: { zIndex: (maxZ._max.zIndex ?? 0) + 1 },
+      return tx.deckSlideElement.update({
+        where: { id: elementId },
+        data: { zIndex: (maxZ._max.zIndex ?? 0) + 1 },
+      });
     });
   }
 
@@ -191,15 +202,18 @@ export class DeckElementsService {
       throw new ForbiddenException("Edit permission required");
     }
 
-    // Shift all elements up
-    await this.prisma.deckSlideElement.updateMany({
-      where: { slideId: element.slideId },
-      data: { zIndex: { increment: 1 } },
-    });
+    // Wrap both writes in a transaction to atomically shift all z-indices
+    // and set the target element to 0, preventing corruption from concurrent writes.
+    return this.prisma.$transaction(async (tx) => {
+      await tx.deckSlideElement.updateMany({
+        where: { slideId: element.slideId },
+        data: { zIndex: { increment: 1 } },
+      });
 
-    return this.prisma.deckSlideElement.update({
-      where: { id: elementId },
-      data: { zIndex: 0 },
+      return tx.deckSlideElement.update({
+        where: { id: elementId },
+        data: { zIndex: 0 },
+      });
     });
   }
 

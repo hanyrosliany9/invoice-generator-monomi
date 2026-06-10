@@ -62,6 +62,35 @@ export class PSAK72ReportsService {
     // Group by client
     const byClient = this.groupByClient(completedMilestones);
 
+    // GL reconciliation for 4-1010 (Revenue / Pendapatan).
+    // CREDIT-normal revenue: glRecognizedRevenue = sum(credit) - sum(debit),
+    // scoped to the period end date. This is AUTHORITATIVE — manual journal
+    // activity on 4-1010 (e.g. a correction entry) is captured here even if
+    // no ProjectMilestone row reflects it. Reconciliation is org-wide because
+    // the GL doesn't store a per-project balance on the 4-1010 account.
+    let glRecognizedRevenue = 0;
+    let reconcilingAdjustment = 0;
+    const revenueAccount = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: "4-1010" }, // Revenue / Pendapatan
+    });
+    if (revenueAccount) {
+      const glEntries = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: revenueAccount.id,
+          entryDate: { lte: endDate },
+          journalEntry: { isPosted: true },
+        },
+      });
+      glRecognizedRevenue = glEntries.reduce(
+        (sum, e) => sum + Number(e.credit) - Number(e.debit),
+        0,
+      );
+      // NOTE: org-wide 4-1010 GL net vs period-scoped milestone sum.
+      // reconcilingAdjustment > 0: GL holds more revenue than milestones show;
+      // < 0: milestones show more than the GL (e.g. unposted journals).
+      reconcilingAdjustment = glRecognizedRevenue - totalRecognized;
+    }
+
     return {
       period: { startDate, endDate },
       summary: {
@@ -71,6 +100,11 @@ export class PSAK72ReportsService {
           completedMilestones.length > 0
             ? totalRecognized / completedMilestones.length
             : 0,
+        // GL net of 4-1010 as of endDate — authoritative org-wide revenue balance.
+        glRecognizedRevenue,
+        // Non-zero when manual GL activity on 4-1010 isn't reflected in milestone rows
+        // (or when the GL period differs from the milestone completion filter).
+        reconcilingAdjustment,
       },
       byProject,
       byClient,
@@ -205,6 +239,30 @@ export class PSAK72ReportsService {
       0,
     );
 
+    // GL reconciliation for 2-1020 (Deferred Revenue / Pendapatan Diterima Dimuka).
+    // CREDIT-normal liability: glBalance = sum(credit) - sum(debit).
+    // No date filter here (aging report is as-of-now); guard for missing COA.
+    let glBalance = 0;
+    let reconcilingAdjustment = 0;
+    const drAccount = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: "2-1020" }, // Deferred Revenue / Pendapatan Diterima Dimuka
+    });
+    if (drAccount) {
+      const glEntries = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: drAccount.id,
+          journalEntry: { isPosted: true },
+        },
+      });
+      glBalance = glEntries.reduce(
+        (sum, e) => sum + Number(e.credit) - Number(e.debit),
+        0,
+      );
+      // reconcilingAdjustment > 0: GL shows more liability than DeferredRevenue rows;
+      // < 0: DeferredRevenue rows show more remaining than the GL actually holds.
+      reconcilingAdjustment = glBalance - totalDeferred;
+    }
+
     return {
       summary: {
         totalDeferred,
@@ -213,6 +271,10 @@ export class PSAK72ReportsService {
           deferredRevenues.length > 0
             ? totalDeferred / deferredRevenues.length
             : 0,
+        // GL net of 2-1020 — authoritative balance that ties to balance sheet.
+        glBalance,
+        // Non-zero when manual GL activity on 2-1020 isn't reflected in DeferredRevenue rows.
+        reconcilingAdjustment,
       },
       byAge: {
         lessThan30Days: {
@@ -431,6 +493,49 @@ export class PSAK72ReportsService {
         ? parseFloat(((totalProfit / totalRevenue) * 100).toFixed(2))
         : 0;
 
+    // GL reconciliation for 4-1010 (Revenue / Pendapatan), project-scoped via
+    // the projectId stored on GeneralLedger line items where available.
+    // CREDIT-normal: glRecognizedRevenue = sum(credit) - sum(debit).
+    // If a projectId link doesn't exist on the GL rows, this falls back to
+    // the org-wide 4-1010 net; in that case the comment below signals it.
+    let glRecognizedRevenue = 0;
+    let reconcilingAdjustment = 0;
+    const revAcct = await this.prisma.chartOfAccounts.findUnique({
+      where: { code: "4-1010" }, // Revenue / Pendapatan
+    });
+    if (revAcct) {
+      // Attempt project-scoped GL query first; the GeneralLedger model stores
+      // a projectId when the journal line carries one.
+      const projectGlEntries = await this.prisma.generalLedger.findMany({
+        where: {
+          accountId: revAcct.id,
+          projectId: projectId,
+          journalEntry: { isPosted: true },
+        },
+      });
+      if (projectGlEntries.length > 0) {
+        // Project-scoped: only 4-1010 lines that reference this project.
+        glRecognizedRevenue = projectGlEntries.reduce(
+          (sum, e) => sum + Number(e.credit) - Number(e.debit),
+          0,
+        );
+      } else {
+        // NOTE: no project-tagged GL rows found for 4-1010 — falling back to
+        // org-wide 4-1010 net; reconciliation figure is therefore org-wide.
+        const orgGlEntries = await this.prisma.generalLedger.findMany({
+          where: {
+            accountId: revAcct.id,
+            journalEntry: { isPosted: true },
+          },
+        });
+        glRecognizedRevenue = orgGlEntries.reduce(
+          (sum, e) => sum + Number(e.credit) - Number(e.debit),
+          0,
+        );
+      }
+      reconcilingAdjustment = glRecognizedRevenue - totalRevenue;
+    }
+
     return {
       project: {
         id: project.id,
@@ -443,6 +548,11 @@ export class PSAK72ReportsService {
         totalProfit,
         averageMarginPercent: averageMargin,
         milestoneCount: milestoneAnalysis.length,
+        // GL net of 4-1010 for this project (falls back to org-wide if no
+        // project-tagged rows exist) — authoritative revenue balance.
+        glRecognizedRevenue,
+        // Non-zero when manual GL activity on 4-1010 isn't reflected in milestones.
+        reconcilingAdjustment,
       },
       milestones: milestoneAnalysis,
     };

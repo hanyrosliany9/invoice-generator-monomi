@@ -1,11 +1,13 @@
 import { useEffect, useCallback } from 'react';
-import { Canvas as FabricCanvas, FabricObject } from 'fabric';
+import { Canvas as FabricCanvas, FabricObject, ActiveSelection } from 'fabric';
 import { useDeckCanvasStore } from '../stores/deckCanvasStore';
 import {
   createRectObject,
   createCircleObject,
   createTextObject,
   createLineObject,
+  groupActiveSelection,
+  ungroupActiveGroup,
 } from '../utils/deckCanvasUtils';
 
 interface UseKeyboardShortcutsOptions {
@@ -71,7 +73,7 @@ export function useDeckKeyboardShortcuts({
           if (pastedObjects.length === 1) {
             canvas.setActiveObject(pastedObjects[0]);
           } else {
-            const selection = new (canvas as any).ActiveSelection(pastedObjects, { canvas });
+            const selection = new ActiveSelection(pastedObjects, { canvas });
             canvas.setActiveObject(selection);
           }
           canvas.renderAll();
@@ -117,7 +119,7 @@ export function useDeckKeyboardShortcuts({
           if (duplicates.length === 1) {
             canvas.setActiveObject(duplicates[0]);
           } else {
-            const selection = new (canvas as any).ActiveSelection(duplicates, { canvas });
+            const selection = new ActiveSelection(duplicates, { canvas });
             canvas.setActiveObject(selection);
           }
           canvas.renderAll();
@@ -155,6 +157,12 @@ export function useDeckKeyboardShortcuts({
       });
 
       canvas.renderAll();
+
+      // Fire object:modified so history + autosave handlers run.
+      const activeObj = canvas.getActiveObject();
+      if (activeObj) {
+        canvas.fire('object:modified', { target: activeObj });
+      }
     },
     [canvas]
   );
@@ -169,7 +177,7 @@ export function useDeckKeyboardShortcuts({
     if (objects.length === 1) {
       canvas.setActiveObject(objects[0]);
     } else {
-      const selection = new (canvas as any).ActiveSelection(objects, { canvas });
+      const selection = new ActiveSelection(objects, { canvas });
       canvas.setActiveObject(selection);
     }
     canvas.renderAll();
@@ -196,6 +204,64 @@ export function useDeckKeyboardShortcuts({
       pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
     }
   }, [canvas, pushHistory]);
+
+  // Bring forward one step
+  const handleBringForward = useCallback(() => {
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      canvas.bringObjectForward(activeObject);
+      canvas.renderAll();
+      pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
+    }
+  }, [canvas, pushHistory]);
+
+  // Send backward one step
+  const handleSendBackward = useCallback(() => {
+    if (!canvas) return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      canvas.sendObjectBackwards(activeObject);
+      canvas.renderAll();
+      pushHistory(JSON.stringify((canvas as any).toJSON(['id', 'elementId', 'elementType'])));
+    }
+  }, [canvas, pushHistory]);
+
+  // Group the active multi-selection (Ctrl+G).
+  const handleGroup = useCallback(() => {
+    if (!canvas) return;
+    const group = groupActiveSelection(canvas);
+    if (group) {
+      // Reuse the canvas object:modified pipeline so history + autosave run.
+      canvas.fire('object:modified', { target: group });
+    }
+  }, [canvas]);
+
+  // Ungroup the active group (Ctrl+Shift+G).
+  const handleUngroup = useCallback(() => {
+    if (!canvas) return;
+    const released = ungroupActiveGroup(canvas);
+    if (released.length > 0) {
+      const active = canvas.getActiveObject();
+      if (active) canvas.fire('object:modified', { target: active });
+    }
+  }, [canvas]);
+
+  // Flip the active object horizontally / vertically. flipX/flipY round-trip via
+  // deckCanvasUtils so a flip survives reload.
+  const handleFlip = useCallback(
+    (axis: 'x' | 'y') => {
+      if (!canvas) return;
+      const activeObject = canvas.getActiveObject();
+      if (!activeObject) return;
+      if (axis === 'x') activeObject.set('flipX', !activeObject.flipX);
+      else activeObject.set('flipY', !activeObject.flipY);
+      activeObject.setCoords();
+      canvas.renderAll();
+      canvas.fire('object:modified', { target: activeObject });
+    },
+    [canvas]
+  );
 
   useEffect(() => {
     // Add a freshly-created object to the canvas, select it, push history and
@@ -279,6 +345,20 @@ export function useDeckKeyboardShortcuts({
         return;
       }
 
+      // Ctrl+Shift+G - Ungroup (checked before Ctrl+G)
+      if (ctrl && shift && key === 'g') {
+        e.preventDefault();
+        handleUngroup();
+        return;
+      }
+
+      // Ctrl+G - Group active multi-selection
+      if (ctrl && key === 'g') {
+        e.preventDefault();
+        handleGroup();
+        return;
+      }
+
       // Ctrl+S - Save
       if (ctrl && key === 's') {
         e.preventDefault();
@@ -309,17 +389,47 @@ export function useDeckKeyboardShortcuts({
         return;
       }
 
-      // ] - Bring to front
+      // Ctrl+Shift+] - Bring to front / Ctrl+] - Bring forward one step
+      if (ctrl && key === ']') {
+        e.preventDefault();
+        if (shift) handleBringToFront();
+        else handleBringForward();
+        return;
+      }
+
+      // Ctrl+Shift+[ - Send to back / Ctrl+[ - Send backward one step
+      if (ctrl && key === '[') {
+        e.preventDefault();
+        if (shift) handleSendToBack();
+        else handleSendBackward();
+        return;
+      }
+
+      // ] - Bring to front (bare, legacy)
       if (key === ']') {
         e.preventDefault();
         handleBringToFront();
         return;
       }
 
-      // [ - Send to back
+      // [ - Send to back (bare, legacy)
       if (key === '[') {
         e.preventDefault();
         handleSendToBack();
+        return;
+      }
+
+      // Shift+H - Flip horizontal
+      if (shift && key === 'h' && !ctrl) {
+        e.preventDefault();
+        handleFlip('x');
+        return;
+      }
+
+      // Shift+V - Flip vertical (note: plain Ctrl+V is paste, handled above)
+      if (shift && key === 'v' && !ctrl) {
+        e.preventDefault();
+        handleFlip('y');
         return;
       }
 
@@ -399,6 +509,11 @@ export function useDeckKeyboardShortcuts({
     handleArrowMove,
     handleBringToFront,
     handleSendToBack,
+    handleBringForward,
+    handleSendBackward,
+    handleGroup,
+    handleUngroup,
+    handleFlip,
     canUndo,
     canRedo,
     undo,
@@ -415,5 +530,11 @@ export function useDeckKeyboardShortcuts({
     selectAll: handleSelectAll,
     bringToFront: handleBringToFront,
     sendToBack: handleSendToBack,
+    bringForward: handleBringForward,
+    sendBackward: handleSendBackward,
+    group: handleGroup,
+    ungroup: handleUngroup,
+    flipHorizontal: () => handleFlip('x'),
+    flipVertical: () => handleFlip('y'),
   };
 }

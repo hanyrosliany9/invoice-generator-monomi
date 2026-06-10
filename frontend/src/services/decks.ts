@@ -39,6 +39,26 @@ export const decksApi = {
     await apiClient.delete(`/decks/${id}`);
   },
 
+  // Import a .pptx file (PowerPoint, or Google Slides via File → Download →
+  // .pptx) as a new deck. Server parses slides/text/images into native
+  // deck elements.
+  importPptx: async (
+    file: File,
+    options?: { title?: string; clientId?: string; projectId?: string },
+  ): Promise<Deck & { importWarnings?: Record<string, number> }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (options?.title) formData.append('title', options.title);
+    if (options?.clientId) formData.append('clientId', options.clientId);
+    if (options?.projectId) formData.append('projectId', options.projectId);
+    const response = await apiClient.post('/decks/import/pptx', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      // Large decks with many embedded images can take a while to parse+upload.
+      timeout: 300000,
+    });
+    return response.data.data;
+  },
+
   duplicate: async (id: string, title?: string): Promise<Deck> => {
     const response = await apiClient.post(`/decks/${id}/duplicate`, { title });
     return response.data.data;
@@ -54,9 +74,45 @@ export const decksApi = {
     return response.data.data;
   },
 
+  setPublicAccessLevel: async (id: string, accessLevel: string): Promise<Deck> => {
+    const response = await apiClient.post(`/decks/${id}/set-public-access-level`, { accessLevel });
+    return response.data.data;
+  },
+
   getPublic: async (token: string): Promise<Deck> => {
     const response = await apiClient.get(`/deck-public/${token}`);
     return response.data.data;
+  },
+
+  createPublicComment: async (
+    token: string,
+    data: {
+      slideId: string;
+      content: string;
+      guestName?: string;
+      guestEmail?: string;
+      parentId?: string;
+      positionX?: number;
+      positionY?: number;
+    },
+  ): Promise<DeckSlideComment> => {
+    const response = await apiClient.post(`/deck-public/${token}/comment`, data);
+    return response.data.data;
+  },
+
+  getPublicComments: async (token: string, slideId: string): Promise<DeckSlideComment[]> => {
+    const response = await apiClient.get(`/deck-public/${token}/comments/${slideId}`);
+    return response.data.data || [];
+  },
+
+  startPublicExportPdf: async (token: string): Promise<{ jobId: string }> => {
+    const response = await apiClient.post(`/deck-public/${token}/export-pdf`);
+    return response.data;
+  },
+
+  getPublicExportPdfStatus: async (token: string, jobId: string): Promise<{ status: string; progress: number; filePath?: string }> => {
+    const response = await apiClient.get(`/deck-public/${token}/export-pdf/status/${jobId}`);
+    return response.data;
   },
 };
 

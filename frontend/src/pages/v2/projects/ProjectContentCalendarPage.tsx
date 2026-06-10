@@ -319,9 +319,7 @@ export default function ProjectContentCalendarPage() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>
         {/* Breadcrumb */}
@@ -1178,7 +1176,7 @@ function CreateDialog({
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors',
                       selected
-                        ? 'border-accent/60 bg-accent/10 text-accent'
+                        ? 'border-accent-navy-ring bg-accent-navy-wash text-text-primary'
                         : 'border-border-subtle bg-bg-sunken text-text-tertiary hover:text-text-primary hover:border-border-default',
                     )}
                   >

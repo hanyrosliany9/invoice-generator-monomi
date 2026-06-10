@@ -1,15 +1,30 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Canvas as FabricCanvas, FabricObject, FabricImage } from 'fabric';
+import { Canvas as FabricCanvas, FabricObject, FabricImage, Line, Group, Point } from 'fabric';
 import { useDeckCanvasStore } from '../../stores/deckCanvasStore';
 import { useAssetBrowserStore, MediaAsset } from '../../stores/assetBrowserStore';
 import { useCollaborationStore } from '../../stores/collaborationStore';
 import { uploadAsset } from '../../services/assetBrowserApi';
-import { fabricObjectToElement } from '../../utils/deckCanvasUtils';
+import {
+  fabricObjectToElement,
+  collectSnapTargets,
+  computeSnap,
+} from '../../utils/deckCanvasUtils';
 import { App, Spin } from 'antd';
 
 // Custom Fabric properties we persist + sync so loadFromJSON round-trips them.
-const CUSTOM_PROPS = ['id', 'elementId', 'elementType', 'assetId', 'assetUrl', 'zIndex'];
+// flipX/flipY included so a flip survives undo/redo + the realtime snapshot.
+const CUSTOM_PROPS = [
+  'id', 'elementId', 'elementType', 'assetId', 'assetUrl', 'zIndex', 'flipX', 'flipY',
+  // ICON/TABLE/CHART store their source content on the instance so the
+  // per-object DB serializer and the undo/collab loadFromJSON path both
+  // round-trip the element's data verbatim.
+  'elementContent', 'iconSvg', 'tableData', 'chartData',
+];
+
+// Zoom clamp shared with the store's setZoom.
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 5;
 
 // Dev-only logging — silenced in production builds to avoid console noise.
 const devLog = (...args: unknown[]) => {
@@ -54,7 +69,22 @@ export default function DeckCanvas({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { setCanvas, pushHistory, setSelectedObjectIds } = useDeckCanvasStore();
+  // Zoom is driven by the sibling toolbar via the store; we subscribe and apply.
+  const zoom = useDeckCanvasStore((s) => s.zoom);
+  const fitRequest = useDeckCanvasStore((s) => s.fitRequest);
   const { message } = App.useApp();
+  // Space-held pan state (read inside the once-only init effect via ref).
+  const isPanningRef = useRef(false);
+  const spaceHeldRef = useRef(false);
+
+  // The canvas-init effect below runs ONCE for the lifetime of the editor (it
+  // creates + disposes the Fabric canvas). To avoid it ever closing over a
+  // stale callback after a slide switch or prop change, every prop/handler it
+  // needs is read through a ref that we keep current on each render.
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  const onObjectModifiedRef = useRef(onObjectModified);
+  const onCanvasReadyRef = useRef(onCanvasReady);
+  const handleFileUploadRef = useRef<(file: File) => void>(() => {});
 
   // Handle file upload - add image to canvas
   const handleFileUpload = useCallback(async (file: File) => {
@@ -220,69 +250,17 @@ export default function DeckCanvas({
     }
   }, [fabricRef, message, pushHistory]);
 
-  // Handle drag over
-  const handleDragOver = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
+  // Keep the refs the once-only init effect reads pointed at the latest values.
+  useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange;
+    onObjectModifiedRef.current = onObjectModified;
+    onCanvasReadyRef.current = onCanvasReady;
+    handleFileUploadRef.current = handleFileUpload;
+  });
 
-  // Handle drag leave
-  const handleDragLeave = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Only set to false if leaving the canvas entirely
-    if (e.target === dropZoneRef.current) {
-      setIsDragging(false);
-    }
-  }, []);
-
-  // Handle drop
-  const handleDrop = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const files = e.dataTransfer?.files;
-    if (!files || files.length === 0) {
-      message.warning('No files to upload');
-      return;
-    }
-
-    // Handle first file for now
-    const file = files[0];
-    handleFileUpload(file);
-  }, [handleFileUpload, message]);
-
-  // Handle paste
-  const handlePaste = useCallback((e: ClipboardEvent) => {
-    // Don't intercept paste if user is editing text
-    const activeElement = document.activeElement;
-    if (
-      activeElement?.tagName === 'INPUT' ||
-      activeElement?.tagName === 'TEXTAREA' ||
-      (activeElement as any)?.contentEditable === 'true'
-    ) {
-      return;
-    }
-
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.kind === 'file' && item.type.startsWith('image/')) {
-        e.preventDefault();
-        const file = item.getAsFile();
-        if (file) {
-          handleFileUpload(file);
-          break;
-        }
-      }
-    }
-  }, [handleFileUpload]);
-
-  // Initialize canvas
+  // Initialize canvas — runs ONCE (empty deps). It must never re-run, or the
+  // whole Fabric canvas (with all objects, selection and in-progress edits)
+  // would be disposed and recreated. All mutable inputs are read via refs.
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -303,27 +281,54 @@ export default function DeckCanvas({
     canvas.on('selection:created', (e) => {
       const ids = e.selected?.map((obj) => obj.get('id') as string).filter(Boolean) || [];
       setSelectedObjectIds(ids);
-      onSelectionChange?.(ids);
+      onSelectionChangeRef.current?.(ids);
     });
 
     canvas.on('selection:updated', (e) => {
       const ids = e.selected?.map((obj) => obj.get('id') as string).filter(Boolean) || [];
       setSelectedObjectIds(ids);
-      onSelectionChange?.(ids);
+      onSelectionChangeRef.current?.(ids);
     });
 
-    canvas.on('selection:cleared', () => {
+    canvas.on('selection:cleared', (e) => {
       setSelectedObjectIds([]);
-      onSelectionChange?.([]);
+      onSelectionChangeRef.current?.([]);
+      // Auto-dissolve groups on deselect so they persist to the DB. A fabric
+      // Group can't be expanded 1→N by the per-object DB serializer, so we keep
+      // a Group only while it's the live selection (move/scale together) and
+      // explode it into individual world-positioned children the moment the user
+      // clicks away. Children are then saved individually and survive reload.
+      // (Undo/redo + realtime collab keep groups intact via loadFromJSON.)
+      const deselected = (e as any)?.deselected as FabricObject[] | undefined;
+      // ICON/TABLE/CHART elements are *single elements* that happen to be drawn
+      // as a fabric Group (their visual is composed of primitives). They must
+      // NOT be auto-ungrouped — they round-trip as one element via their builder.
+      const ELEMENT_GROUP_TYPES = new Set(['ICON', 'TABLE', 'CHART']);
+      const group = deselected?.find(
+        (o) => o instanceof Group && !ELEMENT_GROUP_TYPES.has(o.get('elementType') as string),
+      ) as Group | undefined;
+      if (group && !applyingRemoteRef.current) {
+        const children = group.removeAll();
+        canvas.remove(group);
+        children.forEach((child) => {
+          if (!child.get('id')) {
+            child.set('id', `el_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+          }
+          canvas.add(child);
+        });
+        canvas.requestRenderAll();
+        // Persist the now-flat objects (history + autosave).
+        pushHistory(JSON.stringify((canvas as any).toJSON(CUSTOM_PROPS)));
+        children.forEach((child) => onObjectModifiedRef.current?.(child));
+      }
     });
 
     // Object modified (move, resize, rotate)
     canvas.on('object:modified', (e) => {
       if (e.target) {
-        onObjectModified?.(e.target);
-        // Save to history
-        const json = canvas.toJSON();
-        pushHistory(JSON.stringify(json));
+        onObjectModifiedRef.current?.(e.target);
+        // Save to history (include custom props so ids round-trip through undo)
+        pushHistory(JSON.stringify((canvas as any).toJSON(CUSTOM_PROPS)));
       }
     });
 
@@ -336,13 +341,12 @@ export default function DeckCanvas({
     canvas.on('text:editing:exited', () => {
       canvas.selection = true;
       // Save history when done editing
-      const json = canvas.toJSON();
-      pushHistory(JSON.stringify(json));
+      pushHistory(JSON.stringify((canvas as any).toJSON(CUSTOM_PROPS)));
     });
 
-    // Initial history entry
-    const initialJson = canvas.toJSON();
-    pushHistory(JSON.stringify(initialJson));
+    // NB: no initial empty-canvas history push here. The per-slide undo baseline
+    // is seeded by SlideCanvas (ensureSlideHistory) once a slide's elements have
+    // loaded, so undo starts from the real slide content, not a blank canvas.
 
     /* ---------- realtime collaboration ---------- */
     const collab = useCollaborationStore.getState();
@@ -397,33 +401,202 @@ export default function DeckCanvas({
     };
     window.addEventListener('remote-canvas-update', handleRemoteUpdate as EventListener);
 
-    onCanvasReady?.(canvas);
+    /* ---------- snap / smart guides ---------- */
+    // Transient guide lines drawn while dragging. They're plain fabric Lines
+    // flagged __isGuide so they're excluded from snapping + never persisted
+    // (CUSTOM_PROPS doesn't include __isGuide, and we clear them on mouse:up).
+    let guideLines: Line[] = [];
+    const clearGuides = () => {
+      if (guideLines.length === 0) return;
+      guideLines.forEach((l) => canvas.remove(l));
+      guideLines = [];
+      canvas.requestRenderAll();
+    };
+    const makeGuide = (coords: [number, number, number, number]): Line => {
+      const line = new Line(coords, {
+        stroke: '#ff4d6d',
+        strokeWidth: 1,
+        selectable: false,
+        evented: false,
+        hoverCursor: 'default',
+        strokeDashArray: [4, 4],
+      });
+      (line as any).__isGuide = true;
+      (line as any).excludeFromExport = true;
+      return line;
+    };
 
-    // Add drag-drop listeners to canvas container
+    canvas.on('object:moving', (e) => {
+      const target = e.target;
+      if (!target) return;
+      clearGuides();
+      const w = canvas.getWidth();
+      const h = canvas.getHeight();
+      const targets = collectSnapTargets(canvas, target, w, h);
+      const snap = computeSnap(target, targets);
+      if (snap.left !== undefined) target.set('left', snap.left);
+      if (snap.top !== undefined) target.set('top', snap.top);
+      if (snap.left !== undefined || snap.top !== undefined) target.setCoords();
+
+      // Draw the active guide lines spanning the full slide.
+      snap.guides.forEach((g) => {
+        const line =
+          g.orientation === 'v'
+            ? makeGuide([g.position, 0, g.position, h])
+            : makeGuide([0, g.position, w, g.position]);
+        guideLines.push(line);
+        canvas.add(line);
+        canvas.bringObjectToFront(line);
+      });
+      canvas.requestRenderAll();
+    });
+    canvas.on('mouse:up', clearGuides);
+    canvas.on('selection:cleared', clearGuides);
+
+    /* ---------- zoom (Ctrl+wheel) + pan (Space-drag / middle-drag) ---------- */
+    canvas.on('mouse:wheel', (opt) => {
+      const ev = opt.e as WheelEvent;
+      if (!ev.ctrlKey && !ev.metaKey) return; // only zoom with modifier held
+      ev.preventDefault();
+      ev.stopPropagation();
+      let newZoom = canvas.getZoom() * (ev.deltaY < 0 ? 1.1 : 0.9);
+      newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, newZoom));
+      // Zoom toward the cursor.
+      canvas.zoomToPoint(new Point(ev.offsetX, ev.offsetY), newZoom);
+      // Keep the store in sync so the toolbar's readout matches.
+      useDeckCanvasStore.getState().setZoom(newZoom);
+    });
+
+    canvas.on('mouse:down', (opt) => {
+      const ev = opt.e as MouseEvent;
+      // Space-held drag or middle-mouse button → pan.
+      if (spaceHeldRef.current || ev.button === 1) {
+        isPanningRef.current = true;
+        canvas.selection = false;
+        canvas.setCursor('grabbing');
+        (canvas as any).__lastPan = { x: ev.clientX, y: ev.clientY };
+      }
+    });
+    canvas.on('mouse:move', (opt) => {
+      if (!isPanningRef.current) return;
+      const ev = opt.e as MouseEvent;
+      const last = (canvas as any).__lastPan;
+      if (!last) return;
+      const vpt = canvas.viewportTransform;
+      if (!vpt) return;
+      vpt[4] += ev.clientX - last.x;
+      vpt[5] += ev.clientY - last.y;
+      canvas.setViewportTransform(vpt);
+      (canvas as any).__lastPan = { x: ev.clientX, y: ev.clientY };
+    });
+    canvas.on('mouse:up', () => {
+      if (isPanningRef.current) {
+        isPanningRef.current = false;
+        canvas.selection = true;
+        canvas.setCursor('default');
+        (canvas as any).__lastPan = null;
+      }
+    });
+
+    // Track Space for pan-mode. Captured at window level so it works regardless
+    // of focus; ignored while editing text.
+    const onKeyDownSpace = (ke: KeyboardEvent) => {
+      if (ke.code !== 'Space') return;
+      const ae = document.activeElement;
+      if (
+        ae?.tagName === 'INPUT' ||
+        ae?.tagName === 'TEXTAREA' ||
+        (ae as any)?.isContentEditable
+      ) {
+        return;
+      }
+      const active = canvas.getActiveObject();
+      if (active && (active as any).isEditing) return;
+      spaceHeldRef.current = true;
+      canvas.defaultCursor = 'grab';
+    };
+    const onKeyUpSpace = (ke: KeyboardEvent) => {
+      if (ke.code !== 'Space') return;
+      spaceHeldRef.current = false;
+      canvas.defaultCursor = 'default';
+    };
+    window.addEventListener('keydown', onKeyDownSpace);
+    window.addEventListener('keyup', onKeyUpSpace);
+
+    onCanvasReadyRef.current?.(canvas);
+
+    /* ---------- drag-drop + clipboard image paste ---------- */
+    // Inline listeners that defer to the latest upload handler via a ref, so
+    // this effect never needs them as deps (and thus never re-runs).
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+    };
+    const onDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.target === dropZoneRef.current) setIsDragging(false);
+    };
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      const files = e.dataTransfer?.files;
+      if (!files || files.length === 0) return;
+      handleFileUploadRef.current(files[0]);
+    };
+    const onDocPaste = (e: ClipboardEvent) => {
+      // Don't intercept paste while the user is editing text.
+      const ae = document.activeElement;
+      if (
+        ae?.tagName === 'INPUT' ||
+        ae?.tagName === 'TEXTAREA' ||
+        (ae as any)?.contentEditable === 'true'
+      ) {
+        return;
+      }
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            handleFileUploadRef.current(file);
+            break;
+          }
+        }
+      }
+    };
+
     const container = canvasRef.current?.parentElement;
     if (container) {
-      container.addEventListener('dragover', handleDragOver as EventListener);
-      container.addEventListener('dragleave', handleDragLeave as EventListener);
-      container.addEventListener('drop', handleDrop as EventListener);
+      container.addEventListener('dragover', onDragOver as EventListener);
+      container.addEventListener('dragleave', onDragLeave as EventListener);
+      container.addEventListener('drop', onDrop as EventListener);
     }
-
-    // Add paste listener to document
-    document.addEventListener('paste', handlePaste as EventListener);
+    document.addEventListener('paste', onDocPaste as EventListener);
 
     return () => {
       window.removeEventListener('remote-canvas-update', handleRemoteUpdate as EventListener);
+      window.removeEventListener('keydown', onKeyDownSpace);
+      window.removeEventListener('keyup', onKeyUpSpace);
       canvas.dispose();
       setCanvas(null);
 
       // Clean up event listeners
       if (container) {
-        container.removeEventListener('dragover', handleDragOver as EventListener);
-        container.removeEventListener('dragleave', handleDragLeave as EventListener);
-        container.removeEventListener('drop', handleDrop as EventListener);
+        container.removeEventListener('dragover', onDragOver as EventListener);
+        container.removeEventListener('dragleave', onDragLeave as EventListener);
+        container.removeEventListener('drop', onDrop as EventListener);
       }
-      document.removeEventListener('paste', handlePaste as EventListener);
+      document.removeEventListener('paste', onDocPaste as EventListener);
     };
-  }, [handleDragOver, handleDragLeave, handleDrop, handlePaste]);
+    // Run ONCE: all mutable inputs are read via refs above. Do not add deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Update dimensions
   useEffect(() => {
@@ -431,6 +604,40 @@ export default function DeckCanvas({
       fabricRef.current.setDimensions({ width, height });
     }
   }, [width, height]);
+
+  // Apply store-driven zoom (toolbar buttons / setZoom). Scales around the
+  // canvas centre. Wheel-zoom updates the store too, so this stays in sync but
+  // re-running it here for a wheel change is a cheap no-op (same zoom value).
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
+    const center = new Point(canvas.getWidth() / 2, canvas.getHeight() / 2);
+    canvas.zoomToPoint(center, clamped);
+    canvas.requestRenderAll();
+  }, [zoom]);
+
+  // zoomToFit: fit the slide into the available viewport (the scroll container
+  // around the canvas). Triggered by the store's fitRequest counter.
+  useEffect(() => {
+    if (fitRequest === 0) return;
+    const canvas = fabricRef.current;
+    const container = dropZoneRef.current?.parentElement;
+    if (!canvas || !container) return;
+    const pad = 32; // breathing room around the slide
+    const availW = container.clientWidth - pad;
+    const availH = container.clientHeight - pad;
+    if (availW <= 0 || availH <= 0) return;
+    const fit = Math.min(availW / canvas.getWidth(), availH / canvas.getHeight());
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, fit));
+    // Reset pan, then apply the fit zoom centred.
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    const center = new Point(canvas.getWidth() / 2, canvas.getHeight() / 2);
+    canvas.zoomToPoint(center, clamped);
+    canvas.requestRenderAll();
+    useDeckCanvasStore.getState().setZoom(clamped);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitRequest]);
 
   // Update background color
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   Plus, Search, MoreHorizontal, Eye, Copy, Trash2, Presentation, X,
-  Layers, Globe,
+  Layers, Globe, Upload, Loader2,
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
@@ -113,6 +113,7 @@ export default function DecksPageV2() {
   const [statusFilter, setStatusFilter] = useState<'all' | DeckStatus>('all');
   const [createOpen, setCreateOpen] = useState(false);
   const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-open create dialog when ?projectId is present.
   useEffect(() => {
@@ -148,6 +149,44 @@ export default function DecksPageV2() {
     onError: () => toast.error(t('decks.deleteFailed', 'Failed to delete deck')),
   });
 
+  const importMutation = useMutation({
+    mutationFn: (file: File) => decksApi.importPptx(file),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ['decks'] });
+      const w = created.importWarnings;
+      const skipped =
+        (w?.skippedTables ?? 0) + (w?.skippedCharts ?? 0) + (w?.skippedOther ?? 0);
+      if (skipped > 0 || (w?.failedImages ?? 0) > 0) {
+        toast.success(
+          t('decks.importSuccessPartial',
+            'Deck imported — some elements (tables/charts) could not be converted'),
+        );
+      } else {
+        toast.success(t('decks.importSuccess', 'Deck imported'));
+      }
+      navigate(`/decks/${created.id}`);
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.message || err?.message;
+      toast.error(message || t('decks.importFailed', 'Failed to import deck'));
+    },
+  });
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Allow re-selecting the same file after a failure.
+    e.target.value = '';
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pptx')) {
+      toast.error(
+        t('decks.importPptxOnly',
+          'Only .pptx files are supported. In Google Slides: File → Download → Microsoft PowerPoint (.pptx).'),
+      );
+      return;
+    }
+    importMutation.mutate(file);
+  };
+
   const duplicateMutation = useMutation({
     mutationFn: (id: string) => decksApi.duplicate(id),
     onSuccess: (created) => {
@@ -166,7 +205,8 @@ export default function DecksPageV2() {
         || d.title.toLowerCase().includes(q)
         || d.description?.toLowerCase().includes(q)
         || d.client?.name?.toLowerCase().includes(q)
-        || d.project?.name?.toLowerCase().includes(q);
+        || d.project?.description?.toLowerCase().includes(q)
+        || d.project?.number?.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || d.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -209,10 +249,34 @@ export default function DecksPageV2() {
           title={t('decks.title', 'Presentation Decks')}
           description={t('decks.description', 'Slide collections for pitches, moodboards, and storyboards. Open to edit each slide\'s content.')}
           actions={
-            <Button onClick={() => setCreateOpen(true)} size="sm">
-              <Plus className="h-4 w-4" />
-              {t('decks.newDeck', 'New Deck')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <input
+                ref={importInputRef}
+                type="file"
+                accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                className="hidden"
+                onChange={handleImportFile}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => importInputRef.current?.click()}
+                disabled={importMutation.isPending}
+                title={t('decks.importHint',
+                  'Import a .pptx file. Google Slides: File → Download → Microsoft PowerPoint (.pptx).')}
+              >
+                {importMutation.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Upload className="h-4 w-4" />}
+                {importMutation.isPending
+                  ? t('decks.importing', 'Importing...')
+                  : t('decks.import', 'Import')}
+              </Button>
+              <Button onClick={() => setCreateOpen(true)} size="sm">
+                <Plus className="h-4 w-4" />
+                {t('decks.newDeck', 'New Deck')}
+              </Button>
+            </div>
           }
         />
 
@@ -375,9 +439,7 @@ function Shell({
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       {children}
     </AppShell>
@@ -467,7 +529,9 @@ function DeckCard({
 
         <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-text-tertiary">
           <div className="min-w-0 truncate">
-            {deck.project?.name || deck.client?.name || '—'}
+            {deck.project
+              ? (deck.project.description || deck.project.number || '—')
+              : (deck.client?.name || '—')}
           </div>
           <DateDisplay date={deck.updatedAt} className="shrink-0 tabular-nums" />
         </div>

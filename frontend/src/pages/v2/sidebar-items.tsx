@@ -24,6 +24,7 @@ import {
   PieChart,
   ArrowRightLeft,
   Boxes,
+  ShoppingCart,
   Trophy,
   BarChart3,
   UserCog,
@@ -92,23 +93,61 @@ export const v2SidebarSections: SidebarSection[] = [
     ],
   },
   {
-    // Full accounting section — admin only
+    // Full accounting section — admin only.
+    // Order mirrors the business flow: ledger basics → cash → outflows →
+    // Sales / Purchases (each grouping its report + receivable/payable) →
+    // financial statements → fixed assets → chart of accounts.
     label: 'sectionLabels.accounting',
     requiresAdmin: true,
     items: [
-      { label: 'nav.chartOfAccounts', icon: i(BookOpen), href: '/accounting/chart-of-accounts' },
+      { label: 'nav.journalEntries', icon: i(Book), href: '/accounting/journal-entries' },
       { label: 'nav.cashBankBalance', icon: i(Wallet), href: '/accounting/cash-bank-balance' },
       { label: 'nav.expenses', icon: i(CreditCard), href: '/expenses' },
       { label: 'nav.salaries', icon: i(Users), href: '/salaries' },
-      { label: 'nav.journalEntries', icon: i(Book), href: '/accounting/journal-entries' },
-      { label: 'nav.accountsReceivable', icon: i(Receipt), href: '/accounting/accounts-receivable' },
-      { label: 'nav.accountsPayable', icon: i(TrendingDown), href: '/accounting/accounts-payable' },
-      { label: 'nav.generalLedger', icon: i(Book), href: '/accounting/general-ledger' },
-      { label: 'nav.cashFlow', icon: i(ArrowRightLeft), href: '/accounting/cash-flow' },
-      { label: 'nav.incomeStatement', icon: i(TrendingUp), href: '/accounting/income-statement' },
-      { label: 'nav.trialBalance', icon: i(Scale), href: '/accounting/trial-balance' },
-      { label: 'nav.balanceSheet', icon: i(PieChart), href: '/accounting/balance-sheet' },
-      { label: 'nav.assets', icon: i(Boxes), href: '/assets' },
+      // Penjualan (Sales): sales report (→ invoices, with +Penjualan) + receivables.
+      {
+        label: 'nav.sales',
+        icon: i(TrendingUp),
+        href: '#sales',
+        children: [
+          { label: 'nav.salesReport', icon: i(FileText), href: '/accounting/sales' },
+          { label: 'nav.accountsReceivable', icon: i(Receipt), href: '/accounting/accounts-receivable' },
+        ],
+      },
+      // Pembelian (Purchases): purchase report (PURCHASE journals, with +Pembelian) + payables.
+      {
+        label: 'nav.purchases',
+        icon: i(ShoppingCart),
+        href: '#purchases',
+        children: [
+          { label: 'nav.purchaseReport', icon: i(FileText), href: '/accounting/purchases' },
+          { label: 'nav.accountsPayable', icon: i(TrendingDown), href: '/accounting/accounts-payable' },
+        ],
+      },
+      // Laporan (Financial statements).
+      {
+        label: 'nav.financialReports',
+        icon: i(BarChart3),
+        href: '#reports',
+        children: [
+          { label: 'nav.generalLedger', icon: i(Book), href: '/accounting/general-ledger' },
+          { label: 'nav.cashFlow', icon: i(ArrowRightLeft), href: '/accounting/cash-flow' },
+          { label: 'nav.incomeStatement', icon: i(TrendingUp), href: '/accounting/income-statement' },
+          { label: 'nav.balanceSheet', icon: i(PieChart), href: '/accounting/balance-sheet' },
+          { label: 'nav.trialBalance', icon: i(Scale), href: '/accounting/trial-balance' },
+        ],
+      },
+      // Assets & Depreciation.
+      {
+        label: 'nav.assetsDepreciation',
+        icon: i(Boxes),
+        href: '#assets',
+        children: [
+          { label: 'nav.fixedAssets', icon: i(Boxes), href: '/assets' },
+          { label: 'nav.depreciation', icon: i(TrendingDown), href: '/accounting/depreciation' },
+        ],
+      },
+      { label: 'nav.chartOfAccounts', icon: i(BookOpen), href: '/accounting/chart-of-accounts' },
     ],
   },
   {

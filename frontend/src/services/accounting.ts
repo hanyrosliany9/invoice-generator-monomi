@@ -439,6 +439,12 @@ export interface DepreciationSummary {
     endDate: string;
   };
   totalDepreciation: number;
+  /** GL-authoritative accumulated depreciation (1-40x0 contra-asset family) as of endDate. */
+  totalAccumulatedDepreciation?: number;
+  /** Sum of per-asset accumulated depreciation (itemised detail). */
+  itemsAccumulatedDepreciation?: number;
+  /** GL − items: non-zero ⇒ manual journal to an accum-dep account / out-of-window entries. */
+  accumulatedReconcilingAdjustment?: number;
   assetCount: number;
   byAsset: Array<{
     assetId: string;
@@ -451,6 +457,7 @@ export interface DepreciationSummary {
     accumulatedDepreciation: number;
     netBookValue: number;
     entryCount: number;
+    unregistered?: boolean;
   }>;
   byMethod: Record<string, {
     totalDepreciation: number;
@@ -865,6 +872,92 @@ export const exportGeneralLedgerExcel = async (params: {
     responseType: 'blob',
   });
   downloadBlob(response.data, `buku-besar-${params.startDate || 'all'}-${params.endDate || 'all'}.xlsx`);
+};
+
+export const exportJournalEntriesPDF = async (params: {
+  startDate?: string;
+  endDate?: string;
+  transactionType?: string;
+  status?: string;
+  search?: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/journal-entries/pdf', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `jurnal-umum-${params.endDate || 'all'}.pdf`);
+};
+
+export const exportJournalEntriesExcel = async (params: {
+  startDate?: string;
+  endDate?: string;
+  transactionType?: string;
+  status?: string;
+  search?: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/journal-entries/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `jurnal-umum-${params.endDate || 'all'}.xlsx`);
+};
+
+export const exportCashBankBalancesPDF = async (): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/cash-bank-balances/pdf', {
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, 'saldo-kas-bank.pdf');
+};
+
+export const exportCashBankBalancesExcel = async (): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/cash-bank-balances/excel', {
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, 'saldo-kas-bank.xlsx');
+};
+
+export const exportDepreciationPDF = async (params: {
+  startDate: string;
+  endDate: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/depreciation/pdf', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `penyusutan-${params.startDate}-${params.endDate}.pdf`);
+};
+
+export const exportDepreciationExcel = async (params: {
+  startDate: string;
+  endDate: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/depreciation/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `penyusutan-${params.startDate}-${params.endDate}.xlsx`);
+};
+
+export const exportPurchasesPDF = async (params: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/purchases/pdf', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `laporan-pembelian-${params.endDate || 'all'}.pdf`);
+};
+
+export const exportPurchasesExcel = async (params: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/purchases/excel', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `laporan-pembelian-${params.endDate || 'all'}.xlsx`);
 };
 
 // ============ CASH TRANSACTIONS ============
@@ -1316,4 +1409,167 @@ export const rejectBankReconciliation = async (
 
 export const deleteBankReconciliation = async (id: string): Promise<void> => {
   await apiClient.delete(`/accounting/bank-reconciliations/${id}`);
+};
+
+/* ------------------------------------------------------------------ */
+/*  Purchases (Laporan Pembelian)                                      */
+/* ------------------------------------------------------------------ */
+
+export interface PurchaseRow {
+  id: string;
+  number: string;
+  date: string;
+  vendorName: string | null;
+  categoryCode: string | null;
+  categoryName: string | null;
+  description: string;
+  amount: number;
+  transactionId: string;
+  /** Journal posting status: DRAFT | POSTED. */
+  postingStatus: string;
+  isPosted: boolean;
+  /** PAID once the 2-1010 balance for this purchase has been cleared. */
+  paymentStatus: 'PAID' | 'UNPAID';
+}
+
+export const getPurchases = async (params: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<PurchaseRow[]> => {
+  const response = await apiClient.get('/accounting/purchases', { params });
+  return response.data.data;
+};
+
+/** Settle a purchase from Kas (1-1010) or Bank (1-1020). Posts DR 2-1010 / CR cash. */
+export const markPurchasePaid = async (
+  id: string,
+  cashAccountCode: string,
+): Promise<{ settlementId: string; amount: number; cashAccountCode: string }> => {
+  const response = await apiClient.post(`/accounting/purchases/${id}/mark-paid`, {
+    cashAccountCode,
+  });
+  return response.data.data;
+};
+
+export type PurchasePaymentMethod = 'HUTANG' | 'CASH' | 'BANK';
+
+export interface CreatePurchasePayload {
+  /** Existing vendor id — or omit and pass `vendorName` to create one inline. */
+  vendorId?: string;
+  /** New vendor name typed on the form (backend finds-or-creates it). */
+  vendorName?: string;
+  date: string; // ISO date
+  reference?: string;
+  paymentMethod: PurchasePaymentMethod;
+  lineItems: Array<{
+    accountCode: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+}
+
+export const getNextPurchaseNumber = async (): Promise<string> => {
+  const response = await apiClient.get('/accounting/purchases/next-number');
+  return response.data.data.nextNumber;
+};
+
+/** Record a purchase. HUTANG → UNPAID payable (CR 2-1010); CASH/BANK → PAID (CR Kas/Bank). */
+export const createPurchase = async (payload: CreatePurchasePayload): Promise<{
+  id: string;
+  number: string;
+  amount: number;
+  paymentStatus: 'PAID' | 'UNPAID';
+}> => {
+  const response = await apiClient.post('/accounting/purchases', payload);
+  return response.data.data;
+};
+
+/* ------------------------------------------------------------------ */
+/*  Sales (Laporan Penjualan)                                          */
+/* ------------------------------------------------------------------ */
+
+export type SalePaymentMethod = 'PIUTANG' | 'CASH' | 'BANK';
+
+export interface SaleRow {
+  id: string;
+  /** 'SALE' = direct sale (New Sales form); 'INVOICE' = project-based invoice. */
+  sourceType: 'SALE' | 'INVOICE';
+  number: string;
+  journalEntryNumber: string;
+  clientId: string | null;
+  clientName: string | null;
+  description: string;
+  revenueCode: string | null;
+  issuedDate: string;
+  dueDate: string;
+  amount: number;
+  transactionId: string;
+  postingStatus: string;
+  isPosted: boolean;
+  paymentStatus: 'PAID' | 'UNPAID';
+}
+
+export interface CreateSalePayload {
+  /** Existing client id — or omit and pass `clientName` to create one inline. */
+  clientId?: string;
+  clientName?: string;
+  issuedDate: string; // ISO date
+  dueDate: string;    // ISO date
+  reference?: string;
+  paymentMethod: SalePaymentMethod;
+  lineItems: Array<{
+    itemName: string;
+    accountCode: string;   // revenue COA
+    unit?: string;
+    quantity: number;
+    unitPrice: number;
+    discountPercent?: number; // 0..100
+    taxRate?: number;         // 0 or 0.11
+  }>;
+}
+
+export const getSales = async (params: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<SaleRow[]> => {
+  const response = await apiClient.get('/accounting/sales', { params });
+  return response.data.data;
+};
+
+export const getNextSaleNumber = async (): Promise<string> => {
+  const response = await apiClient.get('/accounting/sales/next-number');
+  return response.data.data.nextNumber;
+};
+
+/** Record a sale. PIUTANG → UNPAID receivable (DR 1-2010); CASH/BANK → PAID. */
+export const createSale = async (payload: CreateSalePayload): Promise<{
+  id: string;
+  number: string;
+  amount: number;
+  paymentStatus: 'PAID' | 'UNPAID';
+}> => {
+  const response = await apiClient.post('/accounting/sales', payload);
+  return response.data.data;
+};
+
+/** Collect a sale into Kas (1-1010) or Bank (1-1020). Posts DR cash / CR 1-2010. */
+export const markSalePaid = async (
+  id: string,
+  cashAccountCode: string,
+): Promise<{ settlementId: string; amount: number; cashAccountCode: string }> => {
+  const response = await apiClient.post(`/accounting/sales/${id}/mark-paid`, {
+    cashAccountCode,
+  });
+  return response.data.data;
+};
+
+export const exportSalesPDF = async (params: { startDate?: string; endDate?: string }): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/sales/pdf', { params, responseType: 'blob' });
+  downloadBlob(response.data, `laporan-penjualan-${params.endDate ?? ''}.pdf`);
+};
+
+export const exportSalesExcel = async (params: { startDate?: string; endDate?: string }): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/sales/excel', { params, responseType: 'blob' });
+  downloadBlob(response.data, `laporan-penjualan-${params.endDate ?? ''}.xlsx`);
 };

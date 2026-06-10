@@ -369,6 +369,29 @@ export class DecksService {
       data: { publicViewCount: { increment: 1 } },
     });
 
+    // Return deck including publicAccessLevel so the viewer can enforce permissions
     return deck;
+  }
+
+  /**
+   * Update the publicAccessLevel of a shared deck (owner/editor only).
+   * The deck must already be public; call enablePublicSharing first if not.
+   */
+  async setPublicAccessLevel(
+    deckId: string,
+    userId: string,
+    accessLevel: string,
+  ) {
+    const deck = await this.findOne(deckId, userId);
+
+    const collaborator = deck.collaborators.find((c) => c.userId === userId);
+    if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
+      throw new ForbiddenException("Edit permission required");
+    }
+
+    return this.prisma.deck.update({
+      where: { id: deckId },
+      data: { publicAccessLevel: accessLevel as any },
+    });
   }
 }

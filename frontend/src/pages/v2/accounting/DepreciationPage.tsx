@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
-  BookOpen, Play, Eye, RefreshCw, TrendingDown, Package, Calendar, DollarSign,
+  BookOpen, Play, Eye, RefreshCw, TrendingDown, Package, Calendar, DollarSign, Download,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -35,6 +35,8 @@ import {
   type DepreciationSummary,
   getDepreciationSummary,
   processMonthlyDepreciation,
+  exportDepreciationPDF,
+  exportDepreciationExcel,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
 
@@ -82,7 +84,7 @@ function PageShell({ user, children }: { user: { name: string; role: string } | 
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{ right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
+      topbar={{}}
     >
       <PageContainer>{children}</PageContainer>
     </AppShell>
@@ -105,7 +107,9 @@ export default function DepreciationPageV2() {
   /* ----- process dialog ----- */
   const [processOpen, setProcessOpen]  = useState(false);
   const [processDate, setProcessDate]  = useState<Date>(today);
-  const [autoPost,    setAutoPost]     = useState<'manual' | 'auto'>('manual');
+  // Default to auto-post so processing depreciation posts its journals to the GL
+  // (keeps Asset & Depreciation connected to the accounting pages).
+  const [autoPost,    setAutoPost]     = useState<'manual' | 'auto'>('auto');
 
   /* ----- detail dialog ----- */
   const [detailAsset, setDetailAsset] = useState<AssetRow | null>(null);
@@ -131,10 +135,28 @@ export default function DepreciationPageV2() {
   /* ----- derived KPIs ----- */
   const kpis = useMemo(() => {
     const byAsset = summary?.byAsset ?? [];
-    const totalAccumulated = byAsset.reduce((a, r) => a + toNumber(r.accumulatedDepreciation), 0);
+    const itemsAccumulated = byAsset.reduce((a, r) => a + toNumber(r.accumulatedDepreciation), 0);
+    // GL-authoritative accumulated depreciation (1-40x0 contra-asset family) — ties
+    // to the balance sheet & journal entries. Falls back to the per-asset sum if the
+    // backend didn't supply it (older response shape).
+    const totalAccumulated = toNumber(
+      summary?.totalAccumulatedDepreciation ?? itemsAccumulated,
+    );
+    // GL − itemised per-asset detail: non-zero ⇒ a manual journal touched an
+    // accumulated-depreciation account, or there are posted entries outside the window.
+    const accumulatedReconciling = toNumber(
+      summary?.accumulatedReconcilingAdjustment ?? (totalAccumulated - itemsAccumulated),
+    );
     const monthlyDep = toNumber(summary?.totalDepreciation);
     const assetCount = toNumber(summary?.assetCount);
-    return { monthlyDep, totalAccumulated, assetCount };
+    const byAssetAll = summary?.byAsset ?? [];
+    const totalCost = toNumber(
+      (summary as any)?.totalCost ?? byAssetAll.reduce((a, r) => a + toNumber(r.purchasePrice), 0),
+    );
+    const totalNetBookValue = toNumber(
+      (summary as any)?.totalNetBookValue ?? byAssetAll.reduce((a, r) => a + toNumber(r.netBookValue), 0),
+    );
+    return { monthlyDep, totalAccumulated, itemsAccumulated, accumulatedReconciling, assetCount, totalCost, totalNetBookValue };
   }, [summary]);
 
   const nextRunDate = useMemo(() => {
@@ -143,6 +165,24 @@ export default function DepreciationPageV2() {
     d.setDate(1);
     return d;
   }, [endDate]);
+
+  const handleExportPDF = async () => {
+    try {
+      await exportDepreciationPDF({ startDate: fmt(startDate), endDate: fmt(endDate) });
+      toast.success(t('accounting.depreciation.exportPdfSuccess', 'PDF exported successfully.'));
+    } catch {
+      toast.error(t('accounting.depreciation.exportPdfFail', 'Failed to export PDF.'));
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      await exportDepreciationExcel({ startDate: fmt(startDate), endDate: fmt(endDate) });
+      toast.success(t('accounting.depreciation.exportExcelSuccess', 'Excel exported successfully.'));
+    } catch {
+      toast.error(t('accounting.depreciation.exportExcelFail', 'Failed to export Excel.'));
+    }
+  };
 
   if (error) {
     return (
@@ -158,6 +198,8 @@ export default function DepreciationPageV2() {
   }
 
   const byAsset = summary?.byAsset ?? [];
+  // Assets grouped by their fixed-asset COA (account) for the grouped view.
+  const byCoa = (summary as any)?.byCoa ?? [];
 
   return (
     <PageShell user={user}>
@@ -166,6 +208,14 @@ export default function DepreciationPageV2() {
         description={t('accounting.depreciation.description')}
         actions={
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportPDF}>
+              <Download className="h-4 w-4" />
+              PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+              <Download className="h-4 w-4" />
+              Excel
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -185,13 +235,10 @@ export default function DepreciationPageV2() {
 
       {/* ── KPI band ─────────────────────────────────────────────── */}
       <section className="mb-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {isLoading ? (
             <>
-              <Skeleton className="h-[108px] rounded-lg" />
-              <Skeleton className="h-[108px] rounded-lg" />
-              <Skeleton className="h-[108px] rounded-lg" />
-              <Skeleton className="h-[108px] rounded-lg" />
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[108px] rounded-lg" />)}
             </>
           ) : (
             <>
@@ -205,9 +252,23 @@ export default function DepreciationPageV2() {
                 sublabel={t('accounting.depreciation.statAssetsSub', 'assets with active schedule')}
               />
               <StatCard
+                label={t('accounting.depreciation.statTotalCost', 'Total Cost')}
+                value={<MoneyDisplay amount={kpis.totalCost} className="text-text-primary" />}
+                sublabel={t('accounting.depreciation.statTotalCostSub', 'total acquisition cost')}
+              />
+              <StatCard
                 label={t('accounting.depreciation.statAccumulated', 'Total Accumulated')}
                 value={<MoneyDisplay amount={kpis.totalAccumulated} className="text-danger" />}
-                sublabel={t('accounting.depreciation.statAccumulatedSub', 'accumulated depreciation')}
+                sublabel={
+                  Math.abs(kpis.accumulatedReconciling) >= 1
+                    ? t('accounting.depreciation.statAccumulatedReconciling', 'incl. journal entries (GL balance)')
+                    : t('accounting.depreciation.statAccumulatedSub', 'accumulated depreciation')
+                }
+              />
+              <StatCard
+                label={t('accounting.depreciation.statNbv', 'Net Book Value')}
+                value={<MoneyDisplay amount={kpis.totalNetBookValue} className="text-success" />}
+                sublabel={t('accounting.depreciation.statNbvSub', 'cost − accumulated depreciation')}
               />
               <StatCard
                 label={t('accounting.depreciation.statPeriod', 'Period Depreciation')}
@@ -264,9 +325,22 @@ export default function DepreciationPageV2() {
             description={t('accounting.depreciation.noDataDesc')}
           />
         ) : (
-          <div className="px-1 pb-1">
+          <div className="px-1 pb-1 space-y-5">
+            {byCoa.map((group: any) => (
+            <div key={group.coaCode} className="rounded-lg border border-border-subtle overflow-hidden">
+              <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-bg-sunken border-b border-border-subtle">
+                <div className="text-sm min-w-0 truncate">
+                  <span className="font-mono text-text-tertiary mr-2">{group.coaCode}</span>
+                  <span className="text-text-primary font-medium">{group.coaName}</span>
+                  <span className="text-text-tertiary ml-2">· {group.assets.length}</span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-text-tertiary shrink-0 tabular-nums">
+                  <span>{t('accounting.depreciation.groupCost', 'Cost')} <MoneyDisplay amount={toNumber(group.totalCost)} className="text-text-secondary" /></span>
+                  <span>{t('accounting.depreciation.groupNbv', 'NBV')} <MoneyDisplay amount={toNumber(group.totalNetBookValue)} className="text-success" /></span>
+                </div>
+              </div>
             <DataTable<AssetRow>
-              data={byAsset}
+              data={group.assets}
               onRowClick={setDetailAsset}
               columns={[
                 {
@@ -337,23 +411,6 @@ export default function DepreciationPageV2() {
                   ),
                 },
                 {
-                  id: 'status',
-                  header: t('accounting.depreciation.colStatus', 'Status'),
-                  cell: ({ row }) => (
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'text-[10px]',
-                        toNumber(row.original.netBookValue) > 0
-                          ? 'text-success border-success/30'
-                          : 'text-text-tertiary border-border-subtle',
-                      )}
-                    >
-                      {toNumber(row.original.netBookValue) > 0 ? t('accounting.depreciation.statusActive', 'Active') : t('accounting.depreciation.statusExpired', 'Expired')}
-                    </Badge>
-                  ),
-                },
-                {
                   id: 'detail',
                   header: () => <span className="sr-only">Detail</span>,
                   cell: ({ row }) => (
@@ -371,6 +428,8 @@ export default function DepreciationPageV2() {
                 },
               ]}
             />
+            </div>
+            ))}
           </div>
         )}
       </GlassPanel>

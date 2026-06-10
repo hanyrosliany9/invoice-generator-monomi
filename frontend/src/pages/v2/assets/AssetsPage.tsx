@@ -33,6 +33,7 @@ import {
 
 import { useAuthStore } from '@/store/auth';
 import { assetService, type Asset } from '@/services/assets';
+import { assetCoaForCategory, coaName } from '@/lib/assetCoa';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -138,6 +139,22 @@ export default function AssetsPageV2() {
     },
   });
 
+  // Inline status change from the table dropdown — no need to open detail.
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Asset['status'] }) =>
+      assetService.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      toast.success(t('assets.statusUpdated', 'Status aset diperbarui.'));
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('assets.statusUpdateFailed', 'Gagal memperbarui status.'));
+    },
+  });
+  const handleStatusChange = (row: Asset, status: Asset['status']) => {
+    if (row.status !== status) statusMutation.mutate({ id: row.id, status });
+  };
+
   /* ----- derived: filtered + categories ----- */
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -163,6 +180,25 @@ export default function AssetsPageV2() {
       return matchesSearch && matchesStatus && matchesCategory && matchesCondition;
     });
   }, [assets, searchText, statusFilter, categoryFilter, conditionFilter]);
+
+  // Group the (filtered) assets by their fixed-asset COA so the page lists them
+  // grouped by account, mirroring the depreciation report.
+  const groupedByCoa = useMemo(() => {
+    const groups = new Map<
+      string,
+      { code: string; name: string; assets: Asset[]; totalCost: number }
+    >();
+    for (const a of filtered) {
+      const code = assetCoaForCategory(a.category);
+      if (!groups.has(code)) {
+        groups.set(code, { code, name: coaName(code), assets: [], totalCost: 0 });
+      }
+      const g = groups.get(code)!;
+      g.assets.push(a);
+      g.totalCost += toNumber(a.purchasePrice);
+    }
+    return [...groups.values()].sort((x, y) => x.code.localeCompare(y.code));
+  }, [filtered]);
 
   /* ----- KPI band — four numbers chosen so an ops lead can answer:
      "How big is the fleet, what's it worth, how much is offline today,
@@ -199,9 +235,7 @@ export default function AssetsPageV2() {
           sections: v2SidebarSections,
           footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
         }}
-        topbar={{
-          right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-        }}
+        topbar={{}}
       >
         <PageContainer>
           <EmptyState
@@ -237,9 +271,7 @@ export default function AssetsPageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>
         <PageHeader
@@ -431,14 +463,30 @@ export default function AssetsPageV2() {
               }
             />
           ) : (
-            <div className="px-1 pb-1">
-              <AssetTable
-                rows={filtered}
-                onRowClick={(row) => navigate(`/assets/${row.id}`)}
-                onView={(row) => navigate(`/assets/${row.id}`)}
-                onEdit={(row) => navigate(`/assets/${row.id}/edit`)}
-                onDelete={handleDelete}
-              />
+            <div className="px-1 pb-1 space-y-5">
+              {groupedByCoa.map((group) => (
+                <div key={group.code} className="rounded-lg border border-border-subtle overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-bg-sunken border-b border-border-subtle">
+                    <div className="text-sm min-w-0 truncate">
+                      <span className="font-mono text-text-tertiary mr-2">{group.code}</span>
+                      <span className="text-text-primary font-medium">{group.name}</span>
+                      <span className="text-text-tertiary ml-2">· {group.assets.length}</span>
+                    </div>
+                    <div className="text-xs text-text-tertiary shrink-0 tabular-nums">
+                      {t('assets.groupValue', 'Nilai Perolehan')}{' '}
+                      <MoneyDisplay amount={group.totalCost} className="text-text-secondary" />
+                    </div>
+                  </div>
+                  <AssetTable
+                    rows={group.assets}
+                    onRowClick={(row) => navigate(`/assets/${row.id}`)}
+                    onView={(row) => navigate(`/assets/${row.id}`)}
+                    onEdit={(row) => navigate(`/assets/${row.id}/edit`)}
+                    onDelete={handleDelete}
+                    onStatusChange={handleStatusChange}
+                  />
+                </div>
+              ))}
             </div>
           )}
         </GlassPanel>
@@ -460,9 +508,10 @@ interface AssetTableProps {
   onView: (row: Asset) => void;
   onEdit: (row: Asset) => void;
   onDelete: (row: Asset) => void;
+  onStatusChange: (row: Asset, status: Asset['status']) => void;
 }
 
-function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTableProps) {
+function AssetTable({ rows, onRowClick, onView, onEdit, onDelete, onStatusChange }: AssetTableProps) {
   const { t } = useTranslation();
   return (
     <DataTable<Asset>
@@ -525,16 +574,31 @@ function AssetTable({ rows, onRowClick, onView, onEdit, onDelete }: AssetTablePr
           cell: ({ row }) => {
             const a = row.original;
             return (
-              <div className="flex flex-col gap-1 items-start">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'border-transparent px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider',
-                    statusChipClass(a.status),
-                  )}
+              // Inline status dropdown — change status here without opening detail.
+              // stopPropagation so picking a status doesn't trigger the row click.
+              <div
+                className="flex flex-col gap-1 items-start"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Select
+                  value={a.status}
+                  onValueChange={(v) => onStatusChange(a, v as Asset['status'])}
                 >
-                  {STATUS_LABEL[a.status] ?? a.status}
-                </Badge>
+                  <SelectTrigger
+                    size="sm"
+                    className={cn(
+                      'h-7 w-[150px] border-transparent text-[11px] font-medium uppercase tracking-wider',
+                      statusChipClass(a.status),
+                    )}
+                  >
+                    <SelectValue>{STATUS_LABEL[a.status] ?? a.status}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(STATUS_LABEL) as Asset['status'][]).map((s) => (
+                      <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <span
                   className={cn('text-[11px]', conditionToneClass(a.condition))}
                 >

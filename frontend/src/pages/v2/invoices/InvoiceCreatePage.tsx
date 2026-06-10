@@ -43,9 +43,7 @@ export default function InvoiceCreatePageV2() {
         sections: v2SidebarSections,
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
-      topbar={{
-        right: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
+      topbar={{}}
     >
       <PageContainer>
         {/* back-link — sits above the H1 in the breadcrumb slot so the
