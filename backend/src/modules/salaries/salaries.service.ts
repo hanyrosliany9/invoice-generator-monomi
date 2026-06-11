@@ -22,8 +22,6 @@ const MANAGEMENT_ACCOUNT = "6-5010"; // Salaries - Management
 const SALES_ACCOUNT = "6-1010"; // Sales Salaries
 const CASH_ACCOUNT = "1-1010"; // Kas (Cash)
 const BANK_ACCOUNT = "1-1020"; // Rekening Bank
-// Deductions/withholding payable account (PPh 21 Payable — LIABILITY)
-const DEDUCTIONS_PAYABLE_ACCOUNT = "2-2110"; // PPh 21 Payable
 
 function salaryExpenseAccount(position: string | null | undefined): string {
   if (!position) return SALARY_EXPENSE_ACCOUNT;
@@ -118,7 +116,7 @@ export class SalariesService {
   // SALARY PAYMENTS CRUD
   // ============================================================================
 
-  async createPayment(dto: CreateSalaryPaymentDto) {
+  async createPayment(dto: CreateSalaryPaymentDto, userId = "system") {
     // Ensure staff exists
     const staff = await this.findOneStaff(dto.staffId);
 
@@ -178,17 +176,34 @@ export class SalariesService {
     // FIX 1: if the payment is immediately PAID, create it and post the journal
     // atomically so we never have a PAID payment without a GL entry.
     if (data.status === SalaryPaymentStatus.PAID) {
-      return this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         const payment = await tx.salaryPayment.create({
           data,
           include: { staff: true },
         });
-        await this.postSalaryJournal(payment, staff as any, "system", tx as any);
-        return tx.salaryPayment.findUnique({
+        const journalId = await this.postSalaryJournal(
+          payment,
+          staff as any,
+          userId,
+          tx as any,
+        );
+        const fresh = await tx.salaryPayment.findUnique({
           where: { id: payment.id },
           include: { staff: true },
         });
+        return { payment: fresh, journalId };
       });
+      // Mirror as an Expense record AFTER the transaction commits — it's a
+      // non-critical view, so its failure must never roll back the payment/GL.
+      if (result.journalId && result.payment) {
+        await this.createSalaryExpenseRecord(
+          result.payment,
+          staff as any,
+          result.journalId,
+          userId,
+        );
+      }
+      return result.payment;
     }
 
     return this.prisma.salaryPayment.create({
@@ -351,6 +366,18 @@ export class SalariesService {
           `Journal reversal skipped for ${payment.journalEntryId}: ${err?.message}`,
         );
       }
+
+      // Remove the mirrored Expense record (linked to the same journal) so the
+      // Expenses page doesn't keep a stale salary row after the payment is gone.
+      try {
+        await this.prisma.expense.deleteMany({
+          where: { journalEntryId: payment.journalEntryId },
+        });
+      } catch (err: any) {
+        this.logger.warn(
+          `Could not delete salary expense mirror for ${payment.journalEntryId}: ${err?.message}`,
+        );
+      }
     }
 
     return this.prisma.salaryPayment.delete({ where: { id } });
@@ -420,7 +447,7 @@ export class SalariesService {
     // FIX 1: use a transaction so the status update and journal post are atomic.
     // If postSalaryJournal throws (and it now rethrows), the prisma update is
     // rolled back and we never have a PAID payment without a GL journal.
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const payment = await tx.salaryPayment.update({
         where: { id },
         data: {
@@ -433,14 +460,32 @@ export class SalariesService {
       });
 
       // Post GL journal — rethrows on failure, rolling back this transaction
-      await this.postSalaryJournal(payment, payment.staff as any, userId, tx as any);
+      const journalId = await this.postSalaryJournal(
+        payment,
+        payment.staff as any,
+        userId,
+        tx as any,
+      );
 
       // Re-fetch so journalEntryId is included in the returned value
-      return tx.salaryPayment.findUnique({
+      const fresh = await tx.salaryPayment.findUnique({
         where: { id },
         include: { staff: true },
       });
+      return { payment: fresh, journalId };
     });
+
+    // Mirror as an Expense record AFTER commit (non-critical view; never rolls
+    // back the payment/GL on failure).
+    if (result.journalId && result.payment) {
+      await this.createSalaryExpenseRecord(
+        result.payment,
+        result.payment.staff as any,
+        result.journalId,
+        userId,
+      );
+    }
+    return result.payment;
   }
 
   async getStats() {
@@ -504,7 +549,7 @@ export class SalariesService {
     staff: { position?: string | null; bankName?: string | null; name: string },
     userId: string,
     txPrisma?: typeof this.prisma,
-  ): Promise<void> {
+  ): Promise<string | null> {
     const db = txPrisma ?? this.prisma;
 
     // Idempotency: do not double-post
@@ -516,18 +561,18 @@ export class SalariesService {
       this.logger.log(
         `Salary journal already posted for payment ${payment.id} — skipping`,
       );
-      return;
+      return current.journalEntryId;
     }
 
-    // FIX 2: use gross for the expense debit; split credits into cash/bank + deductions payable
+    // Net pay is the actual salary expense / cash outflow. PPh 21 was removed:
+    // deductions are a plain reduction of net pay (no 2-2110 tax-payable line).
     const netPay = Number(payment.netPay);
-    const deductions = Number(payment.deductions ?? 0);
-    const grossPay = netPay + deductions; // == baseSalary + allowances
 
     const expenseAccount = salaryExpenseAccount(staff.position);
     const creditAccount = cashOrBankAccount(staff.bankName);
 
-    // Build line items — always debit gross expense
+    // Simple two-line payroll entry: Dr salary expense / Cr cash-or-bank, both
+    // at net pay (debits == credits).
     const lineItems: Array<{
       accountCode: string;
       debit: number;
@@ -536,7 +581,7 @@ export class SalariesService {
     }> = [
       {
         accountCode: expenseAccount,
-        debit: grossPay,
+        debit: netPay,
         credit: 0,
         description: `Beban Gaji ${staff.name} - ${payment.period}`,
       },
@@ -547,16 +592,6 @@ export class SalariesService {
         description: `Pembayaran Gaji ${staff.name} - ${payment.period}`,
       },
     ];
-
-    // Add deductions-payable credit line only when deductions > 0
-    if (deductions > 0) {
-      lineItems.push({
-        accountCode: DEDUCTIONS_PAYABLE_ACCOUNT, // 2-2110 PPh 21 Payable
-        debit: 0,
-        credit: deductions,
-        description: `Potongan PPh 21 ${staff.name} - ${payment.period}`,
-      });
-    }
 
     // FIX 1: do NOT swallow errors — rethrow so markPaymentPaid's transaction rolls back
     let journal: { id: string };
@@ -587,9 +622,131 @@ export class SalariesService {
 
     this.logger.log(
       `✅ Posted salary journal ${journal.id} for payment ${payment.id} ` +
-        `(Dr ${expenseAccount} ${grossPay} / Cr ${creditAccount} ${netPay}` +
-        (deductions > 0 ? ` + Cr ${DEDUCTIONS_PAYABLE_ACCOUNT} ${deductions}` : "") +
-        `)`,
+        `(Dr ${expenseAccount} ${netPay} / Cr ${creditAccount} ${netPay})`,
     );
+    return journal.id;
+  }
+
+  /**
+   * Mirror a PAID salary as an Expense record so it shows on the Expenses page —
+   * "salaries are expenses". It is LINKED to the salary's existing GL journal and
+   * posts NO journal of its own, so the books are never double-counted (the
+   * 6-50xx salary expense is already in the GL once). Idempotent on journalId.
+   */
+  private async createSalaryExpenseRecord(
+    payment: any,
+    staff: { position?: string | null; bankName?: string | null; name: string },
+    journalId: string,
+    userId: string,
+    txPrisma?: typeof this.prisma,
+  ): Promise<void> {
+    const db = txPrisma ?? this.prisma;
+
+    // Don't create a second Expense for the same salary journal.
+    const existing = await db.expense.findFirst({
+      where: { journalEntryId: journalId },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    // Expense.userId is an FK — "system" (or any non-user id) would violate it,
+    // so resolve a real user (the caller, else the earliest/admin user).
+    let effectiveUserId = userId;
+    const userExists = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!userExists) {
+      const fallback = await db.user.findFirst({
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      if (!fallback) {
+        this.logger.warn(
+          `No user to attribute salary expense mirror for payment ${payment.id}; skipping`,
+        );
+        return;
+      }
+      effectiveUserId = fallback.id;
+    }
+
+    const accountCode = salaryExpenseAccount(staff.position);
+    const category = await db.expenseCategory.findFirst({
+      where: { accountCode },
+    });
+    if (!category) {
+      // Without a matching category we can't create the Expense row — log and
+      // skip (the salary GL posting already succeeded, so the books are fine).
+      this.logger.warn(
+        `No expense category for account ${accountCode}; skipping salary expense mirror for payment ${payment.id}`,
+      );
+      return;
+    }
+
+    const amount = Number(payment.netPay) || 0;
+    const expenseDate = payment.paidAt ? new Date(payment.paidAt) : new Date();
+    const desc = `Gaji ${staff.name} - ${payment.period}`;
+    const paymentMethod = staff.bankName ? "BANK_TRANSFER" : "CASH";
+
+    // Unique numbers (EXP-/BKK-) with a small P2002 retry for number races.
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const year = new Date().getFullYear();
+      const expPrefix = `EXP-${year}-`;
+      const bkkPrefix = `BKK-${year}-`;
+      const [lastExp, lastBkk] = await Promise.all([
+        db.expense.findFirst({
+          where: { expenseNumber: { startsWith: expPrefix } },
+          orderBy: { expenseNumber: "desc" },
+          select: { expenseNumber: true },
+        }),
+        db.expense.findFirst({
+          where: { buktiPengeluaranNumber: { startsWith: bkkPrefix } },
+          orderBy: { buktiPengeluaranNumber: "desc" },
+          select: { buktiPengeluaranNumber: true },
+        }),
+      ]);
+      const nextExp = lastExp
+        ? parseInt(lastExp.expenseNumber.split("-")[2], 10) + 1
+        : 1;
+      const nextBkk = lastBkk
+        ? parseInt(lastBkk.buktiPengeluaranNumber.split("-")[2], 10) + 1
+        : 1;
+      try {
+        await db.expense.create({
+          data: {
+            expenseNumber: `${expPrefix}${String(nextExp).padStart(5, "0")}`,
+            buktiPengeluaranNumber: `${bkkPrefix}${String(nextBkk).padStart(5, "0")}`,
+            description: desc,
+            descriptionId: desc,
+            vendorName: staff.name,
+            categoryId: category.id,
+            accountCode,
+            accountName: category.nameId || category.name,
+            grossAmount: amount,
+            ppnAmount: 0,
+            ppnRate: 0,
+            ppnCategory: "NON_CREDITABLE",
+            netAmount: amount,
+            totalAmount: amount,
+            expenseClass: category.expenseClass,
+            expenseDate,
+            status: "PAID",
+            paymentStatus: "PAID",
+            paidAt: expenseDate,
+            paymentMethod,
+            journalEntryId: journalId,
+            userId: effectiveUserId,
+            createdBy: effectiveUserId,
+          },
+        });
+        return;
+      } catch (err: any) {
+        if (err?.code === "P2002" && attempt < 3) continue;
+        this.logger.warn(
+          `Could not create salary expense mirror for payment ${payment.id}: ${err?.message}`,
+        );
+        return;
+      }
+    }
   }
 }

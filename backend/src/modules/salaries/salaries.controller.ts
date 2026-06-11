@@ -120,8 +120,14 @@ export class SalariesController {
     status: 409,
     description: "Duplicate payment for same staff/month/year",
   })
-  async createPayment(@Body() dto: CreateSalaryPaymentDto) {
-    return this.salariesService.createPayment(dto);
+  async createPayment(
+    @Body() dto: CreateSalaryPaymentDto,
+    @Request() req: any,
+  ) {
+    return this.salariesService.createPayment(
+      dto,
+      req.user?.userId ?? "system",
+    );
   }
 
   @Get("payments")
