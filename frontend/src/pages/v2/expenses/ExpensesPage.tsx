@@ -6,7 +6,7 @@ import { invalidateAccountingQueries } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
-  Plus, Search, MoreHorizontal, Eye, Pencil, Trash2, X, Tag as TagIcon,
+  Plus, Search, MoreHorizontal, Eye, Pencil, Trash2, X, Tag as TagIcon, Download,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -35,6 +35,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { expenseService } from '@/services/expenses';
+import { exportExpensesPDF, exportExpensesExcel } from '@/services/accounting';
 import type {
   Expense,
   ExpensePaymentStatus,
@@ -261,6 +262,29 @@ export default function ExpensesPageV2() {
     setEndDate(undefined);
   };
 
+  /* ----- export (PDF / Excel), honouring the current date range ----- */
+  const isoDate = (d?: Date) =>
+    d
+      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      : undefined;
+  const exportParams = () => ({ startDate: isoDate(startDate), endDate: isoDate(endDate) });
+  const handleExportPDF = async () => {
+    try {
+      await exportExpensesPDF(exportParams());
+      toast.success(t('expensesPage.exportPdfSuccess', 'PDF exported successfully.'));
+    } catch (e: any) {
+      toast.error(e?.message || t('expensesPage.exportPdfFail', 'Failed to export PDF.'));
+    }
+  };
+  const handleExportExcel = async () => {
+    try {
+      await exportExpensesExcel(exportParams());
+      toast.success(t('expensesPage.exportExcelSuccess', 'Excel exported successfully.'));
+    } catch (e: any) {
+      toast.error(e?.message || t('expensesPage.exportExcelFail', 'Failed to export Excel.'));
+    }
+  };
+
   /* ----- error short-circuit ----- */
   if (error) {
     return (
@@ -286,6 +310,18 @@ export default function ExpensesPageV2() {
         )}
         actions={
           <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4" />
+                  {t('expensesPage.export', 'Export')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportPDF}>PDF</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>Excel</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="outline"
               size="sm"

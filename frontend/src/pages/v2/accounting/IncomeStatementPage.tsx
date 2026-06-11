@@ -202,9 +202,9 @@ export default function IncomeStatementPageV2() {
   const handleExportExcel = async () => {
     try {
       await exportIncomeStatementExcel({ startDate: startStr, endDate: endStr });
-      toast.success(t('incomeStatement.exportCsvSuccess', 'Income statement exported (CSV).'));
+      toast.success(t('incomeStatement.exportCsvSuccess', 'Income statement exported (Excel).'));
     } catch {
-      toast.error(t('incomeStatement.exportCsvFail', 'Failed to export CSV.'));
+      toast.error(t('incomeStatement.exportCsvFail', 'Failed to export Excel.'));
     }
   };
 
@@ -307,7 +307,7 @@ export default function IncomeStatementPageV2() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
                   <DropdownMenuItem onClick={handleExportPDF}>PDF</DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportExcel}>CSV / Excel</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportExcel}>Excel</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

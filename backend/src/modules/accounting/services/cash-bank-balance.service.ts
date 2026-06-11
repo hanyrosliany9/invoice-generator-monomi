@@ -319,6 +319,117 @@ export class CashBankBalanceService {
     return balance;
   }
 
+  /**
+   * Per-account transaction detail (mutasi) for every cash/bank account: each
+   * posted GL movement with a running balance. Powers the "rincian mutasi"
+   * section of the Cash & Bank exports (the monthly rows only give totals).
+   */
+  async getMutations(): Promise<
+    Array<{
+      accountCode: string;
+      accountName: string;
+      group: "CASH" | "BANK";
+      transactions: Array<{
+        date: Date;
+        reference: string;
+        description: string;
+        relatedCoa: string;
+        inflow: number;
+        outflow: number;
+        balance: number;
+      }>;
+    }>
+  > {
+    const accounts = await this.getCashBankAccounts();
+
+    // First pass: collect every cash/bank GL row and the journals they belong to.
+    const perAccount: Array<{ acct: (typeof accounts)[number]; rows: any[] }> =
+      [];
+    const journalIds = new Set<string>();
+    for (const acct of accounts) {
+      const rows = await this.prisma.generalLedger.findMany({
+        where: { accountId: acct.id, journalEntry: { isPosted: true } },
+        select: {
+          journalEntryId: true,
+          entryDate: true,
+          journalEntryNumber: true,
+          description: true,
+          descriptionId: true,
+          debit: true,
+          credit: true,
+          journalEntry: {
+            select: {
+              entryNumber: true,
+              description: true,
+              descriptionId: true,
+            },
+          },
+        },
+        orderBy: [{ entryDate: "asc" }, { journalEntryNumber: "asc" }],
+      });
+      perAccount.push({ acct, rows });
+      rows.forEach((r) => journalIds.add(r.journalEntryId));
+    }
+
+    // The counter-account COA(s) for each transaction = the OTHER lines in the
+    // same journal entry (the account this cash movement flowed to/from).
+    const counterByJournal = new Map<string, string[]>();
+    if (journalIds.size) {
+      const lines = await this.prisma.generalLedger.findMany({
+        where: { journalEntryId: { in: [...journalIds] } },
+        select: {
+          journalEntryId: true,
+          account: { select: { code: true } },
+        },
+      });
+      for (const l of lines) {
+        const code = l.account?.code;
+        if (!code) continue;
+        const list = counterByJournal.get(l.journalEntryId) ?? [];
+        if (!list.includes(code)) list.push(code);
+        counterByJournal.set(l.journalEntryId, list);
+      }
+    }
+
+    const result = [];
+    for (const { acct, rows } of perAccount) {
+      let balance = 0;
+      const transactions = rows.map((r) => {
+        const inflow = Number(r.debit) || 0;
+        const outflow = Number(r.credit) || 0;
+        balance += inflow - outflow;
+        // Counter accounts = every code on the journal except this cash account
+        // (and other cash legs of an internal transfer are kept as the counter).
+        const related = (counterByJournal.get(r.journalEntryId) ?? []).filter(
+          (code) => code !== acct.code,
+        );
+        return {
+          date: r.entryDate,
+          reference: r.journalEntry?.entryNumber || r.journalEntryNumber || "-",
+          description:
+            r.descriptionId ||
+            r.description ||
+            r.journalEntry?.descriptionId ||
+            r.journalEntry?.description ||
+            "-",
+          relatedCoa: related.length ? related.join(", ") : "-",
+          inflow,
+          outflow,
+          balance,
+        };
+      });
+      if (transactions.length) {
+        result.push({
+          accountCode: acct.code,
+          accountName: acct.nameId || acct.name,
+          group: acct.group,
+          transactions,
+        });
+      }
+    }
+    return result;
+  }
+
   /** All account rows for a period. */
   async findByPeriod(year: number, month: number) {
     return this.prisma.cashBankBalance.findMany({

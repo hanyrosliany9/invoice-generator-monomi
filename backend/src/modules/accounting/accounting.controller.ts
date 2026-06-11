@@ -1665,6 +1665,78 @@ export class AccountingController {
     }
   }
 
+  @Get("export/expenses/pdf")
+  async exportExpensesPDF(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.exportService.exportExpensesPDF({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+      const filename = `laporan-pengeluaran-${startDate || "all"}-${endDate || "all"}.pdf`;
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating PDF",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/expenses/excel")
+  async exportExpensesExcel(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const buffer = await this.excelExportService.exportExpensesExcel({
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+      const filename = `laporan-pengeluaran-${startDate || "all"}-${endDate || "all"}.xlsx`;
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating Excel",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  @Get("export/chart-of-accounts/excel")
+  async exportChartOfAccountsExcel(@Res() res: Response) {
+    try {
+      const buffer =
+        await this.excelExportService.exportChartOfAccountsExcel();
+      const filename = `bagan-akun-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.send(buffer);
+    } catch (error) {
+      res.status(500).json({
+        message: "Error generating Excel",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
   // ============ PHASE 2: REVENUE RECOGNITION & DASHBOARD ============
 
   /**

@@ -666,15 +666,41 @@ export const getInvoiceECLProvisions = async (invoiceId: string): Promise<ECLPro
 
 // ============ EXPORT FUNCTIONS ============
 // Helper function to trigger file download from blob
-const downloadBlob = (blob: Blob, filename: string) => {
+// With `responseType: 'blob'`, a server error (JSON/HTML, or an empty body) is
+// delivered as a Blob too — naively "downloading" it produces a broken/empty
+// file while the caller still shows a success toast ("nothing happened"). Guard
+// against that: reject so the caller's catch fires a real error toast.
+const assertDownloadableBlob = async (blob: Blob): Promise<void> => {
+  if (!blob || blob.size === 0) {
+    throw new Error('Export gagal: berkas kosong dari server.');
+  }
+  const type = (blob.type || '').toLowerCase();
+  if (type.includes('application/json') || type.includes('text/html')) {
+    let message = 'Export gagal di server.';
+    try {
+      const text = await blob.text();
+      const parsed = JSON.parse(text);
+      message = parsed?.message || parsed?.error || message;
+    } catch {
+      /* not JSON — keep the generic message */
+    }
+    throw new Error(message);
+  }
+};
+
+const downloadBlob = async (blob: Blob, filename: string): Promise<void> => {
+  await assertDownloadableBlob(blob);
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.rel = 'noopener';
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
+  link.remove();
+  // Defer revoke a tick so the browser has started the download before the
+  // object URL is torn down (revoking too early can abort the download).
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 };
 
 export const exportTrialBalancePDF = async (params: {
@@ -689,7 +715,7 @@ export const exportTrialBalancePDF = async (params: {
     responseType: 'blob',
   });
   const filename = `neraca-saldo-${params.startDate}-${params.endDate}.pdf`;
-  downloadBlob(response.data, filename);
+  await downloadBlob(response.data, filename);
 };
 
 export const exportIncomeStatementPDF = async (params: {
@@ -702,7 +728,7 @@ export const exportIncomeStatementPDF = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-laba-rugi-${params.startDate}-${params.endDate}.pdf`);
+  await downloadBlob(response.data, `laporan-laba-rugi-${params.startDate}-${params.endDate}.pdf`);
 };
 
 export const exportBalanceSheetPDF = async (params: {
@@ -714,7 +740,7 @@ export const exportBalanceSheetPDF = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `neraca-${params.endDate}.pdf`);
+  await downloadBlob(response.data, `neraca-${params.endDate}.pdf`);
 };
 
 export const exportCashFlowStatementPDF = async (params: {
@@ -726,7 +752,7 @@ export const exportCashFlowStatementPDF = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-arus-kas-${params.startDate}-${params.endDate}.pdf`);
+  await downloadBlob(response.data, `laporan-arus-kas-${params.startDate}-${params.endDate}.pdf`);
 };
 
 export const exportARAgingPDF = async (params: { asOfDate?: string }): Promise<void> => {
@@ -734,7 +760,7 @@ export const exportARAgingPDF = async (params: { asOfDate?: string }): Promise<v
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `aging-piutang-${params.asOfDate || 'current'}.pdf`);
+  await downloadBlob(response.data, `aging-piutang-${params.asOfDate || 'current'}.pdf`);
 };
 
 export const exportAPAgingPDF = async (params: { asOfDate?: string }): Promise<void> => {
@@ -742,7 +768,7 @@ export const exportAPAgingPDF = async (params: { asOfDate?: string }): Promise<v
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `aging-hutang-${params.asOfDate || 'current'}.pdf`);
+  await downloadBlob(response.data, `aging-hutang-${params.asOfDate || 'current'}.pdf`);
 };
 
 export const exportAccountsReceivablePDF = async (params: { endDate: string }): Promise<void> => {
@@ -750,7 +776,7 @@ export const exportAccountsReceivablePDF = async (params: { endDate: string }): 
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-piutang-${params.endDate}.pdf`);
+  await downloadBlob(response.data, `laporan-piutang-${params.endDate}.pdf`);
 };
 
 export const exportAccountsPayablePDF = async (params: { startDate?: string; endDate: string }): Promise<void> => {
@@ -758,7 +784,7 @@ export const exportAccountsPayablePDF = async (params: { startDate?: string; end
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-hutang-${params.endDate}.pdf`);
+  await downloadBlob(response.data, `laporan-hutang-${params.endDate}.pdf`);
 };
 
 export const exportGeneralLedgerPDF = async (params: {
@@ -773,7 +799,7 @@ export const exportGeneralLedgerPDF = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `buku-besar-${params.startDate || 'all'}-${params.endDate || 'all'}.pdf`);
+  await downloadBlob(response.data, `buku-besar-${params.startDate || 'all'}-${params.endDate || 'all'}.pdf`);
 };
 
 // ============ EXCEL EXPORT FUNCTIONS (NEW) ============
@@ -789,7 +815,7 @@ export const exportTrialBalanceExcel = async (params: {
     responseType: 'blob',
   });
   const filename = `neraca-saldo-${params.startDate}-${params.endDate}.xlsx`;
-  downloadBlob(response.data, filename);
+  await downloadBlob(response.data, filename);
 };
 
 export const exportIncomeStatementExcel = async (params: {
@@ -801,7 +827,7 @@ export const exportIncomeStatementExcel = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-laba-rugi-${params.startDate}-${params.endDate}.xlsx`);
+  await downloadBlob(response.data, `laporan-laba-rugi-${params.startDate}-${params.endDate}.xlsx`);
 };
 
 export const exportBalanceSheetExcel = async (params: {
@@ -812,7 +838,7 @@ export const exportBalanceSheetExcel = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `neraca-${params.endDate}.xlsx`);
+  await downloadBlob(response.data, `neraca-${params.endDate}.xlsx`);
 };
 
 export const exportCashFlowStatementExcel = async (params: {
@@ -824,7 +850,7 @@ export const exportCashFlowStatementExcel = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-arus-kas-${params.startDate}-${params.endDate}.xlsx`);
+  await downloadBlob(response.data, `laporan-arus-kas-${params.startDate}-${params.endDate}.xlsx`);
 };
 
 export const exportARAgingExcel = async (params: { asOfDate?: string }): Promise<void> => {
@@ -832,7 +858,7 @@ export const exportARAgingExcel = async (params: { asOfDate?: string }): Promise
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `aging-piutang-${params.asOfDate || 'current'}.xlsx`);
+  await downloadBlob(response.data, `aging-piutang-${params.asOfDate || 'current'}.xlsx`);
 };
 
 export const exportAPAgingExcel = async (params: { asOfDate?: string }): Promise<void> => {
@@ -840,7 +866,7 @@ export const exportAPAgingExcel = async (params: { asOfDate?: string }): Promise
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `aging-hutang-${params.asOfDate || 'current'}.xlsx`);
+  await downloadBlob(response.data, `aging-hutang-${params.asOfDate || 'current'}.xlsx`);
 };
 
 export const exportAccountsReceivableExcel = async (params: { endDate: string }): Promise<void> => {
@@ -848,7 +874,7 @@ export const exportAccountsReceivableExcel = async (params: { endDate: string })
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-piutang-${params.endDate}.xlsx`);
+  await downloadBlob(response.data, `laporan-piutang-${params.endDate}.xlsx`);
 };
 
 export const exportAccountsPayableExcel = async (params: { startDate?: string; endDate: string }): Promise<void> => {
@@ -856,7 +882,7 @@ export const exportAccountsPayableExcel = async (params: { startDate?: string; e
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-hutang-${params.endDate}.xlsx`);
+  await downloadBlob(response.data, `laporan-hutang-${params.endDate}.xlsx`);
 };
 
 export const exportGeneralLedgerExcel = async (params: {
@@ -871,7 +897,7 @@ export const exportGeneralLedgerExcel = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `buku-besar-${params.startDate || 'all'}-${params.endDate || 'all'}.xlsx`);
+  await downloadBlob(response.data, `buku-besar-${params.startDate || 'all'}-${params.endDate || 'all'}.xlsx`);
 };
 
 export const exportJournalEntriesPDF = async (params: {
@@ -885,7 +911,7 @@ export const exportJournalEntriesPDF = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `jurnal-umum-${params.endDate || 'all'}.pdf`);
+  await downloadBlob(response.data, `jurnal-umum-${params.endDate || 'all'}.pdf`);
 };
 
 export const exportJournalEntriesExcel = async (params: {
@@ -899,21 +925,50 @@ export const exportJournalEntriesExcel = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `jurnal-umum-${params.endDate || 'all'}.xlsx`);
+  await downloadBlob(response.data, `jurnal-umum-${params.endDate || 'all'}.xlsx`);
+};
+
+export const exportExpensesPDF = async (params: {
+  startDate?: string;
+  endDate?: string;
+} = {}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/expenses/pdf', {
+    params,
+    responseType: 'blob',
+  });
+  await downloadBlob(response.data, `laporan-pengeluaran-${params.endDate || 'all'}.pdf`);
+};
+
+export const exportExpensesExcel = async (params: {
+  startDate?: string;
+  endDate?: string;
+} = {}): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/expenses/excel', {
+    params,
+    responseType: 'blob',
+  });
+  await downloadBlob(response.data, `laporan-pengeluaran-${params.endDate || 'all'}.xlsx`);
+};
+
+export const exportChartOfAccountsExcel = async (): Promise<void> => {
+  const response = await apiClient.get('/accounting/export/chart-of-accounts/excel', {
+    responseType: 'blob',
+  });
+  await downloadBlob(response.data, `bagan-akun-${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 
 export const exportCashBankBalancesPDF = async (): Promise<void> => {
   const response = await apiClient.get('/accounting/export/cash-bank-balances/pdf', {
     responseType: 'blob',
   });
-  downloadBlob(response.data, 'saldo-kas-bank.pdf');
+  await downloadBlob(response.data, 'saldo-kas-bank.pdf');
 };
 
 export const exportCashBankBalancesExcel = async (): Promise<void> => {
   const response = await apiClient.get('/accounting/export/cash-bank-balances/excel', {
     responseType: 'blob',
   });
-  downloadBlob(response.data, 'saldo-kas-bank.xlsx');
+  await downloadBlob(response.data, 'saldo-kas-bank.xlsx');
 };
 
 export const exportDepreciationPDF = async (params: {
@@ -924,7 +979,7 @@ export const exportDepreciationPDF = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `penyusutan-${params.startDate}-${params.endDate}.pdf`);
+  await downloadBlob(response.data, `penyusutan-${params.startDate}-${params.endDate}.pdf`);
 };
 
 export const exportDepreciationExcel = async (params: {
@@ -935,7 +990,7 @@ export const exportDepreciationExcel = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `penyusutan-${params.startDate}-${params.endDate}.xlsx`);
+  await downloadBlob(response.data, `penyusutan-${params.startDate}-${params.endDate}.xlsx`);
 };
 
 export const exportPurchasesPDF = async (params: {
@@ -946,7 +1001,7 @@ export const exportPurchasesPDF = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-pembelian-${params.endDate || 'all'}.pdf`);
+  await downloadBlob(response.data, `laporan-pembelian-${params.endDate || 'all'}.pdf`);
 };
 
 export const exportPurchasesExcel = async (params: {
@@ -957,7 +1012,7 @@ export const exportPurchasesExcel = async (params: {
     params,
     responseType: 'blob',
   });
-  downloadBlob(response.data, `laporan-pembelian-${params.endDate || 'all'}.xlsx`);
+  await downloadBlob(response.data, `laporan-pembelian-${params.endDate || 'all'}.xlsx`);
 };
 
 // ============ CASH TRANSACTIONS ============
@@ -1566,10 +1621,10 @@ export const markSalePaid = async (
 
 export const exportSalesPDF = async (params: { startDate?: string; endDate?: string }): Promise<void> => {
   const response = await apiClient.get('/accounting/export/sales/pdf', { params, responseType: 'blob' });
-  downloadBlob(response.data, `laporan-penjualan-${params.endDate ?? ''}.pdf`);
+  await downloadBlob(response.data, `laporan-penjualan-${params.endDate ?? ''}.pdf`);
 };
 
 export const exportSalesExcel = async (params: { startDate?: string; endDate?: string }): Promise<void> => {
   const response = await apiClient.get('/accounting/export/sales/excel', { params, responseType: 'blob' });
-  downloadBlob(response.data, `laporan-penjualan-${params.endDate ?? ''}.xlsx`);
+  await downloadBlob(response.data, `laporan-penjualan-${params.endDate ?? ''}.xlsx`);
 };

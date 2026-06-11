@@ -179,7 +179,7 @@ export default function TrialBalancePageV2() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
                   <DropdownMenuItem onClick={handleExportPDF}>PDF</DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportExcel}>CSV / Excel</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportExcel}>Excel</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

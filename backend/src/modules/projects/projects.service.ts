@@ -249,6 +249,13 @@ export class ProjectsService {
               milestoneNumber: "asc",
             },
           },
+          // Approved quotations carry the agreed contract value (work + reimburse
+          // + tax) — that, not the amount invoiced/paid so far, is the project's
+          // "value". Pulled here so the list can surface it without an N+1.
+          quotations: {
+            where: { status: "APPROVED" },
+            select: { totalAmount: true },
+          },
           _count: {
             select: {
               quotations: true,
@@ -263,8 +270,19 @@ export class ProjectsService {
       this.prisma.project.count({ where }),
     ]);
 
+    // contractValue = total of the project's APPROVED quotations (the agreed
+    // project value, reimbursements included). Falls back to basePrice /
+    // estimatedBudget on the frontend when there is no approved quotation.
+    const data = projects.map(({ quotations, ...p }) => ({
+      ...p,
+      contractValue: quotations.reduce(
+        (sum, q) => sum + (Number(q.totalAmount) || 0),
+        0,
+      ),
+    }));
+
     return {
-      data: projects,
+      data,
       pagination: {
         page,
         limit,

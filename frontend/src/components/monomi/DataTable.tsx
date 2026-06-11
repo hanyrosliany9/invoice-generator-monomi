@@ -71,11 +71,19 @@ export function DataTable<TData, TValue = unknown>({
               <tr key={hg.id}>
                 {hg.headers.map((header) => {
                   const canSort = enableSorting && header.column.getCanSort();
+                  const align = header.column.columnDef.meta?.align ?? 'left';
                   return (
                     <th
                       key={header.id}
                       className={cn(
-                        'text-left text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary px-4 py-3',
+                        'text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary px-4 py-3',
+                        // Header alignment matches the cells below so the column
+                        // is one straight vertical line (header + values agree).
+                        align === 'right'
+                          ? 'text-right'
+                          : align === 'center'
+                            ? 'text-center'
+                            : 'text-left',
                         canSort &&
                           'cursor-pointer select-none hover:text-text-secondary transition-colors',
                       )}
@@ -85,7 +93,15 @@ export function DataTable<TData, TValue = unknown>({
                           : undefined
                       }
                     >
-                      <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1.5',
+                          // For right-aligned columns put the sort caret on the
+                          // LEFT so the header label stays flush to the right edge,
+                          // lined up with the numbers underneath.
+                          align === 'right' && 'flex-row-reverse',
+                        )}
+                      >
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext(),
@@ -128,14 +144,25 @@ export function DataTable<TData, TValue = unknown>({
                     onRowClick ? () => onRowClick(row.original) : undefined
                   }
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className={cn(rowPadding, 'text-text-secondary')}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const align = cell.column.columnDef.meta?.align ?? 'left';
+                    return (
+                      <td
+                        key={cell.id}
+                        className={cn(
+                          rowPadding,
+                          'text-text-secondary',
+                          align === 'right' && 'text-right',
+                          align === 'center' && 'text-center',
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}

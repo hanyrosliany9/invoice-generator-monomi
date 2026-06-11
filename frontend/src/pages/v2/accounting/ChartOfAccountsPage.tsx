@@ -7,7 +7,7 @@ import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   BookOpen, Plus, Search, X, MoreHorizontal, Edit2, Power, Trash2,
   ChevronRight, ChevronDown, TrendingUp, TrendingDown, DollarSign, Shield, ShoppingBag,
-  RefreshCw, BarChart2,
+  RefreshCw, BarChart2, Download,
 } from 'lucide-react';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -44,6 +44,7 @@ import {
   getChartOfAccounts,
   toggleAccountStatus,
   updateChartOfAccount,
+  exportChartOfAccountsExcel,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
 
@@ -227,6 +228,14 @@ export default function ChartOfAccountsPageV2() {
     setForm({ ...BLANK_FORM });
     setDialogOpen(true);
   };
+  const handleExportExcel = async () => {
+    try {
+      await exportChartOfAccountsExcel();
+      toast.success(t('accounting.chartOfAccounts.exportSuccess', 'Excel exported successfully.'));
+    } catch (e: any) {
+      toast.error(e?.message || t('accounting.chartOfAccounts.exportFail', 'Failed to export Excel.'));
+    }
+  };
   const openEdit = (a: ChartOfAccount) => {
     setEditing(a);
     setForm({
@@ -291,6 +300,10 @@ export default function ChartOfAccountsPageV2() {
             >
               <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
               {t('accounting.chartOfAccounts.refresh')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+              <Download className="h-4 w-4" />
+              {t('accounting.chartOfAccounts.exportExcel', 'Excel')}
             </Button>
             <Button size="sm" onClick={openCreate}>
               <Plus className="h-4 w-4" />

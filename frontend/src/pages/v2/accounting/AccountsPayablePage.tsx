@@ -400,16 +400,21 @@ function APTable({ rows, total, reconciling = 0, onRowClick }: APTableProps) {
             ),
           },
           {
-            accessorKey: 'description',
-            header: t('accounting.accountsPayable.colVendorDesc', 'Vendor / Description'),
+            id: 'vendor',
+            header: t('accounting.accountsPayable.colVendor', 'Vendor'),
+            accessorFn: (row) => row.vendorName ?? '',
             cell: ({ row }) => (
-              <div className="min-w-0">
-                {row.original.vendorName && (
-                  <div className="text-text-primary text-sm truncate">{row.original.vendorName}</div>
-                )}
-                <div className="text-text-secondary text-sm truncate">
-                  {row.original.description || '—'}
-                </div>
+              <div className="min-w-0 text-text-primary text-sm truncate">
+                {row.original.vendorName || '—'}
+              </div>
+            ),
+          },
+          {
+            accessorKey: 'description',
+            header: t('accounting.accountsPayable.colDescription', 'Description'),
+            cell: ({ row }) => (
+              <div className="min-w-0 text-text-secondary text-sm truncate">
+                {row.original.description || '—'}
               </div>
             ),
           },

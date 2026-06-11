@@ -93,8 +93,11 @@ const toNumber = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-const projectRevenue = (p: Project) =>
-  toNumber(p.totalPaidAmount) || toNumber(p.basePrice) || toNumber(p.estimatedBudget);
+// The "Value" column is the project's agreed value (contract = work + reimburse,
+// from the approved quotation) — NOT the amount invoiced or paid so far. Falls
+// back to basePrice / estimatedBudget when there's no approved quotation yet.
+const projectValue = (p: Project) =>
+  toNumber(p.contractValue) || toNumber(p.basePrice) || toNumber(p.estimatedBudget);
 
 const isThisMonth = (dateStr?: string | null) => {
   if (!dateStr) return false;
@@ -583,16 +586,13 @@ function ProjectTable({
         },
         {
           id: 'value',
-          accessorFn: (row) => projectRevenue(row),
-          header: () => (
-            <span className="block text-right">
-              {t('projects.col.value', 'Value')}
-            </span>
-          ),
+          meta: { align: 'right' },
+          accessorFn: (row) => projectValue(row),
+          header: t('projects.col.value', 'Value'),
           cell: ({ row }) => {
-            const value = projectRevenue(row.original);
+            const value = projectValue(row.original);
             return (
-              <div className="text-right">
+              <div>
                 <MoneyDisplay
                   amount={value}
                   className={cn(

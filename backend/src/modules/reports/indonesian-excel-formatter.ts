@@ -35,7 +35,10 @@ export interface IndonesianReportHeader {
     | "SALDO_KAS_BANK"
     | "PENYUSUTAN_ASET"
     | "LAPORAN_PEMBELIAN"
-    | "LAPORAN_PENJUALAN";
+    | "LAPORAN_PENJUALAN"
+    | "PIUTANG_LAIN"
+    | "EXPENSES"
+    | "CHART_OF_ACCOUNTS";
 }
 
 export class IndonesianExcelFormatter {

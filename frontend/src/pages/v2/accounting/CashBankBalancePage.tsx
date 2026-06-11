@@ -812,6 +812,7 @@ function AccountTransactions({
             <tr className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary">
               <th className="text-left font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.txnDate', 'Date')}</th>
               <th className="text-left font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.txnRef', 'Reference')}</th>
+              <th className="text-left font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.txnRelatedCoa', 'Related COA')}</th>
               <th className="text-left font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.txnDesc', 'Description')}</th>
               <th className="text-right font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.colInflow', 'Total Inflow')}</th>
               <th className="text-right font-medium py-1.5 pr-3">{t('accounting.cashBankBalance.colOutflow', 'Total Outflow')}</th>
@@ -829,6 +830,9 @@ function AccountTransactions({
                   </td>
                   <td className="py-1.5 pr-3 font-mono text-[11px] text-text-tertiary whitespace-nowrap">
                     {e.journalEntry?.entryNumber ?? '—'}
+                  </td>
+                  <td className="py-1.5 pr-3 font-mono text-[11px] text-text-secondary whitespace-nowrap">
+                    {e.relatedCoa || '—'}
                   </td>
                   <td className="py-1.5 pr-3 text-text-secondary max-w-[320px] truncate">
                     {e.description || e.journalEntry?.description || '—'}

@@ -85,6 +85,28 @@ export class LedgerService {
       },
     });
 
+    // Related COA per entry = the other account codes in the same journal entry
+    // (the counter side of each posting). One extra query over the journals in
+    // the result set, indexed by journalEntryId.
+    const journalIds = [...new Set(entries.map((e) => e.journalEntryId))];
+    const counterByJournal = new Map<string, string[]>();
+    if (journalIds.length) {
+      const lines = await this.prisma.generalLedger.findMany({
+        where: { journalEntryId: { in: journalIds } },
+        select: {
+          journalEntryId: true,
+          account: { select: { code: true } },
+        },
+      });
+      for (const l of lines) {
+        const code = l.account?.code;
+        if (!code) continue;
+        const list = counterByJournal.get(l.journalEntryId) ?? [];
+        if (!list.includes(code)) list.push(code);
+        counterByJournal.set(l.journalEntryId, list);
+      }
+    }
+
     // Calculate running balance for each account
     const entriesWithBalance = [];
     const accountBalances = new Map<string, number>();
@@ -102,8 +124,13 @@ export class LedgerService {
 
       accountBalances.set(entry.accountId, currentBalance);
 
+      const relatedCoa = (counterByJournal.get(entry.journalEntryId) ?? [])
+        .filter((code) => code !== account.code)
+        .join(", ");
+
       entriesWithBalance.push({
         ...entry,
+        relatedCoa: relatedCoa || "-",
         runningBalance: currentBalance,
         accountCode: account.code,
         accountName: account.name,
@@ -812,7 +839,15 @@ export class LedgerService {
     // the paid purchase drops off the list instead of lingering as a stray row.
     type Acc = {
       journalEntryId: string;
+      // The shared transactionId for this group (e.g. PUR-… for purchases) — used
+      // to find the linked AccountsPayable record by transaction, since a settled
+      // group may have kept the settlement journal, not the purchase journal.
+      transactionId: string | null;
       reference: string;
+      // The source document number (PUR-…/PO-… for purchases). MANUAL-… ids and
+      // bare journal ids are treated as "no real doc" so the export can fall back
+      // to the JE reference. Drives the "No. Purchase" column.
+      purchaseNumber: string | null;
       date: Date;
       description: string;
       transactionType: string | null;
@@ -828,7 +863,11 @@ export class LedgerService {
           // Keep the EARLIEST posting's metadata (orderBy entryDate asc) — that's
           // the original purchase, not its later settlement.
           journalEntryId: r.journalEntryId,
+          transactionId: r.transactionId,
           reference: r.journalEntryNumber,
+          purchaseNumber: /^(PUR|PO)-/i.test(r.transactionId || "")
+            ? r.transactionId
+            : null,
           date: r.entryDate,
           description:
             r.descriptionId ||
@@ -844,15 +883,25 @@ export class LedgerService {
       byEntry.set(key, cur);
     }
 
-    // Graft the vendor name + real due date from the AccountsPayable record when
-    // one is linked to this journal entry (vendor-invoice flow). Manual journals
-    // have no AP record, so we fall back to a 30-day term from the entry date.
-    // Look up by the stored journalEntryId of each group (the keys are
-    // transactionIds, so they'd never match an AccountsPayable.journalEntryId).
-    const journalIds = [...byEntry.values()].map((e) => e.journalEntryId);
-    const apRecords = journalIds.length
+    // Graft the vendor name + real due date from the AccountsPayable record (the
+    // Pembelian/vendor-invoice flow creates one, linked to the PURCHASE journal).
+    // Manual journals have no AP record → fall back to a 30-day term.
+    //
+    // Match by the shared transactionId, NOT just the group's kept journalEntryId:
+    // a settled purchase nets to zero from two journals (purchase credit +
+    // settlement debit) and the group may have kept the SETTLEMENT journal, whose
+    // id the AP record (linked to the purchase journal) doesn't match — which left
+    // the vendor blank. So fetch AP records for EVERY journal that touched 2-1010
+    // and index them by both their transactionId and journalEntryId.
+    // The transactionId behind each journal id (AccountsPayable stores only the
+    // journalEntryId, with no journalEntry relation to traverse).
+    const txnByJournalId = new Map<string, string | null>();
+    for (const r of glRows) txnByJournalId.set(r.journalEntryId, r.transactionId);
+
+    const allJournalIds = [...new Set(glRows.map((r) => r.journalEntryId))];
+    const apRecords = allJournalIds.length
       ? await this.prisma.accountsPayable.findMany({
-          where: { journalEntryId: { in: journalIds } },
+          where: { journalEntryId: { in: allJournalIds } },
           select: {
             journalEntryId: true,
             dueDate: true,
@@ -860,11 +909,15 @@ export class LedgerService {
           },
         })
       : [];
-    const apByJE = new Map(
-      apRecords
-        .filter((a) => a.journalEntryId)
-        .map((a) => [a.journalEntryId as string, a]),
-    );
+    type ApLink = (typeof apRecords)[number];
+    const apByJE = new Map<string, ApLink>();
+    const apByTxn = new Map<string, ApLink>();
+    for (const a of apRecords) {
+      if (!a.journalEntryId) continue;
+      apByJE.set(a.journalEntryId, a);
+      const txn = txnByJournalId.get(a.journalEntryId);
+      if (txn) apByTxn.set(txn, a);
+    }
 
     const aging = [...byEntry.values()]
       // Keep every document that raised a payable (gross credit > 0) — including
@@ -872,7 +925,9 @@ export class LedgerService {
       // pure-debit groups (a stray settlement with no original payable).
       .filter((e) => e.grossCredit >= 0.005)
       .map((e) => {
-        const link = apByJE.get(e.journalEntryId);
+        const link =
+          (e.transactionId ? apByTxn.get(e.transactionId) : undefined) ??
+          apByJE.get(e.journalEntryId);
         // Due date: the AP record's real due date, else assume a 30-day term from
         // the entry date (WIB-stable — anchor to the WIB calendar date).
         let dueDate: Date;
@@ -899,6 +954,10 @@ export class LedgerService {
           journalEntryId: e.journalEntryId,
           // Journal entry number, shown as the document reference.
           reference: e.reference,
+          // Real purchase document number (PUR-…) when this payable came from the
+          // Pembelian flow; null for manual journals. Used by the "No. Purchase"
+          // column, which falls back to `reference` (the JE number).
+          purchaseNumber: e.purchaseNumber,
           vendorName,
           transactionType: e.transactionType,
           // `category` kept (null) for backward-compat: the PDF/Excel exports read

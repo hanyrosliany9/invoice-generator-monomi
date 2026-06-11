@@ -53,8 +53,12 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  position = "item-aligned",
-  align = "center",
+  // `popper` (not `item-aligned`) gives a floating dropdown with a real
+  // scrollable viewport sized to the trigger — item-aligned overlays the
+  // trigger and scrolls unreliably on long lists (mouse-wheel jank). `start`
+  // is the standard left-aligned anchor.
+  position = "popper",
+  align = "start",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
   return (

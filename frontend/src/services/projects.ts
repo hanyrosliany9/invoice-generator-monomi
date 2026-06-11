@@ -94,6 +94,9 @@ export interface Project {
   totalAllocatedCosts?: string
   totalInvoicedAmount?: string
   totalPaidAmount?: string
+  // Agreed project value = total of the project's APPROVED quotations (work +
+  // reimbursement + tax). Computed server-side on the list endpoint.
+  contractValue?: number
   grossProfit?: string
   netProfit?: string
   grossMarginPercent?: string

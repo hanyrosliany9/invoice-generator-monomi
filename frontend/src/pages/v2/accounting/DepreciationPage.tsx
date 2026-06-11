@@ -367,11 +367,10 @@ export default function DepreciationPageV2() {
                 },
                 {
                   accessorKey: 'purchasePrice',
-                  header: () => <span className="block text-right">{t('accounting.depreciation.colPurchasePrice', 'Cost')}</span>,
+                  meta: { align: 'right' },
+                  header: t('accounting.depreciation.colPurchasePrice', 'Cost'),
                   cell: ({ row }) => (
-                    <div className="text-right">
-                      <MoneyDisplay amount={toNumber(row.original.purchasePrice)} />
-                    </div>
+                    <MoneyDisplay amount={toNumber(row.original.purchasePrice)} />
                   ),
                 },
                 {
@@ -385,29 +384,26 @@ export default function DepreciationPageV2() {
                 },
                 {
                   accessorKey: 'depreciationAmount',
-                  header: () => <span className="block text-right">{t('accounting.depreciation.colPeriodDep', 'Period Dep.')}</span>,
+                  meta: { align: 'right' },
+                  header: t('accounting.depreciation.colPeriodDep', 'Period Dep.'),
                   cell: ({ row }) => (
-                    <div className="text-right">
-                      <MoneyDisplay amount={toNumber(row.original.depreciationAmount)} className="text-warning" />
-                    </div>
+                    <MoneyDisplay amount={toNumber(row.original.depreciationAmount)} className="text-warning" />
                   ),
                 },
                 {
                   accessorKey: 'accumulatedDepreciation',
-                  header: () => <span className="block text-right">{t('accounting.depreciation.colAccumulated', 'Accumulated')}</span>,
+                  meta: { align: 'right' },
+                  header: t('accounting.depreciation.colAccumulated', 'Accumulated'),
                   cell: ({ row }) => (
-                    <div className="text-right">
-                      <MoneyDisplay amount={toNumber(row.original.accumulatedDepreciation)} className="text-danger" />
-                    </div>
+                    <MoneyDisplay amount={toNumber(row.original.accumulatedDepreciation)} className="text-danger" />
                   ),
                 },
                 {
                   accessorKey: 'netBookValue',
-                  header: () => <span className="block text-right">{t('accounting.depreciation.colNetBook', 'Net Book Value')}</span>,
+                  meta: { align: 'right' },
+                  header: t('accounting.depreciation.colNetBook', 'Net Book Value'),
                   cell: ({ row }) => (
-                    <div className="text-right">
-                      <MoneyDisplay amount={toNumber(row.original.netBookValue)} className="text-success" />
-                    </div>
+                    <MoneyDisplay amount={toNumber(row.original.netBookValue)} className="text-success" />
                   ),
                 },
                 {

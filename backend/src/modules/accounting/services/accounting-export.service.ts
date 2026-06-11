@@ -11,6 +11,25 @@ import { JournalService } from "./journal.service";
 import { CashBankBalanceService } from "./cash-bank-balance.service";
 import { DepreciationService } from "./depreciation.service";
 import { CompanySettingsService } from "../../company/company-settings.service";
+import { PrismaService } from "../../prisma/prisma.service";
+
+/**
+ * Sum a journal entry's line items on the given side. JournalEntry rows have no
+ * totalDebit/totalCredit column — the amounts live on lineItems. getJournalEntries
+ * exposes both `debit`/`credit` (Prisma Decimal) and `debitAmount`/`creditAmount`
+ * (number); this reads whichever is present.
+ */
+function sumLineItems(
+  lineItems: any[] | undefined,
+  side: "debit" | "credit",
+): number {
+  if (!Array.isArray(lineItems)) return 0;
+  const amountKey = side === "debit" ? "debitAmount" : "creditAmount";
+  return lineItems.reduce(
+    (sum, li) => sum + (Number(li?.[amountKey] ?? li?.[side]) || 0),
+    0,
+  );
+}
 
 @Injectable()
 export class AccountingExportService {
@@ -21,6 +40,7 @@ export class AccountingExportService {
     private readonly cashBankBalanceService: CashBankBalanceService,
     private readonly depreciationService: DepreciationService,
     private readonly companySettings: CompanySettingsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   private async getCompanyInfo(): Promise<IndonesianCompanyInfo> {
@@ -185,58 +205,54 @@ export class AccountingExportService {
   }
 
   private generateIncomeStatementTableHtml(data: any): string {
-    let html = '<div class="report-section">';
+    // Conventional single-step income statement (laporan laba rugi) — a vertical
+    // list of accounts with amounts in a right-hand column, NOT a generic data
+    // table. Amount field is `balance` (the old code read `amount` → undefined).
+    const line = (label: string, amount: number, indent = true) => `
+      <tr>
+        <td style="padding: 3px 0 3px ${indent ? 18 : 0}px;">${label}</td>
+        <td style="padding: 3px 0; text-align: right; white-space: nowrap;">${this.formatCurrency(Number(amount) || 0)}</td>
+      </tr>`;
+    const sectionHeader = (label: string) => `
+      <tr><td colspan="2" style="padding: 14px 0 4px; font-weight: bold; color: #1F4E79;">${label}</td></tr>`;
+    const totalRow = (label: string, amount: number) => `
+      <tr>
+        <td style="padding: 6px 0; font-weight: bold; border-top: 1px solid #888;">${label}</td>
+        <td style="padding: 6px 0; text-align: right; font-weight: bold; border-top: 1px solid #888; white-space: nowrap;">${this.formatCurrency(Number(amount) || 0)}</td>
+      </tr>`;
 
-    // Revenue Section
-    html +=
-      '<h3 style="color: #1F4E79; margin-bottom: 15px;">PENDAPATAN (REVENUE)</h3>';
-    const revenueHeaders = ["Kode Akun", "Nama Akun", "Jumlah (IDR)"];
-    const revenueData = data.revenue.accounts.map((acc: any) => [
-      acc.accountCode,
-      acc.accountNameId,
-      acc.amount,
-    ]);
-    revenueData.push(["", "TOTAL PENDAPATAN", data.revenue.total]);
-    html += IndonesianPdfFormatter.generateIndonesianTable(
-      revenueHeaders,
-      revenueData,
-      "revenue",
-    );
+    const revenueRows = (data.revenue.accounts || [])
+      .map((acc: any) => line(`${acc.accountCode} — ${acc.accountNameId}`, acc.balance))
+      .join("");
+    const expenseRows = (data.expenses.accounts || [])
+      .map((acc: any) => line(`${acc.accountCode} — ${acc.accountNameId}`, acc.balance))
+      .join("");
 
-    // Expenses Section
-    html +=
-      '<h3 style="color: #1F4E79; margin-top: 30px; margin-bottom: 15px;">BEBAN (EXPENSES)</h3>';
-    const expensesHeaders = [
-      "Kode Akun",
-      "Nama Akun",
-      "Sub Tipe",
-      "Jumlah (IDR)",
-    ];
-    const expensesData = data.expenses.accounts.map((acc: any) => [
-      acc.accountCode,
-      acc.accountNameId,
-      acc.accountSubType,
-      acc.amount,
-    ]);
-    expensesData.push(["", "", "TOTAL BEBAN", data.expenses.total]);
-    html += IndonesianPdfFormatter.generateIndonesianTable(
-      expensesHeaders,
-      expensesData,
-      "expenses",
-    );
-
-    // Summary
-    const netIncome = data.summary.netIncome;
+    const netIncome = Number(data.summary.netIncome) || 0;
     const isProfit = netIncome >= 0;
-    html += `
-      <div style="margin-top: 30px; padding: 20px; background-color: ${isProfit ? "#f6ffed" : "#fff2f0"}; border: 2px solid ${isProfit ? "#52c41a" : "#ff4d4f"};">
-        <h2 style="margin: 0;">${isProfit ? "LABA BERSIH" : "RUGI BERSIH"}: ${this.formatCurrency(Math.abs(netIncome))}</h2>
-        <p style="margin: 10px 0 0 0;"><strong>Margin Laba:</strong> ${data.summary.profitMargin.toFixed(2)}%</p>
+    const margin = Number(data.summary.profitMargin) || 0;
+
+    return `
+      <div class="report-section">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          ${sectionHeader("PENDAPATAN")}
+          ${revenueRows}
+          ${totalRow("Total Pendapatan", data.revenue.total)}
+          ${sectionHeader("BEBAN")}
+          ${expenseRows}
+          ${totalRow("Total Beban", data.expenses.total)}
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold; font-size: 15px; border-top: 2px solid #1F4E79;">
+              ${isProfit ? "LABA BERSIH" : "RUGI BERSIH"}
+            </td>
+            <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 15px; border-top: 2px solid #1F4E79; white-space: nowrap; color: ${isProfit ? "#237804" : "#a8071a"};">
+              ${this.formatCurrency(Math.abs(netIncome))}
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 12px 0 0; font-size: 12px;"><strong>Margin Laba:</strong> ${margin.toFixed(2)}%</p>
       </div>
     `;
-
-    html += "</div>";
-    return html;
   }
 
   // ============ BALANCE SHEET EXPORT ============
@@ -278,76 +294,58 @@ export class AccountingExportService {
   }
 
   private generateBalanceSheetTableHtml(data: any): string {
-    let html = '<div class="report-section">';
+    // Classic T-account balance sheet (neraca bentuk T): ASET on the left,
+    // LIABILITAS + EKUITAS on the right, account name + amount only (no "Sub Tipe").
+    const acctLine = (acc: any) => `
+      <tr>
+        <td style="padding: 3px 0;">${acc.accountCode} — ${acc.accountNameId}</td>
+        <td style="padding: 3px 0; text-align: right; white-space: nowrap;">${this.formatCurrency(Number(acc.balance) || 0)}</td>
+      </tr>`;
+    const subHeader = (label: string) => `
+      <tr><td colspan="2" style="padding: 10px 0 4px; font-weight: bold; color: #1F4E79;">${label}</td></tr>`;
+    const sideTotal = (label: string, amount: number) => `
+      <tr>
+        <td style="padding: 6px 0; font-weight: bold; border-top: 2px solid #1F4E79;">${label}</td>
+        <td style="padding: 6px 0; text-align: right; font-weight: bold; border-top: 2px solid #1F4E79; white-space: nowrap;">${this.formatCurrency(Number(amount) || 0)}</td>
+      </tr>`;
 
-    // Assets Section
-    html +=
-      '<h3 style="color: #1F4E79; margin-bottom: 15px;">ASET (ASSETS)</h3>';
-    const assetsHeaders = [
-      "Kode Akun",
-      "Nama Akun",
-      "Sub Tipe",
-      "Jumlah (IDR)",
-    ];
-    const assetsData = data.assets.accounts.map((acc: any) => [
-      acc.accountCode,
-      acc.accountNameId,
-      acc.accountSubType,
-      acc.balance,
-    ]);
-    assetsData.push(["", "", "TOTAL ASET", data.assets.total]);
-    html += IndonesianPdfFormatter.generateIndonesianTable(
-      assetsHeaders,
-      assetsData,
-      "assets",
-    );
+    const assetRows = (data.assets.accounts || []).map(acctLine).join("");
+    const liabilityRows = (data.liabilities.accounts || []).map(acctLine).join("");
+    const equityRows = (data.equity.accounts || []).map(acctLine).join("");
 
-    // Liabilities Section
-    html +=
-      '<h3 style="color: #1F4E79; margin-top: 30px; margin-bottom: 15px;">LIABILITAS (LIABILITIES)</h3>';
-    const liabilitiesData = data.liabilities.accounts.map((acc: any) => [
-      acc.accountCode,
-      acc.accountNameId,
-      acc.accountSubType,
-      acc.balance,
-    ]);
-    liabilitiesData.push(["", "", "TOTAL LIABILITAS", data.liabilities.total]);
-    html += IndonesianPdfFormatter.generateIndonesianTable(
-      assetsHeaders,
-      liabilitiesData,
-      "liabilities",
-    );
+    const sideStyle =
+      'width: 50%; vertical-align: top; padding: 0 14px; font-size: 12px;';
+    const innerTable = (rows: string) =>
+      `<table style="width: 100%; border-collapse: collapse;">${rows}</table>`;
 
-    // Equity Section
-    html +=
-      '<h3 style="color: #1F4E79; margin-top: 30px; margin-bottom: 15px;">EKUITAS (EQUITY)</h3>';
-    const equityData = data.equity.accounts.map((acc: any) => [
-      acc.accountCode,
-      acc.accountNameId,
-      "",
-      acc.balance,
-    ]);
-    equityData.push(["", "", "TOTAL EKUITAS", data.equity.total]);
-    html += IndonesianPdfFormatter.generateIndonesianTable(
-      assetsHeaders,
-      equityData,
-      "equity",
-    );
-
-    // Summary
-    html += `
-      <div style="margin-top: 30px; padding: 20px; background-color: ${data.summary.isBalanced ? "#f6ffed" : "#fff2f0"};">
-        <h3>RINGKASAN NERACA</h3>
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr><td><strong>Total Aset:</strong></td><td style="text-align: right;"><strong>${this.formatCurrency(data.summary.totalAssets)}</strong></td></tr>
-          <tr><td><strong>Total Liabilitas + Ekuitas:</strong></td><td style="text-align: right;"><strong>${this.formatCurrency(data.summary.liabilitiesAndEquity)}</strong></td></tr>
-          <tr><td><strong>Status:</strong></td><td style="text-align: right;"><strong>${data.summary.isBalanced ? "SEIMBANG" : "TIDAK SEIMBANG"}</strong></td></tr>
+    return `
+      <div class="report-section">
+        <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+          <tr>
+            <td style="${sideStyle} border-right: 2px solid #1F4E79;">
+              <div style="font-weight: bold; font-size: 14px; color: #1F4E79; border-bottom: 1px solid #1F4E79; padding-bottom: 4px; margin-bottom: 4px;">ASET</div>
+              ${innerTable(assetRows + sideTotal("TOTAL ASET", data.assets.total))}
+            </td>
+            <td style="${sideStyle}">
+              <div style="font-weight: bold; font-size: 14px; color: #1F4E79; border-bottom: 1px solid #1F4E79; padding-bottom: 4px; margin-bottom: 4px;">LIABILITAS &amp; EKUITAS</div>
+              ${innerTable(
+                subHeader("LIABILITAS") +
+                  liabilityRows +
+                  subHeader("EKUITAS") +
+                  equityRows +
+                  sideTotal(
+                    "TOTAL LIABILITAS &amp; EKUITAS",
+                    data.summary.liabilitiesAndEquity,
+                  ),
+              )}
+            </td>
+          </tr>
         </table>
+        <p style="margin: 16px 0 0; text-align: center; font-weight: bold; color: ${data.summary.isBalanced ? "#237804" : "#a8071a"};">
+          ${data.summary.isBalanced ? "✓ NERACA SEIMBANG" : "✗ NERACA TIDAK SEIMBANG — Selisih: " + this.formatCurrency(Math.abs(Number(data.summary.difference) || 0))}
+        </p>
       </div>
     `;
-
-    html += "</div>";
-    return html;
   }
 
   // ============ CASH FLOW STATEMENT EXPORT ============
@@ -389,22 +387,62 @@ export class AccountingExportService {
   }
 
   private generateCashFlowStatementTableHtml(data: any): string {
+    // One detail table per activity (date / ref / description / in / out / net),
+    // then the overall summary — the old version only printed each activity's net.
+    const activitySection = (title: string, activity: any): string => {
+      const txns: any[] = activity?.transactions || [];
+      const rows = txns
+        .map(
+          (t) => `
+        <tr>
+          <td style="padding: 3px 6px;">${this.formatDate(t.date)}</td>
+          <td style="padding: 3px 6px;">${t.entryNumber || "-"}</td>
+          <td style="padding: 3px 6px;">${t.descriptionId || t.description || "-"}</td>
+          <td style="padding: 3px 6px; text-align: right; white-space: nowrap;">${Number(t.cashIn) > 0 ? this.formatCurrency(Number(t.cashIn)) : "-"}</td>
+          <td style="padding: 3px 6px; text-align: right; white-space: nowrap;">${Number(t.cashOut) > 0 ? this.formatCurrency(Number(t.cashOut)) : "-"}</td>
+          <td style="padding: 3px 6px; text-align: right; white-space: nowrap;">${this.formatCurrency(Number(t.netCashFlow) || 0)}</td>
+        </tr>`,
+        )
+        .join("");
+      const body =
+        rows ||
+        '<tr><td colspan="6" style="padding: 6px; text-align: center; color: #888;">Tidak ada transaksi</td></tr>';
+      return `
+        <h3 style="color: #1F4E79; margin-top: 20px; margin-bottom: 8px;">${title}</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="border-bottom: 1px solid #1F4E79; color: #1F4E79;">
+              <th style="padding: 4px 6px; text-align: left;">Tanggal</th>
+              <th style="padding: 4px 6px; text-align: left;">No. Jurnal</th>
+              <th style="padding: 4px 6px; text-align: left;">Deskripsi</th>
+              <th style="padding: 4px 6px; text-align: right;">Kas Masuk</th>
+              <th style="padding: 4px 6px; text-align: right;">Kas Keluar</th>
+              <th style="padding: 4px 6px; text-align: right;">Bersih</th>
+            </tr>
+          </thead>
+          <tbody>${body}</tbody>
+          <tfoot>
+            <tr style="border-top: 1px solid #888; font-weight: bold;">
+              <td colspan="5" style="padding: 5px 6px;">Arus Kas Bersih</td>
+              <td style="padding: 5px 6px; text-align: right; white-space: nowrap;">${this.formatCurrency(Number(activity?.netCashFlow) || 0)}</td>
+            </tr>
+          </tfoot>
+        </table>`;
+    };
+
     let html = '<div class="report-section">';
-
-    // Operating Activities
-    html +=
-      '<h3 style="color: #1F4E79; margin-bottom: 15px;">AKTIVITAS OPERASI (Operating Activities)</h3>';
-    html += `<p><strong>Arus Kas Bersih:</strong> ${this.formatCurrency(data.operatingActivities.netCashFlow)}</p>`;
-
-    // Investing Activities
-    html +=
-      '<h3 style="color: #1F4E79; margin-top: 20px; margin-bottom: 15px;">AKTIVITAS INVESTASI (Investing Activities)</h3>';
-    html += `<p><strong>Arus Kas Bersih:</strong> ${this.formatCurrency(data.investingActivities.netCashFlow)}</p>`;
-
-    // Financing Activities
-    html +=
-      '<h3 style="color: #1F4E79; margin-top: 20px; margin-bottom: 15px;">AKTIVITAS PENDANAAN (Financing Activities)</h3>';
-    html += `<p><strong>Arus Kas Bersih:</strong> ${this.formatCurrency(data.financingActivities.netCashFlow)}</p>`;
+    html += activitySection(
+      "AKTIVITAS OPERASI (Operating Activities)",
+      data.operatingActivities,
+    );
+    html += activitySection(
+      "AKTIVITAS INVESTASI (Investing Activities)",
+      data.investingActivities,
+    );
+    html += activitySection(
+      "AKTIVITAS PENDANAAN (Financing Activities)",
+      data.financingActivities,
+    );
 
     // Summary
     html += `
@@ -547,8 +585,10 @@ export class AccountingExportService {
 
   private generateAPAgingTableHtml(data: any): string {
     const headers = [
-      "Kategori/Deskripsi",
-      "Tgl Pengeluaran",
+      "Nama Vendor",
+      "Deskripsi",
+      "No. Purchase",
+      "Tgl",
       "Jatuh Tempo",
       "Hari Terlambat",
       "Kategori Umur",
@@ -558,7 +598,9 @@ export class AccountingExportService {
 
     data.aging.forEach((item: any) => {
       tableData.push([
-        item.category?.nameId || item.description || "N/A",
+        item.vendorName || "-",
+        item.description || "-",
+        item.purchaseNumber || item.reference || "-",
         this.formatDate(item.expenseDate),
         this.formatDate(item.dueDate),
         item.daysOverdue > 0 ? `${item.daysOverdue} hari` : "Belum jatuh tempo",
@@ -567,7 +609,7 @@ export class AccountingExportService {
       ]);
     });
 
-    const summaryRow = ["", "", "", "", "TOTAL", data.summary.totalAP];
+    const summaryRow = ["", "", "", "", "", "", "TOTAL", data.summary.totalAP];
 
     const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
       headers,
@@ -664,10 +706,51 @@ export class AccountingExportService {
       },
     );
 
+    // ── Other Receivables (Piutang Lain-lain, 1-2040) ──────────────────────────
+    // Reimbursable pass-through expenses recoverable from clients — reported as a
+    // SEPARATE section from trade AR (was missing entirely before).
+    const orItems: any[] = data.otherReceivables?.items ?? [];
+    let otherHtml = "";
+    if (orItems.length) {
+      const orHeaders = [
+        "No. Bukti",
+        "Klien",
+        "Deskripsi",
+        "Tgl",
+        "Jumlah (IDR)",
+        "Status",
+      ];
+      let orTotal = 0;
+      const orData = orItems.map((it: any) => {
+        const amount = Number(it.amount) || 0;
+        orTotal += amount;
+        const status = it.collected
+          ? "Sudah Direimburse"
+          : it.posted
+            ? "Outstanding"
+            : "Belum Ditagih";
+        return [
+          it.expenseNumber || "-",
+          it.client?.name || "-",
+          it.description || "-",
+          this.formatDate(it.date),
+          amount,
+          status,
+        ];
+      });
+      const orSummary = ["", "", "", "TOTAL", orTotal, ""];
+      otherHtml = `
+        <h3 style="color: #1F4E79; margin-top: 28px;">PIUTANG LAIN-LAIN (Other Receivables — 1-2040)</h3>
+        ${IndonesianPdfFormatter.generateIndonesianTable(orHeaders, orData, "otherReceivables", { showSummary: true, summaryRow: orSummary })}
+      `;
+    }
+
     return `
       <div class="report-section">
+        <h3 style="color: #1F4E79;">PIUTANG USAHA (Trade Receivables — 1-2010)</h3>
         <p><strong>Total Piutang Belum Terbayar:</strong> ${this.formatCurrency(data.summary?.totalOutstanding || totalOutstanding)}</p>
         ${tableHtml}
+        ${otherHtml}
       </div>
     `;
   }
@@ -710,34 +793,43 @@ export class AccountingExportService {
 
   private generateAccountsPayableTableHtml(data: any): string {
     const headers = [
-      "Kategori/Deskripsi",
-      "Tgl Pengeluaran",
-      "Umur (Hari)",
-      "Jumlah (IDR)",
+      "Nama Vendor",
+      "Deskripsi",
+      "No. Purchase",
+      "Tanggal",
+      "Total (IDR)",
+      "Terbayar (IDR)",
       "Saldo (IDR)",
     ];
     const tableData: any[][] = [];
     let totalAmount = 0;
+    let totalPaid = 0;
     let totalOutstanding = 0;
 
     // Access the aging data from data.aging.aging array
     const payables = data.aging?.aging || [];
 
     payables.forEach((item: any) => {
+      // Vendor and description are separate; the document ref is a purchase/JE
+      // number; paid is derived from outstanding (not hard-coded).
+      const amount = Number(item.amount) || 0;
+      const outstanding = Number(item.outstanding ?? item.amount) || 0;
+      const paid = Math.max(0, amount - outstanding);
       tableData.push([
-        item.category?.nameId || item.description || "N/A",
+        item.vendorName || "-",
+        item.description || "-",
+        item.purchaseNumber || item.reference || "-",
         this.formatDate(item.expenseDate),
-        item.daysOverdue >= 0
-          ? `${item.daysOverdue} hari`
-          : "Belum jatuh tempo",
-        item.amount,
-        item.amount, // Outstanding = Amount for unpaid expenses
+        amount,
+        paid,
+        outstanding,
       ]);
-      totalAmount += Number(item.amount);
-      totalOutstanding += Number(item.amount);
+      totalAmount += amount;
+      totalPaid += paid;
+      totalOutstanding += outstanding;
     });
 
-    const summaryRow = ["", "", "TOTAL", totalAmount, totalOutstanding];
+    const summaryRow = ["", "", "", "TOTAL", totalAmount, totalPaid, totalOutstanding];
 
     const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
       headers,
@@ -809,21 +901,27 @@ export class AccountingExportService {
   private generateGeneralLedgerTableHtml(data: any): string {
     let html = '<div class="report-section">';
 
-    // Group entries by account
-    const accountGroups = new Map<string, any[]>();
+    // Group entries by account. Key on accountCode alone — codes contain "-"
+    // (e.g. "1-1010"), so the old `code-name` key + split("-") mangled both.
+    const accountGroups = new Map<
+      string,
+      { code: string; name: string; entries: any[] }
+    >();
     data.entries.forEach((entry: any) => {
-      const key = `${entry.accountCode}-${entry.accountName}`;
-      if (!accountGroups.has(key)) {
-        accountGroups.set(key, []);
+      const code = entry.accountCode;
+      if (!accountGroups.has(code)) {
+        accountGroups.set(code, {
+          code,
+          name: entry.accountNameId || entry.accountName || "",
+          entries: [],
+        });
       }
-      accountGroups.get(key)!.push(entry);
+      accountGroups.get(code)!.entries.push(entry);
     });
 
     // Generate table for each account
-    accountGroups.forEach((entries, accountKey) => {
-      const [accountCode, accountName] = accountKey.split("-");
-
-      html += `<h3 style="color: #1F4E79; margin-top: 20px;">${accountCode} - ${accountName}</h3>`;
+    accountGroups.forEach(({ code, name, entries }) => {
+      html += `<h3 style="color: #1F4E79; margin-top: 20px;">${code} - ${name}</h3>`;
 
       const headers = [
         "Tanggal",
@@ -836,20 +934,28 @@ export class AccountingExportService {
       const tableData: any[][] = [];
 
       entries.forEach((entry: any) => {
+        // The GL row exposes the journal via `journalEntry`, and amounts on
+        // `debit`/`credit` (Prisma Decimal). The old code read `entry.entryNumber`
+        // (undefined) and `entry.debitAmount`/`creditAmount` (undefined → zero).
+        const debit = Number(entry.debit) || 0;
+        const credit = Number(entry.credit) || 0;
         tableData.push([
           this.formatDate(entry.entryDate),
-          entry.entryNumber,
-          entry.description,
-          entry.debitAmount > 0 ? entry.debitAmount : "-",
-          entry.creditAmount > 0 ? entry.creditAmount : "-",
-          entry.runningBalance,
+          entry.journalEntry?.entryNumber || entry.journalEntryNumber || "-",
+          entry.journalEntry?.descriptionId ||
+            entry.journalEntry?.description ||
+            entry.description ||
+            "-",
+          debit > 0 ? debit : "-",
+          credit > 0 ? credit : "-",
+          Number(entry.runningBalance) || 0,
         ]);
       });
 
       html += IndonesianPdfFormatter.generateIndonesianTable(
         headers,
         tableData,
-        `ledger-${accountCode}`,
+        `ledger-${code}`,
       );
     });
 
@@ -924,8 +1030,10 @@ export class AccountingExportService {
     let totalCredit = 0;
 
     entries.forEach((entry: any) => {
-      const debit = Number(entry.totalDebit) || 0;
-      const credit = Number(entry.totalCredit) || 0;
+      // JournalEntry has no totalDebit/totalCredit column — the amounts live on
+      // the line items. Sum them (a balanced entry's debit total == credit total).
+      const debit = sumLineItems(entry.lineItems, "debit");
+      const credit = sumLineItems(entry.lineItems, "credit");
       totalDebit += debit;
       totalCredit += credit;
       tableData.push([
@@ -971,7 +1079,11 @@ export class AccountingExportService {
       reportType: "CASH_BANK_BALANCES",
     };
 
-    const tableHtml = this.generateCashBankBalancesTableHtml(result.data);
+    const mutations = await this.cashBankBalanceService.getMutations();
+    const tableHtml = this.generateCashBankBalancesTableHtml(
+      result.data,
+      mutations,
+    );
     const completeHtml = IndonesianPdfFormatter.generateCompleteReportHtml(
       companyInfo,
       reportHeader,
@@ -982,31 +1094,95 @@ export class AccountingExportService {
     return await IndonesianPdfFormatter.generatePdfBuffer(completeHtml, options);
   }
 
-  private generateCashBankBalancesTableHtml(rows: any[]): string {
-    const headers = ["Kode Akun", "Nama Akun", "Saldo (IDR)"];
-    const tableData: any[][] = [];
-    let totalBalance = 0;
-
-    rows.forEach((row: any) => {
+  private generateCashBankBalancesTableHtml(
+    rows: any[],
+    mutations: any[] = [],
+  ): string {
+    // 1) Per-account, per-period summary (opening → in/out → closing).
+    const summaryHeaders = [
+      "Kode Akun",
+      "Nama Akun",
+      "Periode",
+      "Saldo Awal",
+      "Kas Masuk",
+      "Kas Keluar",
+      "Saldo Akhir",
+    ];
+    let totalOpening = 0;
+    let totalInflow = 0;
+    let totalOutflow = 0;
+    let totalClosing = 0;
+    const summaryData = rows.map((row: any) => {
+      const opening = Number(row.openingBalance) || 0;
+      const inflow = Number(row.totalInflow) || 0;
+      const outflow = Number(row.totalOutflow) || 0;
       const closing = Number(row.closingBalance) || 0;
-      totalBalance += closing;
-      tableData.push([
+      totalOpening += opening;
+      totalInflow += inflow;
+      totalOutflow += outflow;
+      totalClosing += closing;
+      return [
         row.accountCode || "-",
         row.accountName || "-",
+        row.period || this.formatDate(row.periodDate),
+        opening,
+        inflow,
+        outflow,
         closing,
-      ]);
+      ];
     });
+    const summaryRow = [
+      "",
+      "",
+      "TOTAL",
+      totalOpening,
+      totalInflow,
+      totalOutflow,
+      totalClosing,
+    ];
+    let html =
+      '<div class="report-section">' +
+      IndonesianPdfFormatter.generateIndonesianTable(
+        summaryHeaders,
+        summaryData,
+        "cashBankBalances",
+        { showSummary: true, summaryRow },
+      );
 
-    const summaryRow = ["", "TOTAL", totalBalance];
+    // 2) Rincian mutasi — the posted transactions behind each account's totals.
+    if (mutations.length) {
+      html +=
+        '<h3 style="color: #1F4E79; margin-top: 24px;">RINCIAN MUTASI KAS &amp; BANK</h3>';
+      for (const acct of mutations) {
+        const detailHeaders = [
+          "Tanggal",
+          "No. Jurnal",
+          "COA Terkait",
+          "Deskripsi",
+          "Kas Masuk",
+          "Kas Keluar",
+          "Saldo",
+        ];
+        const detailData = acct.transactions.map((t: any) => [
+          this.formatDate(t.date),
+          t.reference || "-",
+          t.relatedCoa || "-",
+          t.description || "-",
+          Number(t.inflow) > 0 ? Number(t.inflow) : "-",
+          Number(t.outflow) > 0 ? Number(t.outflow) : "-",
+          Number(t.balance) || 0,
+        ]);
+        html += `<h4 style="color: #1F4E79; margin-top: 16px; margin-bottom: 6px;">${acct.accountCode} — ${acct.accountName}</h4>`;
+        html += IndonesianPdfFormatter.generateIndonesianTable(
+          detailHeaders,
+          detailData,
+          `cashBankMutasi-${acct.accountCode}`,
+        );
+      }
+    }
 
-    const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
-      headers,
-      tableData,
-      "cashBankBalances",
-      { showSummary: true, summaryRow },
-    );
-
-    return `<div class="report-section">${tableHtml}</div>`;
+    html += "</div>";
+    return html;
   }
 
   // ============ DEPRECIATION EXPORT ============
@@ -1244,6 +1420,81 @@ export class AccountingExportService {
       { showSummary: true, summaryRow },
     );
 
+    return `<div class="report-section">${tableHtml}</div>`;
+  }
+
+  // ============ EXPENSES EXPORT ============
+  async exportExpensesPDF(
+    params: { startDate?: string; endDate?: string },
+    options: PdfFormattingOptions = {},
+  ): Promise<Buffer> {
+    const where: any = {};
+    if (params.startDate || params.endDate) {
+      where.expenseDate = {};
+      if (params.startDate) where.expenseDate.gte = new Date(params.startDate);
+      if (params.endDate) where.expenseDate.lte = new Date(params.endDate);
+    }
+    const expenses = await this.prisma.expense.findMany({
+      where,
+      include: { category: { select: { name: true, nameId: true } } },
+      orderBy: { expenseDate: "desc" },
+    });
+    const companyInfo = await this.getCompanyInfo();
+
+    const periodText =
+      params.startDate && params.endDate
+        ? `Periode: ${this.formatDate(params.startDate)} - ${this.formatDate(params.endDate)}`
+        : "Semua Periode";
+    const reportHeader: IndonesianReportHeader = {
+      reportTitle: "LAPORAN PENGELUARAN / EXPENSES REPORT",
+      reportSubtitle: "LAPORAN TRANSAKSI PENGELUARAN",
+      reportPeriod: periodText,
+      preparationDate: new Date(),
+      reportType: "EXPENSES",
+    };
+
+    const tableHtml = this.generateExpensesTableHtml(expenses);
+    const completeHtml = IndonesianPdfFormatter.generateCompleteReportHtml(
+      companyInfo,
+      reportHeader,
+      tableHtml,
+      options,
+    );
+    return await IndonesianPdfFormatter.generatePdfBuffer(completeHtml, options);
+  }
+
+  private generateExpensesTableHtml(rows: any[]): string {
+    const headers = [
+      "No. Pengeluaran",
+      "Tanggal",
+      "Vendor",
+      "Kategori",
+      "Deskripsi",
+      "Jumlah (IDR)",
+      "Status",
+    ];
+    const tableData: any[][] = [];
+    let totalAmount = 0;
+    rows.forEach((e: any) => {
+      const amount = Number(e.totalAmount) || 0;
+      totalAmount += amount;
+      tableData.push([
+        e.expenseNumber || "-",
+        this.formatDate(e.expenseDate),
+        e.vendorName || "-",
+        e.category?.nameId || e.category?.name || "-",
+        e.description || "-",
+        amount,
+        e.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas",
+      ]);
+    });
+    const summaryRow = ["", "", "", "", "TOTAL", totalAmount, ""];
+    const tableHtml = IndonesianPdfFormatter.generateIndonesianTable(
+      headers,
+      tableData,
+      "expenses",
+      { showSummary: true, summaryRow },
+    );
     return `<div class="report-section">${tableHtml}</div>`;
   }
 }

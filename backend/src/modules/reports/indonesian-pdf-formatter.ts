@@ -471,8 +471,6 @@ export class IndonesianPdfFormatter {
         </style>
       </head>
       <body>
-        <div class="watermark">SAK EMKM</div>
-        
         ${letterheadHtml}
         
         <div class="report-content">

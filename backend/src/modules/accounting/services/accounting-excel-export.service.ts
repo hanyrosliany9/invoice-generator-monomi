@@ -13,6 +13,79 @@ import {
 } from "../../reports/indonesian-excel-formatter";
 import { CompanySettingsService } from "../../company/company-settings.service";
 
+/**
+ * Sum a journal entry's line items on the given side. JournalEntry rows have no
+ * totalDebit/totalCredit column — the amounts live on lineItems. getJournalEntries
+ * exposes both `debit`/`credit` (Prisma Decimal) and `debitAmount`/`creditAmount`
+ * (number); this reads whichever is present.
+ */
+function sumLineItems(
+  lineItems: any[] | undefined,
+  side: "debit" | "credit",
+): number {
+  if (!Array.isArray(lineItems)) return 0;
+  const amountKey = side === "debit" ? "debitAmount" : "creditAmount";
+  return lineItems.reduce(
+    (sum, li) => sum + (Number(li?.[amountKey] ?? li?.[side]) || 0),
+    0,
+  );
+}
+
+interface AgingPivotRow {
+  entityName: string;
+  current: number;
+  days1_30: number;
+  days31_60: number;
+  days61_90: number;
+  over90: number;
+  total: number;
+}
+
+/**
+ * Pivot a flat aging list (one row per receivable/payable, each carrying an
+ * `agingBucket` label + an `outstanding` amount) into one row per entity
+ * (client/vendor) with the outstanding split across age-bucket columns. The
+ * aging endpoints return the flat list — the per-bucket columns the export wants
+ * don't exist on individual rows, so they must be aggregated here. Only entities
+ * with a non-zero outstanding total are returned (an aging report shows what is
+ * still owed).
+ */
+function pivotAgingByEntity(
+  items: any[] | undefined,
+  nameOf: (item: any) => string | null | undefined,
+): AgingPivotRow[] {
+  const bucketKey = (b: string): keyof AgingPivotRow =>
+    (({
+      Current: "current",
+      "1-30 days": "days1_30",
+      "31-60 days": "days31_60",
+      "61-90 days": "days61_90",
+      "Over 90 days": "over90",
+    }) as Record<string, keyof AgingPivotRow>)[b] ?? "current";
+
+  const byEntity = new Map<string, AgingPivotRow>();
+  (items ?? []).forEach((it) => {
+    const amount = Number(it.outstanding ?? it.netReceivable ?? it.amount) || 0;
+    if (amount <= 0.005) return; // aging shows only what's still owed
+    const name = (nameOf(it) || "-").toString();
+    const row =
+      byEntity.get(name) ??
+      ({
+        entityName: name,
+        current: 0,
+        days1_30: 0,
+        days31_60: 0,
+        days61_90: 0,
+        over90: 0,
+        total: 0,
+      } as AgingPivotRow);
+    (row[bucketKey(it.agingBucket)] as number) += amount;
+    row.total += amount;
+    byEntity.set(name, row);
+  });
+  return [...byEntity.values()].sort((a, b) => b.total - a.total);
+}
+
 interface ExportParams {
   startDate?: string;
   endDate?: string;
@@ -248,11 +321,14 @@ export class AccountingExcelExportService {
       worksheet.addRow([
         this.formatIndonesianDate(entry.entryDate),
         entry.journalEntry.entryNumber,
-        `${entry.accountCode} - ${entry.accountNameId}`,
+        // COA code only (no account name) per the GL export spec.
+        entry.accountCode,
         entry.journalEntry.descriptionId || entry.journalEntry.description,
-        entry.debit,
-        entry.credit,
-        entry.runningBalance,
+        // Coerce Prisma Decimal → number so Excel stores real numbers (a Decimal
+        // object serialises to a string, which Excel flags as text — the apostrophe).
+        Number(entry.debit) || 0,
+        Number(entry.credit) || 0,
+        Number(entry.runningBalance) || 0,
       ]);
     });
 
@@ -780,19 +856,26 @@ export class AccountingExcelExportService {
 
     if (data.aging && data.aging.aging) {
       data.aging.aging.forEach((item: any, index: number) => {
+        // Client is a nested object ({ id, name }) on the aging row — the old
+        // `item.clientName` was always undefined (empty column). Outstanding is
+        // tracked too, so derive the paid amount instead of hard-coding 0.
+        const amount = Number(item.amount) || 0;
+        const outstanding = Number(item.outstanding ?? item.amount) || 0;
+        const paid = Math.max(0, amount - outstanding);
         worksheet.addRow([
           index + 1,
-          item.clientName,
-          item.invoiceNumber,
+          item.client?.name || "-",
+          item.invoiceNumber || "-",
           this.formatIndonesianDate(item.invoiceDate),
-          item.amount,
-          0, // paid amount not available in aging
-          item.amount,
-          item.agingBucket,
+          amount,
+          paid,
+          outstanding,
+          item.paymentStatus || item.agingBucket || "-",
         ]);
 
-        totalInvoiceAmount += item.amount;
-        totalOutstanding += item.amount;
+        totalInvoiceAmount += amount;
+        totalPaidAmount += paid;
+        totalOutstanding += outstanding;
       });
     }
 
@@ -830,6 +913,68 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [4]);
 
     // Set column widths
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 8);
+
+    // ── Other Receivables (Piutang Lain-lain, 1-2040) ─────────────────────────
+    // Reimbursable pass-through expenses recoverable from clients. Appended to the
+    // SAME sheet (right below trade AR) so it's never missed — columns align with
+    // the trade-AR formats: Tanggal in col 4 (date), Jumlah in col 5 (currency).
+    const orItems: any[] = data.otherReceivables?.items ?? [];
+    worksheet.addRow([]);
+    const orTitleRow = worksheet.addRow([
+      "PIUTANG LAIN-LAIN (Other Receivables — 1-2040)",
+    ]);
+    orTitleRow.font = { bold: true, size: 12, color: { argb: "FF1F4E79" } };
+    worksheet.addRow([
+      "No.",
+      "Nama Client",
+      "No. Bukti",
+      "Tanggal",
+      "Jumlah",
+      "Deskripsi",
+      "Status",
+    ]);
+    const orHeaderRow = worksheet.rowCount;
+    const orStatus = (it: any) =>
+      it.collected
+        ? "Sudah Direimburse"
+        : it.posted
+          ? "Outstanding"
+          : "Belum Ditagih";
+    let orTotal = 0;
+    if (orItems.length) {
+      orItems.forEach((it: any, i: number) => {
+        const amount = Number(it.amount) || 0;
+        orTotal += amount;
+        worksheet.addRow([
+          i + 1,
+          it.client?.name || "-",
+          it.expenseNumber || "-",
+          this.formatIndonesianDate(it.date),
+          amount,
+          it.description || "-",
+          orStatus(it),
+        ]);
+      });
+    } else {
+      worksheet.addRow(["", "Tidak ada piutang lain-lain", "", "", "", "", ""]);
+    }
+    const orSummaryRow = worksheet.rowCount + 1;
+    worksheet.addRow(["", "", "", "TOTAL", orTotal, "", ""]);
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet,
+      orHeaderRow,
+      orSummaryRow,
+      1,
+      7,
+      "PiutangLain",
+      true,
+    );
+
+    // Re-assert column formats so both the trade-AR and the appended Other-
+    // Receivables rows render correctly (Tanggal=col4 date, amounts=cols 5–7).
+    IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [4]);
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [5, 6, 7]);
     IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 8);
 
     // Apply page setup
@@ -880,13 +1025,15 @@ export class AccountingExcelExportService {
       reportHeader,
     );
 
-    // Add column headers
+    // Add column headers. Vendor and Description are SEPARATE columns, and the
+    // document reference is a purchase/journal number (not an invoice number).
     const headers = [
       "No.",
       "Nama Vendor",
-      "No. Invoice",
-      "Tanggal Invoice",
-      "Total Invoice",
+      "Deskripsi",
+      "No. Purchase",
+      "Tanggal",
+      "Total",
       "Terbayar",
       "Saldo Hutang",
       "Status",
@@ -901,25 +1048,35 @@ export class AccountingExcelExportService {
 
     if (data.aging && data.aging.aging) {
       data.aging.aging.forEach((item: any, index: number) => {
+        // Vendor is `vendorName` (the old `categoryName` mixed in the transaction
+        // type when no vendor was linked). The document reference is `reference`
+        // (a PUR-/JE- number), not the non-existent `expenseNumber`. Outstanding
+        // is tracked, so derive the paid amount instead of hard-coding 0.
+        const amount = Number(item.amount) || 0;
+        const outstanding = Number(item.outstanding ?? item.amount) || 0;
+        const paid = Math.max(0, amount - outstanding);
         worksheet.addRow([
           index + 1,
-          item.categoryName,
-          item.expenseNumber,
+          item.vendorName || "-",
+          item.description || "-",
+          item.purchaseNumber || item.reference || "-",
           this.formatIndonesianDate(item.expenseDate),
-          item.amount,
-          0, // paid amount not available in aging
-          item.amount,
-          item.agingBucket,
+          amount,
+          paid,
+          outstanding,
+          item.paymentStatus || item.agingBucket || "-",
         ]);
 
-        totalInvoiceAmount += item.amount;
-        totalOutstanding += item.amount;
+        totalInvoiceAmount += amount;
+        totalPaidAmount += paid;
+        totalOutstanding += outstanding;
       });
     }
 
     // Add summary row
     const summaryRowIndex = worksheet.rowCount + 1;
     worksheet.addRow([
+      "",
       "",
       "",
       "",
@@ -936,22 +1093,22 @@ export class AccountingExcelExportService {
       headerRowIndex,
       summaryRowIndex,
       1,
-      8,
+      9,
       "LaporanHutang",
       true,
     );
 
-    // Apply currency formatting
+    // Apply currency formatting (Total, Terbayar, Saldo Hutang = cols 6,7,8)
     IndonesianExcelFormatter.applyIndonesianCurrencyFormat(
       worksheet,
-      [5, 6, 7],
+      [6, 7, 8],
     );
 
-    // Apply date formatting
-    IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [4]);
+    // Apply date formatting (Tanggal = col 5)
+    IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [5]);
 
     // Set column widths
-    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 8);
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 9);
 
     // Apply page setup
     IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
@@ -1016,10 +1173,14 @@ export class AccountingExcelExportService {
     let totalOver90 = 0;
     let totalAll = 0;
 
-    data.aging.forEach((item: any, index: number) => {
+    // The aging list is flat (one row per receivable) with an `agingBucket` label
+    // — it has no per-row bucket columns. Pivot it into per-client rows, summing
+    // each receivable's OUTSTANDING into the column matching its age bucket.
+    const arRows = pivotAgingByEntity(data.aging, (it) => it.client?.name);
+    arRows.forEach((item, index) => {
       worksheet.addRow([
         index + 1,
-        item.clientName,
+        item.entityName,
         item.current,
         item.days1_30,
         item.days31_60,
@@ -1132,10 +1293,15 @@ export class AccountingExcelExportService {
     let totalOver90 = 0;
     let totalAll = 0;
 
-    data.aging.forEach((item: any, index: number) => {
+    // Pivot the flat aging list into per-vendor rows (see AR aging above).
+    const apRows = pivotAgingByEntity(
+      data.aging,
+      (it) => it.vendorName || it.categoryName,
+    );
+    apRows.forEach((item, index) => {
       worksheet.addRow([
         index + 1,
-        item.vendorName,
+        item.entityName,
         item.current,
         item.days1_30,
         item.days31_60,
@@ -1260,8 +1426,10 @@ export class AccountingExcelExportService {
     let totalCredit = 0;
 
     result.data.forEach((entry: any) => {
-      const debit = Number(entry.totalDebit) || 0;
-      const credit = Number(entry.totalCredit) || 0;
+      // JournalEntry has no totalDebit/totalCredit column — sum the line items
+      // (a balanced entry's debit total == credit total).
+      const debit = sumLineItems(entry.lineItems, "debit");
+      const credit = sumLineItems(entry.lineItems, "credit");
       totalDebit += debit;
       totalCredit += credit;
       worksheet.addRow([
@@ -1314,29 +1482,102 @@ export class AccountingExcelExportService {
 
     IndonesianExcelFormatter.formatIndonesianLetterhead(worksheet, companyInfo, reportHeader);
 
-    const headers = ["Kode Akun", "Nama Akun", "Saldo"];
+    // Full per-account, per-period breakdown (opening → inflow/outflow → closing),
+    // matching the on-screen register — the old export only had a single closing
+    // balance column ("belum ada rinciannya").
+    const headers = [
+      "Kode Akun",
+      "Nama Akun",
+      "Periode",
+      "Saldo Awal",
+      "Kas Masuk",
+      "Kas Keluar",
+      "Saldo Akhir",
+    ];
     worksheet.addRow(headers);
     const headerRowIndex = worksheet.rowCount;
 
-    let totalBalance = 0;
+    let totalOpening = 0;
+    let totalInflow = 0;
+    let totalOutflow = 0;
+    let totalClosing = 0;
     result.data.forEach((row: any) => {
+      const opening = Number(row.openingBalance) || 0;
+      const inflow = Number(row.totalInflow) || 0;
+      const outflow = Number(row.totalOutflow) || 0;
       const closing = Number(row.closingBalance) || 0;
-      totalBalance += closing;
+      totalOpening += opening;
+      totalInflow += inflow;
+      totalOutflow += outflow;
+      totalClosing += closing;
       worksheet.addRow([
         row.accountCode || "-",
         row.accountName || "-",
+        row.period || this.formatIndonesianDate(row.periodDate),
+        opening,
+        inflow,
+        outflow,
         closing,
       ]);
     });
 
     const summaryRowIndex = worksheet.rowCount + 1;
-    worksheet.addRow(["", "TOTAL", totalBalance]);
+    worksheet.addRow([
+      "",
+      "",
+      "TOTAL",
+      totalOpening,
+      totalInflow,
+      totalOutflow,
+      totalClosing,
+    ]);
 
     IndonesianExcelFormatter.formatIndonesianTable(
-      worksheet, headerRowIndex, summaryRowIndex, 1, 3, "SaldoKasBank", true,
+      worksheet, headerRowIndex, summaryRowIndex, 1, 7, "SaldoKasBank", true,
     );
-    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [3]);
-    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 3);
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [4, 5, 6, 7]);
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 7);
+
+    // Rincian mutasi: the actual posted transactions behind each account's totals
+    // (date, journal ref, description, in, out, running balance). The summary
+    // above only gives the period totals.
+    const mutations = await this.cashBankBalanceService.getMutations();
+    if (mutations.length) {
+      worksheet.addRow([]);
+      const sectionRow = worksheet.addRow(["RINCIAN MUTASI KAS & BANK"]);
+      sectionRow.font = { bold: true, size: 12, color: { argb: "FF1F4E79" } };
+      for (const acct of mutations) {
+        worksheet.addRow([]);
+        const acctRow = worksheet.addRow([
+          `${acct.accountCode} — ${acct.accountName}`,
+        ]);
+        acctRow.font = { bold: true };
+        const hdrRow = worksheet.addRow([
+          "Tanggal",
+          "No. Jurnal",
+          "COA Terkait",
+          "Deskripsi",
+          "Kas Masuk",
+          "Kas Keluar",
+          "Saldo",
+        ]);
+        hdrRow.font = { bold: true };
+        acct.transactions.forEach((t) => {
+          worksheet.addRow([
+            this.formatIndonesianDate(t.date),
+            t.reference,
+            t.relatedCoa,
+            t.description,
+            t.inflow,
+            t.outflow,
+            t.balance,
+          ]);
+        });
+      }
+      // Mutasi amounts live in columns 5–7; ensure they carry the Rupiah format.
+      IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [5, 6, 7]);
+    }
+
     IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
     IndonesianExcelFormatter.addIndonesianFooter(worksheet, companyInfo, "Sistem Akuntansi Digital", "Manajer Keuangan");
 
@@ -1562,6 +1803,153 @@ export class AccountingExcelExportService {
     IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 7);
     IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
     IndonesianExcelFormatter.addIndonesianFooter(worksheet, companyInfo, "Sistem Akuntansi Digital", "Manajer Keuangan");
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  // ============ EXPENSES EXCEL EXPORT ============
+  async exportExpensesExcel(params: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const companyInfo = await this.getIndonesianCompanyInfo();
+
+    const where: any = {};
+    if (params.startDate || params.endDate) {
+      where.expenseDate = {};
+      if (params.startDate) where.expenseDate.gte = new Date(params.startDate);
+      if (params.endDate) where.expenseDate.lte = new Date(params.endDate);
+    }
+    const expenses = await this.prisma.expense.findMany({
+      where,
+      include: { category: { select: { name: true, nameId: true } } },
+      orderBy: { expenseDate: "desc" },
+    });
+
+    const worksheet = workbook.addWorksheet("Pengeluaran");
+    const periodText =
+      params.startDate && params.endDate
+        ? `${this.formatIndonesianDate(params.startDate)} - ${this.formatIndonesianDate(params.endDate)}`
+        : "Semua Periode";
+    IndonesianExcelFormatter.formatIndonesianLetterhead(worksheet, companyInfo, {
+      reportTitle: "LAPORAN PENGELUARAN",
+      reportSubtitle: "EXPENSES REPORT",
+      reportPeriod: `Periode: ${periodText}`,
+      preparationDate: new Date(),
+      reportType: "EXPENSES",
+    });
+
+    worksheet.addRow([
+      "No. Pengeluaran",
+      "Tanggal",
+      "Vendor",
+      "Kategori",
+      "Deskripsi",
+      "Jumlah",
+      "Status Bayar",
+    ]);
+    const headerRowIndex = worksheet.rowCount;
+
+    let total = 0;
+    expenses.forEach((e: any) => {
+      const amount = Number(e.totalAmount) || 0;
+      total += amount;
+      worksheet.addRow([
+        e.expenseNumber || "-",
+        this.formatIndonesianDate(e.expenseDate),
+        e.vendorName || "-",
+        e.category?.nameId || e.category?.name || "-",
+        e.description || "-",
+        amount,
+        e.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas",
+      ]);
+    });
+
+    const summaryRowIndex = worksheet.rowCount + 1;
+    worksheet.addRow(["", "", "", "", "TOTAL", total, ""]);
+
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet,
+      headerRowIndex,
+      summaryRowIndex,
+      1,
+      7,
+      "Pengeluaran",
+      true,
+    );
+    IndonesianExcelFormatter.applyIndonesianCurrencyFormat(worksheet, [6]);
+    IndonesianExcelFormatter.applyIndonesianDateFormat(worksheet, [2]);
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 7);
+    IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
+    IndonesianExcelFormatter.addIndonesianFooter(
+      worksheet,
+      companyInfo,
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
+    );
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  // ============ CHART OF ACCOUNTS EXCEL EXPORT ============
+  async exportChartOfAccountsExcel(): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const companyInfo = await this.getIndonesianCompanyInfo();
+
+    const accounts = await this.prisma.chartOfAccounts.findMany({
+      orderBy: { code: "asc" },
+    });
+
+    const worksheet = workbook.addWorksheet("Bagan Akun");
+    IndonesianExcelFormatter.formatIndonesianLetterhead(worksheet, companyInfo, {
+      reportTitle: "BAGAN AKUN",
+      reportSubtitle: "CHART OF ACCOUNTS",
+      reportPeriod: `Per Tanggal: ${this.formatIndonesianDate(new Date())}`,
+      preparationDate: new Date(),
+      reportType: "CHART_OF_ACCOUNTS",
+    });
+
+    worksheet.addRow([
+      "Kode Akun",
+      "Nama Akun",
+      "Tipe Akun",
+      "Sub Tipe",
+      "Saldo Normal",
+      "Status",
+    ]);
+    const headerRowIndex = worksheet.rowCount;
+
+    accounts.forEach((a: any) => {
+      worksheet.addRow([
+        a.code,
+        a.nameId || a.name,
+        a.accountType,
+        a.accountSubType || "-",
+        a.normalBalance,
+        a.isActive ? "Aktif" : "Nonaktif",
+      ]);
+    });
+
+    IndonesianExcelFormatter.formatIndonesianTable(
+      worksheet,
+      headerRowIndex,
+      worksheet.rowCount,
+      1,
+      6,
+      "BaganAkun",
+      false,
+    );
+    IndonesianExcelFormatter.setIndonesianColumnWidths(worksheet, 6);
+    IndonesianExcelFormatter.applyIndonesianPageSetup(worksheet);
+    IndonesianExcelFormatter.addIndonesianFooter(
+      worksheet,
+      companyInfo,
+      "Sistem Akuntansi Digital",
+      "Manajer Keuangan",
+    );
 
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
