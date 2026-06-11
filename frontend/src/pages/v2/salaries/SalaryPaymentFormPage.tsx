@@ -105,7 +105,6 @@ export default function SalaryPaymentFormPage() {
     if (existing) {
       reset({
         staffId: existing.staffId,
-        period: existing.period,
         monthStr: String(existing.month),
         yearStr: String(existing.year),
         year: existing.year,
@@ -143,13 +142,12 @@ export default function SalaryPaymentFormPage() {
   const onSubmit = (formData: FormValues) => {
     const month = parseInt(formData.monthStr, 10);
     const year = parseInt(formData.yearStr, 10);
-    const period = `${MONTHS[month - 1]} ${year}`;
+    // `period` is derived server-side from year+month — do NOT send it.
     const payload: CreateSalaryPaymentData = {
       staffId: formData.staffId,
-      period,
       year,
       month,
-      baseSalary: Number(formData.baseSalary),
+      baseSalary: Number(formData.baseSalary) || 0,
       allowances: Number(formData.allowances) || 0,
       deductions: Number(formData.deductions) || 0,
       paidAt: formData.paidAt || undefined,

@@ -64,7 +64,8 @@ export interface CreateStaffData {
 
 export interface CreateSalaryPaymentData {
   staffId: string;
-  period: string;
+  // `period` is NOT sent — the backend derives it from year+month and rejects
+  // any extra property (forbidNonWhitelisted).
   year: number;
   month: number;
   baseSalary: number;
