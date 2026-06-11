@@ -58,12 +58,18 @@ export default function SalaryPaymentFormPage() {
     },
   });
 
+  const watchedStaffId = useWatch({ control, name: 'staffId' });
   const watchedBase = useWatch({ control, name: 'baseSalary' }) ?? 0;
   const watchedAllowances = useWatch({ control, name: 'allowances' }) ?? 0;
   const watchedDeductions = useWatch({ control, name: 'deductions' }) ?? 0;
 
+  // An empty number input with valueAsNumber yields NaN — guard EACH term (a
+  // single NaN turns the whole sum into NaN, which renders as "Rp 0").
   const netPay = useMemo(
-    () => Number(watchedBase) + Number(watchedAllowances) - Number(watchedDeductions),
+    () =>
+      (Number(watchedBase) || 0) +
+      (Number(watchedAllowances) || 0) -
+      (Number(watchedDeductions) || 0),
     [watchedBase, watchedAllowances, watchedDeductions],
   );
 
@@ -72,6 +78,21 @@ export default function SalaryPaymentFormPage() {
     queryKey: ['staff'],
     queryFn: () => salaryService.listStaff(),
   });
+
+  const selectedStaff = staffList.find((s) => s.id === watchedStaffId);
+
+  // Base Salary auto-follows the selected staff's registered salary. It re-fills
+  // whenever the staff changes OR that staff's salary is edited (staffList
+  // refetches with the new figure). Skipped while editing an existing payment —
+  // that keeps its stored historical base salary (set by the reset() above).
+  useEffect(() => {
+    if (isEdit) return;
+    if (selectedStaff) {
+      setValue('baseSalary', Number(selectedStaff.baseSalary) || 0, {
+        shouldValidate: true,
+      });
+    }
+  }, [isEdit, watchedStaffId, selectedStaff?.baseSalary, setValue]);
 
   // Existing payment if editing
   const { data: existing, isLoading: loadingExisting } = useQuery({
@@ -247,14 +268,18 @@ export default function SalaryPaymentFormPage() {
                           id="baseSalary"
                           type="number"
                           min={0}
+                          readOnly
                           {...register('baseSalary', {
                             required: t('salaries.payment.baseRequired', 'Required'),
                             valueAsNumber: true,
                             min: 0,
                           })}
-                          placeholder="5000000"
-                          className="bg-bg-sunken border-border-subtle font-mono"
+                          placeholder={t('salaries.payment.basePlaceholder', 'Select a staff member')}
+                          className="bg-bg-sunken border-border-subtle font-mono opacity-90 cursor-not-allowed"
                         />
+                        <p className="text-[11px] text-text-tertiary">
+                          {t('salaries.payment.baseAutoHint', 'Auto-filled from the staff member’s registered salary.')}
+                        </p>
                         {errors.baseSalary && <p className="text-xs text-destructive">{errors.baseSalary.message}</p>}
                       </div>
                       <div className="space-y-1.5">
