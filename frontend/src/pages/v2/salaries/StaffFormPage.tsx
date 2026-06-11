@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 import { toLocalISODate } from '@/utils/date';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -54,12 +55,19 @@ export default function StaffFormPage() {
     }
   }, [existing, reset]);
 
+  const apiError = (err: any, fallback: string) =>
+    err?.response?.data?.message || err?.message || fallback;
+
   const createMutation = useMutation({
     mutationFn: (data: CreateStaffData) => salaryService.createStaff(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       queryClient.invalidateQueries({ queryKey: ['salary-stats'] });
+      toast.success(t('salaries.staffCreated', 'Staff member created.'));
       navigate('/salaries');
+    },
+    onError: (err: any) => {
+      toast.error(apiError(err, t('salaries.staffCreateFailed', 'Failed to create staff member.')));
     },
   });
 
@@ -68,7 +76,11 @@ export default function StaffFormPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       queryClient.invalidateQueries({ queryKey: ['salary-stats'] });
+      toast.success(t('salaries.staffUpdated', 'Staff member updated.'));
       navigate('/salaries');
+    },
+    onError: (err: any) => {
+      toast.error(apiError(err, t('salaries.staffUpdateFailed', 'Failed to update staff member.')));
     },
   });
 

@@ -9,7 +9,13 @@ import {
   Min,
   MaxLength,
 } from "class-validator";
-import { Type } from "class-transformer";
+import { Type, Transform } from "class-transformer";
+
+// Optional form fields arrive as "" (empty string) from the UI, not undefined —
+// so @IsOptional() wouldn't skip them and @IsEmail()/@IsDateString() would 400.
+// Normalise blanks to undefined before validation.
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  typeof value === "string" && value.trim() === "" ? undefined : value;
 
 export class CreateStaffDto {
   @ApiProperty({ description: "Staff full name" })
@@ -23,17 +29,20 @@ export class CreateStaffDto {
   position: string;
 
   @ApiPropertyOptional({ description: "Email address" })
+  @Transform(emptyToUndefined)
   @IsOptional()
   @IsEmail()
   email?: string;
 
   @ApiPropertyOptional({ description: "Phone number" })
+  @Transform(emptyToUndefined)
   @IsOptional()
   @IsString()
   @MaxLength(30)
   phone?: string;
 
   @ApiPropertyOptional({ description: "Date joined (ISO 8601)" })
+  @Transform(emptyToUndefined)
   @IsOptional()
   @IsDateString()
   joinedDate?: string;
