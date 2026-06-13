@@ -112,4 +112,40 @@ export class CreateClientDto {
   @IsOptional()
   @IsString({ message: "Notes harus berupa string" })
   notes?: string;
+
+  @ApiProperty({
+    description: "Instagram handle untuk pratinjau konten (mis. @brandklien)",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  instagramHandle?: string;
+
+  @ApiProperty({ description: "URL foto profil Instagram", required: false })
+  @IsOptional()
+  @IsString()
+  instagramAvatarUrl?: string;
+
+  @ApiProperty({ description: "Bio profil Instagram", required: false })
+  @IsOptional()
+  @IsString()
+  instagramBio?: string;
+
+  @ApiProperty({
+    description: "TikTok handle untuk pratinjau konten (mis. @brandklien)",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  tiktokHandle?: string;
+
+  @ApiProperty({ description: "URL foto profil TikTok", required: false })
+  @IsOptional()
+  @IsString()
+  tiktokAvatarUrl?: string;
+
+  @ApiProperty({ description: "Bio profil TikTok", required: false })
+  @IsOptional()
+  @IsString()
+  tiktokBio?: string;
 }

@@ -12,6 +12,7 @@ import {
   UploadedFiles,
   Logger,
   BadRequestException,
+  UnauthorizedException,
   Res,
   StreamableFile,
 } from "@nestjs/common";
@@ -29,6 +30,7 @@ import {
   RequireMediaRole,
   RequireAdmin,
   RequireSuperAdmin,
+  Public,
 } from "../auth/decorators/auth.decorators";
 import { MediaService } from "./media.service";
 import { MediaCleanupService } from "./services/media-cleanup.service";
@@ -356,6 +358,57 @@ export class MediaController {
     res.status(statusCode || 200);
 
     // Stream the file
+    stream.pipe(res);
+  }
+
+  /**
+   * GET /media/view/:key?mt=<media-access-token>
+   *
+   * Streams an R2 file authenticated by a media access token carried in the URL,
+   * so it can be used directly in <img>/<video> src (which cannot send an
+   * Authorization header). Same-origin equivalent of the Cloudflare worker URL —
+   * works in both local dev and production. The token is a short-lived signed JWT
+   * with purpose "media-access" (see generateMediaAccessToken).
+   */
+  @Get("view/:key(*)")
+  @Public()
+  @SkipThrottle()
+  @ApiOperation({ summary: "Stream R2 file authenticated by a media access token (for <img>/<video>)" })
+  async viewFile(
+    @Param("key") key: string,
+    @Query("mt") mt: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    if (!key) {
+      throw new BadRequestException("No file key provided");
+    }
+    if (!mt) {
+      throw new UnauthorizedException("Missing media access token");
+    }
+    // Throws UnauthorizedException if the token is invalid/expired/wrong purpose.
+    await this.mediaService.validateMediaAccessToken(mt);
+
+    const rangeHeader = req.headers["range"] as string | undefined;
+    const { stream, contentType, contentLength, originalName, statusCode, contentRange } =
+      await this.mediaService.getFileStream(key, { range: rangeHeader });
+
+    res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Length", contentLength);
+    res.setHeader("Cache-Control", "private, max-age=86400, must-revalidate");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    if (contentRange) {
+      res.setHeader("Content-Range", contentRange);
+    }
+    if (originalName) {
+      const encodedFilename = encodeURIComponent(originalName);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${originalName}"; filename*=UTF-8''${encodedFilename}`,
+      );
+    }
+    res.status(statusCode || 200);
     stream.pipe(res);
   }
 

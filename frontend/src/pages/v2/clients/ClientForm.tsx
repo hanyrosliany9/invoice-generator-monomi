@@ -73,6 +73,16 @@ const makeClientFormSchema = (t: (key: string, fallback: string) => string) => z
 
   // Catatan
   notes: z.string().max(2000, 'Catatan terlalu panjang').optional().or(z.literal('')),
+
+  // Instagram profile (for the content planner per-client preview)
+  instagramHandle: z.string().max(64, 'Terlalu panjang').optional().or(z.literal('')),
+  instagramAvatarUrl: z.string().max(500, 'Terlalu panjang').optional().or(z.literal('')),
+  instagramBio: z.string().max(300, 'Bio terlalu panjang').optional().or(z.literal('')),
+
+  // TikTok profile (for the content planner per-client preview)
+  tiktokHandle: z.string().max(64, 'Terlalu panjang').optional().or(z.literal('')),
+  tiktokAvatarUrl: z.string().max(500, 'Terlalu panjang').optional().or(z.literal('')),
+  tiktokBio: z.string().max(300, 'Bio terlalu panjang').optional().or(z.literal('')),
 });
 
 export const clientFormSchema = makeClientFormSchema((_, fallback) => fallback);
@@ -91,6 +101,12 @@ export const emptyClientFormValues: ClientFormValues = {
   bankAccount: '',
   address: '',
   notes: '',
+  instagramHandle: '',
+  instagramAvatarUrl: '',
+  instagramBio: '',
+  tiktokHandle: '',
+  tiktokAvatarUrl: '',
+  tiktokBio: '',
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -557,6 +573,133 @@ export const ClientForm = ({
             aria-invalid={!!errors.notes}
             disabled={isSubmitting}
             {...register('notes')}
+          />
+        </FieldShell>
+      </GlassPanel>
+
+      {/* ─────────────────────────────────────────────────────
+          05 · Instagram — per-client social profile used in the
+          Content Calendar preview for this client.
+      ───────────────────────────────────────────────────── */}
+      <GlassPanel surface="subtle" padding="lg">
+        <SectionHeader
+          index={5}
+          title={t('clients.form.instagram.title', 'Profil Instagram')}
+          description={t(
+            'clients.form.instagram.desc',
+            'Tampil di pratinjau Kalender Konten untuk klien ini.',
+          )}
+        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FieldShell
+            id="cf-ig-handle"
+            label={t('clients.form.instagram.handle', 'Username Instagram')}
+            error={errors.instagramHandle?.message}
+          >
+            <Input
+              id="cf-ig-handle"
+              placeholder="@brandklien"
+              autoComplete="off"
+              aria-invalid={!!errors.instagramHandle}
+              className={cn(fieldInputClass, errors.instagramHandle && fieldInvalidClass)}
+              disabled={isSubmitting}
+              {...register('instagramHandle')}
+            />
+          </FieldShell>
+
+          <FieldShell
+            id="cf-ig-avatar"
+            label={t('clients.form.instagram.avatar', 'URL Foto Profil')}
+            error={errors.instagramAvatarUrl?.message}
+          >
+            <Input
+              id="cf-ig-avatar"
+              placeholder="https://…/avatar.jpg"
+              autoComplete="off"
+              aria-invalid={!!errors.instagramAvatarUrl}
+              className={cn(fieldInputClass, errors.instagramAvatarUrl && fieldInvalidClass)}
+              disabled={isSubmitting}
+              {...register('instagramAvatarUrl')}
+            />
+          </FieldShell>
+        </div>
+
+        <FieldShell
+          id="cf-ig-bio"
+          label={t('clients.form.instagram.bio', 'Bio')}
+          error={errors.instagramBio?.message}
+        >
+          <Textarea
+            id="cf-ig-bio"
+            rows={2}
+            placeholder={t('clients.form.instagram.bioPlaceholder', 'Bio singkat yang tampil di profil…')}
+            invalid={!!errors.instagramBio}
+            aria-invalid={!!errors.instagramBio}
+            disabled={isSubmitting}
+            {...register('instagramBio')}
+          />
+        </FieldShell>
+      </GlassPanel>
+
+      {/* ─────────────────────────────────────────────────────
+          06 · TikTok — per-client social profile used in the
+          Content Calendar TikTok preview for this client.
+      ───────────────────────────────────────────────────── */}
+      <GlassPanel surface="subtle" padding="lg">
+        <SectionHeader
+          index={6}
+          title={t('clients.form.tiktok.title', 'Profil TikTok')}
+          description={t('clients.form.tiktok.desc', 'Tampil di pratinjau TikTok pada Kalender Konten untuk klien ini.')}
+        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FieldShell
+            id="cf-tt-handle"
+            label={t('clients.form.tiktok.handle', 'Username TikTok')}
+            error={errors.tiktokHandle?.message}
+          >
+            <Input
+              id="cf-tt-handle"
+              placeholder="@brandklien"
+              autoComplete="off"
+              aria-invalid={!!errors.tiktokHandle}
+              className={cn(fieldInputClass, errors.tiktokHandle && fieldInvalidClass)}
+              disabled={isSubmitting}
+              {...register('tiktokHandle')}
+            />
+          </FieldShell>
+
+          <FieldShell
+            id="cf-tt-avatar"
+            label={t('clients.form.tiktok.avatar', 'URL Foto Profil')}
+            error={errors.tiktokAvatarUrl?.message}
+          >
+            <Input
+              id="cf-tt-avatar"
+              placeholder="https://…/avatar.jpg"
+              autoComplete="off"
+              aria-invalid={!!errors.tiktokAvatarUrl}
+              className={cn(fieldInputClass, errors.tiktokAvatarUrl && fieldInvalidClass)}
+              disabled={isSubmitting}
+              {...register('tiktokAvatarUrl')}
+            />
+          </FieldShell>
+        </div>
+
+        <FieldShell
+          id="cf-tt-bio"
+          label={t('clients.form.tiktok.bio', 'Bio')}
+          error={errors.tiktokBio?.message}
+        >
+          <Textarea
+            id="cf-tt-bio"
+            rows={2}
+            placeholder={t('clients.form.tiktok.bioPlaceholder', 'Bio singkat yang tampil di profil…')}
+            invalid={!!errors.tiktokBio}
+            aria-invalid={!!errors.tiktokBio}
+            disabled={isSubmitting}
+            {...register('tiktokBio')}
           />
         </FieldShell>
       </GlassPanel>

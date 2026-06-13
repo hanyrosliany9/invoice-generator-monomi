@@ -15,11 +15,11 @@ export const PLATFORM_MEDIA_LIMITS: Record<
   }
 > = {
   [ContentPlatform.INSTAGRAM]: {
-    maxMedia: 10,
+    maxMedia: 20,
     allowsMultipleMedia: true,
     allowsImages: true,
     allowsVideos: true,
-    description: "Instagram carousel: max 10 images/videos",
+    description: "Instagram carousel: max 20 images/videos (2026)",
   },
   [ContentPlatform.FACEBOOK]: {
     maxMedia: 10,
@@ -43,11 +43,11 @@ export const PLATFORM_MEDIA_LIMITS: Record<
     description: "Twitter/X: max 4 images or 1 video",
   },
   [ContentPlatform.TIKTOK]: {
-    maxMedia: 1,
-    allowsMultipleMedia: false,
-    allowsImages: false,
+    maxMedia: 35,
+    allowsMultipleMedia: true,
+    allowsImages: true,
     allowsVideos: true,
-    description: "TikTok: single video only",
+    description: "TikTok: single video or Photo Mode carousel (max 35 images, 2026)",
   },
   [ContentPlatform.YOUTUBE]: {
     maxMedia: 1,

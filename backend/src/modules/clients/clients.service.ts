@@ -52,6 +52,12 @@ export class ClientsService {
         taxNumber: createClientDto.taxNumber || null,
         bankAccount: createClientDto.bankAccount || null,
         notes: createClientDto.notes || null,
+        instagramHandle: createClientDto.instagramHandle || null,
+        instagramAvatarUrl: createClientDto.instagramAvatarUrl || null,
+        instagramBio: createClientDto.instagramBio || null,
+        tiktokHandle: createClientDto.tiktokHandle || null,
+        tiktokAvatarUrl: createClientDto.tiktokAvatarUrl || null,
+        tiktokBio: createClientDto.tiktokBio || null,
       };
 
       return await this.prisma.client.create({

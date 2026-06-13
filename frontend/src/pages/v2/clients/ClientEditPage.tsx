@@ -80,6 +80,12 @@ export default function ClientEditPageV2() {
       bankAccount: client.bankAccount ?? '',
       address: client.address ?? '',
       notes: client.notes ?? '',
+      instagramHandle: client.instagramHandle ?? '',
+      instagramAvatarUrl: client.instagramAvatarUrl ?? '',
+      instagramBio: client.instagramBio ?? '',
+      tiktokHandle: client.tiktokHandle ?? '',
+      tiktokAvatarUrl: client.tiktokAvatarUrl ?? '',
+      tiktokBio: client.tiktokBio ?? '',
     };
   }, [client]);
 
@@ -121,6 +127,12 @@ export default function ClientEditPageV2() {
       paymentTerms: values.paymentTerms?.trim() || undefined,
       notes: values.notes?.trim() || undefined,
       status: values.status,
+      instagramHandle: values.instagramHandle?.trim() || undefined,
+      instagramAvatarUrl: values.instagramAvatarUrl?.trim() || undefined,
+      instagramBio: values.instagramBio?.trim() || undefined,
+      tiktokHandle: values.tiktokHandle?.trim() || undefined,
+      tiktokAvatarUrl: values.tiktokAvatarUrl?.trim() || undefined,
+      tiktokBio: values.tiktokBio?.trim() || undefined,
     };
     updateMutation.mutate({ id, data: payload });
   };

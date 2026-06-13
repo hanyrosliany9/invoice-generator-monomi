@@ -909,7 +909,23 @@
       "notesPlaceholder": "Communication preferences, relationship history, important notes to remember…",
       "statusHint": "Inactive clients do not appear in default selection lists.",
       "editNote": "Changes are saved when you press \"Save\".",
-      "companyPlaceholder": "PT, CV, or studio name"
+      "companyPlaceholder": "PT, CV, or studio name",
+      "instagram": {
+        "title": "Instagram Profile",
+        "desc": "Shown in this client's Content Calendar preview.",
+        "handle": "Instagram Username",
+        "avatar": "Profile Picture URL",
+        "bio": "Bio",
+        "bioPlaceholder": "A short bio shown on the profile…"
+      },
+      "tiktok": {
+        "title": "TikTok Profile",
+        "desc": "Shown in this client's TikTok preview in the Content Calendar.",
+        "handle": "TikTok Username",
+        "avatar": "Profile Picture URL",
+        "bio": "Bio",
+        "bioPlaceholder": "A short bio shown on the profile…"
+      }
     },
     "kpi": {
       "active": "Active Clients",
@@ -2124,12 +2140,63 @@
     "title": "Content Calendar",
     "view": {
       "list": "List",
-      "month": "Month"
+      "month": "Month",
+      "instagram": "Instagram",
+      "tiktok": "TikTok"
     },
     "search": {
       "placeholder": "Search by caption, platform, or client..."
     },
-    "subtitle": "Plan, schedule, and track social media publications across platforms."
+    "subtitle": "Plan, schedule, and track social media publications across platforms.",
+    "clientSubtitle": "Content calendar for this client — plan, schedule, and preview the feed.",
+    "allClients": "All Clients",
+    "highlights": "Highlights",
+    "share": "Share",
+    "shareEnabled": "Share link enabled.",
+    "shareFailed": "Failed to enable sharing.",
+    "shareDisabled": "Share link disabled.",
+    "shareDisableFailed": "Failed to disable sharing.",
+    "copyFailed": "Failed to copy link.",
+    "shareTitle": "Share with Client",
+    "shareDesc": "A read-only link with {{name}}'s content preview (Instagram & TikTok). No login required.",
+    "copied": "Copied",
+    "copy": "Copy",
+    "shareViews": "opened {{n}} times",
+    "shareDisableAction": "Disable link",
+    "shareOff": "Sharing isn't active for this client yet.",
+    "shareEnableAction": "Enable share link",
+    "highlightCreated": "Highlight created.",
+    "highlightFailed": "Failed to create highlight.",
+    "highlightDeleted": "Highlight deleted.",
+    "highlightDeleteFailed": "Failed to delete highlight.",
+    "highlightsTitle": "Manage Highlights",
+    "highlightsDesc": "A highlight is a saved collection (cover + 9:16 media) shown as a circle on the profile. The first media becomes the cover.",
+    "highlightsEmpty": "No highlights yet.",
+    "highlightTitleLabel": "Highlight Title",
+    "highlightTitlePlaceholder": "e.g. Promo, Products, Tutorial",
+    "highlightMedia": "Media (9:16)",
+    "highlightCreate": "Create Highlight",
+    "clients": {
+      "title": "Content Calendar",
+      "subtitle": "Pick a client to manage and preview their social media content.",
+      "totalClients": "Clients",
+      "totalContent": "Total Content",
+      "scheduled": "Scheduled",
+      "searchPlaceholder": "Search clients...",
+      "noMatch": "No matching clients",
+      "empty": "No clients yet",
+      "noMatchDesc": "Try a different keyword.",
+      "emptyDesc": "Add a client first to plan their content.",
+      "posts": "content",
+      "next": "Next"
+    },
+    "updated": "Content updated.",
+    "updateFailed": "Failed to update content.",
+    "highlightEdit": "Edit highlight",
+    "highlightEditing": "Editing highlight",
+    "highlightNewInstead": "+ New highlight",
+    "highlightUpdate": "Update Highlight",
+    "highlightUpdated": "Highlight updated."
   },
   "expenses": {
     "action": {
@@ -5757,16 +5824,49 @@
       "schedule": "Schedule",
       "scheduleDate": "Schedule Date",
       "time": "Time",
-      "title": "Add Content"
+      "title": "Add Content",
+      "trimmed": "This type allows only {{n}} media — the rest were removed.",
+      "mediaSingle": "This type supports only 1 media. Remove it first to replace.",
+      "mediaMax": "Up to {{n}} media per post.",
+      "uploadFailed": "Failed to upload media.",
+      "clientRequired": "Pick a client first.",
+      "carouselMin": "A carousel needs at least 2 media.",
+      "contentType": "Content Type",
+      "media": "Media",
+      "cover": "Cover",
+      "addMedia": "Add",
+      "thisClient": "This client"
     },
     "detailSheet": {
       "created": "Created",
       "publishFailed": "Publish failed — needs review",
       "published": "Published",
-      "title": "Content Detail"
+      "title": "Content Detail",
+      "fileCount_one": "{{count}} file",
+      "fileCount_other": "{{count}} files"
     },
     "searchProject": "Search by name or number…",
-    "noProjectsFound": "No projects found"
+    "noProjectsFound": "No projects found",
+    "kind": {
+      "post": "Photo / Video",
+      "postSpec": "1 media · 4:5",
+      "carousel": "Carousel",
+      "carouselSpec": "2–20 · swipe",
+      "reel": "Reel",
+      "reelSpec": "Video 9:16",
+      "story": "Story",
+      "storySpec": "9:16 · 24h",
+      "postHint": "One photo/video. Best ratio 4:5 (1080×1350) or 1:1. The profile grid shows 3:4 — keep key subjects centered.",
+      "carouselHint": "2–20 swipeable media. All slides follow the first slide's ratio (4:5 recommended). The first slide is the cover.",
+      "reelHint": "One vertical 9:16 video (1080×1920). Keep text ~250px from the top, ~440px from the bottom (caption & buttons), and ~120px from the right (action buttons).",
+      "storyHint": "One vertical 9:16 media (1080×1920), live for 24h. Keep text/logos ~250px from the top and bottom edges so the UI doesn't cover them."
+    },
+    "editDialog": {
+      "title": "Edit Content",
+      "desc": "Update this content — caption, media, type, schedule.",
+      "save": "Save Changes"
+    },
+    "platform": "Platform"
   },
   "projectContentCalendar": {
     "title": "Content Calendar",
@@ -7747,5 +7847,57 @@
     "error": "Failed to record the expense. Please try again.",
     "noCategory": "Could not resolve the budget category.",
     "badAmount": "Enter the actual amount."
+  },
+  "preview": {
+    "noSchedule": "No schedule",
+    "noMediaShort": "No media",
+    "prev": "Previous",
+    "next": "Next",
+    "noMedia": "No media yet",
+    "edit": "Edit",
+    "playStories": "Play {{n}} stories",
+    "posts": "posts",
+    "followers": "followers",
+    "following": "following",
+    "tabGrid": "GRID",
+    "tabReels": "REELS",
+    "dragHint": "Drag to rearrange the grid",
+    "feedLayout": "Feed layout",
+    "done": "Done",
+    "rearrange": "Rearrange",
+    "igEmptyTitle": "No Instagram content yet",
+    "igEmptyDesc": "Tag content with the Instagram platform to see it here.",
+    "noFeed": "No feed posts yet.",
+    "noReels": "No Reels yet.",
+    "openIg": "Open Instagram preview",
+    "openPhone": "Open phone preview",
+    "visualNote": "Visual preview — tap to open the full phone view.",
+    "close": "Close",
+    "tt": {
+      "followingTab": "Following",
+      "forYou": "For You",
+      "originalSound": "original sound",
+      "following": "Following",
+      "followers": "Followers",
+      "likes": "Likes",
+      "follow": "Follow",
+      "emptyTitle": "No TikTok content yet",
+      "emptyDesc": "Tag content with the TikTok platform to see it here."
+    },
+    "client": "Client",
+    "openTiktok": "Open TikTok preview",
+    "delete": "Delete",
+    "follow": "Follow",
+    "message": "Message",
+    "reorderFailed": "Couldn't save grid order.",
+    "formatUpdated": "Content format updated.",
+    "formatFailed": "Couldn't update format."
+  },
+  "publicContent": {
+    "readOnly": "Read-only preview",
+    "invalidTitle": "Invalid link",
+    "invalidDesc": "This share link wasn't found or has been disabled. Contact your agency for an updated link.",
+    "subtitle": "Social media content plan — previewed as it appears in the apps.",
+    "posts": "content"
   }
 }

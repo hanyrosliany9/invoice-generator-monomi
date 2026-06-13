@@ -667,7 +667,7 @@ export default function ProjectDetailPageV2() {
                   <Briefcase className="h-3.5 w-3.5" />
                   {t('projectDetail.newDeck', 'New Deck')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(`/calendar/content?projectId=${id}`)}>
+                <DropdownMenuItem onClick={() => navigate(project.client ? `/calendar/content/clients/${project.client.id}?projectId=${id}` : '/calendar/content')}>
                   <Calendar className="h-3.5 w-3.5" />
                   {t('projectDetail.newContentItem', 'New Content Item')}
                 </DropdownMenuItem>

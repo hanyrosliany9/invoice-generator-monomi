@@ -5,11 +5,12 @@ import {
   IsArray,
   IsDateString,
   IsNotEmpty,
+  IsInt,
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ContentStatus, ContentPlatform } from "@prisma/client";
+import { ContentStatus, ContentPlatform, ContentFormat } from "@prisma/client";
 
 /**
  * DTO for content media attachment
@@ -96,7 +97,23 @@ export class CreateContentDto {
   })
   @IsEnum(ContentStatus)
   @IsOptional()
-  status?: ContentStatus = ContentStatus.DRAFT;
+  status?: ContentStatus;
+
+  @ApiPropertyOptional({
+    description: "Content format (Feed post, Reel, or Story)",
+    enum: ContentFormat,
+    example: ContentFormat.FEED,
+  })
+  @IsEnum(ContentFormat)
+  @IsOptional()
+  format?: ContentFormat;
+
+  @ApiPropertyOptional({
+    description: "Manual position in the Instagram grid preview",
+  })
+  @IsOptional()
+  @IsInt()
+  gridOrder?: number;
 
   @ApiProperty({
     description: "Target platforms",
@@ -107,12 +124,12 @@ export class CreateContentDto {
   @IsArray()
   @IsEnum(ContentPlatform, { each: true })
   @IsOptional()
-  platforms?: ContentPlatform[] = [];
+  platforms?: ContentPlatform[];
 
-  @ApiPropertyOptional({ description: "Client ID" })
+  @ApiProperty({ description: "Client ID — content is client-scoped (required)" })
   @IsString()
-  @IsOptional()
-  clientId?: string;
+  @IsNotEmpty()
+  clientId: string;
 
   @ApiPropertyOptional({ description: "Project ID" })
   @IsString()
@@ -129,5 +146,5 @@ export class CreateContentDto {
   @ValidateNested({ each: true })
   @Type(() => ContentMediaDto)
   @IsOptional()
-  media?: ContentMediaDto[] = [];
+  media?: ContentMediaDto[];
 }

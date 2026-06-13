@@ -68,6 +68,7 @@ const V2SystemReportPage = lazy(() => import('./pages/v2/reports/SystemReportPag
 const V2MonthlyBusinessReportPage = lazy(() => import('./pages/v2/reports/MonthlyBusinessReportPage'))
 const V2CalendarPage = lazy(() => import('./pages/v2/calendar/CalendarPage'))
 const V2ContentCalendarPage = lazy(() => import('./pages/v2/calendar/ContentCalendarPage'))
+const V2ContentCalendarClientsPage = lazy(() => import('./pages/v2/calendar/ContentCalendarClientsPage'))
 const V2CallSheetsListPage = lazy(() => import('./pages/v2/call-sheets/CallSheetsListPage'))
 const V2CallSheetEditorPage = lazy(() => import('./pages/v2/call-sheets/CallSheetEditorPage'))
 const V2DecksPage = lazy(() => import('./pages/v2/decks/DecksPage'))
@@ -109,6 +110,7 @@ const V2CashDisbursementsPage = lazy(() => import('./pages/v2/accounting/CashDis
 const V2GuestAcceptInvitePage = lazy(() => import('./pages/v2/guest/GuestAcceptInvitePage'))
 const V2GuestProjectViewPage = lazy(() => import('./pages/v2/guest/GuestProjectViewPage'))
 const V2PublicProjectViewPage = lazy(() => import('./pages/v2/guest/PublicProjectViewPage'))
+const V2PublicContentViewPage = lazy(() => import('./pages/v2/guest/PublicContentViewPage'))
 const V2MediaDownloaderPage = lazy(() => import('./pages/v2/downloaders/MediaDownloaderPage'))
 const V2PinterestDownloaderPage = lazy(() => import('./pages/v2/downloaders/PinterestDownloaderPage'))
 const V2SalariesPage = lazy(() => import('./pages/v2/salaries/SalariesPage'))
@@ -241,6 +243,7 @@ function App() {
           {/* Public / anonymous routes (no auth) */}
           <Route path='/guest/accept' element={<Suspense fallback={<PageLoader />}><V2GuestAcceptInvitePage /></Suspense>} />
           <Route path='/guest/project/:projectId' element={<Suspense fallback={<PageLoader />}><V2GuestProjectViewPage /></Suspense>} />
+          <Route path='/shared/content/:token' element={<Suspense fallback={<PageLoader />}><V2PublicContentViewPage /></Suspense>} />
           <Route path='/shared/:token' element={<Suspense fallback={<PageLoader />}><V2PublicProjectViewPage /></Suspense>} />
           <Route path='/deck/shared/:token' element={<Suspense fallback={<PageLoader />}><V2PublicDeckViewPage /></Suspense>} />
           <Route path='/deck/invite/:token' element={<Suspense fallback={<PageLoader />}><V2DeckAcceptInvitePage /></Suspense>} />
@@ -350,7 +353,8 @@ function App() {
                           Business calendar is admin-only; content calendar +
                           all production/media tools are open to VIDEOGRAPHER. */}
                       <Route path='/calendar' element={<AdminRoute><V2CalendarPage /></AdminRoute>} />
-                      <Route path='/calendar/content' element={<V2ContentCalendarPage />} />
+                      <Route path='/calendar/content' element={<V2ContentCalendarClientsPage />} />
+                      <Route path='/calendar/content/clients/:clientId' element={<V2ContentCalendarPage />} />
                       <Route path='/call-sheets' element={<V2CallSheetsListPage />} />
                       <Route path='/call-sheets/:id' element={<V2CallSheetEditorPage />} />
                       <Route path='/decks' element={<V2DecksPage />} />

@@ -80,6 +80,12 @@ export default function ClientCreatePageV2() {
       bankAccount: values.bankAccount?.trim() || undefined,
       paymentTerms: values.paymentTerms?.trim() || undefined,
       notes: values.notes?.trim() || undefined,
+      instagramHandle: values.instagramHandle?.trim() || undefined,
+      instagramAvatarUrl: values.instagramAvatarUrl?.trim() || undefined,
+      instagramBio: values.instagramBio?.trim() || undefined,
+      tiktokHandle: values.tiktokHandle?.trim() || undefined,
+      tiktokAvatarUrl: values.tiktokAvatarUrl?.trim() || undefined,
+      tiktokBio: values.tiktokBio?.trim() || undefined,
     };
     createMutation.mutate(payload);
   };

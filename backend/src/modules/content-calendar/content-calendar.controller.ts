@@ -21,10 +21,16 @@ import {
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
-import { UserRole, ContentStatus, ContentPlatform } from "@prisma/client";
+import {
+  UserRole,
+  ContentStatus,
+  ContentPlatform,
+  ContentFormat,
+} from "@prisma/client";
 import { ContentCalendarService } from "./content-calendar.service";
 import { CreateContentDto } from "./dto/create-content.dto";
 import { UpdateContentDto } from "./dto/update-content.dto";
+import { CreateHighlightDto } from "./dto/create-highlight.dto";
 
 /**
  * ContentCalendarController - REST API for Content Planning
@@ -70,6 +76,19 @@ export class ContentCalendarController {
   }
 
   /**
+   * Persist the Instagram grid drag-to-rearrange order.
+   * Available to all authenticated users.
+   */
+  @Put("reorder")
+  @ApiOperation({ summary: "Reorder content items in the Instagram grid" })
+  @ApiResponse({ status: 200, description: "Grid order updated" })
+  async reorder(
+    @Body() body: { items: { id: string; gridOrder: number }[] },
+  ) {
+    return this.contentCalendarService.reorder(body?.items ?? []);
+  }
+
+  /**
    * Get all content calendar items with optional filters
    * Available to all authenticated users
    */
@@ -77,6 +96,7 @@ export class ContentCalendarController {
   @ApiOperation({ summary: "Get all content calendar items" })
   @ApiQuery({ name: "status", enum: ContentStatus, required: false })
   @ApiQuery({ name: "platform", enum: ContentPlatform, required: false })
+  @ApiQuery({ name: "format", enum: ContentFormat, required: false })
   @ApiQuery({ name: "clientId", required: false })
   @ApiQuery({ name: "projectId", required: false })
   @ApiQuery({ name: "createdBy", required: false })
@@ -85,6 +105,7 @@ export class ContentCalendarController {
   async findAll(
     @Query("status") status?: ContentStatus,
     @Query("platform") platform?: ContentPlatform,
+    @Query("format") format?: ContentFormat,
     @Query("clientId") clientId?: string,
     @Query("projectId") projectId?: string,
     @Query("createdBy") createdBy?: string,
@@ -94,6 +115,7 @@ export class ContentCalendarController {
     const filters = {
       ...(status && { status }),
       ...(platform && { platform }),
+      ...(format && { format }),
       ...(clientId && { clientId }),
       ...(projectId && { projectId }),
       ...(createdBy && { createdBy }),
@@ -104,6 +126,89 @@ export class ContentCalendarController {
     const contents = await this.contentCalendarService.findAll(filters);
 
     return contents;
+  }
+
+  /**
+   * Get the agency Instagram profile for the grid preview header.
+   * Non-sensitive fields only; available to all authenticated users.
+   */
+  @Get("ig-profile")
+  @ApiOperation({ summary: "Get a client's Instagram profile for the grid preview" })
+  @ApiQuery({ name: "clientId", required: true })
+  async getIgProfile(@Query("clientId") clientId: string) {
+    return this.contentCalendarService.getSocialProfile(
+      clientId,
+      ContentPlatform.INSTAGRAM,
+    );
+  }
+
+  @Get("social-profile")
+  @ApiOperation({ summary: "Get a client's social profile (per platform) for the grid preview" })
+  @ApiQuery({ name: "clientId", required: true })
+  @ApiQuery({ name: "platform", enum: ContentPlatform, required: false })
+  async getSocialProfile(
+    @Query("clientId") clientId: string,
+    @Query("platform") platform?: ContentPlatform,
+  ) {
+    return this.contentCalendarService.getSocialProfile(
+      clientId,
+      platform || ContentPlatform.INSTAGRAM,
+    );
+  }
+
+  // ----- per-client public share management (admin) -----
+
+  @Get("share/:clientId")
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: "Get the public share status for a client's content planner" })
+  async getShareStatus(@Param("clientId") clientId: string) {
+    return this.contentCalendarService.getShareStatus(clientId);
+  }
+
+  @Post("share/:clientId")
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: "Enable the public share link for a client's content planner" })
+  async enableShare(@Param("clientId") clientId: string) {
+    return this.contentCalendarService.enableShare(clientId);
+  }
+
+  @Delete("share/:clientId")
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: "Disable the public share link for a client's content planner" })
+  async disableShare(@Param("clientId") clientId: string) {
+    return this.contentCalendarService.disableShare(clientId);
+  }
+
+  // ----- story highlights (per client) -----
+
+  @Get("highlights/:clientId")
+  @ApiOperation({ summary: "List a client's Instagram story highlights" })
+  async listHighlights(@Param("clientId") clientId: string) {
+    return this.contentCalendarService.listHighlights(clientId);
+  }
+
+  @Post("highlights/:clientId")
+  @ApiOperation({ summary: "Create an Instagram story highlight for a client" })
+  async createHighlight(
+    @Param("clientId") clientId: string,
+    @Body() dto: CreateHighlightDto,
+  ) {
+    return this.contentCalendarService.createHighlight(clientId, dto);
+  }
+
+  @Put("highlight/:highlightId")
+  @ApiOperation({ summary: "Update an Instagram story highlight (title and/or media)" })
+  async updateHighlight(
+    @Param("highlightId") highlightId: string,
+    @Body() dto: Partial<CreateHighlightDto>,
+  ) {
+    return this.contentCalendarService.updateHighlight(highlightId, dto);
+  }
+
+  @Delete("highlight/:highlightId")
+  @ApiOperation({ summary: "Delete an Instagram story highlight" })
+  async deleteHighlight(@Param("highlightId") highlightId: string) {
+    return this.contentCalendarService.deleteHighlight(highlightId);
   }
 
   /**

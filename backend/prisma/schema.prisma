@@ -145,6 +145,23 @@ model Client {
   bankAccount  String? // Bank account information
   notes        String? @db.Text // Additional notes
 
+  // Instagram preview profile (per-client social profile in the content planner)
+  instagramHandle    String? // e.g. "@clientbrand"
+  instagramAvatarUrl String? // profile picture URL
+  instagramBio       String? // profile bio text
+
+  // TikTok preview profile (per-client social profile in the content planner)
+  tiktokHandle    String? // e.g. "@clientbrand"
+  tiktokAvatarUrl String? // profile picture URL
+  tiktokBio       String? // profile bio text
+
+  // Content planner public sharing — a read-only link for the client to view
+  // their own content calendar previews (no login required).
+  contentShareToken   String?   @unique // Unique token for the public share link
+  contentShareEnabled Boolean   @default(false) // Whether the share link is active
+  contentSharedAt     DateTime? // When sharing was first enabled
+  contentShareViews   Int       @default(0) // How many times the public link was opened
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -155,6 +172,7 @@ model Client {
   businessJourneyEvents BusinessJourneyEvent[]
   expenses              Expense[] // Client-related expenses
   contentCalendarItems  ContentCalendarItem[]
+  storyHighlights       StoryHighlight[] // Instagram preview story highlights
   mediaProjects         MediaProject[] // Media collaboration projects
   decks                 Deck[]
   calendarEvents        CalendarEvent[]
@@ -774,6 +792,11 @@ model CompanySettings {
   website     String?
   taxNumber   String? // NPWP
   currency    String  @default("IDR")
+
+  // Instagram preview profile (agency social profile shown in the content planner)
+  instagramHandle    String? // e.g. "@monomi.agency"
+  instagramAvatarUrl String? // profile picture URL
+  instagramBio       String? // profile bio text
 
   // Bank accounts
   bankAccountName String? // Name on bank account (Rekening atas nama)
@@ -3936,6 +3959,8 @@ model ContentCalendarItem {
   scheduledAt   DateTime?
   publishedAt   DateTime?
   status        ContentStatus     @default(DRAFT)
+  format        ContentFormat     @default(FEED) // Feed post, Reel, or Story (drives IG preview tabs)
+  gridOrder     Int? // Manual drag-to-rearrange position in the Instagram grid preview (null = order by scheduledAt)
   platforms     ContentPlatform[]
   clientId      String?
   projectId     String?
@@ -3953,6 +3978,8 @@ model ContentCalendarItem {
   @@index([projectId])
   @@index([createdBy])
   @@index([status, scheduledAt])
+  @@index([format])
+  @@index([gridOrder])
   @@map("content_calendar_items")
 }
 
@@ -3993,6 +4020,51 @@ enum MediaType {
   IMAGE
   VIDEO
   CAROUSEL
+}
+
+enum ContentFormat {
+  FEED
+  REEL
+  STORY
+}
+
+// Instagram story highlights — saved, named collections (cover + media) shown
+// as circles on the profile. Per-client; self-contained (own uploaded media).
+model StoryHighlight {
+  id        String           @id @default(cuid())
+  clientId  String
+  title     String
+  coverUrl  String?
+  coverKey  String?
+  order     Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  client    Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  media     HighlightMedia[]
+
+  @@index([clientId])
+  @@index([clientId, order])
+  @@map("story_highlights")
+}
+
+model HighlightMedia {
+  id           String         @id @default(cuid())
+  highlightId  String
+  url          String
+  key          String
+  type         MediaType
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  thumbnailUrl String?
+  thumbnailKey String?
+  order        Int            @default(0)
+  highlight    StoryHighlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+
+  @@index([highlightId])
+  @@index([highlightId, order])
+  @@map("highlight_media")
 }
 
 enum ContentPlatform {

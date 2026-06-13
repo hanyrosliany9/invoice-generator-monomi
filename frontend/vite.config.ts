@@ -37,7 +37,9 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 3000,
+    // Dev port + proxy target are env-overridable so a second instance can run
+    // alongside another project. Defaults are unchanged (3000 → backend 5000).
+    port: Number(process.env.VITE_PORT) || 3000,
     // Accept tunnel hostnames (cloudflared / ngrok). Dev-only; build output is unaffected.
     allowedHosts: true,
     // VITE_TUNNEL=1 routes HMR through the tunnel on wss:443. Used with
@@ -48,7 +50,7 @@ export default defineConfig({
     fs: { strict: false, allow: ['..'] },
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
         ws: true,

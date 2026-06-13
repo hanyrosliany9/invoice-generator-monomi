@@ -603,6 +603,7 @@ export default function ProjectContentCalendarPage() {
         onOpenChange={setCreateOpen}
         initialDate={createDate}
         projectId={projectId!}
+        clientId={project?.clientId ?? project?.client?.id ?? ''}
         onSubmit={(data) => createMutation.mutate(data)}
         submitting={createMutation.isPending}
       />
@@ -1061,12 +1062,13 @@ function DetailSheet({
 /* ------------------------------------------------------------------ */
 
 function CreateDialog({
-  open, onOpenChange, initialDate, projectId, onSubmit, submitting,
+  open, onOpenChange, initialDate, projectId, clientId, onSubmit, submitting,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initialDate?: Date;
   projectId: string;
+  clientId: string;
   onSubmit: (data: CreateContentDto) => void;
   submitting: boolean;
 }) {
@@ -1094,12 +1096,17 @@ function CreateDialog({
       d.setHours(h || 0, m || 0, 0, 0);
       iso = d.toISOString();
     }
+    if (!clientId) {
+      toast.error(t('projectContentCalendar.createDialog.clientRequired', 'Proyek ini belum memiliki klien.'));
+      return;
+    }
     onSubmit({
       caption: caption.trim(),
       scheduledAt: iso,
       status: iso ? 'SCHEDULED' : 'DRAFT',
       platforms: selectedPlatforms,
       projectId,
+      clientId,
     });
     setCaption('');
     setSelectedPlatforms([]);

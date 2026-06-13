@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,6 +9,8 @@ import {
   Rocket, Archive,
   Layers, ListChecks, FileImage, Video, CheckCircle2, AlertTriangle, Clock,
   Calendar as CalendarIcon, Camera, Film, Globe, Hash, Briefcase, Play,
+  Grid3x3, ArrowLeft, Loader2, ImagePlus, Square, SquareStack, CircleDashed, Info,
+  Share2, Copy, Check, Link2, Pencil,
 } from 'lucide-react';
 import {
   addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format,
@@ -55,9 +57,14 @@ import contentCalendarService, {
   type ContentCalendarItem,
   type CreateContentDto,
   type ContentCalendarFilters,
+  type ContentFormat,
+  type StoryHighlight,
 } from '@/services/content-calendar';
+import InstagramPreview from '@/pages/v2/calendar/instagram/InstagramPreview';
+import TikTokPreview from '@/pages/v2/calendar/tiktok/TikTokPreview';
 import { projectService } from '@/services/projects';
 import { clientService } from '@/services/clients';
+import { useMediaToken } from '@/hooks/useMediaToken';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -150,13 +157,14 @@ const Textarea = ({
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
-type ViewMode = 'month' | 'list';
+type ViewMode = 'month' | 'list' | 'instagram' | 'tiktok';
 
 export default function ContentCalendarPageV2() {
   const { t } = useTranslation();
   const idLocale = useDateLocale();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { clientId = '' } = useParams<{ clientId: string }>();
   const prefillProjectId = searchParams.get('projectId') ?? '';
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
@@ -173,18 +181,23 @@ export default function ContentCalendarPageV2() {
   const [selectedItem, setSelectedItem] = useState<ContentCalendarItem | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createDate, setCreateDate] = useState<Date | undefined>(undefined);
+  const [editItem, setEditItem] = useState<ContentCalendarItem | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [highlightsOpen, setHighlightsOpen] = useState(false);
 
   // Auto-open create dialog when ?projectId is present.
   useEffect(() => {
     if (prefillProjectId) setCreateOpen(true);
   }, [prefillProjectId]);
 
-  /* ----- data ----- */
+  /* ----- data -----
+     The page is client-scoped via the :clientId route param (mirrors the
+     media-collab folder pattern). All content is filtered to this client. */
   const filters: ContentCalendarFilters = useMemo(() => ({
     status:    statusFilter   !== 'all' ? (statusFilter as ContentStatus) : undefined,
     platform:  platformFilter !== 'all' ? (platformFilter as Platform)    : undefined,
-    clientId:  clientFilter   !== 'all' ? clientFilter                    : undefined,
-  }), [statusFilter, platformFilter, clientFilter]);
+    clientId:  clientId || undefined,
+  }), [statusFilter, platformFilter, clientId]);
 
   const { data: contentsResp, isLoading } = useQuery({
     queryKey: ['content-calendar-v2', filters],
@@ -204,6 +217,13 @@ export default function ContentCalendarPageV2() {
     queryKey: ['clients'],
     queryFn: clientService.getClients,
   });
+  const currentClient = useMemo(() => clients.find((c) => c.id === clientId), [clients, clientId]);
+  // If the :clientId param is invalid once clients load, bounce back to the picker.
+  useEffect(() => {
+    if (clientId && clients.length > 0 && !currentClient) {
+      navigate('/calendar/content', { replace: true });
+    }
+  }, [clientId, clients.length, currentClient, navigate]);
 
   /* ----- search (client-side) ----- */
   const filtered = useMemo(() => {
@@ -309,14 +329,24 @@ export default function ContentCalendarPageV2() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateContentDto) => contentCalendarService.createContent(data),
-    onSuccess: (created) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
       toast.success(t('content.created', 'Konten dibuat.'));
       setCreateOpen(false);
-      // Open detail sheet so operator can immediately see / edit the new item.
-      if (created?.id) setSelectedItem(created);
     },
     onError: () => toast.error(t('content.createFailed', 'Gagal membuat konten.')),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreateContentDto> }) =>
+      contentCalendarService.updateContent(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
+      toast.success(t('content.updated', 'Konten diperbarui.'));
+      setCreateOpen(false);
+      setEditItem(null);
+    },
+    onError: () => toast.error(t('content.updateFailed', 'Gagal memperbarui konten.')),
   });
 
   const hasActiveFilters = !!search || statusFilter !== 'all' || platformFilter !== 'all' || clientFilter !== 'all';
@@ -328,8 +358,18 @@ export default function ContentCalendarPageV2() {
   };
 
   const openCreate = (date?: Date) => {
+    setEditItem(null);
     setCreateDate(date);
     setCreateOpen(true);
+  };
+  const openEdit = (item: ContentCalendarItem) => {
+    setEditItem(item);
+    setCreateOpen(true);
+  };
+  const confirmDelete = (item: ContentCalendarItem) => {
+    if (confirm(t('content.confirmDelete', 'Hapus konten ini?'))) {
+      deleteMutation.mutate(item.id);
+    }
   };
 
   /* ----- render ----- */
@@ -344,21 +384,34 @@ export default function ContentCalendarPageV2() {
     >
       <PageContainer>
         <PageHeader
-          title={t('content.title', 'Kalender Konten')}
-          description={t(
-            'content.subtitle',
-            'Rencanakan, jadwalkan, dan pantau publikasi media sosial lintas platform.',
-          )}
+          title={currentClient?.name ?? t('content.title', 'Kalender Konten')}
+          description={
+            currentClient
+              ? t('content.clientSubtitle', 'Kalender konten untuk klien ini — rencanakan, jadwalkan, dan pratinjau feed Instagram.')
+              : t('content.subtitle', 'Rencanakan, jadwalkan, dan pantau publikasi media sosial lintas platform.')
+          }
           actions={
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/calendar')}
+                onClick={() => navigate('/calendar/content')}
               >
-                <CalendarDays className="h-4 w-4" />
-                {t('content.openGeneral', 'Kalender Umum')}
+                <ArrowLeft className="h-4 w-4" />
+                {t('content.allClients', 'Semua Klien')}
               </Button>
+              {clientId && view === 'instagram' && (
+                <Button variant="outline" size="sm" onClick={() => setHighlightsOpen(true)}>
+                  <CircleDashed className="h-4 w-4" />
+                  {t('content.highlights', 'Highlights')}
+                </Button>
+              )}
+              {clientId && (
+                <Button variant="outline" size="sm" onClick={() => setShareOpen(true)}>
+                  <Share2 className="h-4 w-4" />
+                  {t('content.share', 'Bagikan')}
+                </Button>
+              )}
               <Button size="sm" onClick={() => openCreate()}>
                 <Plus className="h-4 w-4" />
                 {t('content.new', 'Tambah Konten')}
@@ -450,6 +503,14 @@ export default function ContentCalendarPageV2() {
                   <ListChecks className="h-3.5 w-3.5" />
                   {t('content.view.list', 'Daftar')}
                 </TabsTrigger>
+                <TabsTrigger value="instagram">
+                  <Grid3x3 className="h-3.5 w-3.5" />
+                  {t('content.view.instagram', 'Instagram')}
+                </TabsTrigger>
+                <TabsTrigger value="tiktok">
+                  <Video className="h-3.5 w-3.5" />
+                  {t('content.view.tiktok', 'TikTok')}
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -499,21 +560,6 @@ export default function ContentCalendarPageV2() {
                 </SelectContent>
               </Select>
 
-              <Select value={clientFilter} onValueChange={setClientFilter}>
-                <SelectTrigger
-                  size="sm"
-                  className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px] max-w-[220px]"
-                >
-                  <SelectValue placeholder={t('content.filter.client', 'Klien')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('content.filter.allClients', 'Semua Klien')}</SelectItem>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
               {hasActiveFilters && (
                 <Button
                   variant="ghost"
@@ -536,6 +582,10 @@ export default function ContentCalendarPageV2() {
               <Skeleton className="h-10 rounded" />
               <Skeleton className="h-64 rounded" />
             </div>
+          ) : view === 'instagram' ? (
+            <InstagramPreview items={filtered} onEdit={openEdit} onDelete={confirmDelete} clientId={clientId} />
+          ) : view === 'tiktok' ? (
+            <TikTokPreview items={filtered} onEdit={openEdit} onDelete={confirmDelete} clientId={clientId} />
           ) : view === 'month' ? (
             <MonthGrid
               monthMatrix={monthMatrix}
@@ -611,6 +661,7 @@ export default function ContentCalendarPageV2() {
       <DetailSheet
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
+        onEdit={(it) => { setSelectedItem(null); openEdit(it); }}
         onPublish={(id) => publishMutation.mutate(id)}
         onArchive={(id) => archiveMutation.mutate(id)}
         idLocale={idLocale}
@@ -621,17 +672,49 @@ export default function ContentCalendarPageV2() {
         }}
       />
 
-      {/* ─────────────── Create dialog ─────────────── */}
+      {/* ─────────────── Create / edit dialog ─────────────── */}
       <CreateDialog
         open={createOpen}
-        onOpenChange={setCreateOpen}
+        onOpenChange={(v) => { setCreateOpen(v); if (!v) setEditItem(null); }}
         initialDate={createDate}
+        editItem={editItem}
         clients={clients.map((c) => ({ id: c.id, name: c.name }))}
         projects={projects.map((p) => ({ id: p.id, number: p.number, description: p.description }))}
-        onSubmit={(data) => createMutation.mutate(data)}
-        submitting={createMutation.isPending}
+        onSubmit={(data, mediaChanged) =>
+          editItem
+            ? updateMutation.mutate({
+                id: editItem.id,
+                // only resend media when the user actually changed it, so an
+                // unrelated edit never wipes the existing media in R2.
+                data: mediaChanged ? data : (({ media, ...rest }) => rest)(data),
+              })
+            : createMutation.mutate(data)
+        }
+        submitting={createMutation.isPending || updateMutation.isPending}
         prefillProjectId={prefillProjectId}
+        lockedClientId={clientId}
+        lockedClientName={currentClient?.name}
+        defaultPlatform={view === 'tiktok' ? 'TIKTOK' : 'INSTAGRAM'}
       />
+
+      {/* ─────────────── Share dialog ─────────────── */}
+      {clientId && (
+        <ShareDialog
+          clientId={clientId}
+          clientName={currentClient?.name}
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+        />
+      )}
+
+      {/* ─────────────── Highlights manager ─────────────── */}
+      {clientId && (
+        <HighlightsDialog
+          clientId={clientId}
+          open={highlightsOpen}
+          onOpenChange={setHighlightsOpen}
+        />
+      )}
     </AppShell>
   );
 }
@@ -951,10 +1034,11 @@ function DraftCard({ item, onSelect }: { item: ContentCalendarItem; onSelect: ()
 /* ------------------------------------------------------------------ */
 
 function DetailSheet({
-  item, onClose, onPublish, onArchive, onDelete, idLocale,
+  item, onClose, onEdit, onPublish, onArchive, onDelete, idLocale,
 }: {
   item: ContentCalendarItem | null;
   onClose: () => void;
+  onEdit: (item: ContentCalendarItem) => void;
   onPublish: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
@@ -1003,7 +1087,7 @@ function DetailSheet({
               {/* Caption */}
               <section>
                 <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                  Caption
+                  {t('contentCalendar.createDialog.caption', 'Caption')}
                 </h4>
                 <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
                   {item.caption || '—'}
@@ -1013,7 +1097,7 @@ function DetailSheet({
               {/* Platforms */}
               <section>
                 <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                  Platform
+                  {t('contentCalendar.platform', 'Platform')}
                 </h4>
                 {item.platforms.length === 0 ? (
                   <span className="text-sm text-text-tertiary">—</span>
@@ -1039,13 +1123,13 @@ function DetailSheet({
               {(item.media?.length ?? 0) > 0 && (
                 <section>
                   <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                    Media
+                    {t('contentCalendar.createDialog.media', 'Media')}
                   </h4>
                   <div className="inline-flex items-center gap-2 text-sm text-text-secondary">
                     {item.media[0].type === 'VIDEO'
                       ? <Video className="h-4 w-4" />
                       : <FileImage className="h-4 w-4" />}
-                    {item.media.length} {item.media.length === 1 ? 'berkas' : 'berkas'}
+                    {t('contentCalendar.detailSheet.fileCount', '{{count}} file', { count: item.media.length })}
                   </div>
                 </section>
               )}
@@ -1074,8 +1158,12 @@ function DetailSheet({
             </div>
 
             <div className="border-t border-border-subtle p-4 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => onEdit(item)}>
+                <Pencil className="h-3.5 w-3.5" />
+                {t('common.edit', 'Edit')}
+              </Button>
               {item.status !== 'PUBLISHED' && (
-                <Button size="sm" onClick={() => onPublish(item.id)}>
+                <Button variant="outline" size="sm" onClick={() => onPublish(item.id)}>
                   <Rocket className="h-3.5 w-3.5" />
                   {t('contentCalendar.publish', 'Publish')}
                 </Button>
@@ -1104,36 +1192,170 @@ function DetailSheet({
 }
 
 /* ------------------------------------------------------------------ */
-/*  CreateDialog — lean create form.                                  */
-/*  Caption + scheduledAt + platforms + client/project.               */
-/*  No media upload in v2 yet — kept intentionally focused; full      */
-/*  upload + carousel reorder still lives in the classic page.        */
+/*  CreateDialog — create form with format-aware media upload.        */
+/*                                                                     */
+/*  Content "kind" is what the user actually thinks in — Foto/Video,   */
+/*  Carousel, Reel, Story — and it drives the media rules (how many,   */
+/*  what aspect ratio) so there's no confusion about what's being      */
+/*  posted. Carousel maps to the FEED format (Instagram has no         */
+/*  separate carousel format; it's just a multi-media feed post).      */
 /* ------------------------------------------------------------------ */
 
+type PostKind = 'POST' | 'CAROUSEL' | 'REEL' | 'STORY';
+
+// 2026 Instagram specs: feed recommended 4:5 (1080×1350), grid displays 3:4;
+// carousel 2–20 slides sharing the first slide's ratio; Reels/Stories 9:16
+// (1080×1920). `thumb` frames the upload preview at the real aspect ratio so
+// the user can see whether they're making a feed post vs a vertical reel/story.
+const KIND_CFG: Record<PostKind, {
+  max: number;
+  thumb: string; // tailwind aspect class (literal so JIT picks it up)
+  format: ContentFormat;
+  accept: string;
+}> = {
+  POST:     { max: 1,  thumb: 'aspect-[4/5]',  format: 'FEED',  accept: 'image/*,video/*' },
+  CAROUSEL: { max: 20, thumb: 'aspect-[4/5]',  format: 'FEED',  accept: 'image/*,video/*' },
+  REEL:     { max: 1,  thumb: 'aspect-[9/16]', format: 'REEL',  accept: 'video/*,image/*' },
+  STORY:    { max: 1,  thumb: 'aspect-[9/16]', format: 'STORY', accept: 'image/*,video/*' },
+};
+
+// Map a stored item back to the user-facing "kind" for the edit form.
+function kindFromItem(it: ContentCalendarItem): PostKind {
+  if (it.format === 'STORY') return 'STORY';
+  if (it.format === 'REEL') return 'REEL';
+  return (it.media?.length ?? 0) > 1 ? 'CAROUSEL' : 'POST';
+}
+
 function CreateDialog({
-  open, onOpenChange, initialDate, clients, projects, onSubmit, submitting, prefillProjectId = '',
+  open, onOpenChange, initialDate, editItem, clients, projects, onSubmit, submitting, prefillProjectId = '',
+  lockedClientId = '', lockedClientName, defaultPlatform = 'INSTAGRAM',
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initialDate?: Date;
+  editItem?: ContentCalendarItem | null;
   clients: Array<{ id: string; name: string }>;
   projects: Array<{ id: string; number: string; description: string }>;
-  onSubmit: (data: CreateContentDto) => void;
+  onSubmit: (data: CreateContentDto, mediaChanged?: boolean) => void;
   submitting: boolean;
   prefillProjectId?: string;
+  lockedClientId?: string;
+  lockedClientName?: string;
+  defaultPlatform?: Platform;
 }) {
   const { t } = useTranslation();
+  const { mediaToken } = useMediaToken();
+  const isEdit = !!editItem;
   const [caption, setCaption] = useState('');
   const [scheduledAt, setScheduledAt] = useState<Date | undefined>(initialDate);
   const [time, setTime] = useState('09:00');
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);
-  const [clientId, setClientId] = useState<string>('');
+  // The active preview's platform is pre-selected so new content appears in
+  // that feed by default (Instagram view → IG, TikTok view → TikTok).
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([defaultPlatform]);
+  // Re-seed the platform each time the dialog opens for a fresh create
+  // (edit prefills from the item below, so skip it then).
+  useEffect(() => { if (open && !editItem) setSelectedPlatforms([defaultPlatform]); }, [open, defaultPlatform, editItem]);
+  const [kind, setKind] = useState<PostKind>('POST');
+  const cfg = KIND_CFG[kind];
+  const [clientId, setClientId] = useState<string>(lockedClientId);
   const [projectId, setProjectId] = useState<string>(prefillProjectId);
+
+  // Uploaded media (carousel order = array order). `preview` is a local blob
+  // URL for instant display; the rest is the R2 metadata sent on submit.
+  type UploadedMedia = {
+    url: string; key: string; mimeType: string; size: number;
+    width?: number; height?: number; thumbnailUrl?: string; thumbnailKey?: string;
+    preview: string;
+  };
+  const [media, setMedia] = useState<UploadedMedia[]>([]);
+  const [uploading, setUploading] = useState(false);
+  // Tracks whether media was touched in this session — on edit we only resend
+  // media when it actually changed (avoids wiping R2 files on an unrelated edit).
+  const [mediaDirty, setMediaDirty] = useState(false);
+
+  // When the page is client-scoped, the content always belongs to that client.
+  useEffect(() => { if (lockedClientId) setClientId(lockedClientId); }, [lockedClientId, open]);
+
+  // Prefill (edit) or reset (create) whenever the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+    if (editItem) {
+      setCaption(editItem.caption ?? '');
+      const d = editItem.scheduledAt ? new Date(editItem.scheduledAt) : undefined;
+      setScheduledAt(d);
+      if (d) setTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+      setSelectedPlatforms((editItem.platforms?.length ? editItem.platforms : [defaultPlatform]) as Platform[]);
+      setKind(kindFromItem(editItem));
+      setProjectId(editItem.projectId ?? '');
+      setMedia((editItem.media ?? []).map((m) => ({
+        url: m.url, key: m.key, mimeType: m.mimeType, size: (m as any).size ?? 0,
+        thumbnailUrl: m.thumbnailUrl ?? undefined, thumbnailKey: (m as any).thumbnailKey ?? undefined,
+        // existing media: resolve a displayable preview via the media token.
+        preview: m.key ? `/api/v1/media/view/${m.key}?mt=${encodeURIComponent(mediaToken ?? '')}` : m.url,
+      })));
+      setMediaDirty(false);
+    } else {
+      setCaption('');
+      setKind('POST');
+      setProjectId(prefillProjectId);
+      setMedia([]);
+      setMediaDirty(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editItem?.id]);
+
+  const MEDIA_MAX = cfg.max;
+
+  // Switching kind enforces that kind's media limit (e.g. Reel/Story = 1).
+  const changeKind = (k: PostKind) => {
+    const max = KIND_CFG[k].max;
+    if (media.length > max) {
+      media.slice(max).forEach((m) => URL.revokeObjectURL(m.preview));
+      setMedia(media.slice(0, max));
+      setMediaDirty(true);
+      toast.message(t('contentCalendar.createDialog.trimmed', 'Tipe ini hanya {{n}} media — sisanya dihapus.', { n: max }));
+    }
+    setKind(k);
+  };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const room = MEDIA_MAX - media.length;
+    if (room <= 0) {
+      toast.error(MEDIA_MAX === 1
+        ? t('contentCalendar.createDialog.mediaSingle', 'Tipe ini hanya mendukung 1 media. Hapus dulu untuk mengganti.')
+        : t('contentCalendar.createDialog.mediaMax', 'Maksimal {{n}} media per kiriman.', { n: MEDIA_MAX }));
+      return;
+    }
+    const arr = Array.from(files).slice(0, room);
+    const previews = arr.map((f) => URL.createObjectURL(f));
+    setUploading(true);
+    try {
+      const uploaded = await contentCalendarService.uploadMultipleMedia(arr);
+      const merged: UploadedMedia[] = uploaded.map((d, i) => ({ ...d, preview: previews[i] }));
+      setMedia((prev) => [...prev, ...merged]);
+      setMediaDirty(true);
+    } catch {
+      previews.forEach((u) => URL.revokeObjectURL(u));
+      toast.error(t('contentCalendar.createDialog.uploadFailed', 'Gagal mengunggah media.'));
+    } finally {
+      setUploading(false);
+    }
+  };
+  const removeMedia = (idx: number) => {
+    setMediaDirty(true);
+    setMedia((prev) => {
+      const next = [...prev];
+      const [r] = next.splice(idx, 1);
+      if (r && r.preview.startsWith('blob:')) URL.revokeObjectURL(r.preview);
+      return next;
+    });
+  };
 
   // Reset every time we open with a different initial date so the
   // calendar's "+" button always gives a clean slate prefilled with
   // the day the operator clicked.
-  useEffect(() => { setScheduledAt(initialDate); }, [initialDate]);
+  useEffect(() => { if (!editItem) setScheduledAt(initialDate); }, [initialDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Seed projectId when dialog opens with a prefill (deep-link scenario).
   useEffect(() => {
@@ -1171,6 +1393,15 @@ function CreateDialog({
       toast.error(t('contentCalendar.createDialog.captionRequired', 'Caption is required.'));
       return;
     }
+    const effectiveClientId = lockedClientId || clientId;
+    if (!effectiveClientId) {
+      toast.error(t('contentCalendar.createDialog.clientRequired', 'Pilih klien terlebih dahulu.'));
+      return;
+    }
+    if (kind === 'CAROUSEL' && media.length < 2) {
+      toast.error(t('contentCalendar.createDialog.carouselMin', 'Carousel butuh minimal 2 media.'));
+      return;
+    }
     let iso: string | undefined;
     if (scheduledAt) {
       const [h, m] = time.split(':').map(Number);
@@ -1181,16 +1412,21 @@ function CreateDialog({
     onSubmit({
       caption: caption.trim(),
       scheduledAt: iso,
-      status: iso ? 'SCHEDULED' : 'DRAFT',
+      // Don't reset an existing item's status on edit — only set it on create.
+      ...(isEdit ? {} : { status: iso ? 'SCHEDULED' : 'DRAFT' }),
+      format: cfg.format,
       platforms: selectedPlatforms,
-      clientId: clientId || undefined,
+      clientId: effectiveClientId,
       projectId: projectId || undefined,
-    });
-    // Reset for the next open.
-    setCaption('');
-    setSelectedPlatforms([]);
-    setClientId('');
-    setProjectId('');
+      media: media.map((m, i) => ({
+        url: m.url, key: m.key, mimeType: m.mimeType, size: m.size,
+        width: m.width, height: m.height,
+        thumbnailUrl: m.thumbnailUrl, thumbnailKey: m.thumbnailKey,
+        order: i,
+      })),
+    }, mediaDirty);
+    // NOTE: don't reset fields here — that would clear the form even on a failed
+    // submit. The open-effect re-initializes (create) or prefills (edit) next time.
   };
 
   return (
@@ -1198,10 +1434,12 @@ function CreateDialog({
       <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-text-primary font-display tracking-tight">
-            {t('contentCalendar.createDialog.title', 'Add Content')}
+            {isEdit ? t('contentCalendar.editDialog.title', 'Edit Content') : t('contentCalendar.createDialog.title', 'Add Content')}
           </DialogTitle>
           <DialogDescription className="text-text-tertiary text-xs">
-            {t('contentCalendar.createDialog.desc', 'Create a content draft — schedule it now or save as draft to arrange later.')}
+            {isEdit
+              ? t('contentCalendar.editDialog.desc', 'Update this content — caption, media, type, schedule.')
+              : t('contentCalendar.createDialog.desc', 'Create a content draft — schedule it now or save as draft to arrange later.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -1275,23 +1513,127 @@ function CreateDialog({
             </div>
           </div>
 
+          {/* Content type — what the user is actually making. Distinct cards so
+              Foto / Carousel / Reel / Story are never confused. */}
+          <div>
+            <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
+              {t('contentCalendar.createDialog.contentType', 'Tipe Konten')}
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {([
+                { k: 'POST' as PostKind, name: t('contentCalendar.kind.post', 'Foto / Video'), spec: t('contentCalendar.kind.postSpec', '1 media · 4:5'), icon: <Square className="h-4 w-4" /> },
+                { k: 'CAROUSEL' as PostKind, name: t('contentCalendar.kind.carousel', 'Carousel'), spec: t('contentCalendar.kind.carouselSpec', '2–20 · geser'), icon: <SquareStack className="h-4 w-4" /> },
+                { k: 'REEL' as PostKind, name: t('contentCalendar.kind.reel', 'Reel'), spec: t('contentCalendar.kind.reelSpec', 'Video 9:16'), icon: <Film className="h-4 w-4" /> },
+                { k: 'STORY' as PostKind, name: t('contentCalendar.kind.story', 'Story'), spec: t('contentCalendar.kind.storySpec', '9:16 · 24 jam'), icon: <CircleDashed className="h-4 w-4" /> },
+              ]).map((o) => (
+                <button
+                  key={o.k}
+                  type="button"
+                  onClick={() => changeKind(o.k)}
+                  className={cn(
+                    'flex flex-col items-center gap-1 rounded-lg border p-2.5 text-center transition-colors',
+                    kind === o.k
+                      ? 'border-accent-navy-ring bg-accent-navy-wash text-text-primary'
+                      : 'border-border-subtle bg-bg-sunken text-text-tertiary hover:text-text-primary hover:border-border-default',
+                  )}
+                >
+                  {o.icon}
+                  <span className="text-[12px] font-medium leading-none">{o.name}</span>
+                  <span className="text-[9px] leading-tight text-text-tertiary">{o.spec}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Media — framed at the real aspect ratio for the chosen type, so a
+              Reel/Story reads as vertical and a Feed/Carousel as 4:5. */}
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                {t('contentCalendar.createDialog.media', 'Media')}
+              </label>
+              <span className="text-[10px] text-text-tertiary tabular-nums">
+                {media.length}/{MEDIA_MAX}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {media.map((m, i) => (
+                <div key={m.key} className={cn('group relative w-16 overflow-hidden rounded-md border border-border-subtle bg-bg-sunken', cfg.thumb)}>
+                  <img src={m.preview} alt="" className="h-full w-full object-cover" />
+                  {i === 0 && kind === 'CAROUSEL' && (
+                    <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[8px] font-medium text-white">
+                      {t('contentCalendar.createDialog.cover', 'Sampul')}
+                    </span>
+                  )}
+                  {kind === 'CAROUSEL' && (
+                    <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 text-[8px] font-medium text-white tabular-nums">
+                      {i + 1}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeMedia(i)}
+                    className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition group-hover:opacity-100"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {media.length < MEDIA_MAX && (
+                <label className={cn(
+                  'flex w-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border-default bg-bg-sunken text-text-tertiary hover:text-text-primary',
+                  cfg.thumb,
+                  uploading && 'pointer-events-none opacity-60',
+                )}>
+                  {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+                  <span className="text-[9px] leading-tight text-center px-1">
+                    {uploading ? t('common.uploading', 'Mengunggah…') : t('contentCalendar.createDialog.addMedia', 'Tambah')}
+                  </span>
+                  <input
+                    type="file"
+                    accept={cfg.accept}
+                    multiple={MEDIA_MAX > 1}
+                    className="hidden"
+                    onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
+                  />
+                </label>
+              )}
+            </div>
+            {/* Per-type spec + safe-area guidance (2026 Instagram). */}
+            <p className="mt-1.5 flex items-start gap-1 text-[10px] leading-snug text-text-tertiary">
+              <Info className="mt-px h-3 w-3 shrink-0" />
+              <span>
+                {kind === 'POST' && t('contentCalendar.kind.postHint', 'Satu foto/video. Rasio terbaik 4:5 (1080×1350) atau 1:1. Kisi profil menampilkan 3:4 — letakkan objek penting di tengah.')}
+                {kind === 'CAROUSEL' && t('contentCalendar.kind.carouselHint', '2–20 media yang bisa digeser. Semua slide mengikuti rasio slide pertama (disarankan 4:5). Slide pertama jadi sampul.')}
+                {kind === 'REEL' && t('contentCalendar.kind.reelHint', 'Satu video vertikal 9:16 (1080×1920). Jaga teks ±250px dari atas, ±440px dari bawah (kapsi & tombol), dan ±120px dari kanan (tombol aksi).')}
+                {kind === 'STORY' && t('contentCalendar.kind.storyHint', 'Satu media vertikal 9:16 (1080×1920), tayang 24 jam. Jaga teks/logo ±250px dari tepi atas & bawah agar tak tertutup UI.')}
+              </span>
+            </p>
+          </div>
+
           {/* Client + project */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
                 {t('contentCalendar.createDialog.client', 'Client')}
               </label>
-              <Select value={clientId || 'none'} onValueChange={(v) => setClientId(v === 'none' ? '' : v)}>
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder={t('contentCalendar.createDialog.clientPlaceholder', 'Select client (optional)')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t('contentCalendar.createDialog.none', 'None')}</SelectItem>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {lockedClientId ? (
+                <div className="flex h-9 items-center rounded-md border border-border-subtle bg-bg-sunken px-3 text-sm text-text-secondary">
+                  {lockedClientName ?? t('contentCalendar.createDialog.thisClient', 'Klien ini')}
+                </div>
+              ) : (
+                <Select value={clientId || 'none'} onValueChange={(v) => setClientId(v === 'none' ? '' : v)}>
+                  <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
+                    <SelectValue placeholder={t('contentCalendar.createDialog.clientPlaceholder', 'Select client')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t('contentCalendar.createDialog.none', 'None')}</SelectItem>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
@@ -1315,7 +1657,312 @@ function CreateDialog({
             {t('common.cancel', 'Cancel')}
           </Button>
           <Button size="sm" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? t('common.saving', 'Saving...') : scheduledAt ? t('contentCalendar.createDialog.schedule', 'Schedule') : t('contentCalendar.createDialog.saveDraft', 'Save Draft')}
+            {submitting
+              ? t('common.saving', 'Saving...')
+              : isEdit ? t('contentCalendar.editDialog.save', 'Simpan Perubahan')
+              : scheduledAt ? t('contentCalendar.createDialog.schedule', 'Schedule')
+              : t('contentCalendar.createDialog.saveDraft', 'Save Draft')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  ShareDialog — enable/disable the client's public content link.     */
+/* ------------------------------------------------------------------ */
+
+function ShareDialog({
+  clientId, clientName, open, onOpenChange,
+}: {
+  clientId: string;
+  clientName?: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [copied, setCopied] = useState(false);
+
+  const { data: status, isLoading } = useQuery({
+    queryKey: ['content-share', clientId],
+    queryFn: () => contentCalendarService.getShareStatus(clientId),
+    enabled: open,
+  });
+
+  const enableMutation = useMutation({
+    mutationFn: () => contentCalendarService.enableShare(clientId),
+    onSuccess: (s) => {
+      qc.setQueryData(['content-share', clientId], s);
+      toast.success(t('content.shareEnabled', 'Tautan berbagi diaktifkan.'));
+    },
+    onError: () => toast.error(t('content.shareFailed', 'Gagal mengaktifkan berbagi.')),
+  });
+  const disableMutation = useMutation({
+    mutationFn: () => contentCalendarService.disableShare(clientId),
+    onSuccess: () => {
+      qc.setQueryData(['content-share', clientId], { enabled: false, token: null, path: null, views: status?.views ?? 0 });
+      toast.success(t('content.shareDisabled', 'Tautan berbagi dinonaktifkan.'));
+    },
+    onError: () => toast.error(t('content.shareDisableFailed', 'Gagal menonaktifkan berbagi.')),
+  });
+
+  const fullUrl = status?.enabled && status.path ? `${window.location.origin}${status.path}` : '';
+  const copy = async () => {
+    if (!fullUrl) return;
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error(t('content.copyFailed', 'Gagal menyalin tautan.'));
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-text-primary font-display tracking-tight flex items-center gap-2">
+            <Share2 className="h-4 w-4" />
+            {t('content.shareTitle', 'Bagikan ke Klien')}
+          </DialogTitle>
+          <DialogDescription className="text-text-tertiary text-xs">
+            {t('content.shareDesc', 'Tautan hanya-baca berisi pratinjau konten {{name}} (Instagram & TikTok). Klien tak perlu login.', { name: clientName ?? '' })}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-text-tertiary"><Loader2 className="h-4 w-4 animate-spin" /> {t('common.loading', 'Memuat…')}</div>
+          ) : status?.enabled ? (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-tertiary" />
+                  <Input readOnly value={fullUrl} className="pl-8 bg-bg-sunken border-border-subtle text-text-secondary text-xs" onFocus={(e) => e.currentTarget.select()} />
+                </div>
+                <Button size="sm" variant="outline" onClick={copy}>
+                  {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                  {copied ? t('content.copied', 'Tersalin') : t('content.copy', 'Salin')}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-text-tertiary">
+                <span>{t('content.shareViews', '{{n}} kali dibuka', { n: status.views })}</span>
+                <button
+                  onClick={() => disableMutation.mutate()}
+                  disabled={disableMutation.isPending}
+                  className="text-destructive hover:underline"
+                >
+                  {t('content.shareDisableAction', 'Nonaktifkan tautan')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <p className="text-sm text-text-secondary">{t('content.shareOff', 'Berbagi belum aktif untuk klien ini.')}</p>
+              <Button size="sm" onClick={() => enableMutation.mutate()} disabled={enableMutation.isPending}>
+                {enableMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+                {t('content.shareEnableAction', 'Aktifkan tautan berbagi')}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('common.close', 'Tutup')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  HighlightsDialog — create/delete a client's story highlights.      */
+/* ------------------------------------------------------------------ */
+
+function HighlightsDialog({
+  clientId, open, onOpenChange,
+}: {
+  clientId: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const { mediaToken } = useMediaToken();
+  const [title, setTitle] = useState('');
+  type UM = { url: string; key: string; mimeType: string; size: number; preview: string };
+  const [media, setMedia] = useState<UM[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [mediaDirty, setMediaDirty] = useState(false);
+
+  const { data: highlights = [], isLoading } = useQuery({
+    queryKey: ['ig-highlights', clientId],
+    queryFn: () => contentCalendarService.listHighlights(clientId),
+    enabled: open,
+  });
+
+  const reset = () => {
+    media.forEach((m) => { if (m.preview.startsWith('blob:')) URL.revokeObjectURL(m.preview); });
+    setMedia([]); setTitle(''); setEditingId(null); setMediaDirty(false);
+  };
+  const startEdit = (h: StoryHighlight) => {
+    setEditingId(h.id);
+    setTitle(h.title);
+    setMediaDirty(false);
+    setMedia((h.media ?? []).map((m) => ({
+      url: m.url, key: m.key, mimeType: m.mimeType, size: 0,
+      preview: `/api/v1/media/view/${m.key}?mt=${encodeURIComponent(mediaToken ?? '')}`,
+    })));
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      const payloadMedia = media.map((m) => ({ url: m.url, key: m.key, mimeType: m.mimeType, size: m.size }));
+      return editingId
+        ? contentCalendarService.updateHighlight(editingId, { title: title.trim(), ...(mediaDirty ? { media: payloadMedia } : {}) })
+        : contentCalendarService.createHighlight(clientId, { title: title.trim(), media: payloadMedia });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ig-highlights', clientId] });
+      toast.success(editingId ? t('content.highlightUpdated', 'Highlight diperbarui.') : t('content.highlightCreated', 'Highlight dibuat.'));
+      reset();
+    },
+    onError: () => toast.error(t('content.highlightFailed', 'Gagal menyimpan highlight.')),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => contentCalendarService.deleteHighlight(id),
+    onSuccess: (_d, id) => {
+      qc.invalidateQueries({ queryKey: ['ig-highlights', clientId] });
+      toast.success(t('content.highlightDeleted', 'Highlight dihapus.'));
+      if (id === editingId) reset();
+    },
+    onError: () => toast.error(t('content.highlightDeleteFailed', 'Gagal menghapus highlight.')),
+  });
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const arr = Array.from(files).slice(0, 20 - media.length);
+    if (arr.length === 0) return;
+    const previews = arr.map((f) => URL.createObjectURL(f));
+    setUploading(true);
+    try {
+      const uploaded = await contentCalendarService.uploadMultipleMedia(arr);
+      setMedia((prev) => [...prev, ...uploaded.map((d, i) => ({ ...d, preview: previews[i] }))]);
+      setMediaDirty(true);
+    } catch {
+      previews.forEach((u) => URL.revokeObjectURL(u));
+      toast.error(t('contentCalendar.createDialog.uploadFailed', 'Gagal mengunggah media.'));
+    } finally {
+      setUploading(false);
+    }
+  };
+  const removeMedia = (idx: number) => {
+    setMediaDirty(true);
+    setMedia((prev) => {
+      const next = [...prev]; const [r] = next.splice(idx, 1);
+      if (r && r.preview.startsWith('blob:')) URL.revokeObjectURL(r.preview);
+      return next;
+    });
+  };
+
+  const canCreate = title.trim().length > 0 && media.length > 0 && !uploading;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-text-primary font-display tracking-tight flex items-center gap-2">
+            <CircleDashed className="h-4 w-4" />
+            {t('content.highlightsTitle', 'Kelola Highlights')}
+          </DialogTitle>
+          <DialogDescription className="text-text-tertiary text-xs">
+            {t('content.highlightsDesc', 'Highlight = koleksi tersimpan (sampul + media 9:16) yang tampil sebagai lingkaran di profil. Media pertama jadi sampul.')}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* existing highlights */}
+        <div className="space-y-2">
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-text-tertiary"><Loader2 className="h-4 w-4 animate-spin" /> {t('common.loading', 'Memuat…')}</div>
+          ) : highlights.length === 0 ? (
+            <p className="text-[12px] text-text-tertiary">{t('content.highlightsEmpty', 'Belum ada highlight.')}</p>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {highlights.map((h: StoryHighlight) => (
+                <div key={h.id} className="group relative flex w-16 flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(h)}
+                    title={t('content.highlightEdit', 'Edit highlight')}
+                    className={cn(
+                      'rounded-full border p-[2px] transition',
+                      editingId === h.id ? 'border-accent ring-2 ring-accent/40' : 'border-border-default hover:border-accent',
+                    )}
+                  >
+                    {h.coverUrl
+                      ? <span className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-sunken text-[9px] text-text-tertiary">{h.media.length}🎞</span>
+                      : <span className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-sunken"><ImagePlus className="h-4 w-4 text-text-tertiary" /></span>}
+                  </button>
+                  <span className="w-full truncate text-center text-[10px] text-text-secondary">{h.title}</span>
+                  <button
+                    onClick={() => deleteMutation.mutate(h.id)}
+                    disabled={deleteMutation.isPending}
+                    className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-white opacity-0 transition group-hover:opacity-100"
+                    aria-label={t('preview.delete', 'Hapus')}
+                  ><X className="h-3 w-3" /></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* create / edit */}
+        <div className="space-y-3 border-t border-border-subtle pt-3">
+          {editingId && (
+            <div className="flex items-center justify-between rounded-md bg-bg-sunken px-2.5 py-1.5">
+              <span className="text-[11px] text-text-secondary">{t('content.highlightEditing', 'Mengedit highlight')}</span>
+              <button type="button" onClick={reset} className="text-[11px] text-accent hover:underline">{t('content.highlightNewInstead', '+ Highlight baru')}</button>
+            </div>
+          )}
+          <div>
+            <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
+              {t('content.highlightTitleLabel', 'Judul Highlight')}
+            </label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={40}
+                   placeholder={t('content.highlightTitlePlaceholder', 'mis. Promo, Produk, Tutorial')}
+                   className="bg-bg-sunken border-border-subtle text-text-primary" />
+          </div>
+          <div>
+            <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
+              {t('content.highlightMedia', 'Media (9:16)')}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {media.map((m, i) => (
+                <div key={m.key} className="group relative w-14 aspect-[9/16] overflow-hidden rounded-md border border-border-subtle bg-bg-sunken">
+                  <img src={m.preview} alt="" className="h-full w-full object-cover" />
+                  {i === 0 && <span className="absolute left-1 top-1 rounded bg-black/60 px-1 text-[7px] font-medium text-white">{t('contentCalendar.createDialog.cover', 'Sampul')}</span>}
+                  <button type="button" onClick={() => removeMedia(i)} className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition group-hover:opacity-100"><X className="h-3 w-3" /></button>
+                </div>
+              ))}
+              {media.length < 20 && (
+                <label className={cn('flex w-14 aspect-[9/16] cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border-default bg-bg-sunken text-text-tertiary hover:text-text-primary', uploading && 'pointer-events-none opacity-60')}>
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                  <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }} />
+                </label>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('common.close', 'Tutup')}</Button>
+          <Button size="sm" onClick={() => saveMutation.mutate()} disabled={!canCreate || saveMutation.isPending}>
+            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {editingId ? t('content.highlightUpdate', 'Perbarui Highlight') : t('content.highlightCreate', 'Buat Highlight')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -3,6 +3,7 @@ import { PrismaModule } from "../prisma/prisma.module";
 import { MediaModule } from "../media/media.module";
 import { ContentCalendarService } from "./content-calendar.service";
 import { ContentCalendarController } from "./content-calendar.controller";
+import { ContentPublicController } from "./content-public.controller";
 
 /**
  * ContentCalendarModule - Content Planning & Calendar Management
@@ -22,7 +23,7 @@ import { ContentCalendarController } from "./content-calendar.controller";
  */
 @Module({
   imports: [PrismaModule, MediaModule],
-  controllers: [ContentCalendarController],
+  controllers: [ContentCalendarController, ContentPublicController],
   providers: [ContentCalendarService],
   exports: [ContentCalendarService],
 })

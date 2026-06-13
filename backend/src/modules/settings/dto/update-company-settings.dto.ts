@@ -73,4 +73,21 @@ export class UpdateCompanySettingsDto {
   @IsOptional()
   @IsString()
   bank3Number?: string;
+
+  @ApiPropertyOptional({
+    description: "Instagram handle shown in the content planner (e.g. @monomi.agency)",
+  })
+  @IsOptional()
+  @IsString()
+  instagramHandle?: string;
+
+  @ApiPropertyOptional({ description: "Instagram profile picture URL" })
+  @IsOptional()
+  @IsString()
+  instagramAvatarUrl?: string;
+
+  @ApiPropertyOptional({ description: "Instagram profile bio text" })
+  @IsOptional()
+  @IsString()
+  instagramBio?: string;
 }

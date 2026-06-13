@@ -13,6 +13,12 @@ export interface Client {
   taxNumber?: string
   bankAccount?: string
   notes?: string
+  instagramHandle?: string | null
+  instagramAvatarUrl?: string | null
+  instagramBio?: string | null
+  tiktokHandle?: string | null
+  tiktokAvatarUrl?: string | null
+  tiktokBio?: string | null
   lastTransaction?: string
   totalPaid?: number
   totalPending?: number
@@ -45,6 +51,12 @@ export interface CreateClientRequest {
   bankAccount?: string
   notes?: string
   status?: 'active' | 'inactive'
+  instagramHandle?: string
+  instagramAvatarUrl?: string
+  instagramBio?: string
+  tiktokHandle?: string
+  tiktokAvatarUrl?: string
+  tiktokBio?: string
 }
 
 export type UpdateClientRequest = Partial<CreateClientRequest>

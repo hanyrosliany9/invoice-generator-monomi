@@ -1000,7 +1000,23 @@
       "notesPlaceholder": "Preferensi komunikasi, sejarah hubungan, hal-hal yang perlu diingat…",
       "statusHint": "Klien nonaktif tidak muncul di pemilih default.",
       "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\".",
-      "companyPlaceholder": "PT, CV, atau nama studio"
+      "companyPlaceholder": "PT, CV, atau nama studio",
+      "instagram": {
+        "title": "Profil Instagram",
+        "desc": "Tampil di pratinjau Kalender Konten untuk klien ini.",
+        "handle": "Username Instagram",
+        "avatar": "URL Foto Profil",
+        "bio": "Bio",
+        "bioPlaceholder": "Bio singkat yang tampil di profil…"
+      },
+      "tiktok": {
+        "title": "Profil TikTok",
+        "desc": "Tampil di pratinjau TikTok pada Kalender Konten untuk klien ini.",
+        "handle": "Username TikTok",
+        "avatar": "URL Foto Profil",
+        "bio": "Bio",
+        "bioPlaceholder": "Bio singkat yang tampil di profil…"
+      }
     },
     "kpi": {
       "active": "Klien Aktif",
@@ -2215,12 +2231,63 @@
     "title": "Kalender Konten",
     "view": {
       "list": "Daftar",
-      "month": "Bulan"
+      "month": "Bulan",
+      "instagram": "Instagram",
+      "tiktok": "TikTok"
     },
     "search": {
       "placeholder": "Cari caption, platform, klien..."
     },
-    "subtitle": "Rencanakan, jadwalkan, dan pantau publikasi media sosial lintas platform."
+    "subtitle": "Rencanakan, jadwalkan, dan pantau publikasi media sosial lintas platform.",
+    "clientSubtitle": "Kalender konten untuk klien ini — rencanakan, jadwalkan, dan pratinjau feed Instagram.",
+    "allClients": "Semua Klien",
+    "highlights": "Highlights",
+    "share": "Bagikan",
+    "shareEnabled": "Tautan berbagi diaktifkan.",
+    "shareFailed": "Gagal mengaktifkan berbagi.",
+    "shareDisabled": "Tautan berbagi dinonaktifkan.",
+    "shareDisableFailed": "Gagal menonaktifkan berbagi.",
+    "copyFailed": "Gagal menyalin tautan.",
+    "shareTitle": "Bagikan ke Klien",
+    "shareDesc": "Tautan hanya-baca berisi pratinjau konten {{name}} (Instagram & TikTok). Klien tak perlu login.",
+    "copied": "Tersalin",
+    "copy": "Salin",
+    "shareViews": "{{n}} kali dibuka",
+    "shareDisableAction": "Nonaktifkan tautan",
+    "shareOff": "Berbagi belum aktif untuk klien ini.",
+    "shareEnableAction": "Aktifkan tautan berbagi",
+    "highlightCreated": "Highlight dibuat.",
+    "highlightFailed": "Gagal membuat highlight.",
+    "highlightDeleted": "Highlight dihapus.",
+    "highlightDeleteFailed": "Gagal menghapus highlight.",
+    "highlightsTitle": "Kelola Highlights",
+    "highlightsDesc": "Highlight = koleksi tersimpan (sampul + media 9:16) yang tampil sebagai lingkaran di profil. Media pertama jadi sampul.",
+    "highlightsEmpty": "Belum ada highlight.",
+    "highlightTitleLabel": "Judul Highlight",
+    "highlightTitlePlaceholder": "mis. Promo, Produk, Tutorial",
+    "highlightMedia": "Media (9:16)",
+    "highlightCreate": "Buat Highlight",
+    "clients": {
+      "title": "Kalender Konten",
+      "subtitle": "Pilih klien untuk mengelola dan mempratinjau konten media sosialnya.",
+      "totalClients": "Klien",
+      "totalContent": "Total Konten",
+      "scheduled": "Terjadwal",
+      "searchPlaceholder": "Cari klien...",
+      "noMatch": "Tidak ada klien yang cocok",
+      "empty": "Belum ada klien",
+      "noMatchDesc": "Coba kata kunci lain.",
+      "emptyDesc": "Tambah klien terlebih dahulu untuk merencanakan kontennya.",
+      "posts": "konten",
+      "next": "Berikutnya"
+    },
+    "updated": "Konten diperbarui.",
+    "updateFailed": "Gagal memperbarui konten.",
+    "highlightEdit": "Edit highlight",
+    "highlightEditing": "Mengedit highlight",
+    "highlightNewInstead": "+ Highlight baru",
+    "highlightUpdate": "Perbarui Highlight",
+    "highlightUpdated": "Highlight diperbarui."
   },
   "expenses": {
     "action": {
@@ -5847,16 +5914,49 @@
       "schedule": "Jadwalkan",
       "scheduleDate": "Tanggal Jadwal",
       "time": "Waktu",
-      "title": "Tambah Konten"
+      "title": "Tambah Konten",
+      "trimmed": "Tipe ini hanya {{n}} media — sisanya dihapus.",
+      "mediaSingle": "Tipe ini hanya mendukung 1 media. Hapus dulu untuk mengganti.",
+      "mediaMax": "Maksimal {{n}} media per kiriman.",
+      "uploadFailed": "Gagal mengunggah media.",
+      "clientRequired": "Pilih klien terlebih dahulu.",
+      "carouselMin": "Carousel butuh minimal 2 media.",
+      "contentType": "Tipe Konten",
+      "media": "Media",
+      "cover": "Sampul",
+      "addMedia": "Tambah",
+      "thisClient": "Klien ini"
     },
     "detailSheet": {
       "created": "Dibuat",
       "publishFailed": "Publikasi gagal — perlu pemeriksaan",
       "published": "Terbit",
-      "title": "Detail Konten"
+      "title": "Detail Konten",
+      "fileCount_one": "{{count}} berkas",
+      "fileCount_other": "{{count}} berkas"
     },
     "searchProject": "Cari berdasarkan nama atau nomor…",
-    "noProjectsFound": "Proyek tidak ditemukan"
+    "noProjectsFound": "Proyek tidak ditemukan",
+    "kind": {
+      "post": "Foto / Video",
+      "postSpec": "1 media · 4:5",
+      "carousel": "Carousel",
+      "carouselSpec": "2–20 · geser",
+      "reel": "Reel",
+      "reelSpec": "Video 9:16",
+      "story": "Story",
+      "storySpec": "9:16 · 24 jam",
+      "postHint": "Satu foto/video. Rasio terbaik 4:5 (1080×1350) atau 1:1. Kisi profil menampilkan 3:4 — letakkan objek penting di tengah.",
+      "carouselHint": "2–20 media yang bisa digeser. Semua slide mengikuti rasio slide pertama (disarankan 4:5). Slide pertama jadi sampul.",
+      "reelHint": "Satu video vertikal 9:16 (1080×1920). Jaga teks ±250px dari atas, ±440px dari bawah (kapsi & tombol), dan ±120px dari kanan (tombol aksi).",
+      "storyHint": "Satu media vertikal 9:16 (1080×1920), tayang 24 jam. Jaga teks/logo ±250px dari tepi atas & bawah agar tak tertutup UI."
+    },
+    "editDialog": {
+      "title": "Edit Konten",
+      "desc": "Perbarui konten — caption, media, tipe, jadwal.",
+      "save": "Simpan Perubahan"
+    },
+    "platform": "Platform"
   },
   "projectContentCalendar": {
     "title": "Kalender Konten",
@@ -7746,5 +7846,57 @@
     "error": "Gagal mencatat pengeluaran. Coba lagi.",
     "noCategory": "Kategori anggaran tidak dapat ditemukan.",
     "badAmount": "Masukkan jumlah nyata."
+  },
+  "preview": {
+    "noSchedule": "Tanpa jadwal",
+    "noMediaShort": "Tanpa media",
+    "prev": "Sebelumnya",
+    "next": "Berikutnya",
+    "noMedia": "Belum ada media",
+    "edit": "Edit",
+    "playStories": "Putar {{n}} story",
+    "posts": "kiriman",
+    "followers": "pengikut",
+    "following": "diikuti",
+    "tabGrid": "KISI",
+    "tabReels": "REELS",
+    "dragHint": "Seret untuk menata ulang kisi",
+    "feedLayout": "Tata letak feed",
+    "done": "Selesai",
+    "rearrange": "Atur ulang",
+    "igEmptyTitle": "Belum ada konten Instagram",
+    "igEmptyDesc": "Tandai konten dengan platform Instagram untuk melihatnya di sini.",
+    "noFeed": "Belum ada kiriman feed.",
+    "noReels": "Belum ada Reels.",
+    "openIg": "Buka pratinjau Instagram",
+    "openPhone": "Buka pratinjau ponsel",
+    "visualNote": "Pratinjau visual — klik untuk membuka tampilan ponsel penuh.",
+    "close": "Tutup",
+    "tt": {
+      "followingTab": "Mengikuti",
+      "forYou": "Untuk Anda",
+      "originalSound": "suara asli",
+      "following": "Mengikuti",
+      "followers": "Pengikut",
+      "likes": "Suka",
+      "follow": "Ikuti",
+      "emptyTitle": "Belum ada konten TikTok",
+      "emptyDesc": "Tandai konten dengan platform TikTok untuk melihatnya di sini."
+    },
+    "client": "Klien",
+    "openTiktok": "Buka pratinjau TikTok",
+    "delete": "Hapus",
+    "follow": "Ikuti",
+    "message": "Pesan",
+    "reorderFailed": "Gagal menyimpan urutan kisi.",
+    "formatUpdated": "Format konten diperbarui.",
+    "formatFailed": "Gagal memperbarui format."
+  },
+  "publicContent": {
+    "readOnly": "Pratinjau hanya-baca",
+    "invalidTitle": "Tautan tidak valid",
+    "invalidDesc": "Tautan berbagi ini tidak ditemukan atau telah dinonaktifkan. Hubungi agensi Anda untuk tautan terbaru.",
+    "subtitle": "Rencana konten media sosial — pratinjau seperti tampil di aplikasi.",
+    "posts": "konten"
   }
 }
