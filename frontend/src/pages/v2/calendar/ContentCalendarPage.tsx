@@ -1296,6 +1296,8 @@ function CreateDialog({
       setMediaDirty(false);
     } else {
       setCaption('');
+      setTime('09:00');
+      setSelectedPlatforms([defaultPlatform] as Platform[]);
       setKind('POST');
       setProjectId(prefillProjectId);
       setMedia([]);
@@ -1303,6 +1305,14 @@ function CreateDialog({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editItem?.id]);
+
+  // Revoke any blob: object URLs when the dialog closes so uploaded-but-unsaved
+  // previews don't leak for the tab's lifetime.
+  useEffect(() => {
+    if (open) return;
+    media.forEach((m) => { if (m.preview?.startsWith('blob:')) URL.revokeObjectURL(m.preview); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const MEDIA_MAX = cfg.max;
 
@@ -1903,8 +1913,12 @@ function HighlightsDialog({
                       editingId === h.id ? 'border-accent ring-2 ring-accent/40' : 'border-border-default hover:border-accent',
                     )}
                   >
-                    {h.coverUrl
-                      ? <span className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-sunken text-[9px] text-text-tertiary">{h.media.length}🎞</span>
+                    {h.coverKey || h.coverUrl
+                      ? <img
+                          src={h.coverKey ? `/api/v1/media/view/${h.coverKey}?mt=${encodeURIComponent(mediaToken ?? '')}` : (h.coverUrl as string)}
+                          alt={h.title}
+                          className="h-12 w-12 rounded-full object-cover"
+                        />
                       : <span className="flex h-12 w-12 items-center justify-center rounded-full bg-bg-sunken"><ImagePlus className="h-4 w-4 text-text-tertiary" /></span>}
                   </button>
                   <span className="w-full truncate text-center text-[10px] text-text-secondary">{h.title}</span>

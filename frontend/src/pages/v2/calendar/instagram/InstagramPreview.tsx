@@ -258,15 +258,17 @@ function PostModal({
   // reset carousel slide whenever the post changes
   useEffect(() => { setSlide(0); }, [item?.id]);
 
-  // keyboard nav: esc closes, arrows move between posts
+  // keyboard nav: esc closes, arrows move between posts.
+  // Capture phase + stopImmediatePropagation so Escape closes only this
+  // modal, not the outer phone modal underneath.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { e.stopImmediatePropagation(); onClose(); }
       else if (e.key === 'ArrowRight' && index < list.length - 1) onIndex(index + 1);
       else if (e.key === 'ArrowLeft' && index > 0) onIndex(index - 1);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [index, list.length, onClose, onIndex]);
 
   if (!item) return null;
@@ -449,14 +451,16 @@ function StoryViewer({
     return () => clearTimeout(timer);
   }, [index, item, stories.length, onClose, onIndex]);
 
+  // Capture phase + stopImmediatePropagation so Escape closes only the story
+  // viewer, not the outer phone modal underneath.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { e.stopImmediatePropagation(); onClose(); }
       else if (e.key === 'ArrowRight') index < stories.length - 1 ? onIndex(index + 1) : onClose();
       else if (e.key === 'ArrowLeft' && index > 0) onIndex(index - 1);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [index, stories.length, onClose, onIndex]);
 
   if (!item) return null;
@@ -465,17 +469,21 @@ function StoryViewer({
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95">
       <div className="relative h-[92vh] max-h-[860px] w-full max-w-[420px] overflow-hidden rounded-xl bg-black">
         {/* progress bars */}
+        <style>{`@keyframes igStoryFill{from{width:0%}to{width:100%}}`}</style>
         <div className="absolute left-0 right-0 top-0 z-20 flex gap-1 p-2">
           {stories.map((s, i) => (
             <div key={s.id} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30">
               <div
                 className="h-full bg-white"
-                style={{
-                  width: i < index ? '100%' : i === index ? '100%' : '0%',
-                  transition: i === index ? `width ${STORY_MS}ms linear` : 'none',
-                  // restart the fill animation when this story becomes active
-                  animation: undefined,
-                }}
+                // Remount (key change) when a story becomes active so the fill
+                // animation restarts from 0% and runs over the auto-advance window.
+                style={
+                  i < index
+                    ? { width: '100%' }
+                    : i === index
+                      ? { width: '0%', animation: `igStoryFill ${STORY_MS}ms linear forwards` }
+                      : { width: '0%' }
+                }
                 key={`${s.id}-${i === index ? index : 'idle'}`}
               />
             </div>

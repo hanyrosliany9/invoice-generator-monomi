@@ -373,6 +373,15 @@ export class ContentCalendarService {
         })),
       };
     } else if (dto.cover) {
+      // Replacing only the cover: drop the old cover object from R2 first so it
+      // isn't orphaned.
+      if (hl.coverKey && hl.coverKey !== dto.cover.key) {
+        try {
+          await this.mediaService.deleteMultipleFiles([hl.coverKey]);
+        } catch (e) {
+          this.logger.warn(`Failed to delete old highlight cover from R2: ${e}`);
+        }
+      }
       data.coverUrl = dto.cover.url;
       data.coverKey = dto.cover.key;
     }
@@ -748,9 +757,14 @@ export class ContentCalendarService {
       }
     }
 
-    // Validate media count against platform limits (if both are being updated)
+    // Validate media count against platform limits (if both are being updated).
+    // Use !== undefined so an explicitly-empty media array reports 0 (not the
+    // stale existing count) and the limit check reflects the real new state.
     const platforms = updateDto.platforms || existing.platforms;
-    const mediaCount = updateDto.media?.length || existing.media?.length || 0;
+    const mediaCount =
+      updateDto.media !== undefined
+        ? updateDto.media.length
+        : (existing.media?.length ?? 0);
 
     if (platforms && platforms.length > 0 && mediaCount > 0) {
       const validation = validateMediaForPlatforms(platforms, mediaCount);
@@ -809,7 +823,7 @@ export class ContentCalendarService {
     const content = await this.prisma.contentCalendarItem.update({
       where: { id },
       data: {
-        ...(updateDto.caption && { caption: updateDto.caption }),
+        ...(updateDto.caption !== undefined && { caption: updateDto.caption }),
         ...(updateDto.scheduledAt && {
           scheduledAt: new Date(updateDto.scheduledAt),
         }),
