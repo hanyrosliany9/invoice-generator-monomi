@@ -16,8 +16,11 @@ services:
       - NODE_ENV=production
       - FRONTEND_PORT=3000
       - BACKEND_URL=http://app:5000
-    ports:
-      - "3000:3000"
+    # No host port publish: nginx reaches the SPA over the internal Docker
+    # network (upstream frontend -> frontend:3000). Publishing host :3000 was
+    # debug-only and collided with another tenant squatting :3000 on the VPS.
+    expose:
+      - "3000"
     depends_on:
       app:
         condition: service_healthy
