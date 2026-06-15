@@ -181,14 +181,16 @@ function TikTokPlayer({
   const [slide, setSlide] = useState(0);
   useEffect(() => { setSlide(0); }, [item?.id]);
 
+  // Capture phase + stopImmediatePropagation so Escape closes only the player,
+  // not the outer phone modal underneath.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { e.stopImmediatePropagation(); onClose(); }
       else if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && index < list.length - 1) onIndex(index + 1);
       else if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && index > 0) onIndex(index - 1);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [index, list.length, onClose, onIndex]);
 
   if (!item) return null;
