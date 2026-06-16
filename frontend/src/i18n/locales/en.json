@@ -49,7 +49,9 @@
     "confirmDiscard": "You have unsaved changes. Leave without saving?",
     "removing": "Removing…",
     "remove": "Remove",
-    "copy": "Copy"
+    "copy": "Copy",
+    "fromDate": "From",
+    "toDate": "To"
   },
   "table": {
     "number": "Number",

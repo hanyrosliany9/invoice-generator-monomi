@@ -87,9 +87,10 @@ export default function ARAgingPageV2() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const [asOfDate, setAsOfDate] = useState<Date>(new Date());
+  const [fromDate, setFromDate] = useState<Date>(() => new Date(new Date().getFullYear(), 0, 1));
+  const [toDate, setToDate] = useState<Date>(new Date());
 
-  const isoDate = toLocalISODate(asOfDate);
+  const isoDate = toLocalISODate(toDate);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['v2', 'ar-aging', isoDate],
@@ -173,12 +174,14 @@ export default function ARAgingPageV2() {
           ]}
           actions={
             <div className="flex flex-wrap items-center gap-2">
-              <div className="w-[200px]">
-                <MonomiDatePicker
-                  value={asOfDate}
-                  onChange={(d) => d && setAsOfDate(d)}
-                  placeholder={t('accounting.arAging.asOfDatePlaceholder', 'As of date')}
-                />
+              <div className="flex items-center gap-2">
+                <div className="w-[150px]">
+                  <MonomiDatePicker value={fromDate} onChange={(d) => d && setFromDate(d)} placeholder={t('common.fromDate', 'Dari')} />
+                </div>
+                <span className="text-text-tertiary text-xs">→</span>
+                <div className="w-[150px]">
+                  <MonomiDatePicker value={toDate} onChange={(d) => d && setToDate(d)} placeholder={t('common.toDate', 'Sampai')} />
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <Download className="h-4 w-4" />

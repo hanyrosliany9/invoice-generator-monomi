@@ -253,15 +253,16 @@ export default function BalanceSheetPageV2() {
   const idLocale = useDateLocale();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const [asOfDate, setAsOfDate] = useState<Date>(new Date());
+  const [fromDate, setFromDate] = useState<Date>(() => new Date(new Date().getFullYear(), 0, 1));
+  const [toDate, setToDate] = useState<Date>(new Date());
 
   const goToGL = (accountCode: string) => {
     const params = new URLSearchParams({ accountCode });
-    params.set('endDate', format(asOfDate, 'yyyy-MM-dd'));
+    params.set('endDate', format(toDate, 'yyyy-MM-dd'));
     navigate(`/accounting/general-ledger?${params.toString()}`);
   };
 
-  const dateStr = format(asOfDate, 'yyyy-MM-dd');
+  const dateStr = format(toDate, 'yyyy-MM-dd');
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<BalanceSheet>({
     queryKey: ['v2', 'balance-sheet', dateStr],
@@ -343,14 +344,17 @@ export default function BalanceSheetPageV2() {
             <div className="flex items-center gap-3 text-xs text-text-tertiary uppercase tracking-[0.16em]">
               <span>{t('accounting.balanceSheet.asOf', 'As of')}</span>
               <span className="text-text-primary normal-case tracking-normal font-display text-sm">
-                {format(asOfDate, 'd MMMM yyyy', { locale: idLocale })}
+                {format(toDate, 'd MMMM yyyy', { locale: idLocale })}
               </span>
             </div>
-            <div className="w-full sm:w-auto sm:min-w-[240px]">
-              <MonomiDatePicker
-                value={asOfDate}
-                onChange={(d) => d && setAsOfDate(d)}
-              />
+            <div className="flex items-center gap-2">
+              <div className="w-[150px]">
+                <MonomiDatePicker value={fromDate} onChange={(d) => d && setFromDate(d)} placeholder={t('common.fromDate', 'Dari')} />
+              </div>
+              <span className="text-text-tertiary text-xs">→</span>
+              <div className="w-[150px]">
+                <MonomiDatePicker value={toDate} onChange={(d) => d && setToDate(d)} placeholder={t('common.toDate', 'Sampai')} />
+              </div>
             </div>
           </div>
         </div>

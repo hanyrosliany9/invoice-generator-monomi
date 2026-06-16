@@ -103,22 +103,17 @@ export default function AccountsPayablePageV2() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
 
-  const [asOfDate, setAsOfDate] = useState<Date>(new Date());
+  const [fromDate, setFromDate] = useState<Date>(() => new Date(new Date().getFullYear(), 0, 1));
+  const [toDate, setToDate] = useState<Date>(new Date());
   const [searchText, setSearchText] = useState('');
   const [bucketFilter, setBucketFilter] = useState<string>('all');
 
-  const isoDate = toLocalISODate(asOfDate);
-  // The AP report endpoint expects an endDate (and optional startDate).
-  // We pin startDate to the start of the year so we still get the full
-  // period of unpaid expenses without arbitrary truncation.
-  const startOfYear = useMemo(
-    () => toLocalISODate(new Date(asOfDate.getFullYear(), 0, 1)),
-    [asOfDate],
-  );
+  const fromIso = toLocalISODate(fromDate);
+  const toIso = toLocalISODate(toDate);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['v2', 'ap-report', isoDate],
-    queryFn: () => getAccountsPayableReport({ startDate: startOfYear, endDate: isoDate }),
+    queryKey: ['v2', 'ap-report', fromIso, toIso],
+    queryFn: () => getAccountsPayableReport({ startDate: fromIso, endDate: toIso }),
   });
 
   /* ----- derived: rows + filtering ----- */
@@ -174,7 +169,7 @@ export default function AccountsPayablePageV2() {
 
   const handleExportPDF = async () => {
     try {
-      await exportAccountsPayablePDF({ startDate: startOfYear, endDate: isoDate });
+      await exportAccountsPayablePDF({ startDate: fromIso, endDate: toIso });
       toast.success(t('accounting.accountsPayable.exportPdfSuccess'));
     } catch {
       toast.error(t('accounting.accountsPayable.exportPdfFail'));
@@ -183,7 +178,7 @@ export default function AccountsPayablePageV2() {
 
   const handleExportExcel = async () => {
     try {
-      await exportAccountsPayableExcel({ startDate: startOfYear, endDate: isoDate });
+      await exportAccountsPayableExcel({ startDate: fromIso, endDate: toIso });
       toast.success(t('accounting.accountsPayable.exportExcelSuccess'));
     } catch {
       toast.error(t('accounting.accountsPayable.exportExcelFail'));
@@ -209,12 +204,22 @@ export default function AccountsPayablePageV2() {
           ]}
           actions={
             <div className="flex flex-wrap items-center gap-2">
-              <div className="w-[200px]">
-                <MonomiDatePicker
-                  value={asOfDate}
-                  onChange={(d) => d && setAsOfDate(d)}
-                  placeholder={t('accounting.accountsPayable.asOfDatePlaceholder', 'As of date')}
-                />
+              <div className="flex items-center gap-2">
+                <div className="w-[150px]">
+                  <MonomiDatePicker
+                    value={fromDate}
+                    onChange={(d) => d && setFromDate(d)}
+                    placeholder={t('common.fromDate', 'Dari')}
+                  />
+                </div>
+                <span className="text-text-tertiary text-xs">→</span>
+                <div className="w-[150px]">
+                  <MonomiDatePicker
+                    value={toDate}
+                    onChange={(d) => d && setToDate(d)}
+                    placeholder={t('common.toDate', 'Sampai')}
+                  />
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <Download className="h-4 w-4" />

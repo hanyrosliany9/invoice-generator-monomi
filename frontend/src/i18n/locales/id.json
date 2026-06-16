@@ -49,7 +49,9 @@
     "confirmDiscard": "Ada perubahan yang belum disimpan. Tinggalkan tanpa menyimpan?",
     "removing": "Menghapus…",
     "remove": "Hapus",
-    "copy": "Salin"
+    "copy": "Salin",
+    "fromDate": "Dari",
+    "toDate": "Sampai"
   },
   "table": {
     "number": "Nomor",

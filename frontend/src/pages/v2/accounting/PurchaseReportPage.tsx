@@ -48,7 +48,8 @@ export default function PurchaseReportPageV2() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
-  const [asOfDate, setAsOfDate] = useState<Date>(new Date());
+  const [fromDate, setFromDate] = useState<Date>(() => new Date(new Date().getFullYear(), 0, 1));
+  const [toDate, setToDate] = useState<Date>(new Date());
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -56,15 +57,12 @@ export default function PurchaseReportPageV2() {
   const [payTarget, setPayTarget] = useState<PurchaseRow | null>(null);
   const [cashAccount, setCashAccount] = useState<string>('1-1010');
 
-  const isoDate = toLocalISODate(asOfDate);
-  const startOfYear = useMemo(
-    () => toLocalISODate(new Date(asOfDate.getFullYear(), 0, 1)),
-    [asOfDate],
-  );
+  const fromIso = toLocalISODate(fromDate);
+  const toIso = toLocalISODate(toDate);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['v2', 'purchases', startOfYear, isoDate],
-    queryFn: () => getPurchases({ startDate: startOfYear, endDate: isoDate }),
+    queryKey: ['v2', 'purchases', fromIso, toIso],
+    queryFn: () => getPurchases({ startDate: fromIso, endDate: toIso }),
   });
 
   const rows: PurchaseRow[] = useMemo(() => data ?? [], [data]);
@@ -121,7 +119,7 @@ export default function PurchaseReportPageV2() {
 
   const handleExportPDF = async () => {
     try {
-      await exportPurchasesPDF({ startDate: startOfYear, endDate: isoDate });
+      await exportPurchasesPDF({ startDate: fromIso, endDate: toIso });
       toast.success(t('accounting.purchaseReport.exportPdfSuccess', 'PDF exported successfully.'));
     } catch {
       toast.error(t('accounting.purchaseReport.exportPdfFail', 'Failed to export PDF.'));
@@ -130,7 +128,7 @@ export default function PurchaseReportPageV2() {
 
   const handleExportExcel = async () => {
     try {
-      await exportPurchasesExcel({ startDate: startOfYear, endDate: isoDate });
+      await exportPurchasesExcel({ startDate: fromIso, endDate: toIso });
       toast.success(t('accounting.purchaseReport.exportExcelSuccess', 'Excel exported successfully.'));
     } catch {
       toast.error(t('accounting.purchaseReport.exportExcelFail', 'Failed to export Excel.'));
@@ -160,12 +158,22 @@ export default function PurchaseReportPageV2() {
                 <Download className="h-4 w-4" />
                 Excel
               </Button>
-              <div className="w-[200px]">
-                <MonomiDatePicker
-                  value={asOfDate}
-                  onChange={(d) => d && setAsOfDate(d)}
-                  placeholder={t('accounting.purchaseReport.asOf', 'As of date')}
-                />
+              <div className="flex items-center gap-2">
+                <div className="w-[150px]">
+                  <MonomiDatePicker
+                    value={fromDate}
+                    onChange={(d) => d && setFromDate(d)}
+                    placeholder={t('common.fromDate', 'Dari')}
+                  />
+                </div>
+                <span className="text-text-tertiary text-xs">→</span>
+                <div className="w-[150px]">
+                  <MonomiDatePicker
+                    value={toDate}
+                    onChange={(d) => d && setToDate(d)}
+                    placeholder={t('common.toDate', 'Sampai')}
+                  />
+                </div>
               </div>
               <Button size="sm" onClick={() => navigate(CREATE_HREF)}>
                 <Plus className="h-4 w-4" />

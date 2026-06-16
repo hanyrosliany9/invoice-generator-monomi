@@ -51,7 +51,8 @@ export default function SalesReportPageV2() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
 
-  const [asOfDate, setAsOfDate] = useState<Date>(new Date());
+  const [fromDate, setFromDate] = useState<Date>(() => new Date(new Date().getFullYear(), 0, 1));
+  const [toDate, setToDate] = useState<Date>(new Date());
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -59,14 +60,12 @@ export default function SalesReportPageV2() {
   const [payTarget, setPayTarget] = useState<SaleRow | null>(null);
   const [cashAccount, setCashAccount] = useState<string>('1-1010');
 
-  const isoDate = toLocalISODate(asOfDate);
-  // No lower bound by default — the Sales Report shows ALL sales (invoices +
-  // direct sales) up to the chosen "as of" date, so historical invoices from
-  // prior years aren't hidden. The date picker narrows the upper bound.
+  const fromIso = toLocalISODate(fromDate);
+  const toIso = toLocalISODate(toDate);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['v2', 'sales', isoDate],
-    queryFn: () => getSales({ endDate: isoDate }),
+    queryKey: ['v2', 'sales', fromIso, toIso],
+    queryFn: () => getSales({ startDate: fromIso, endDate: toIso }),
   });
 
   const rows: SaleRow[] = useMemo(() => data ?? [], [data]);
@@ -130,7 +129,7 @@ export default function SalesReportPageV2() {
 
   const handleExportPDF = async () => {
     try {
-      await exportSalesPDF({ endDate: isoDate });
+      await exportSalesPDF({ startDate: fromIso, endDate: toIso });
       toast.success(t('accounting.salesReport.exportPdfSuccess', 'PDF exported successfully.'));
     } catch {
       toast.error(t('accounting.salesReport.exportPdfFail', 'Failed to export PDF.'));
@@ -139,7 +138,7 @@ export default function SalesReportPageV2() {
 
   const handleExportExcel = async () => {
     try {
-      await exportSalesExcel({ endDate: isoDate });
+      await exportSalesExcel({ startDate: fromIso, endDate: toIso });
       toast.success(t('accounting.salesReport.exportExcelSuccess', 'Excel exported successfully.'));
     } catch {
       toast.error(t('accounting.salesReport.exportExcelFail', 'Failed to export Excel.'));
@@ -169,12 +168,22 @@ export default function SalesReportPageV2() {
                 <Download className="h-4 w-4" />
                 Excel
               </Button>
-              <div className="w-[200px]">
-                <MonomiDatePicker
-                  value={asOfDate}
-                  onChange={(d) => d && setAsOfDate(d)}
-                  placeholder={t('accounting.salesReport.asOf', 'As of date')}
-                />
+              <div className="flex items-center gap-2">
+                <div className="w-[150px]">
+                  <MonomiDatePicker
+                    value={fromDate}
+                    onChange={(d) => d && setFromDate(d)}
+                    placeholder={t('common.fromDate', 'Dari')}
+                  />
+                </div>
+                <span className="text-text-tertiary text-xs">→</span>
+                <div className="w-[150px]">
+                  <MonomiDatePicker
+                    value={toDate}
+                    onChange={(d) => d && setToDate(d)}
+                    placeholder={t('common.toDate', 'Sampai')}
+                  />
+                </div>
               </div>
               <Button size="sm" onClick={() => navigate(CREATE_HREF)}>
                 <Plus className="h-4 w-4" />
