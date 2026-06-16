@@ -2281,7 +2281,9 @@
       "noMatchDesc": "Coba kata kunci lain.",
       "emptyDesc": "Tambah klien terlebih dahulu untuk merencanakan kontennya.",
       "posts": "konten",
-      "next": "Berikutnya"
+      "next": "Berikutnya",
+      "emptySocial": "Belum ada klien media sosial",
+      "emptySocialDesc": "Klien muncul di sini setelah punya proyek bertipe \"Social Media Management\". Buat proyek Social Media untuk klien agar bisa merencanakan kontennya."
     },
     "updated": "Konten diperbarui.",
     "updateFailed": "Gagal memperbarui konten.",

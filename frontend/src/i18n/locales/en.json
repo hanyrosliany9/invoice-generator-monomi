@@ -2190,7 +2190,9 @@
       "noMatchDesc": "Try a different keyword.",
       "emptyDesc": "Add a client first to plan their content.",
       "posts": "content",
-      "next": "Next"
+      "next": "Next",
+      "emptySocial": "No social media clients yet",
+      "emptySocialDesc": "Clients appear here once they have a \"Social Media Management\" project. Create a Social Media project for a client to start planning their content."
     },
     "updated": "Content updated.",
     "updateFailed": "Failed to update content.",

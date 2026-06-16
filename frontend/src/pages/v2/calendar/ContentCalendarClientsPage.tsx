@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/store/auth';
 import { clientService, type Client } from '@/services/clients';
+import { projectService } from '@/services/projects';
 import contentCalendarService, { type ContentCalendarItem } from '@/services/content-calendar';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +58,20 @@ export default function ContentCalendarClientsPage() {
     queryFn: () => contentCalendarService.getContents(),
   });
 
+  // A client belongs in the content planner only if it has a Social Media
+  // Management (SOCIAL_MEDIA) project — production-only clients are excluded.
+  const { data: projects = [], isLoading: loadingProjects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: projectService.getProjects,
+  });
+  const socialClientIds = useMemo(() => {
+    const s = new Set<string>();
+    projects.forEach((p) => {
+      if (p.projectType?.code === 'SOCIAL_MEDIA' && p.clientId) s.add(p.clientId);
+    });
+    return s;
+  }, [projects]);
+
   const statsByClient = useMemo(() => {
     const map = new Map<string, ClientStats>();
     (content as ContentCalendarItem[]).forEach((it) => {
@@ -76,15 +91,15 @@ export default function ContentCalendarClientsPage() {
   const totals = useMemo(() => {
     const items = content as ContentCalendarItem[];
     return {
-      clients: clients.length,
+      clients: clients.filter((c) => socialClientIds.has(c.id)).length,
       content: items.length,
       scheduled: items.filter((i) => i.status === 'SCHEDULED').length,
     };
-  }, [clients, content]);
+  }, [clients, content, socialClientIds]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const list = [...clients].sort((a, b) => {
+    const list = [...clients].filter((c) => socialClientIds.has(c.id)).sort((a, b) => {
       // clients with content float to the top, then alphabetical
       const ca = statsByClient.get(a.id)?.total ?? 0;
       const cb = statsByClient.get(b.id)?.total ?? 0;
@@ -97,9 +112,9 @@ export default function ContentCalendarClientsPage() {
       || c.company?.toLowerCase().includes(q)
       || c.instagramHandle?.toLowerCase().includes(q),
     );
-  }, [clients, search, statsByClient]);
+  }, [clients, search, statsByClient, socialClientIds]);
 
-  const isLoading = loadingClients || loadingContent;
+  const isLoading = loadingClients || loadingContent || loadingProjects;
 
   return (
     <AppShell
@@ -169,10 +184,10 @@ export default function ContentCalendarClientsPage() {
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={<FolderOpen />}
-              title={search ? t('content.clients.noMatch', 'Tidak ada klien yang cocok') : t('content.clients.empty', 'Belum ada klien')}
+              title={search ? t('content.clients.noMatch', 'Tidak ada klien yang cocok') : t('content.clients.emptySocial', 'Belum ada klien media sosial')}
               description={search
                 ? t('content.clients.noMatchDesc', 'Coba kata kunci lain.')
-                : t('content.clients.emptyDesc', 'Tambah klien terlebih dahulu untuk merencanakan kontennya.')}
+                : t('content.clients.emptySocialDesc', 'Klien muncul di sini setelah punya proyek bertipe "Social Media Management". Buat proyek Social Media untuk klien agar bisa merencanakan kontennya.')}
             />
           ) : (
             <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
