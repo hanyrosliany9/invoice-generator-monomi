@@ -84,7 +84,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: false, // Disabled temporarily to catch TDZ errors with real variable names
+    minify: 'esbuild', // re-enabled: the TDZ/init-order errors came from the manualChunks vendor split, now fixed (single vendor chunk)
     target: 'es2020',
     cssCodeSplit: true,
     chunkSizeWarningLimit: 1000,
@@ -94,57 +94,20 @@ export default defineConfig({
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
         /**
-         * Manual chunks — split the giant vendor bundle into focused pieces so:
-         * 1. The initial JS download is smaller (only react+router are critical).
-         * 2. Antd / recharts / editor chunks are shared across pages without
-         *    being bundled into every lazy page chunk.
-         * 3. Long-term browser caching: lib hashes change only when that lib
-         *    version changes, not when an unrelated page component changes.
+         * Single `vendor` chunk for ALL node_modules.
+         *
+         * Splitting vendors into focused chunks (react / antd / charts / …)
+         * created circular chunk edges: many libs read React (React.version,
+         * React.useState) at MODULE TOP LEVEL, and Rollup's cross-chunk import
+         * graph let a consumer chunk evaluate before the React chunk finished
+         * exporting — so `React` was undefined and the whole app blanked out
+         * (first antd, then recharts, etc.). Keeping every node_module in one
+         * chunk makes all those reads intra-chunk and dependency-ordered, which
+         * is the only cycle-proof option. App code still splits per route, so
+         * page-level caching is preserved.
          */
         manualChunks(id) {
-          // React core + Ant Design MUST share one chunk. antd reads
-          // `React.version` at module top-level; splitting them lets Rollup
-          // create a circular chunk edge (vendor-react <-> vendor-antd) where
-          // antd evaluates before React has finished exporting, so
-          // `reactExports.version` is undefined and the whole app blanks out.
-          // Keeping them together makes that read intra-chunk and ordered.
-          if (id.includes('node_modules/react/') ||
-              id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/react-is/') ||
-              id.includes('node_modules/antd/') ||
-              id.includes('node_modules/@ant-design/') ||
-              id.includes('node_modules/rc-')) {
-            return 'vendor-react'
-          }
-          // Router
-          if (id.includes('node_modules/react-router')) {
-            return 'vendor-router'
-          }
-          // TanStack Query + Zustand — state layer
-          if (id.includes('node_modules/@tanstack/') ||
-              id.includes('node_modules/zustand/')) {
-            return 'vendor-state'
-          }
-          // Charts
-          if (id.includes('node_modules/recharts/') ||
-              id.includes('node_modules/d3') ||
-              id.includes('node_modules/victory')) {
-            return 'vendor-charts'
-          }
-          // Rich-text / Slate editor
-          if (id.includes('node_modules/slate')) {
-            return 'vendor-editor'
-          }
-          // Date utilities
-          if (id.includes('node_modules/dayjs/') ||
-              id.includes('node_modules/date-fns/')) {
-            return 'vendor-dates'
-          }
-          // i18n
-          if (id.includes('node_modules/i18next') ||
-              id.includes('node_modules/react-i18next')) {
-            return 'vendor-i18n'
-          }
+          if (id.includes('node_modules')) return 'vendor'
         },
       },
     },
