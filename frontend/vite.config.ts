@@ -102,10 +102,18 @@ export default defineConfig({
          *    version changes, not when an unrelated page component changes.
          */
         manualChunks(id) {
-          // React core — must load first; keep tiny
+          // React core + Ant Design MUST share one chunk. antd reads
+          // `React.version` at module top-level; splitting them lets Rollup
+          // create a circular chunk edge (vendor-react <-> vendor-antd) where
+          // antd evaluates before React has finished exporting, so
+          // `reactExports.version` is undefined and the whole app blanks out.
+          // Keeping them together makes that read intra-chunk and ordered.
           if (id.includes('node_modules/react/') ||
               id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/react-is/')) {
+              id.includes('node_modules/react-is/') ||
+              id.includes('node_modules/antd/') ||
+              id.includes('node_modules/@ant-design/') ||
+              id.includes('node_modules/rc-')) {
             return 'vendor-react'
           }
           // Router
@@ -116,12 +124,6 @@ export default defineConfig({
           if (id.includes('node_modules/@tanstack/') ||
               id.includes('node_modules/zustand/')) {
             return 'vendor-state'
-          }
-          // Ant Design (large — isolate so page chunks stay small)
-          if (id.includes('node_modules/antd/') ||
-              id.includes('node_modules/@ant-design/') ||
-              id.includes('node_modules/rc-')) {
-            return 'vendor-antd'
           }
           // Charts
           if (id.includes('node_modules/recharts/') ||
