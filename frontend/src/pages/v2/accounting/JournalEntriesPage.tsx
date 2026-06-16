@@ -244,29 +244,6 @@ export default function JournalEntriesPageV2() {
     }
   };
 
-  /* ----- error short-circuit ----- */
-  if (error) {
-    return (
-      <AppShell
-        sidebar={{
-          brand: <MonomiBrand />,
-          sections: v2SidebarSections,
-          footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-        }}
-        topbar={{}}
-      >
-        <PageContainer>
-          <EmptyState
-            icon={<FileText className="h-12 w-12" />}
-            title={t('accounting.journalEntries.errorTitle')}
-            description={error instanceof Error ? error.message : t('accounting.journalEntries.errorGeneric')}
-            action={<Button onClick={() => refetch()}>{t('accounting.journalEntries.retry')}</Button>}
-          />
-        </PageContainer>
-      </AppShell>
-    );
-  }
-
   return (
     <AppShell
       sidebar={{
@@ -398,7 +375,14 @@ export default function JournalEntriesPageV2() {
           </div>
 
           {/* Table */}
-          {isLoading ? (
+          {error ? (
+            <EmptyState
+              icon={<FileText className="h-12 w-12" />}
+              title={t('accounting.journalEntries.errorTitle')}
+              description={error instanceof Error ? error.message : t('accounting.journalEntries.errorGeneric')}
+              action={<Button onClick={() => refetch()}>{t('accounting.journalEntries.retry')}</Button>}
+            />
+          ) : isLoading ? (
             <div className="p-5 space-y-2">
               <Skeleton className="h-10 rounded" />
               <Skeleton className="h-10 rounded" />

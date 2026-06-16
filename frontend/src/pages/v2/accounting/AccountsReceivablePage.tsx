@@ -187,29 +187,6 @@ export default function AccountsReceivablePageV2() {
     }
   };
 
-  /* ----- error short-circuit ----- */
-  if (error) {
-    return (
-      <AppShell
-        sidebar={{
-          brand: <MonomiBrand />,
-          sections: v2SidebarSections,
-          footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-        }}
-        topbar={{}}
-      >
-        <PageContainer>
-          <EmptyState
-            icon={<Wallet className="h-12 w-12" />}
-            title={t('accounting.accountsReceivable.errorTitle')}
-            description={error instanceof Error ? error.message : t('accounting.accountsReceivable.errorDesc')}
-            action={<Button onClick={() => refetch()}>{t('accounting.accountsReceivable.retry')}</Button>}
-          />
-        </PageContainer>
-      </AppShell>
-    );
-  }
-
   return (
     <AppShell
       sidebar={{
@@ -248,6 +225,15 @@ export default function AccountsReceivablePageV2() {
           }
         />
 
+        {error ? (
+          <EmptyState
+            icon={<Wallet className="h-12 w-12" />}
+            title={t('accounting.accountsReceivable.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.accountsReceivable.errorDesc')}
+            action={<Button onClick={() => refetch()}>{t('accounting.accountsReceivable.retry')}</Button>}
+          />
+        ) : (
+          <>
         {/* ─────────────────────────────────────────────────────────────
             KPI band — Piutang Usaha / Piutang Lain-lain / Belum Jatuh
             Tempo / Jatuh Tempo / Klien. Trade AR (1-2010) and Other
@@ -490,6 +476,8 @@ export default function AccountsReceivablePageV2() {
             </GlassPanel>
           );
         })()}
+          </>
+        )}
       </PageContainer>
     </AppShell>
   );

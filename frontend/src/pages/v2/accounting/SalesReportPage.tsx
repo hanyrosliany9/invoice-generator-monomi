@@ -146,24 +146,6 @@ export default function SalesReportPageV2() {
     }
   };
 
-  if (error) {
-    return (
-      <AppShell
-        sidebar={{ brand: <MonomiBrand />, sections: v2SidebarSections, footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
-        topbar={{}}
-      >
-        <PageContainer>
-          <EmptyState
-            icon={<BookOpen className="h-12 w-12" />}
-            title={t('accounting.salesReport.errorTitle', 'Failed to load sales')}
-            description={error instanceof Error ? error.message : ''}
-            action={<Button onClick={() => refetch()}>{t('accounting.salesReport.retry', 'Retry')}</Button>}
-          />
-        </PageContainer>
-      </AppShell>
-    );
-  }
-
   return (
     <AppShell
       sidebar={{ brand: <MonomiBrand />, sections: v2SidebarSections, footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null }}
@@ -202,120 +184,131 @@ export default function SalesReportPageV2() {
           }
         />
 
-        <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-[108px] rounded-lg" />
-                <Skeleton className="h-[108px] rounded-lg" />
-                <Skeleton className="h-[108px] rounded-lg" />
-                <Skeleton className="h-[108px] rounded-lg" />
-              </>
-            ) : (
-              <>
-                <StatCard label={t('accounting.salesReport.statTotal', 'Total Sales')} value={<MoneyDisplay amount={stats.total} />} sublabel={t('accounting.salesReport.statTotalSub', 'this year')} />
-                <StatCard label={t('accounting.salesReport.statUnpaid', 'Unpaid')} value={<MoneyDisplay amount={stats.unpaid} className="text-danger" />} sublabel={t('accounting.salesReport.statUnpaidSub', 'outstanding receivable')} />
-                <StatCard label={t('accounting.salesReport.statPaid', 'Paid')} value={<MoneyDisplay amount={stats.paid} />} sublabel={t('accounting.salesReport.statPaidSub', 'collected')} />
-                <StatCard label={t('accounting.salesReport.statCount', 'Sales')} value={stats.count} sublabel={t('accounting.salesReport.statCountSub', 'records')} />
-              </>
-            )}
-          </div>
-        </section>
+        {error ? (
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12" />}
+            title={t('accounting.salesReport.errorTitle', 'Failed to load sales')}
+            description={error instanceof Error ? error.message : ''}
+            action={<Button onClick={() => refetch()}>{t('accounting.salesReport.retry', 'Retry')}</Button>}
+          />
+        ) : (
+          <>
+            <section className="mb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {isLoading ? (
+                  <>
+                    <Skeleton className="h-[108px] rounded-lg" />
+                    <Skeleton className="h-[108px] rounded-lg" />
+                    <Skeleton className="h-[108px] rounded-lg" />
+                    <Skeleton className="h-[108px] rounded-lg" />
+                  </>
+                ) : (
+                  <>
+                    <StatCard label={t('accounting.salesReport.statTotal', 'Total Sales')} value={<MoneyDisplay amount={stats.total} />} sublabel={t('accounting.salesReport.statTotalSub', 'this year')} />
+                    <StatCard label={t('accounting.salesReport.statUnpaid', 'Unpaid')} value={<MoneyDisplay amount={stats.unpaid} className="text-danger" />} sublabel={t('accounting.salesReport.statUnpaidSub', 'outstanding receivable')} />
+                    <StatCard label={t('accounting.salesReport.statPaid', 'Paid')} value={<MoneyDisplay amount={stats.paid} />} sublabel={t('accounting.salesReport.statPaidSub', 'collected')} />
+                    <StatCard label={t('accounting.salesReport.statCount', 'Sales')} value={stats.count} sublabel={t('accounting.salesReport.statCountSub', 'records')} />
+                  </>
+                )}
+              </div>
+            </section>
 
-        <GlassPanel surface="glass" padding="none" className="overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 border-b border-border-subtle">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
-              <Input
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder={t('accounting.salesReport.searchPlaceholder', 'Search by number, client or description...')}
-                className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
-              />
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[150px]">
-                  <SelectValue placeholder={t('accounting.salesReport.filterStatus', 'Status')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('accounting.salesReport.filterAll', 'All')}</SelectItem>
-                  <SelectItem value="UNPAID">{t('accounting.salesReport.statusUnpaid', 'Unpaid')}</SelectItem>
-                  <SelectItem value="PAID">{t('accounting.salesReport.statusPaid', 'Paid')}</SelectItem>
-                </SelectContent>
-              </Select>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={resetFilters} className="text-text-tertiary hover:text-text-primary">
-                  <X className="h-3.5 w-3.5" /> {t('accounting.salesReport.reset', 'Reset')}
-                </Button>
+            <GlassPanel surface="glass" padding="none" className="overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 border-b border-border-subtle">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
+                  <Input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder={t('accounting.salesReport.searchPlaceholder', 'Search by number, client or description...')}
+                    className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
+                  />
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[150px]">
+                      <SelectValue placeholder={t('accounting.salesReport.filterStatus', 'Status')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('accounting.salesReport.filterAll', 'All')}</SelectItem>
+                      <SelectItem value="UNPAID">{t('accounting.salesReport.statusUnpaid', 'Unpaid')}</SelectItem>
+                      <SelectItem value="PAID">{t('accounting.salesReport.statusPaid', 'Paid')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={resetFilters} className="text-text-tertiary hover:text-text-primary">
+                      <X className="h-3.5 w-3.5" /> {t('accounting.salesReport.reset', 'Reset')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {isLoading ? (
+                <div className="p-5 space-y-2">
+                  {Array.from({ length: 5 }).map((_, idx) => <Skeleton key={idx} className="h-10 rounded" />)}
+                </div>
+              ) : filtered.length === 0 ? (
+                <EmptyState
+                  icon={<BookOpen />}
+                  title={hasActiveFilters ? t('accounting.salesReport.noMatch', 'No matching sales') : t('accounting.salesReport.empty', 'No sales yet')}
+                  description={hasActiveFilters ? t('accounting.salesReport.noMatchDesc', 'Try adjusting your filters.') : t('accounting.salesReport.emptyDesc', 'Record a sale with + Penjualan.')}
+                  action={
+                    hasActiveFilters
+                      ? <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.salesReport.reset', 'Reset')}</Button>
+                      : <Button size="sm" onClick={() => navigate(CREATE_HREF)}><Plus className="h-4 w-4" /> {t('accounting.salesReport.newSale', '+ Penjualan')}</Button>
+                  }
+                />
+              ) : (
+                <div className="px-1 pb-1">
+                  <DataTable<SaleRow>
+                    data={filtered}
+                    enablePagination
+                    onRowClick={(row) =>
+                      navigate(`/accounting/journal-entries?search=${encodeURIComponent(row.transactionId)}`)
+                    }
+                    columns={[
+                      {
+                        accessorKey: 'number',
+                        header: t('accounting.salesReport.colNumber', 'Number'),
+                        cell: ({ row }) => <span className="text-sm font-medium text-text-primary tabular-nums">{row.original.number}</span>,
+                      },
+                      {
+                        accessorKey: 'clientName',
+                        header: t('accounting.salesReport.colClient', 'Client'),
+                        cell: ({ row }) => <span className="text-text-secondary text-sm">{row.original.clientName || '—'}</span>,
+                      },
+                      {
+                        accessorKey: 'description',
+                        header: t('accounting.salesReport.colDescription', 'Description'),
+                        cell: ({ row }) => <span className="text-text-secondary text-sm truncate">{row.original.description || '—'}</span>,
+                      },
+                      {
+                        accessorKey: 'issuedDate',
+                        header: t('accounting.salesReport.colIssuedDate', 'Issued Date'),
+                        cell: ({ row }) => <span className="text-text-tertiary"><DateDisplay date={row.original.issuedDate} /></span>,
+                      },
+                      {
+                        accessorKey: 'dueDate',
+                        header: t('accounting.salesReport.colDueDate', 'Due Date'),
+                        cell: ({ row }) => <span className="text-text-tertiary"><DateDisplay date={row.original.dueDate} /></span>,
+                      },
+                      {
+                        accessorKey: 'amount',
+                        header: () => <span className="block text-right">{t('accounting.salesReport.colAmount', 'Amount')}</span>,
+                        cell: ({ row }) => <div className="text-right"><MoneyDisplay amount={toNumber(row.original.amount)} className="text-text-primary" /></div>,
+                      },
+                      {
+                        id: 'status',
+                        header: () => <span className="block text-right">{t('accounting.salesReport.colStatus', 'Status')}</span>,
+                        cell: ({ row }) => <StatusCell row={row.original} onPay={(r) => { setPayTarget(r); setCashAccount('1-1010'); }} />,
+                      },
+                    ]}
+                  />
+                </div>
               )}
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="p-5 space-y-2">
-              {Array.from({ length: 5 }).map((_, idx) => <Skeleton key={idx} className="h-10 rounded" />)}
-            </div>
-          ) : filtered.length === 0 ? (
-            <EmptyState
-              icon={<BookOpen />}
-              title={hasActiveFilters ? t('accounting.salesReport.noMatch', 'No matching sales') : t('accounting.salesReport.empty', 'No sales yet')}
-              description={hasActiveFilters ? t('accounting.salesReport.noMatchDesc', 'Try adjusting your filters.') : t('accounting.salesReport.emptyDesc', 'Record a sale with + Penjualan.')}
-              action={
-                hasActiveFilters
-                  ? <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.salesReport.reset', 'Reset')}</Button>
-                  : <Button size="sm" onClick={() => navigate(CREATE_HREF)}><Plus className="h-4 w-4" /> {t('accounting.salesReport.newSale', '+ Penjualan')}</Button>
-              }
-            />
-          ) : (
-            <div className="px-1 pb-1">
-              <DataTable<SaleRow>
-                data={filtered}
-                enablePagination
-                onRowClick={(row) =>
-                  navigate(`/accounting/journal-entries?search=${encodeURIComponent(row.transactionId)}`)
-                }
-                columns={[
-                  {
-                    accessorKey: 'number',
-                    header: t('accounting.salesReport.colNumber', 'Number'),
-                    cell: ({ row }) => <span className="text-sm font-medium text-text-primary tabular-nums">{row.original.number}</span>,
-                  },
-                  {
-                    accessorKey: 'clientName',
-                    header: t('accounting.salesReport.colClient', 'Client'),
-                    cell: ({ row }) => <span className="text-text-secondary text-sm">{row.original.clientName || '—'}</span>,
-                  },
-                  {
-                    accessorKey: 'description',
-                    header: t('accounting.salesReport.colDescription', 'Description'),
-                    cell: ({ row }) => <span className="text-text-secondary text-sm truncate">{row.original.description || '—'}</span>,
-                  },
-                  {
-                    accessorKey: 'issuedDate',
-                    header: t('accounting.salesReport.colIssuedDate', 'Issued Date'),
-                    cell: ({ row }) => <span className="text-text-tertiary"><DateDisplay date={row.original.issuedDate} /></span>,
-                  },
-                  {
-                    accessorKey: 'dueDate',
-                    header: t('accounting.salesReport.colDueDate', 'Due Date'),
-                    cell: ({ row }) => <span className="text-text-tertiary"><DateDisplay date={row.original.dueDate} /></span>,
-                  },
-                  {
-                    accessorKey: 'amount',
-                    header: () => <span className="block text-right">{t('accounting.salesReport.colAmount', 'Amount')}</span>,
-                    cell: ({ row }) => <div className="text-right"><MoneyDisplay amount={toNumber(row.original.amount)} className="text-text-primary" /></div>,
-                  },
-                  {
-                    id: 'status',
-                    header: () => <span className="block text-right">{t('accounting.salesReport.colStatus', 'Status')}</span>,
-                    cell: ({ row }) => <StatusCell row={row.original} onPay={(r) => { setPayTarget(r); setCashAccount('1-1010'); }} />,
-                  },
-                ]}
-              />
-            </div>
-          )}
-        </GlassPanel>
+            </GlassPanel>
+          </>
+        )}
       </PageContainer>
 
       {/* Mark-as-collected dialog */}

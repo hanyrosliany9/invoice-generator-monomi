@@ -292,20 +292,6 @@ export default function CashReceiptsPageV2() {
     setEndDate(undefined);
   };
 
-  /* ----- error short-circuit ----- */
-  if (error) {
-    return (
-      <PageShell user={user}>
-        <EmptyState
-          icon={<ArrowDownLeft className="h-12 w-12" />}
-          title={t('accounting.cashReceipts.errorTitle', 'Cannot load cash receipts')}
-          description={error instanceof Error ? error.message : t('accounting.cashReceipts.errorDesc', 'An error occurred')}
-          action={<Button onClick={() => refetch()}>{t('accounting.cashReceipts.retry', 'Try Again')}</Button>}
-        />
-      </PageShell>
-    );
-  }
-
   /* ----- render ----- */
   return (
     <PageShell user={user}>
@@ -484,7 +470,14 @@ export default function CashReceiptsPageV2() {
         </div>
 
         {/* Table body */}
-        {isLoading ? (
+        {error ? (
+          <EmptyState
+            icon={<ArrowDownLeft className="h-12 w-12" />}
+            title={t('accounting.cashReceipts.errorTitle', 'Cannot load cash receipts')}
+            description={error instanceof Error ? error.message : t('accounting.cashReceipts.errorDesc', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('accounting.cashReceipts.retry', 'Try Again')}</Button>}
+          />
+        ) : isLoading ? (
           <div className="p-5 space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-10 rounded" />

@@ -184,19 +184,6 @@ export default function DepreciationPageV2() {
     }
   };
 
-  if (error) {
-    return (
-      <PageShell user={user}>
-        <EmptyState
-          icon={<TrendingDown className="h-12 w-12" />}
-          title={t('accounting.depreciation.errorTitle')}
-          description={error instanceof Error ? error.message : t('accounting.depreciation.errorGeneric')}
-          action={<Button onClick={() => refetch()}>{t('accounting.depreciation.retry')}</Button>}
-        />
-      </PageShell>
-    );
-  }
-
   const byAsset = summary?.byAsset ?? [];
   // Assets grouped by their fixed-asset COA (account) for the grouped view.
   const byCoa = (summary as any)?.byCoa ?? [];
@@ -314,7 +301,14 @@ export default function DepreciationPageV2() {
         </div>
 
         {/* Table */}
-        {isLoading ? (
+        {error ? (
+          <EmptyState
+            icon={<TrendingDown className="h-12 w-12" />}
+            title={t('accounting.depreciation.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.depreciation.errorGeneric')}
+            action={<Button onClick={() => refetch()}>{t('accounting.depreciation.retry')}</Button>}
+          />
+        ) : isLoading ? (
           <div className="p-5 space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
           </div>

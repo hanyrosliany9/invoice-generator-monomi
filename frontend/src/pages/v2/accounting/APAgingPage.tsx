@@ -150,28 +150,6 @@ export default function APAgingPageV2() {
     }
   };
 
-  if (error) {
-    return (
-      <AppShell
-        sidebar={{
-          brand: <MonomiBrand />,
-          sections: v2SidebarSections,
-          footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-        }}
-        topbar={{}}
-      >
-        <PageContainer>
-          <EmptyState
-            icon={<BookOpen className="h-12 w-12" />}
-            title={t('accounting.apAging.errorTitle')}
-            description={error instanceof Error ? error.message : t('accounting.apAging.errorDesc')}
-            action={<Button onClick={() => refetch()}>{t('accounting.apAging.retry')}</Button>}
-          />
-        </PageContainer>
-      </AppShell>
-    );
-  }
-
   return (
     <AppShell
       sidebar={{
@@ -210,155 +188,166 @@ export default function APAgingPageV2() {
           }
         />
 
-        <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {isLoading
-              ? BUCKETS.map((b) => (
-                  <Skeleton key={b.key} className="h-[108px] rounded-lg" />
-                ))
-              : BUCKETS.map((b) => (
-                  <StatCard
-                    key={b.key}
-                    label={t(b.labelKey, b.labelDefault)}
-                    value={
-                      <MoneyDisplay
-                        amount={summary[b.key]}
-                        className={cn(TONE_CLASS[b.tone])}
-                      />
-                    }
-                    sublabel={
-                      summary.total > 0
-                        ? `${((summary[b.key] / summary.total) * 100).toFixed(1)}%`
-                        : '—'
-                    }
-                  />
-                ))}
-          </div>
-        </section>
-
-        <GlassPanel surface="glass" padding="none" className="overflow-hidden">
-          <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
-            <div>
-              <div className="text-sm font-display font-semibold text-text-primary">
-                {t('accounting.apAging.panelTitle')}
-              </div>
-              <div className="text-xs text-text-tertiary mt-0.5">
-                {t('accounting.apAging.categoryCount', { count: matrix.length })}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
-                {t('accounting.apAging.totalPayable')}
-              </div>
-              <div className="mt-1">
-                <MoneyDisplay amount={summary.total} className="text-text-primary text-base font-semibold" />
-              </div>
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="p-5 space-y-2">
-              <Skeleton className="h-10 rounded" />
-              <Skeleton className="h-10 rounded" />
-              <Skeleton className="h-10 rounded" />
-              <Skeleton className="h-10 rounded" />
-            </div>
-          ) : matrix.length === 0 ? (
-            <EmptyState
-              icon={<BookOpen />}
-              title={t('accounting.apAging.noPayables')}
-              description={t('accounting.apAging.noPayablesDesc')}
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-max w-full font-body text-sm">
-                <thead className="border-b border-border-subtle">
-                  <tr>
-                    <th className="text-left text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary px-4 py-3">
-                      Kategori
-                    </th>
-                    {BUCKETS.map((b) => (
-                      <th
+        {error ? (
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12" />}
+            title={t('accounting.apAging.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.apAging.errorDesc')}
+            action={<Button onClick={() => refetch()}>{t('accounting.apAging.retry')}</Button>}
+          />
+        ) : (
+          <>
+            <section className="mb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {isLoading
+                  ? BUCKETS.map((b) => (
+                      <Skeleton key={b.key} className="h-[108px] rounded-lg" />
+                    ))
+                  : BUCKETS.map((b) => (
+                      <StatCard
                         key={b.key}
-                        className={cn(
-                          'text-right text-[10px] uppercase tracking-[0.14em] font-medium px-4 py-3',
-                          b.tone === 'danger'
-                            ? 'text-danger'
-                            : b.tone === 'warning'
-                            ? 'text-warning'
-                            : 'text-text-tertiary',
-                        )}
-                      >
-                        {t(b.labelKey, b.labelDefault)}
-                      </th>
+                        label={t(b.labelKey, b.labelDefault)}
+                        value={
+                          <MoneyDisplay
+                            amount={summary[b.key]}
+                            className={cn(TONE_CLASS[b.tone])}
+                          />
+                        }
+                        sublabel={
+                          summary.total > 0
+                            ? `${((summary[b.key] / summary.total) * 100).toFixed(1)}%`
+                            : '—'
+                        }
+                      />
                     ))}
-                    <th className="text-right text-[10px] uppercase tracking-[0.14em] font-medium text-text-secondary px-4 py-3">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {matrix.map((row) => (
-                    <tr
-                      key={row.categoryCode}
-                      className="border-b border-border-subtle/60 last:border-0 hover:bg-accent-navy-soft transition-colors"
-                    >
-                      <td className="px-4 py-3.5 text-text-primary">{row.categoryName}</td>
-                      {BUCKETS.map((b) => {
-                        const v = row.buckets[b.key];
-                        return (
+              </div>
+            </section>
+
+            <GlassPanel surface="glass" padding="none" className="overflow-hidden">
+              <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-display font-semibold text-text-primary">
+                    {t('accounting.apAging.panelTitle')}
+                  </div>
+                  <div className="text-xs text-text-tertiary mt-0.5">
+                    {t('accounting.apAging.categoryCount', { count: matrix.length })}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">
+                    {t('accounting.apAging.totalPayable')}
+                  </div>
+                  <div className="mt-1">
+                    <MoneyDisplay amount={summary.total} className="text-text-primary text-base font-semibold" />
+                  </div>
+                </div>
+              </div>
+
+              {isLoading ? (
+                <div className="p-5 space-y-2">
+                  <Skeleton className="h-10 rounded" />
+                  <Skeleton className="h-10 rounded" />
+                  <Skeleton className="h-10 rounded" />
+                  <Skeleton className="h-10 rounded" />
+                </div>
+              ) : matrix.length === 0 ? (
+                <EmptyState
+                  icon={<BookOpen />}
+                  title={t('accounting.apAging.noPayables')}
+                  description={t('accounting.apAging.noPayablesDesc')}
+                />
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-max w-full font-body text-sm">
+                    <thead className="border-b border-border-subtle">
+                      <tr>
+                        <th className="text-left text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary px-4 py-3">
+                          Kategori
+                        </th>
+                        {BUCKETS.map((b) => (
+                          <th
+                            key={b.key}
+                            className={cn(
+                              'text-right text-[10px] uppercase tracking-[0.14em] font-medium px-4 py-3',
+                              b.tone === 'danger'
+                                ? 'text-danger'
+                                : b.tone === 'warning'
+                                ? 'text-warning'
+                                : 'text-text-tertiary',
+                            )}
+                          >
+                            {t(b.labelKey, b.labelDefault)}
+                          </th>
+                        ))}
+                        <th className="text-right text-[10px] uppercase tracking-[0.14em] font-medium text-text-secondary px-4 py-3">
+                          Total
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {matrix.map((row) => (
+                        <tr
+                          key={row.categoryCode}
+                          className="border-b border-border-subtle/60 last:border-0 hover:bg-accent-navy-soft transition-colors"
+                        >
+                          <td className="px-4 py-3.5 text-text-primary">{row.categoryName}</td>
+                          {BUCKETS.map((b) => {
+                            const v = row.buckets[b.key];
+                            return (
+                              <td
+                                key={b.key}
+                                className={cn(
+                                  'px-4 py-3.5 text-right',
+                                  v === 0
+                                    ? 'text-text-tertiary'
+                                    : b.tone === 'danger'
+                                    ? 'text-danger'
+                                    : b.tone === 'warning'
+                                    ? 'text-warning'
+                                    : 'text-text-secondary',
+                                )}
+                              >
+                                {v === 0 ? '—' : <MoneyDisplay amount={v} />}
+                              </td>
+                            );
+                          })}
+                          <td className="px-4 py-3.5 text-right text-text-primary font-medium">
+                            <MoneyDisplay amount={row.total} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="border-t-2 border-border-default bg-bg-sunken">
+                      <tr>
+                        <td className="px-4 py-3.5 text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">
+                          Total
+                        </td>
+                        {BUCKETS.map((b) => (
                           <td
                             key={b.key}
                             className={cn(
-                              'px-4 py-3.5 text-right',
-                              v === 0
-                                ? 'text-text-tertiary'
-                                : b.tone === 'danger'
+                              'px-4 py-3.5 text-right font-medium',
+                              b.tone === 'danger'
                                 ? 'text-danger'
                                 : b.tone === 'warning'
                                 ? 'text-warning'
                                 : 'text-text-secondary',
                             )}
                           >
-                            {v === 0 ? '—' : <MoneyDisplay amount={v} />}
+                            <MoneyDisplay amount={summary[b.key]} />
                           </td>
-                        );
-                      })}
-                      <td className="px-4 py-3.5 text-right text-text-primary font-medium">
-                        <MoneyDisplay amount={row.total} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="border-t-2 border-border-default bg-bg-sunken">
-                  <tr>
-                    <td className="px-4 py-3.5 text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">
-                      Total
-                    </td>
-                    {BUCKETS.map((b) => (
-                      <td
-                        key={b.key}
-                        className={cn(
-                          'px-4 py-3.5 text-right font-medium',
-                          b.tone === 'danger'
-                            ? 'text-danger'
-                            : b.tone === 'warning'
-                            ? 'text-warning'
-                            : 'text-text-secondary',
-                        )}
-                      >
-                        <MoneyDisplay amount={summary[b.key]} />
-                      </td>
-                    ))}
-                    <td className="px-4 py-3.5 text-right text-text-primary font-semibold">
-                      <MoneyDisplay amount={summary.total} />
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-        </GlassPanel>
+                        ))}
+                        <td className="px-4 py-3.5 text-right text-text-primary font-semibold">
+                          <MoneyDisplay amount={summary.total} />
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </GlassPanel>
+          </>
+        )}
       </PageContainer>
     </AppShell>
   );

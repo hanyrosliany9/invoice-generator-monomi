@@ -190,28 +190,6 @@ export default function AccountsPayablePageV2() {
     }
   };
 
-  if (error) {
-    return (
-      <AppShell
-        sidebar={{
-          brand: <MonomiBrand />,
-          sections: v2SidebarSections,
-          footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-        }}
-        topbar={{}}
-      >
-        <PageContainer>
-          <EmptyState
-            icon={<Wallet className="h-12 w-12" />}
-            title={t('accounting.accountsPayable.errorTitle')}
-            description={error instanceof Error ? error.message : t('accounting.accountsPayable.errorDesc')}
-            action={<Button onClick={() => refetch()}>{t('accounting.accountsPayable.retry')}</Button>}
-          />
-        </PageContainer>
-      </AppShell>
-    );
-  }
-
   return (
     <AppShell
       sidebar={{
@@ -250,118 +228,129 @@ export default function AccountsPayablePageV2() {
           }
         />
 
-        <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-[108px] rounded-lg" />
-                <Skeleton className="h-[108px] rounded-lg" />
-                <Skeleton className="h-[108px] rounded-lg" />
-                <Skeleton className="h-[108px] rounded-lg" />
-              </>
-            ) : (
-              <>
-                <StatCard
-                  label={t('accounting.accountsPayable.statTotalPayable', 'Total Payable')}
-                  value={<MoneyDisplay amount={stats.total} />}
-                  sublabel={t('accounting.accountsPayable.statTotalPayableSub', 'open obligations as of reporting date')}
-                />
-                <StatCard
-                  label={t('accounting.accountsPayable.statCurrent', 'Not Yet Due')}
-                  value={<MoneyDisplay amount={stats.current} />}
-                  sublabel={t('accounting.accountsPayable.statCurrentSub', 'still within payment period')}
-                />
-                <StatCard
-                  label={t('accounting.accountsPayable.statOverdue', 'Overdue')}
-                  value={<MoneyDisplay amount={stats.overdue} className="text-danger" />}
-                  sublabel={t('accounting.accountsPayable.statOverdueSub', 'requires immediate settlement')}
-                />
-                <StatCard
-                  label={t('accounting.accountsPayable.statOpenItems', 'Open Items')}
-                  value={stats.openItems}
-                  sublabel={t('accounting.accountsPayable.statOpenItemsSub', 'journal entries with a balance')}
-                />
-              </>
-            )}
-          </div>
-        </section>
+        {error ? (
+          <EmptyState
+            icon={<Wallet className="h-12 w-12" />}
+            title={t('accounting.accountsPayable.errorTitle')}
+            description={error instanceof Error ? error.message : t('accounting.accountsPayable.errorDesc')}
+            action={<Button onClick={() => refetch()}>{t('accounting.accountsPayable.retry')}</Button>}
+          />
+        ) : (
+          <>
+            <section className="mb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {isLoading ? (
+                  <>
+                    <Skeleton className="h-[108px] rounded-lg" />
+                    <Skeleton className="h-[108px] rounded-lg" />
+                    <Skeleton className="h-[108px] rounded-lg" />
+                    <Skeleton className="h-[108px] rounded-lg" />
+                  </>
+                ) : (
+                  <>
+                    <StatCard
+                      label={t('accounting.accountsPayable.statTotalPayable', 'Total Payable')}
+                      value={<MoneyDisplay amount={stats.total} />}
+                      sublabel={t('accounting.accountsPayable.statTotalPayableSub', 'open obligations as of reporting date')}
+                    />
+                    <StatCard
+                      label={t('accounting.accountsPayable.statCurrent', 'Not Yet Due')}
+                      value={<MoneyDisplay amount={stats.current} />}
+                      sublabel={t('accounting.accountsPayable.statCurrentSub', 'still within payment period')}
+                    />
+                    <StatCard
+                      label={t('accounting.accountsPayable.statOverdue', 'Overdue')}
+                      value={<MoneyDisplay amount={stats.overdue} className="text-danger" />}
+                      sublabel={t('accounting.accountsPayable.statOverdueSub', 'requires immediate settlement')}
+                    />
+                    <StatCard
+                      label={t('accounting.accountsPayable.statOpenItems', 'Open Items')}
+                      value={stats.openItems}
+                      sublabel={t('accounting.accountsPayable.statOpenItemsSub', 'journal entries with a balance')}
+                    />
+                  </>
+                )}
+              </div>
+            </section>
 
-        <GlassPanel surface="glass" padding="none" className="overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 border-b border-border-subtle">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
-              <Input
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder={t('accounting.accountsPayable.searchPlaceholder', 'Search by reference, vendor or description...')}
-                className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
-              />
-            </div>
+            <GlassPanel surface="glass" padding="none" className="overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 border-b border-border-subtle">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
+                  <Input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder={t('accounting.accountsPayable.searchPlaceholder', 'Search by reference, vendor or description...')}
+                    className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"
+                  />
+                </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <Select value={bucketFilter} onValueChange={setBucketFilter}>
-                <SelectTrigger
-                  size="sm"
-                  className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]"
-                >
-                  <SelectValue placeholder={t('accounting.accountsPayable.filterAgingLabel', 'Aging')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('accounting.accountsPayable.filterAllAging', 'All Ages')}</SelectItem>
-                  {Object.entries(BUCKET_ID_KEY).map(([k, tKey]) => (
-                    <SelectItem key={k} value={k}>{t(tKey, BUCKET_ID_DEFAULT[k])}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Select value={bucketFilter} onValueChange={setBucketFilter}>
+                    <SelectTrigger
+                      size="sm"
+                      className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px]"
+                    >
+                      <SelectValue placeholder={t('accounting.accountsPayable.filterAgingLabel', 'Aging')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('accounting.accountsPayable.filterAllAging', 'All Ages')}</SelectItem>
+                      {Object.entries(BUCKET_ID_KEY).map(([k, tKey]) => (
+                        <SelectItem key={k} value={k}>{t(tKey, BUCKET_ID_DEFAULT[k])}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="text-text-tertiary hover:text-text-primary"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Reset
-                </Button>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetFilters}
+                      className="text-text-tertiary hover:text-text-primary"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Reset
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {isLoading ? (
+                <div className="p-5 space-y-2">
+                  <Skeleton className="h-10 rounded" />
+                  <Skeleton className="h-10 rounded" />
+                  <Skeleton className="h-10 rounded" />
+                  <Skeleton className="h-10 rounded" />
+                  <Skeleton className="h-10 rounded" />
+                </div>
+              ) : filtered.length === 0 && Math.abs(stats.reconciling) < 1 ? (
+                <EmptyState
+                  icon={<BookOpen />}
+                  title={hasActiveFilters ? t('accounting.accountsPayable.noMatch') : t('accounting.accountsPayable.noPayables')}
+                  description={
+                    hasActiveFilters
+                      ? t('accounting.accountsPayable.noMatchDesc')
+                      : t('accounting.accountsPayable.noPayablesDesc')
+                  }
+                  action={
+                    hasActiveFilters && (
+                      <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.accountsPayable.resetFilter')}</Button>
+                    )
+                  }
+                />
+              ) : (
+                <div className="px-1 pb-1">
+                  <APTable
+                    rows={filtered}
+                    total={stats.total}
+                    reconciling={hasActiveFilters ? 0 : stats.reconciling}
+                    onRowClick={() => navigate('/accounting/journal-entries')}
+                  />
+                </div>
               )}
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className="p-5 space-y-2">
-              <Skeleton className="h-10 rounded" />
-              <Skeleton className="h-10 rounded" />
-              <Skeleton className="h-10 rounded" />
-              <Skeleton className="h-10 rounded" />
-              <Skeleton className="h-10 rounded" />
-            </div>
-          ) : filtered.length === 0 && Math.abs(stats.reconciling) < 1 ? (
-            <EmptyState
-              icon={<BookOpen />}
-              title={hasActiveFilters ? t('accounting.accountsPayable.noMatch') : t('accounting.accountsPayable.noPayables')}
-              description={
-                hasActiveFilters
-                  ? t('accounting.accountsPayable.noMatchDesc')
-                  : t('accounting.accountsPayable.noPayablesDesc')
-              }
-              action={
-                hasActiveFilters && (
-                  <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.accountsPayable.resetFilter')}</Button>
-                )
-              }
-            />
-          ) : (
-            <div className="px-1 pb-1">
-              <APTable
-                rows={filtered}
-                total={stats.total}
-                reconciling={hasActiveFilters ? 0 : stats.reconciling}
-                onRowClick={() => navigate('/accounting/journal-entries')}
-              />
-            </div>
-          )}
-        </GlassPanel>
+            </GlassPanel>
+          </>
+        )}
       </PageContainer>
     </AppShell>
   );

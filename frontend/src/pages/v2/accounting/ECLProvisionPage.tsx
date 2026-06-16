@@ -174,19 +174,6 @@ export default function ECLProvisionPageV2() {
 
   const provisions = summary?.provisions ?? [];
 
-  if (error) {
-    return (
-      <PageShell user={user}>
-        <EmptyState
-          icon={<AlertTriangle className="h-12 w-12" />}
-          title={t('accounting.eclProvision.errorTitle', 'Unable to load ECL data')}
-          description={error instanceof Error ? error.message : t('accounting.eclProvision.errorGeneric', 'An error occurred')}
-          action={<Button onClick={() => refetch()}>{t('accounting.eclProvision.retry', 'Try Again')}</Button>}
-        />
-      </PageShell>
-    );
-  }
-
   return (
     <PageShell user={user}>
       <PageHeader
@@ -362,7 +349,14 @@ export default function ECLProvisionPageV2() {
         </div>
 
         {/* Table */}
-        {isLoading ? (
+        {error ? (
+          <EmptyState
+            icon={<AlertTriangle className="h-12 w-12" />}
+            title={t('accounting.eclProvision.errorTitle', 'Unable to load ECL data')}
+            description={error instanceof Error ? error.message : t('accounting.eclProvision.errorGeneric', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('accounting.eclProvision.retry', 'Try Again')}</Button>}
+          />
+        ) : isLoading ? (
           <div className="p-5 space-y-2">
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
           </div>

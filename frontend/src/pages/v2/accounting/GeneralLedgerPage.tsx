@@ -158,28 +158,6 @@ export default function GeneralLedgerPageV2() {
     }
   };
 
-  if (error) {
-    return (
-      <AppShell
-        sidebar={{
-          brand: <MonomiBrand />,
-          sections: v2SidebarSections,
-          footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-        }}
-        topbar={{}}
-      >
-        <PageContainer>
-          <EmptyState
-            icon={<BookOpen className="h-12 w-12" />}
-            title={t('accounting.generalLedger.errorTitle')}
-            description={error instanceof Error ? error.message : t('accounting.generalLedger.errorGeneric')}
-            action={<Button onClick={() => refetch()}>{t('accounting.generalLedger.retry')}</Button>}
-          />
-        </PageContainer>
-      </AppShell>
-    );
-  }
-
   return (
     <AppShell
       sidebar={{
@@ -338,7 +316,14 @@ export default function GeneralLedgerPageV2() {
           </div>
 
           {/* Table */}
-          {isLoading ? (
+          {error ? (
+            <EmptyState
+              icon={<BookOpen className="h-12 w-12" />}
+              title={t('accounting.generalLedger.errorTitle')}
+              description={error instanceof Error ? error.message : t('accounting.generalLedger.errorGeneric')}
+              action={<Button onClick={() => refetch()}>{t('accounting.generalLedger.retry')}</Button>}
+            />
+          ) : isLoading ? (
             <div className="p-5 space-y-2">
               <Skeleton className="h-10 rounded" />
               <Skeleton className="h-10 rounded" />

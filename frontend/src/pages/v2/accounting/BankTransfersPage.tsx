@@ -315,19 +315,6 @@ export default function BankTransfersPage() {
     });
   };
 
-  if (error) {
-    return (
-      <PageShell user={user}>
-        <EmptyState
-          icon={<BookOpen className="h-12 w-12" />}
-          title={t('accounting.bankTransfers.errorTitle', 'Cannot load bank transfers')}
-          description={error instanceof Error ? error.message : t('accounting.bankTransfers.errorGeneric', 'An error occurred')}
-          action={<Button onClick={() => refetch()}>{t('accounting.bankTransfers.retry', 'Try Again')}</Button>}
-        />
-      </PageShell>
-    );
-  }
-
   return (
     <PageShell user={user}>
       <PageHeader
@@ -423,7 +410,14 @@ export default function BankTransfersPage() {
         </div>
 
         {/* Table */}
-        {isLoading ? (
+        {error ? (
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12" />}
+            title={t('accounting.bankTransfers.errorTitle', 'Cannot load bank transfers')}
+            description={error instanceof Error ? error.message : t('accounting.bankTransfers.errorGeneric', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('accounting.bankTransfers.retry', 'Try Again')}</Button>}
+          />
+        ) : isLoading ? (
           <div className="p-5 space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
           </div>

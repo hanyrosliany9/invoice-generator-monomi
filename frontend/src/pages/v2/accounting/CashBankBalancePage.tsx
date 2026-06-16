@@ -268,19 +268,6 @@ export default function CashBankBalancePage() {
       + `&startDate=${localIso(start)}&endDate=${localIso(end)}`;
   };
 
-  if (error) {
-    return (
-      <PageShell user={user}>
-        <EmptyState
-          icon={<BookOpen className="h-12 w-12" />}
-          title={t('accounting.cashBankBalance.errorTitle', 'Cannot load cash & bank balance')}
-          description={error instanceof Error ? error.message : t('accounting.cashBankBalance.errorGeneric', 'An error occurred')}
-          action={<Button onClick={() => refetch()}>{t('accounting.cashBankBalance.retry', 'Try Again')}</Button>}
-        />
-      </PageShell>
-    );
-  }
-
   const hasData = !isLoading && periods.length > 0 && !!selected;
 
   const handleExportPDF = async () => {
@@ -335,6 +322,15 @@ export default function CashBankBalancePage() {
         }
       />
 
+      {error ? (
+        <EmptyState
+          icon={<BookOpen className="h-12 w-12" />}
+          title={t('accounting.cashBankBalance.errorTitle', 'Cannot load cash & bank balance')}
+          description={error instanceof Error ? error.message : t('accounting.cashBankBalance.errorGeneric', 'An error occurred')}
+          action={<Button onClick={() => refetch()}>{t('accounting.cashBankBalance.retry', 'Try Again')}</Button>}
+        />
+      ) : (
+      <>
       {/* ---- Period selector + provenance bar ------------------------------ */}
       {/*  Answers the finance question "WHICH data am I looking at?" up front: */}
       {/*  the period, the exact date range it covers, the source, and when it  */}
@@ -571,6 +567,8 @@ export default function CashBankBalancePage() {
             </table>
           </div>
         </GlassPanel>
+      )}
+      </>
       )}
 
       {/* Create dialog */}

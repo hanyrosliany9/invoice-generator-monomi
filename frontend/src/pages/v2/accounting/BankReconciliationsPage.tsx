@@ -316,19 +316,6 @@ export default function BankReconciliationsPage() {
     });
   };
 
-  if (error) {
-    return (
-      <PageShell user={user}>
-        <EmptyState
-          icon={<BookOpen className="h-12 w-12" />}
-          title={t('accounting.bankReconciliations.errorTitle', 'Cannot load bank reconciliations')}
-          description={error instanceof Error ? error.message : t('accounting.bankReconciliations.errorDesc', 'An error occurred')}
-          action={<Button onClick={() => refetch()}>{t('accounting.bankReconciliations.retry', 'Try Again')}</Button>}
-        />
-      </PageShell>
-    );
-  }
-
   return (
     <PageShell user={user}>
       <PageHeader
@@ -438,7 +425,14 @@ export default function BankReconciliationsPage() {
         </div>
 
         {/* Table */}
-        {isLoading ? (
+        {error ? (
+          <EmptyState
+            icon={<BookOpen className="h-12 w-12" />}
+            title={t('accounting.bankReconciliations.errorTitle', 'Cannot load bank reconciliations')}
+            description={error instanceof Error ? error.message : t('accounting.bankReconciliations.errorDesc', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('accounting.bankReconciliations.retry', 'Try Again')}</Button>}
+          />
+        ) : isLoading ? (
           <div className="p-5 space-y-2">
             {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}
           </div>

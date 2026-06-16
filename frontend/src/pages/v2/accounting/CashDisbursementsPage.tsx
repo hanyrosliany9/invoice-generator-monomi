@@ -253,19 +253,6 @@ export default function CashDisbursementsPageV2() {
     setAccountFilter('all'); setStartDate(undefined); setEndDate(undefined);
   };
 
-  if (error) {
-    return (
-      <PageShell user={user}>
-        <EmptyState
-          icon={<ArrowUpRight className="h-12 w-12" />}
-          title={t('accounting.cashDisbursements.errorTitle', 'Cannot load cash disbursements')}
-          description={error instanceof Error ? error.message : t('accounting.cashDisbursements.errorDesc', 'An error occurred')}
-          action={<Button onClick={() => refetch()}>{t('accounting.cashDisbursements.retry', 'Try Again')}</Button>}
-        />
-      </PageShell>
-    );
-  }
-
   return (
     <PageShell user={user}>
       <PageHeader
@@ -416,7 +403,14 @@ export default function CashDisbursementsPageV2() {
           </div>
         </div>
 
-        {isLoading ? (
+        {error ? (
+          <EmptyState
+            icon={<ArrowUpRight className="h-12 w-12" />}
+            title={t('accounting.cashDisbursements.errorTitle', 'Cannot load cash disbursements')}
+            description={error instanceof Error ? error.message : t('accounting.cashDisbursements.errorDesc', 'An error occurred')}
+            action={<Button onClick={() => refetch()}>{t('accounting.cashDisbursements.retry', 'Try Again')}</Button>}
+          />
+        ) : isLoading ? (
           <div className="p-5 space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-10 rounded" />
