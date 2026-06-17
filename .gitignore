@@ -214,6 +214,8 @@ backend/update-*.js
 frontend/public/*
 !frontend/public/favicon.png
 !frontend/public/logo.png
+!frontend/public/downloads/
+!frontend/public/downloads/monomi.apk
 !backend/src/modules/pdf/assets/company-logo.png
 .aider*
 backups/

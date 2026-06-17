@@ -25,6 +25,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Smartphone,
 } from 'lucide-react';
 
 import { AppShell } from '@/components/monomi/AppShell';
@@ -72,7 +73,8 @@ type SectionId =
   | 'banks'
   | 'invoicing'
   | 'notifications'
-  | 'backup';
+  | 'backup'
+  | 'mobile';
 
 interface SectionMeta {
   id: SectionId;
@@ -1422,6 +1424,55 @@ const BackupSection = ({ data }: { data: SystemSettings | undefined }) => {
 // ──────────────────────────────────────────────────────────────
 
 // ──────────────────────────────────────────────────────────────
+// Mobile App Section — download the Android APK
+// ──────────────────────────────────────────────────────────────
+function MobileAppSection() {
+  const { t } = useTranslation();
+  return (
+    <GlassPanel surface="glass" padding="lg" className="space-y-6">
+      <SectionTitle
+        icon={<Smartphone />}
+        title={t('settingsPage.mobile.title', 'Mobile App')}
+        description={t('settingsPage.mobile.desc', 'Install the Monomi app on your Android phone for on-the-go access.')}
+      />
+
+      <div className="flex items-start gap-4 rounded-lg border border-border-subtle bg-bg-sunken p-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-navy-wash">
+          <Smartphone className="h-6 w-6 text-accent-navy" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-text-primary">Monomi Android</p>
+          <p className="mt-0.5 text-xs text-text-secondary">
+            {t('settingsPage.mobile.version', 'Version 1.0.0')} &middot; APK &middot; ~6 MB
+          </p>
+          <p className="mt-2 text-xs text-text-tertiary">
+            {t('settingsPage.mobile.installNote', 'Enable "Install from unknown sources" on your phone before installing.')}
+          </p>
+        </div>
+        <a href="/downloads/monomi.apk" download="monomi.apk">
+          <Button size="sm" className="shrink-0 gap-2">
+            <Download className="h-4 w-4" />
+            {t('settingsPage.mobile.download', 'Download APK')}
+          </Button>
+        </a>
+      </div>
+
+      <div className="space-y-2 text-xs text-text-tertiary">
+        <p className="font-medium text-text-secondary">
+          {t('settingsPage.mobile.howToInstall', 'How to install:')}
+        </p>
+        <ol className="list-decimal list-inside space-y-1">
+          <li>{t('settingsPage.mobile.step1', 'Download the APK file above')}</li>
+          <li>{t('settingsPage.mobile.step2', 'Open your phone\'s Settings → Security → Enable "Install unknown apps"')}</li>
+          <li>{t('settingsPage.mobile.step3', 'Open the downloaded APK file and tap Install')}</li>
+          <li>{t('settingsPage.mobile.step4', 'Launch Monomi and log in with your account')}</li>
+        </ol>
+      </div>
+    </GlassPanel>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
 // Dirty-state bridge — lets each sub-section form tell the
 // orchestrator "I have unsaved changes" so the nav can warn
 // before switching away. A simple ref is enough; we never need
@@ -1490,6 +1541,12 @@ export default function SettingsPageV2() {
       description: t('settingsPage.nav.backupDesc', 'Auto backup and manual download'),
       icon: <DatabaseBackup className="h-4 w-4" />,
     },
+    {
+      id: 'mobile',
+      label: t('settingsPage.nav.mobile', 'Mobile App'),
+      description: t('settingsPage.nav.mobileDesc', 'Download the Android app'),
+      icon: <Smartphone className="h-4 w-4" />,
+    },
   ], [t]);
 
   // Three queries, fired in parallel. Each section consumes only what
@@ -1516,7 +1573,7 @@ export default function SettingsPageV2() {
   const visibleSections = useMemo(() => {
     if (canManageSettings()) return SECTIONS;
     return SECTIONS.filter((s) =>
-      ['profile', 'security', 'notifications'].includes(s.id),
+      ['profile', 'security', 'notifications', 'mobile'].includes(s.id),
     );
   }, [canManageSettings]);
 
@@ -1555,6 +1612,8 @@ export default function SettingsPageV2() {
       case 'backup':
         if (isSystemLoading) return <SectionSkeleton rows={3} />;
         return <BackupSection data={systemQuery.data} />;
+      case 'mobile':
+        return <MobileAppSection />;
       default:
         return null;
     }
