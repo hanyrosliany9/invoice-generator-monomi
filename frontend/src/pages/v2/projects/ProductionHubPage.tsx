@@ -7,6 +7,7 @@ import {
   Share2, Copy, RefreshCw, Trash2, Check, Link as LinkIcon,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { toast } from 'sonner';
 import { apiClient } from '@/config/api';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -28,6 +29,19 @@ import { schedulesApi } from '@/services/schedules';
 import { decksApi } from '@/services/decks';
 import { callSheetsApi } from '@/services/callSheets';
 import { mediaCollabService } from '@/services/media-collab';
+
+/* ------------------------------------------------------------------ */
+/*  Mobile tab config                                                   */
+/* ------------------------------------------------------------------ */
+type MobileTab = 'callsheets' | 'schedule' | 'shots' | 'decks' | 'media';
+
+const MOBILE_TABS: { key: MobileTab; label: string; icon: React.ElementType; accent: string }[] = [
+  { key: 'callsheets', label: 'Call',     icon: FileText,      accent: 'text-amber-500' },
+  { key: 'schedule',   label: 'Schedule', icon: CalendarRange, accent: 'text-emerald-500' },
+  { key: 'shots',      label: 'Shots',    icon: ListChecks,    accent: 'text-blue-500' },
+  { key: 'decks',      label: 'Decks',    icon: Presentation,  accent: 'text-violet-500' },
+  { key: 'media',      label: 'Media',    icon: Images,        accent: 'text-rose-500' },
+];
 
 /* ------------------------------------------------------------------ */
 /*  One tool card — icon, title, count badge, list of items + create   */
@@ -110,7 +124,7 @@ function ItemRow({
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center justify-between gap-3 py-2.5 px-2 -mx-2 text-left rounded-md hover:bg-bg-sunken/50 transition-colors group"
+      className="w-full flex items-center justify-between gap-3 py-3 sm:py-2.5 px-2 -mx-2 text-left rounded-md hover:bg-bg-sunken/50 active:bg-bg-sunken/70 transition-colors group min-h-[48px] sm:min-h-0"
     >
       <div className="min-w-0">
         <div className="text-sm text-text-primary truncate">{primary}</div>
@@ -127,6 +141,14 @@ function ItemRow({
 /* ================================================================== */
 /*  Page                                                               */
 /* ================================================================== */
+function isToday(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+}
+
 export default function ProductionHubPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -134,6 +156,8 @@ export default function ProductionHubPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
+  const [mobileTab, setMobileTab] = useState<MobileTab>('callsheets');
+  const isMobile = useIsMobile();
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['project', id],
@@ -323,165 +347,178 @@ export default function ProductionHubPage() {
           </div>
         </GlassPanel>
 
-        {/* 2-column grid for tool cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Tool cards — desktop 2-col grid; mobile single active section */}
+        <div className={cn(!isMobile && 'grid grid-cols-1 lg:grid-cols-2 gap-6', isMobile && 'pb-20 space-y-4')}>
 
-          {/* DECK */}
-          <ToolCard
-            icon={<Presentation className="h-5 w-5 text-violet-500" />}
-            title={t('productionHub.decks', 'Creative Decks')}
-            description={t('productionHub.decksDesc', 'Mood boards, concepts, and creative briefs for client approval.')}
-            count={decks.length}
-            loading={deckLoading}
-            onNew={() => navigate(`/decks?projectId=${id}&from=${fromParam}`)}
-            newLabel={t('productionHub.newDeck', 'New Deck')}
-            accentClass="bg-violet-500/10 border border-violet-500/20"
-          >
-            {decks.length === 0 ? (
-              <EmptyState
-                icon={<Presentation className="h-8 w-8" />}
-                title={t('productionHub.noDecks', 'No decks yet')}
-                description={t('productionHub.noDecksDesc', 'Start with a mood board or concept deck.')}
-              />
-            ) : (
-              <ul>
-                {decks.map((deck) => (
-                  <ItemRow
-                    key={deck.id}
-                    primary={deck.title}
-                    secondary={deck.description ?? undefined}
-                    meta={
-                      <>
-                        <Badge variant="outline" className="text-[10px] capitalize">{deck.status?.toLowerCase()}</Badge>
-                        <DateDisplay date={deck.updatedAt} />
-                      </>
-                    }
-                    onClick={() => navigate(`/decks/${deck.id}?from=${fromParam}`)}
-                  />
-                ))}
-              </ul>
-            )}
-          </ToolCard>
-
-          {/* SHOT LIST */}
-          <ToolCard
-            icon={<ListChecks className="h-5 w-5 text-blue-500" />}
-            title={t('productionHub.shotLists', 'Shot Lists')}
-            description={t('productionHub.shotListsDesc', 'Scene-by-scene shot breakdown for the photography team.')}
-            count={shotLists.length}
-            loading={slLoading}
-            onNew={() => navigate(`/shot-lists?projectId=${id}&from=${fromParam}`)}
-            newLabel={t('productionHub.newShotList', 'New Shot List')}
-            accentClass="bg-blue-500/10 border border-blue-500/20"
-          >
-            {shotLists.length === 0 ? (
-              <EmptyState
-                icon={<ListChecks className="h-8 w-8" />}
-                title={t('productionHub.noShotLists', 'No shot lists yet')}
-                description={t('productionHub.noShotListsDesc', 'Plan every scene and setup before shoot day.')}
-              />
-            ) : (
-              <ul>
-                {shotLists.map((sl) => {
-                  const shotCount = (sl.scenes ?? []).reduce((acc: number, sc: { shots?: unknown[] }) => acc + (sc.shots?.length ?? 0), 0);
-                  return (
+          {/* CALL SHEETS — first for shooting-day priority */}
+          <div className={cn(isMobile && mobileTab !== 'callsheets' && 'hidden')}>
+            <ToolCard
+              icon={<FileText className="h-5 w-5 text-amber-500" />}
+              title={t('productionHub.callSheets', 'Call Sheets')}
+              description={t('productionHub.callSheetsDesc', 'Day-of crew briefings with call times, locations, and shot lists.')}
+              count={callSheets.length}
+              loading={csLoading}
+              onNew={() => navigate(`/call-sheets?projectId=${id}&from=${fromParam}`)}
+              newLabel={t('productionHub.newCallSheet', 'New Call Sheet')}
+              accentClass="bg-amber-500/10 border border-amber-500/20"
+            >
+              {callSheets.length === 0 ? (
+                <EmptyState
+                  icon={<FileText className="h-8 w-8" />}
+                  title={t('productionHub.noCallSheets', 'No call sheets yet')}
+                  description={t('productionHub.noCallSheetsDesc', 'Generate from a schedule or create a standalone call sheet.')}
+                />
+              ) : (
+                <ul>
+                  {callSheets.map((cs) => (
                     <ItemRow
-                      key={sl.id}
-                      primary={sl.name}
-                      secondary={sl.description ?? undefined}
+                      key={cs.id}
+                      primary={cs.productionName || t('productionHub.callSheetN', 'Call Sheet #{{n}}', { n: cs.callSheetNumber })}
+                      secondary={new Date(cs.shootDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                       meta={
                         <>
-                          <span className="tabular-nums">{t('productionHub.shots', '{{n}} shots', { n: shotCount })}</span>
-                          <DateDisplay date={sl.updatedAt} />
+                          {isToday(cs.shootDate) && (
+                            <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 text-[10px] py-0">
+                              Today
+                            </Badge>
+                          )}
+                          <span>{t('productionHub.crew', '{{n}} crew', { n: cs._count?.crewCalls ?? 0 })}</span>
+                          <span>{t('productionHub.cast', '{{n}} cast', { n: cs._count?.castCalls ?? 0 })}</span>
                         </>
                       }
-                      onClick={() => navigate(`/shot-lists/${sl.id}?from=${fromParam}`)}
+                      onClick={() => navigate(`/call-sheets/${cs.id}?from=${fromParam}`)}
                     />
-                  );
-                })}
-              </ul>
-            )}
-          </ToolCard>
+                  ))}
+                </ul>
+              )}
+            </ToolCard>
+          </div>
 
           {/* SCHEDULE / RUNDOWN */}
-          <ToolCard
-            icon={<CalendarRange className="h-5 w-5 text-emerald-500" />}
-            title={t('productionHub.schedules', 'Shooting Schedules')}
-            description={t('productionHub.schedulesDesc', 'Day-by-day shoot schedule and strip board for the production team.')}
-            count={schedules.length}
-            loading={schLoading}
-            onNew={() => navigate(`/schedules?projectId=${id}&from=${fromParam}`)}
-            newLabel={t('productionHub.newSchedule', 'New Schedule')}
-            accentClass="bg-emerald-500/10 border border-emerald-500/20"
-          >
-            {schedules.length === 0 ? (
-              <EmptyState
-                icon={<CalendarRange className="h-8 w-8" />}
-                title={t('productionHub.noSchedules', 'No schedules yet')}
-                description={t('productionHub.noSchedulesDesc', 'Build the day-by-day plan and generate call sheets from it.')}
-              />
-            ) : (
-              <ul>
-                {schedules.map((sch) => {
-                  const dayCount = sch._count?.shootDays ?? sch.shootDays?.length ?? 0;
-                  return (
+          <div className={cn(isMobile && mobileTab !== 'schedule' && 'hidden')}>
+            <ToolCard
+              icon={<CalendarRange className="h-5 w-5 text-emerald-500" />}
+              title={t('productionHub.schedules', 'Shooting Schedules')}
+              description={t('productionHub.schedulesDesc', 'Day-by-day shoot schedule and strip board for the production team.')}
+              count={schedules.length}
+              loading={schLoading}
+              onNew={() => navigate(`/schedules?projectId=${id}&from=${fromParam}`)}
+              newLabel={t('productionHub.newSchedule', 'New Schedule')}
+              accentClass="bg-emerald-500/10 border border-emerald-500/20"
+            >
+              {schedules.length === 0 ? (
+                <EmptyState
+                  icon={<CalendarRange className="h-8 w-8" />}
+                  title={t('productionHub.noSchedules', 'No schedules yet')}
+                  description={t('productionHub.noSchedulesDesc', 'Build the day-by-day plan and generate call sheets from it.')}
+                />
+              ) : (
+                <ul>
+                  {schedules.map((sch) => {
+                    const dayCount = sch._count?.shootDays ?? sch.shootDays?.length ?? 0;
+                    return (
+                      <ItemRow
+                        key={sch.id}
+                        primary={sch.name}
+                        secondary={sch.description ?? undefined}
+                        meta={
+                          <>
+                            <span className="tabular-nums">{t('productionHub.days', '{{n}} days', { n: dayCount })}</span>
+                            <DateDisplay date={sch.updatedAt} />
+                          </>
+                        }
+                        onClick={() => navigate(`/schedules/${sch.id}?from=${fromParam}`)}
+                      />
+                    );
+                  })}
+                </ul>
+              )}
+            </ToolCard>
+          </div>
+
+          {/* SHOT LIST */}
+          <div className={cn(isMobile && mobileTab !== 'shots' && 'hidden')}>
+            <ToolCard
+              icon={<ListChecks className="h-5 w-5 text-blue-500" />}
+              title={t('productionHub.shotLists', 'Shot Lists')}
+              description={t('productionHub.shotListsDesc', 'Scene-by-scene shot breakdown for the photography team.')}
+              count={shotLists.length}
+              loading={slLoading}
+              onNew={() => navigate(`/shot-lists?projectId=${id}&from=${fromParam}`)}
+              newLabel={t('productionHub.newShotList', 'New Shot List')}
+              accentClass="bg-blue-500/10 border border-blue-500/20"
+            >
+              {shotLists.length === 0 ? (
+                <EmptyState
+                  icon={<ListChecks className="h-8 w-8" />}
+                  title={t('productionHub.noShotLists', 'No shot lists yet')}
+                  description={t('productionHub.noShotListsDesc', 'Plan every scene and setup before shoot day.')}
+                />
+              ) : (
+                <ul>
+                  {shotLists.map((sl) => {
+                    const shotCount = (sl.scenes ?? []).reduce((acc: number, sc: { shots?: unknown[] }) => acc + (sc.shots?.length ?? 0), 0);
+                    return (
+                      <ItemRow
+                        key={sl.id}
+                        primary={sl.name}
+                        secondary={sl.description ?? undefined}
+                        meta={
+                          <>
+                            <span className="tabular-nums">{t('productionHub.shots', '{{n}} shots', { n: shotCount })}</span>
+                            <DateDisplay date={sl.updatedAt} />
+                          </>
+                        }
+                        onClick={() => navigate(`/shot-lists/${sl.id}?from=${fromParam}`)}
+                      />
+                    );
+                  })}
+                </ul>
+              )}
+            </ToolCard>
+          </div>
+
+          {/* DECK */}
+          <div className={cn(isMobile && mobileTab !== 'decks' && 'hidden')}>
+            <ToolCard
+              icon={<Presentation className="h-5 w-5 text-violet-500" />}
+              title={t('productionHub.decks', 'Creative Decks')}
+              description={t('productionHub.decksDesc', 'Mood boards, concepts, and creative briefs for client approval.')}
+              count={decks.length}
+              loading={deckLoading}
+              onNew={() => navigate(`/decks?projectId=${id}&from=${fromParam}`)}
+              newLabel={t('productionHub.newDeck', 'New Deck')}
+              accentClass="bg-violet-500/10 border border-violet-500/20"
+            >
+              {decks.length === 0 ? (
+                <EmptyState
+                  icon={<Presentation className="h-8 w-8" />}
+                  title={t('productionHub.noDecks', 'No decks yet')}
+                  description={t('productionHub.noDecksDesc', 'Start with a mood board or concept deck.')}
+                />
+              ) : (
+                <ul>
+                  {decks.map((deck) => (
                     <ItemRow
-                      key={sch.id}
-                      primary={sch.name}
-                      secondary={sch.description ?? undefined}
+                      key={deck.id}
+                      primary={deck.title}
+                      secondary={deck.description ?? undefined}
                       meta={
                         <>
-                          <span className="tabular-nums">{t('productionHub.days', '{{n}} days', { n: dayCount })}</span>
-                          <DateDisplay date={sch.updatedAt} />
+                          <Badge variant="outline" className="text-[10px] capitalize">{deck.status?.toLowerCase()}</Badge>
+                          <DateDisplay date={deck.updatedAt} />
                         </>
                       }
-                      onClick={() => navigate(`/schedules/${sch.id}?from=${fromParam}`)}
+                      onClick={() => navigate(`/decks/${deck.id}?from=${fromParam}`)}
                     />
-                  );
-                })}
-              </ul>
-            )}
-          </ToolCard>
+                  ))}
+                </ul>
+              )}
+            </ToolCard>
+          </div>
 
-          {/* CALL SHEETS */}
-          <ToolCard
-            icon={<FileText className="h-5 w-5 text-amber-500" />}
-            title={t('productionHub.callSheets', 'Call Sheets')}
-            description={t('productionHub.callSheetsDesc', 'Day-of crew briefings with call times, locations, and shot lists.')}
-            count={callSheets.length}
-            loading={csLoading}
-            onNew={() => navigate(`/call-sheets?projectId=${id}&from=${fromParam}`)}
-            newLabel={t('productionHub.newCallSheet', 'New Call Sheet')}
-            accentClass="bg-amber-500/10 border border-amber-500/20"
-          >
-            {callSheets.length === 0 ? (
-              <EmptyState
-                icon={<FileText className="h-8 w-8" />}
-                title={t('productionHub.noCallSheets', 'No call sheets yet')}
-                description={t('productionHub.noCallSheetsDesc', 'Generate from a schedule or create a standalone call sheet.')}
-              />
-            ) : (
-              <ul>
-                {callSheets.map((cs) => (
-                  <ItemRow
-                    key={cs.id}
-                    primary={cs.productionName || t('productionHub.callSheetN', 'Call Sheet #{{n}}', { n: cs.callSheetNumber })}
-                    secondary={new Date(cs.shootDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                    meta={
-                      <>
-                        <span>{t('productionHub.crew', '{{n}} crew', { n: cs._count?.crewCalls ?? 0 })}</span>
-                        <span>{t('productionHub.cast', '{{n}} cast', { n: cs._count?.castCalls ?? 0 })}</span>
-                      </>
-                    }
-                    onClick={() => navigate(`/call-sheets/${cs.id}?from=${fromParam}`)}
-                  />
-                ))}
-              </ul>
-            )}
-          </ToolCard>
-
-          {/* MEDIA COLLABORATION — full-width */}
-          <div className="lg:col-span-2">
+          {/* MEDIA COLLABORATION — full-width on desktop, tab on mobile */}
+          <div className={cn('lg:col-span-2', isMobile && mobileTab !== 'media' && 'hidden')}>
             <ToolCard
               icon={<Images className="h-5 w-5 text-rose-500" />}
               title={t('productionHub.mediaProjects', 'Media Collaboration')}
@@ -505,9 +542,9 @@ export default function ProductionHubPage() {
                       key={mp.id}
                       type="button"
                       onClick={() => navigate(`/media-collab/${mp.id}?from=${fromParam}`)}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-border-subtle bg-bg-sunken/30 hover:bg-bg-sunken/60 transition-colors text-left group"
+                      className="flex items-center gap-3 p-3 min-h-[60px] rounded-lg border border-border-subtle bg-bg-sunken/30 hover:bg-bg-sunken/60 active:bg-bg-sunken/80 transition-colors text-left group"
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 border border-rose-500/20">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 border border-rose-500/20">
                         <Images className="h-4 w-4 text-rose-500" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -532,6 +569,32 @@ export default function ProductionHubPage() {
 
         </div>
       </PageContainer>
+
+      {/* ── Mobile bottom tab bar ─────────────────────────────────────── */}
+      {isMobile && (
+        <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-border-subtle bg-bg-base/95 backdrop-blur-sm safe-area-pb">
+          <div className="grid grid-cols-5 h-16">
+            {MOBILE_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = mobileTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setMobileTab(tab.key)}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',
+                    isActive ? `${tab.accent} bg-bg-raised/50` : 'text-text-quaternary',
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5', isActive ? tab.accent : '')} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </AppShell>
   );
 }
