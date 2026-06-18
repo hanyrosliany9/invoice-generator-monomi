@@ -36,12 +36,7 @@ export class GuestController {
   @ApiResponse({ status: 403, description: "Invite revoked" })
   @ApiResponse({ status: 404, description: "Invalid token" })
   async acceptInvite(@Query("token") token: string) {
-    const collaborator =
-      await this.collaboratorsService.acceptGuestInvite(token);
-    return {
-      data: collaborator,
-      message: "Invite accepted successfully",
-    };
+    return this.collaboratorsService.acceptGuestInvite(token);
   }
 
   /**
@@ -87,10 +82,7 @@ export class GuestController {
       orderBy: { uploadedAt: "desc" },
     });
 
-    return {
-      data: assets,
-      message: "Assets retrieved successfully",
-    };
+    return assets;
   }
 
   /**
@@ -117,12 +109,9 @@ export class GuestController {
     }
 
     return {
-      data: {
-        project: collaborator.project,
-        role: collaborator.role,
-        guestName: collaborator.guestName,
-      },
-      message: "Project retrieved successfully",
+      project: collaborator.project,
+      role: collaborator.role,
+      guestName: collaborator.guestName,
     };
   }
 }

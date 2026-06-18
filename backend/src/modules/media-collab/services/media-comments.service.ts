@@ -11,7 +11,22 @@ import { PrismaService } from "../../prisma/prisma.service";
  *  - MediaFrame holds the timecode (timestamp) + assetId
  *  - When a comment is created, we find-or-create the MediaFrame for
  *    that asset + timecode, then attach the comment to it.
+ *
+ * Field mapping note: DB stores `text` + `resolved: Boolean`, but the
+ * frontend FrameComment interface expects `content: string` and
+ * `status: 'OPEN' | 'RESOLVED'`. mapComment() normalises on the way out.
  */
+
+function mapComment(c: any): any {
+  if (!c) return c;
+  const { text, resolved, replies, ...rest } = c;
+  return {
+    ...rest,
+    content: text,
+    status: resolved ? "RESOLVED" : "OPEN",
+    replies: Array.isArray(replies) ? replies.map(mapComment) : replies,
+  };
+}
 @Injectable()
 export class MediaCommentsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -43,7 +58,7 @@ export class MediaCommentsService {
       });
     }
 
-    return this.prisma.frameComment.create({
+    const created = await this.prisma.frameComment.create({
       data: {
         frameId: frame.id,
         text: data.content,
@@ -61,10 +76,11 @@ export class MediaCommentsService {
         },
       },
     });
+    return mapComment(created);
   }
 
   async findByFrame(frameId: string) {
-    return this.prisma.frameComment.findMany({
+    const results = await this.prisma.frameComment.findMany({
       where: { frameId },
       include: {
         author: {
@@ -82,10 +98,11 @@ export class MediaCommentsService {
         createdAt: "asc",
       },
     });
+    return results.map(mapComment);
   }
 
   async findByAsset(assetId: string) {
-    return this.prisma.frameComment.findMany({
+    const results = await this.prisma.frameComment.findMany({
       where: {
         parentId: null,
         frame: {
@@ -111,6 +128,7 @@ export class MediaCommentsService {
         createdAt: "desc",
       },
     });
+    return results.map(mapComment);
   }
 
   /**
@@ -168,14 +186,15 @@ export class MediaCommentsService {
 
   async update(commentId: string, text: string, userId: string) {
     await this.assertMutationAllowed(commentId, userId);
-    return this.prisma.frameComment.update({
+    const result = await this.prisma.frameComment.update({
       where: { id: commentId },
       data: { text },
     });
+    return mapComment(result);
   }
 
   async resolve(commentId: string, userId: string) {
-    return this.prisma.frameComment.update({
+    const result = await this.prisma.frameComment.update({
       where: { id: commentId },
       data: {
         resolved: true,
@@ -183,6 +202,7 @@ export class MediaCommentsService {
         resolvedAt: new Date(),
       },
     });
+    return mapComment(result);
   }
 
   async remove(commentId: string, userId: string) {

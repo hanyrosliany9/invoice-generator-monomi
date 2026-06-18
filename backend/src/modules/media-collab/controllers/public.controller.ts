@@ -7,6 +7,7 @@ import {
   Body,
   Query,
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
 } from "@nestjs/common";
 import {
@@ -203,6 +204,10 @@ export class PublicController {
     // Validate public link and get project creator's userId
     const project = await this.projectsService.getPublicProject(token);
 
+    if (project.publicAccessLevel === "VIEW_ONLY") {
+      throw new ForbiddenException("This share link is view-only");
+    }
+
     // IDOR guard: confirm the asset belongs to the project resolved by this token
     const asset = await this.assetsService.findOneRaw(assetId);
     if (!asset || asset.projectId !== project.id) {
@@ -254,6 +259,10 @@ export class PublicController {
     // Verify token is valid and get project
     const project = await this.projectsService.getPublicProject(token);
 
+    if (project.publicAccessLevel === "VIEW_ONLY") {
+      throw new ForbiddenException("This share link is view-only");
+    }
+
     // IDOR guard: confirm the asset belongs to the project resolved by this token
     const asset = await this.assetsService.findOneRaw(assetId);
     if (!asset || asset.projectId !== project.id) {
@@ -301,6 +310,10 @@ export class PublicController {
   ) {
     // Verify token is valid and get project
     const project = await this.projectsService.getPublicProject(token);
+
+    if (project.publicAccessLevel === "VIEW_ONLY") {
+      throw new ForbiddenException("This share link is view-only");
+    }
 
     // IDOR guard: confirm the asset belongs to the project resolved by this token
     const asset = await this.assetsService.findOneRaw(assetId);

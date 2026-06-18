@@ -446,7 +446,7 @@ class MediaCollabService {
       },
     );
 
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -457,7 +457,7 @@ class MediaCollabService {
    */
   async getBulkDownloadJobStatus(jobId: string): Promise<BulkDownloadJobStatus> {
     const response = await apiClient.get(`/media-collab/bulk-download/jobs/${jobId}`);
-    return response.data;
+    return response.data.data;
   }
 
   /**
@@ -468,7 +468,7 @@ class MediaCollabService {
    */
   async cancelBulkDownloadJob(jobId: string): Promise<{ success: boolean; message: string }> {
     const response = await apiClient.delete(`/media-collab/bulk-download/jobs/${jobId}`);
-    return response.data;
+    return response.data.data;
   }
 
   // ============================================
@@ -728,7 +728,7 @@ class MediaCollabService {
 
   async inviteGuest(projectId: string, data: InviteGuestDto): Promise<GuestInviteResponse> {
     const response = await apiClient.post(`/media-collab/collaborators/project/${projectId}/invite-guest`, data);
-    return response.data;
+    return response.data.data;
   }
 
   async acceptGuestInvite(token: string): Promise<GuestAcceptResponse> {
@@ -743,7 +743,7 @@ class MediaCollabService {
 
   async regenerateGuestInvite(projectId: string, collaboratorId: string): Promise<GuestInviteResponse> {
     const response = await apiClient.post(`/media-collab/collaborators/project/${projectId}/${collaboratorId}/regenerate`);
-    return response.data;
+    return response.data.data;
   }
 
   async getGuestProject(projectId: string, token: string): Promise<GuestProjectResponse> {
@@ -998,7 +998,7 @@ export interface FrameComment {
   authorId: string;
   content: string;
   parentId?: string;
-  status: 'OPEN' | 'RESOLVED';
+  status: 'OPEN' | 'RESOLVED'; // mapped from DB `resolved: Boolean` by backend
   resolvedBy?: string;
   resolvedAt?: string;
   createdAt: string;
@@ -1009,6 +1009,7 @@ export interface FrameComment {
     email: string;
   };
   replies?: FrameComment[];
+  frame?: { timestamp?: number };
 }
 
 export interface CreateCommentDto {
@@ -1031,7 +1032,7 @@ export enum CollaboratorRole {
 export interface MediaCollaborator {
   id: string;
   projectId: string;
-  userId: string;
+  userId: string | null; // null for guest (external) collaborators
   role: CollaboratorRole;
   invitedBy: string;
   addedAt: string;
