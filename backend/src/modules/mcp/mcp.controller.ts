@@ -115,7 +115,7 @@ export class McpController {
         tool.name,
         {
           description: tool.description,
-          inputSchema: tool.inputSchema,
+          inputSchema: z.object(tool.inputSchema),
         },
         async (args: Record<string, unknown>) => {
           // Scope enforcement: check AFTER role (role gates visibility;
