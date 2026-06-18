@@ -36,6 +36,11 @@ export const callSheetsApi = {
     return res.data.data;
   },
 
+  getByProject: async (projectId: string): Promise<CallSheet[]> => {
+    const res = await apiClient.get(`/call-sheets?projectId=${projectId}`);
+    return res.data.data ?? [];
+  },
+
   getById: async (id: string): Promise<CallSheet> => {
     const res = await apiClient.get(`/call-sheets/${id}`);
     return res.data.data;

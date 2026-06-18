@@ -84,6 +84,20 @@ export class CallSheetsService {
     });
   }
 
+  async findByProject(projectId: string) {
+    return this.prisma.callSheet.findMany({
+      where: {
+        schedule: { projectId },
+      },
+      include: {
+        shootDay: true,
+        schedule: { select: { id: true, name: true, project: { select: { id: true, number: true, description: true } } } },
+        _count: { select: { castCalls: true, crewCalls: true } },
+      },
+      orderBy: { shootDate: "asc" },
+    });
+  }
+
   async findBySchedule(scheduleId: string) {
     return this.prisma.callSheet.findMany({
       where: { scheduleId },

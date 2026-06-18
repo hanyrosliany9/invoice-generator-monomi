@@ -6,7 +6,7 @@ import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
   ArrowLeft, MoreHorizontal, Pencil, Trash2, Copy, Building2, Calendar,
   PlayCircle, CheckCircle2, PauseCircle, ListChecks, Briefcase, Plus, Film,
-  CalendarRange,
+  CalendarRange, Clapperboard, Image, Presentation, Images,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -37,6 +37,9 @@ import { quotationService, type Quotation } from '@/services/quotations';
 import { expenseService } from '@/services/expenses';
 import { shotListsApi } from '@/services/shotLists';
 import { schedulesApi } from '@/services/schedules';
+import { decksApi } from '@/services/decks';
+import { callSheetsApi } from '@/services/callSheets';
+import { mediaCollabService } from '@/services/media-collab';
 import type { Expense } from '@/types/expense';
 import { QuickExpenseSheet } from '@/pages/v2/expenses/QuickExpenseSheet';
 import { RealizeExpenseDialog, type PlannedLine } from './RealizeExpenseDialog';
@@ -238,6 +241,24 @@ export default function ProjectDetailPageV2() {
   const { data: schedules = [], isLoading: schedulesLoading } = useQuery({
     queryKey: ['schedules', 'by-project', id],
     queryFn: () => schedulesApi.getByProject(id!),
+    enabled: !!id,
+  });
+
+  const { data: decks = [], isLoading: decksLoading } = useQuery({
+    queryKey: ['decks', 'by-project', id],
+    queryFn: () => decksApi.getAll({ projectId: id }),
+    enabled: !!id,
+  });
+
+  const { data: callSheets = [], isLoading: callSheetsLoading } = useQuery({
+    queryKey: ['call-sheets', 'by-project', id],
+    queryFn: () => callSheetsApi.getByProject(id!),
+    enabled: !!id,
+  });
+
+  const { data: mediaProjects = [], isLoading: mediaProjectsLoading } = useQuery({
+    queryKey: ['media-projects', 'by-biz-project', id],
+    queryFn: () => mediaCollabService.getProjectsByBizProject(id!),
     enabled: !!id,
   });
 
@@ -612,6 +633,10 @@ export default function ProjectDetailPageV2() {
             >
               {STATUS_LABEL[project.status] ?? project.status}
             </Badge>
+            <Button size="sm" variant="outline" onClick={() => navigate(`/projects/${id}/production`)}>
+              <Clapperboard className="h-4 w-4" />
+              {t('projectDetail.productionHub', 'Production Hub')}
+            </Button>
             <Button size="sm" onClick={() => navigate(`/projects/${id}/edit`)}>
               <Pencil className="h-4 w-4" />
               {t('projectDetail.edit', 'Edit')}
@@ -1442,6 +1467,171 @@ export default function ProjectDetailPageV2() {
                   </li>
                 );
               })}
+            </ul>
+          )}
+        </GlassPanel>
+      </section>
+
+      {/* Decks — creative presentations linked to this project */}
+      <section className="mb-10">
+        <GlassPanel surface="glass" padding="lg">
+          <SectionHeader
+            title={t('projectDetail.decksSection', 'Creative Decks')}
+            sublabel={decksLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: decks.length })}
+            action={
+              <Button size="sm" onClick={() => navigate(`/decks?projectId=${id}&from=${encodeURIComponent(`/projects/${id}`)}`)}>
+                <Plus className="h-4 w-4" />
+                {t('projectDetail.newDeck', 'New Deck')}
+              </Button>
+            }
+          />
+          {decksLoading ? (
+            <div className="space-y-2"><Skeleton className="h-12 rounded" /><Skeleton className="h-12 rounded" /></div>
+          ) : decks.length === 0 ? (
+            <EmptyState
+              icon={<Presentation className="h-12 w-12" />}
+              title={t('projectDetail.noDecks', 'No decks yet')}
+              description={t('projectDetail.noDecksDesc', 'Create a creative deck or mood board for this project.')}
+              action={
+                <Button size="sm" onClick={() => navigate(`/decks?projectId=${id}&from=${encodeURIComponent(`/projects/${id}`)}`)}>
+                  <Plus className="h-4 w-4" />
+                  {t('projectDetail.newDeck', 'New Deck')}
+                </Button>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-border-subtle">
+              {decks.map((deck) => (
+                <li key={deck.id}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/decks/${deck.id}?from=${encodeURIComponent(`/projects/${id}`)}`)}
+                    className="w-full flex items-center justify-between gap-4 py-3 px-2 -mx-2 text-left rounded-md hover:bg-bg-sunken/40 transition-colors"
+                  >
+                    <div className="min-w-0 flex items-center gap-3">
+                      <Presentation className="h-4 w-4 shrink-0 text-text-tertiary" />
+                      <div>
+                        <div className="text-sm text-text-primary truncate">{deck.title}</div>
+                        {deck.description && <div className="text-xs text-text-tertiary truncate mt-0.5">{deck.description}</div>}
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-3 text-xs text-text-tertiary">
+                      <Badge variant="outline" className="text-[10px] capitalize">{deck.status?.toLowerCase()}</Badge>
+                      <DateDisplay date={deck.updatedAt} />
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </GlassPanel>
+      </section>
+
+      {/* Call Sheets — linked via shooting schedules */}
+      <section className="mb-10">
+        <GlassPanel surface="glass" padding="lg">
+          <SectionHeader
+            title={t('projectDetail.callSheetsSection', 'Call Sheets')}
+            sublabel={callSheetsLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: callSheets.length })}
+            action={
+              <Button size="sm" onClick={() => navigate(`/call-sheets?projectId=${id}&from=${encodeURIComponent(`/projects/${id}`)}`)}>
+                <Plus className="h-4 w-4" />
+                {t('projectDetail.newCallSheet', 'New Call Sheet')}
+              </Button>
+            }
+          />
+          {callSheetsLoading ? (
+            <div className="space-y-2"><Skeleton className="h-12 rounded" /><Skeleton className="h-12 rounded" /></div>
+          ) : callSheets.length === 0 ? (
+            <EmptyState
+              icon={<FileText className="h-12 w-12" />}
+              title={t('projectDetail.noCallSheets', 'No call sheets yet')}
+              description={t('projectDetail.noCallSheetsDesc', 'Create a call sheet from a shooting schedule to brief your crew.')}
+              action={
+                <Button size="sm" onClick={() => navigate(`/call-sheets?projectId=${id}&from=${encodeURIComponent(`/projects/${id}`)}`)}>
+                  <Plus className="h-4 w-4" />
+                  {t('projectDetail.newCallSheet', 'New Call Sheet')}
+                </Button>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-border-subtle">
+              {callSheets.map((cs) => (
+                <li key={cs.id}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/call-sheets/${cs.id}?from=${encodeURIComponent(`/projects/${id}`)}`)}
+                    className="w-full flex items-center justify-between gap-4 py-3 px-2 -mx-2 text-left rounded-md hover:bg-bg-sunken/40 transition-colors"
+                  >
+                    <div className="min-w-0 flex items-center gap-3">
+                      <FileText className="h-4 w-4 shrink-0 text-text-tertiary" />
+                      <div>
+                        <div className="text-sm text-text-primary truncate">{cs.productionName || t('projectDetail.callSheetFallback', 'Call Sheet #{{n}}', { n: cs.callSheetNumber })}</div>
+                        <div className="text-xs text-text-tertiary truncate mt-0.5">{new Date(cs.shootDate).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-4 text-xs text-text-tertiary tabular-nums">
+                      <span>{t('projectDetail.crewCount', '{{count}} crew', { count: (cs._count?.crewCalls ?? 0) })}</span>
+                      <span>{t('projectDetail.castCount', '{{count}} cast', { count: (cs._count?.castCalls ?? 0) })}</span>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </GlassPanel>
+      </section>
+
+      {/* Media Projects — shared media collaboration spaces */}
+      <section className="mb-10">
+        <GlassPanel surface="glass" padding="lg">
+          <SectionHeader
+            title={t('projectDetail.mediaProjectsSection', 'Media Collaboration')}
+            sublabel={mediaProjectsLoading ? t('projectDetail.loading', 'Loading...') : t('projectDetail.recordCount', '{{count}} records', { count: mediaProjects.length })}
+            action={
+              <Button size="sm" onClick={() => navigate(`/media-collab?projectId=${id}&from=${encodeURIComponent(`/projects/${id}`)}`)}>
+                <Plus className="h-4 w-4" />
+                {t('projectDetail.newMediaProject', 'New Media Space')}
+              </Button>
+            }
+          />
+          {mediaProjectsLoading ? (
+            <div className="space-y-2"><Skeleton className="h-12 rounded" /><Skeleton className="h-12 rounded" /></div>
+          ) : mediaProjects.length === 0 ? (
+            <EmptyState
+              icon={<Images className="h-12 w-12" />}
+              title={t('projectDetail.noMediaProjects', 'No media spaces yet')}
+              description={t('projectDetail.noMediaProjectsDesc', 'Create a shared media space to collaborate on selects with your client.')}
+              action={
+                <Button size="sm" onClick={() => navigate(`/media-collab?projectId=${id}&from=${encodeURIComponent(`/projects/${id}`)}`)}>
+                  <Plus className="h-4 w-4" />
+                  {t('projectDetail.newMediaProject', 'New Media Space')}
+                </Button>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-border-subtle">
+              {mediaProjects.map((mp) => (
+                <li key={mp.id}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/media-collab/${mp.id}?from=${encodeURIComponent(`/projects/${id}`)}`)}
+                    className="w-full flex items-center justify-between gap-4 py-3 px-2 -mx-2 text-left rounded-md hover:bg-bg-sunken/40 transition-colors"
+                  >
+                    <div className="min-w-0 flex items-center gap-3">
+                      <Images className="h-4 w-4 shrink-0 text-text-tertiary" />
+                      <div>
+                        <div className="text-sm text-text-primary truncate">{mp.name}</div>
+                        {mp.description && <div className="text-xs text-text-tertiary truncate mt-0.5">{mp.description}</div>}
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-4 text-xs text-text-tertiary tabular-nums">
+                      <span>{t('projectDetail.assetCount', '{{count}} assets', { count: mp._count?.assets ?? 0 })}</span>
+                      {mp.isPublic && <Badge variant="outline" className="text-[10px] text-accent-navy border-accent-navy/30">{t('projectDetail.shared', 'Shared')}</Badge>}
+                    </div>
+                  </button>
+                </li>
+              ))}
             </ul>
           )}
         </GlassPanel>

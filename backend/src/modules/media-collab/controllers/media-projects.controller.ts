@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Request,
+  Query,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -42,7 +43,10 @@ export class MediaProjectsController {
   @Get()
   @ApiOperation({ summary: "Get all media projects accessible by user" })
   @ApiResponse({ status: 200, description: "List of projects" })
-  findAll(@Request() req: AuthenticatedRequest) {
+  findAll(@Request() req: AuthenticatedRequest, @Query("bizProjectId") bizProjectId?: string) {
+    if (bizProjectId) {
+      return this.mediaProjectsService.findByBizProject(bizProjectId);
+    }
     return this.mediaProjectsService.findAll(req.user.id);
   }
 

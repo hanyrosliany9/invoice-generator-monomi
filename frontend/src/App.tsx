@@ -43,6 +43,7 @@ const V2ProjectsPage = lazy(() => import('./pages/v2/projects/ProjectsPage'))
 const V2ProjectDetailPage = lazy(() => import('./pages/v2/projects/ProjectDetailPage'))
 const V2ProjectCreatePage = lazy(() => import('./pages/v2/projects/ProjectCreatePage'))
 const V2ProjectEditPage = lazy(() => import('./pages/v2/projects/ProjectEditPage'))
+const V2ProductionHubPage = lazy(() => import('./pages/v2/projects/ProductionHubPage'))
 const V2ExpensesPage = lazy(() => import('./pages/v2/expenses/ExpensesPage'))
 const V2ExpenseDetailPage = lazy(() => import('./pages/v2/expenses/ExpenseDetailPage'))
 const V2ExpenseCreatePage = lazy(() => import('./pages/v2/expenses/ExpenseCreatePage'))
@@ -299,6 +300,7 @@ function App() {
                       <Route path='/projects/new' element={<AdminRoute><V2ProjectCreatePage /></AdminRoute>} />
                       <Route path='/projects/:id' element={<AdminRoute><V2ProjectDetailPage /></AdminRoute>} />
                       <Route path='/projects/:id/edit' element={<AdminRoute><V2ProjectEditPage /></AdminRoute>} />
+                      <Route path='/projects/:id/production' element={<AdminRoute><V2ProductionHubPage /></AdminRoute>} />
                       <Route path='/projects/:projectId/calendar' element={<AdminRoute><V2ProjectCalendarPage /></AdminRoute>} />
                       <Route path='/projects/:projectId/content-calendar' element={<AdminRoute><V2ProjectContentCalendarPage /></AdminRoute>} />
                       <Route path='/expenses' element={<AdminRoute><V2ExpensesPage /></AdminRoute>} />

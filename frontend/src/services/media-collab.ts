@@ -253,6 +253,11 @@ class MediaCollabService {
     return response.data.data;
   }
 
+  async getProjectsByBizProject(bizProjectId: string): Promise<MediaProject[]> {
+    const response = await apiClient.get(`/media-collab/projects?bizProjectId=${bizProjectId}`);
+    return response.data.data ?? [];
+  }
+
   async getProject(id: string): Promise<MediaProject> {
     const response = await apiClient.get(`/media-collab/projects/${id}`);
     return response.data.data;

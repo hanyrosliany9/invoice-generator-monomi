@@ -196,6 +196,22 @@ export class MediaProjectsService {
   }
 
   /**
+   * Get all media projects linked to a business project
+   */
+  async findByBizProject(bizProjectId: string) {
+    return this.prisma.mediaProject.findMany({
+      where: { projectId: bizProjectId },
+      include: {
+        client: true,
+        project: { select: { id: true, number: true, description: true } },
+        creator: { select: { id: true, name: true, email: true } },
+        _count: { select: { assets: true, collaborators: true, collections: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+  }
+
+  /**
    * Get a single project by ID
    */
   async findOne(projectId: string, userId: string) {

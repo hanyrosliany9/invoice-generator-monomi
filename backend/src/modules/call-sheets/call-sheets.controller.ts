@@ -61,7 +61,10 @@ export class CallSheetsController {
   }
 
   @Get()
-  async findBySchedule(@Query("scheduleId") scheduleId?: string) {
+  async findBySchedule(@Query("scheduleId") scheduleId?: string, @Query("projectId") projectId?: string) {
+    if (projectId) {
+      return this.service.findByProject(projectId);
+    }
     if (!scheduleId) {
       return this.service.findAll();
     }
