@@ -25,6 +25,7 @@ interface LightboxOverlayProps {
 const ZOOM_STEP = 0.25;
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 4;
+const ZOOM_DEFAULT = 1;
 
 export function LightboxOverlay({
   src,
@@ -40,7 +41,7 @@ export function LightboxOverlay({
   onShowDetails,
 }: LightboxOverlayProps) {
   const { t } = useTranslation();
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(ZOOM_DEFAULT);
   const [rotate, setRotate] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
 
