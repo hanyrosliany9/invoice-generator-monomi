@@ -269,6 +269,21 @@ export class MediaAssetsController {
     );
   }
 
+  @Post("backfill-thumbnails/:projectId")
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @ApiOperation({ summary: "Backfill missing thumbnails for a project (admin/owner)" })
+  @ApiResponse({ status: 201, description: "Backfill run complete" })
+  async backfillThumbnails(
+    @Request() req: AuthenticatedRequest,
+    @Param("projectId") projectId: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.assetsService.backfillMissingThumbnails(
+      projectId,
+      limit ? Math.min(parseInt(limit, 10) || 20, 50) : 20,
+    );
+  }
+
   @Post("register-batch/:projectId")
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests/min per user — batch DB writes are expensive
   @ApiOperation({ summary: "Register assets after direct R2 upload (batch)" })

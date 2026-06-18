@@ -1636,7 +1636,9 @@ function AssetTile({
 }: AssetTileProps) {
   const { t } = useTranslation();
   const isVideo = asset.mediaType === 'VIDEO';
-  const src = asset.thumbnailUrl || (!isVideo ? asset.url : null);
+  // Grid tiles only ever load the thumbnail — never the full original.
+  // Assets without a thumbnailUrl show a placeholder icon instead.
+  const src = asset.thumbnailUrl ?? null;
   const proxied = src ? getProxyUrl(src, mediaToken) : null;
 
   return (

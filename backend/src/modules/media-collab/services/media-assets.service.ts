@@ -425,9 +425,56 @@ export class MediaAssetsService {
         },
       },
       orderBy,
+      take: 500, // hard cap — prevents runaway queries on very large projects
     });
 
     return assets;
+  }
+
+  /**
+   * Backfill thumbnails for assets that have none (uploaded via presigned URL
+   * path when background generation failed). Processes up to `limit` assets
+   * per call so the caller can batch safely.
+   */
+  async backfillMissingThumbnails(
+    projectId: string,
+    limit = 20,
+  ): Promise<{ processed: number; failed: number; remaining: number }> {
+    const missing = await this.prisma.mediaAsset.findMany({
+      where: {
+        projectId,
+        thumbnailUrl: null,
+        mediaType: { in: ["IMAGE", "RAW_IMAGE", "VIDEO"] },
+      },
+      select: { id: true, key: true, mimeType: true, originalName: true },
+      take: limit,
+    });
+
+    const remaining = await this.prisma.mediaAsset.count({
+      where: {
+        projectId,
+        thumbnailUrl: null,
+        mediaType: { in: ["IMAGE", "RAW_IMAGE", "VIDEO"] },
+      },
+    });
+
+    let processed = 0;
+    let failed = 0;
+    for (const asset of missing) {
+      try {
+        await this.generateThumbnailForRegisteredAsset(
+          asset.id,
+          asset.key,
+          asset.mimeType,
+          asset.originalName,
+        );
+        processed++;
+      } catch {
+        failed++;
+      }
+    }
+
+    return { processed, failed, remaining: remaining - processed };
   }
 
   /**
