@@ -28,7 +28,9 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     giflib-dev \
     pixman-dev \
     # FFmpeg for video processing and thumbnail generation
-    ffmpeg
+    ffmpeg \
+    # PostgreSQL client tools — pg_dump is used by the settings backup endpoint
+    postgresql-client
 
 # Install yt-dlp for media downloading (YouTube, Instagram, TikTok, Pinterest, etc.)
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
