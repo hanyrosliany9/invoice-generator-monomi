@@ -291,8 +291,13 @@ model Project {
   // Calendar Events Relations
   calendarEvents CalendarEvent[]
 
+  // Production Hub guest access token
+  productionHubToken   String?  @unique // Shareable token for read-only guest access
+  productionHubTokenAt DateTime? // When the token was last generated/rotated
+
   @@index([number])
   @@index([projectTypeId])
+  @@index([productionHubToken])
   @@index([clientId])
   @@index([createdAt])
   // Composite indexes for performance optimization

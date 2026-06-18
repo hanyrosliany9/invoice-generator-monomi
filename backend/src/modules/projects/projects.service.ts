@@ -2,7 +2,9 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from "@nestjs/common";
+import { randomBytes } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { DocumentsService } from "../documents/documents.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
@@ -825,5 +827,89 @@ export class ProjectsService {
     });
 
     return duplicated;
+  }
+
+  async generateProductionHubToken(projectId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw new NotFoundException("Project not found");
+    const token = randomBytes(24).toString("base64url");
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: { productionHubToken: token, productionHubTokenAt: new Date() },
+      select: { id: true, productionHubToken: true, productionHubTokenAt: true },
+    });
+  }
+
+  async revokeProductionHubToken(projectId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) throw new NotFoundException("Project not found");
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: { productionHubToken: null, productionHubTokenAt: null },
+      select: { id: true, productionHubToken: true },
+    });
+  }
+
+  async getProductionHubByToken(token: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { productionHubToken: token },
+      select: {
+        id: true, number: true, description: true, status: true,
+        startDate: true, endDate: true,
+        client: { select: { id: true, name: true, company: true } },
+        projectType: { select: { id: true, name: true } },
+        shotLists: {
+          orderBy: { updatedAt: "desc" },
+          select: {
+            id: true, name: true, description: true, updatedAt: true,
+            scenes: {
+              select: { id: true, shots: { select: { id: true } } },
+            },
+          },
+        },
+        shootingSchedules: {
+          orderBy: { updatedAt: "desc" },
+          select: {
+            id: true, name: true, description: true, startDate: true, updatedAt: true,
+            _count: { select: { shootDays: true } },
+          },
+        },
+        decks: {
+          orderBy: { updatedAt: "desc" },
+          where: { status: { not: "ARCHIVED" } },
+          select: {
+            id: true, title: true, description: true, status: true,
+            isPublic: true, publicShareToken: true, updatedAt: true,
+            _count: { select: { slides: true } },
+          },
+        },
+        mediaProjects: {
+          orderBy: { updatedAt: "desc" },
+          select: {
+            id: true, name: true, description: true,
+            isPublic: true, publicShareToken: true, updatedAt: true,
+            _count: { select: { assets: true } },
+          },
+        },
+      },
+    });
+
+    if (!project) throw new ForbiddenException("Invalid or revoked access token");
+
+    // Fetch call sheets via schedules
+    const scheduleIds = project.shootingSchedules.map((s) => s.id);
+    const callSheets = scheduleIds.length > 0
+      ? await this.prisma.callSheet.findMany({
+          where: { scheduleId: { in: scheduleIds } },
+          orderBy: { shootDate: "asc" },
+          select: {
+            id: true, productionName: true, callSheetNumber: true,
+            shootDate: true, crewCallTime: true, locationName: true,
+            _count: { select: { crewCalls: true, castCalls: true } },
+          },
+        })
+      : [];
+
+    return { project, callSheets };
   }
 }

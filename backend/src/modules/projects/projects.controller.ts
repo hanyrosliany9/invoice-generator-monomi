@@ -25,6 +25,7 @@ import { CalculateProjectionDto } from "./dto/calculate-projection.dto";
 import { ProjectProjectionService } from "./project-projection.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RequireAdmin } from "../auth/decorators/auth.decorators";
+import { Public } from "../../common/decorators/public.decorator";
 import { ProjectStatus } from "@prisma/client";
 
 @ApiTags("Projects")
@@ -347,5 +348,28 @@ export class ProjectsController {
   })
   async duplicate(@Param("id") id: string) {
     return this.projectsService.duplicate(id);
+  }
+
+  // ── Production Hub guest-access token endpoints ──────────────────────
+
+  @Post(":id/production-hub/token")
+  @RequireAdmin()
+  @ApiOperation({ summary: "Generate (or rotate) a guest-access token for the Production Hub" })
+  async generateProductionHubToken(@Param("id") id: string) {
+    return this.projectsService.generateProductionHubToken(id);
+  }
+
+  @Delete(":id/production-hub/token")
+  @RequireAdmin()
+  @ApiOperation({ summary: "Revoke the guest-access token for the Production Hub" })
+  async revokeProductionHubToken(@Param("id") id: string) {
+    return this.projectsService.revokeProductionHubToken(id);
+  }
+
+  @Public()
+  @Get("hub/:token")
+  @ApiOperation({ summary: "Get production hub data by guest token (no auth required)" })
+  async getProductionHubByToken(@Param("token") token: string) {
+    return this.projectsService.getProductionHubByToken(token);
   }
 }

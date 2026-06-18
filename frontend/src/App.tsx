@@ -44,6 +44,7 @@ const V2ProjectDetailPage = lazy(() => import('./pages/v2/projects/ProjectDetail
 const V2ProjectCreatePage = lazy(() => import('./pages/v2/projects/ProjectCreatePage'))
 const V2ProjectEditPage = lazy(() => import('./pages/v2/projects/ProjectEditPage'))
 const V2ProductionHubPage = lazy(() => import('./pages/v2/projects/ProductionHubPage'))
+const GuestProductionHubPage = lazy(() => import('./pages/guest/GuestProductionHubPage'))
 const V2ExpensesPage = lazy(() => import('./pages/v2/expenses/ExpensesPage'))
 const V2ExpenseDetailPage = lazy(() => import('./pages/v2/expenses/ExpenseDetailPage'))
 const V2ExpenseCreatePage = lazy(() => import('./pages/v2/expenses/ExpenseCreatePage'))
@@ -248,6 +249,7 @@ function App() {
           <Route path='/shared/:token' element={<Suspense fallback={<PageLoader />}><V2PublicProjectViewPage /></Suspense>} />
           <Route path='/deck/shared/:token' element={<Suspense fallback={<PageLoader />}><V2PublicDeckViewPage /></Suspense>} />
           <Route path='/deck/invite/:token' element={<Suspense fallback={<PageLoader />}><V2DeckAcceptInvitePage /></Suspense>} />
+          <Route path='/guest/hub/:token' element={<Suspense fallback={<PageLoader />}><GuestProductionHubPage /></Suspense>} />
 
           {/* Login — anonymous only */}
           <Route

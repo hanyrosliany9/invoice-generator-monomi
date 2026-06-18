@@ -1,10 +1,14 @@
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Plus, Clapperboard, ListChecks, CalendarRange,
   FileText, Presentation, Images, ExternalLink, ChevronRight,
+  Share2, Copy, RefreshCw, Trash2, Check, Link as LinkIcon,
 } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { apiClient } from '@/config/api';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
@@ -127,6 +131,9 @@ export default function ProductionHubPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const [copied, setCopied] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['project', id],
@@ -164,7 +171,47 @@ export default function ProductionHubPage() {
     enabled: !!id,
   });
 
-  const { user } = useAuthStore();
+  // Project token (for guest access)
+  const { data: tokenData, isLoading: tokenLoading } = useQuery({
+    queryKey: ['project', id, 'hub-token'],
+    queryFn: async () => {
+      const res = await apiClient.get(`/projects/${id}`);
+      const p = res.data.data as { productionHubToken?: string; productionHubTokenAt?: string };
+      return { token: p.productionHubToken ?? null, generatedAt: p.productionHubTokenAt ?? null };
+    },
+    enabled: !!id,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: () => apiClient.post(`/projects/${id}/production-hub/token`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', id, 'hub-token'] });
+      toast.success('Guest link generated');
+    },
+    onError: () => toast.error('Failed to generate link'),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: () => apiClient.delete(`/projects/${id}/production-hub/token`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', id, 'hub-token'] });
+      toast.success('Guest link revoked');
+    },
+    onError: () => toast.error('Failed to revoke link'),
+  });
+
+  const guestUrl = tokenData?.token
+    ? `${window.location.origin}/guest/hub/${tokenData.token}`
+    : null;
+
+  function copyLink() {
+    if (!guestUrl) return;
+    navigator.clipboard.writeText(guestUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   const fromParam = encodeURIComponent(`/projects/${id}/production`);
   const backTo = `/projects/${id}`;
 
@@ -214,6 +261,67 @@ export default function ProductionHubPage() {
             </Badge>
           )}
         </div>
+
+        {/* ── Guest Access / Share Hub ─────────────────────────────── */}
+        <GlassPanel surface="glass" padding="lg" className="mb-8">
+          <div className="flex items-start gap-4 flex-wrap sm:flex-nowrap">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bg-raised border border-border-subtle">
+              <Share2 className="h-5 w-5 text-text-secondary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-text-primary">{t('productionHub.shareTitle', 'Guest Access Link')}</p>
+              <p className="text-xs text-text-tertiary mt-0.5 leading-relaxed">
+                {t('productionHub.shareDesc', 'Share a read-only link with your client. They can view decks, shot lists, schedules, call sheets, and media spaces — nothing else.')}
+              </p>
+              {guestUrl && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex-1 min-w-0 flex items-center gap-2 rounded-md border border-border-subtle bg-bg-sunken px-3 py-1.5 text-xs text-text-secondary font-mono truncate">
+                    <LinkIcon className="h-3 w-3 shrink-0 text-text-tertiary" />
+                    <span className="truncate">{guestUrl}</span>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={copyLink} className="shrink-0 gap-1.5">
+                    {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? t('productionHub.copied', 'Copied') : t('productionHub.copy', 'Copy')}
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {guestUrl ? (
+                <>
+                  <Button
+                    size="sm" variant="outline"
+                    onClick={() => generateMutation.mutate()}
+                    disabled={generateMutation.isPending}
+                    className="gap-1.5"
+                  >
+                    <RefreshCw className={cn('h-3.5 w-3.5', generateMutation.isPending && 'animate-spin')} />
+                    {t('productionHub.rotate', 'Rotate')}
+                  </Button>
+                  <Button
+                    size="sm" variant="ghost"
+                    onClick={() => revokeMutation.mutate()}
+                    disabled={revokeMutation.isPending}
+                    className="gap-1.5 text-danger hover:text-danger"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {t('productionHub.revoke', 'Revoke')}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => generateMutation.mutate()}
+                  disabled={generateMutation.isPending || tokenLoading}
+                  className="gap-1.5"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  {t('productionHub.generateLink', 'Generate Link')}
+                </Button>
+              )}
+            </div>
+          </div>
+        </GlassPanel>
 
         {/* 2-column grid for tool cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
