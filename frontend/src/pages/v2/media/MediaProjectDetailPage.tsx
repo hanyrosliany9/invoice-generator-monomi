@@ -7,7 +7,7 @@ import {
   ArrowLeft, Upload, Image as ImageIcon, Film, Play, Trash2,
   MoreHorizontal, Share2, Copy, Link as LinkIcon, MessageCircle,
   CheckCircle2, X, Loader2, Eye, Globe, FolderOpen, ZoomIn, Plus,
-  ChevronLeft, ChevronRight, Users, UserPlus, Mail,
+  ChevronLeft, ChevronRight, Users, UserPlus, Mail, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -125,13 +125,16 @@ export default function MediaProjectDetailPageV2() {
   /* ---------- local ui state ---------- */
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
   const [shareExpiry, setShareExpiry] = useState<Date | undefined>(undefined);
-  // Cap how many tiles render at once — a 440-asset project would otherwise
-  // paint a 35,000px DOM. "Load more" reveals the next page on demand.
-  const PAGE_SIZE = 48;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
-  // Per-file upload state: name → { progress 0-100, error?: string }
-  const [uploadStates, setUploadStates] = useState<Record<string, { progress: number; error?: string }>>({});
+  interface UploadItem {
+    id: string;
+    file: File;
+    name: string;
+    status: 'queued' | 'uploading' | 'done' | 'error';
+    progress: number;
+    error?: string;
+  }
+  const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   /* ---------- new review-tool state ---------- */
@@ -150,6 +153,7 @@ export default function MediaProjectDetailPageV2() {
 
   /* ---------- folder + collection state ---------- */
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [folderSheetOpen, setFolderSheetOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [newCollectionDialogOpen, setNewCollectionDialogOpen] = useState(false);
 
@@ -202,6 +206,15 @@ export default function MediaProjectDetailPageV2() {
     queryKey: ['asset-comments', selectedAsset?.id],
     queryFn: () => mediaCollabService.getCommentsByAsset(selectedAsset!.id),
     enabled: !!selectedAsset,
+  });
+
+  const {
+    data: lightboxComments = [],
+    refetch: refetchLightboxComments,
+  } = useQuery({
+    queryKey: ['asset-comments', lightboxAsset?.id],
+    queryFn: () => mediaCollabService.getCommentsByAsset(lightboxAsset!.id),
+    enabled: !!lightboxAsset,
   });
 
   /* ---------- mutations ---------- */
@@ -362,16 +375,40 @@ export default function MediaProjectDetailPageV2() {
     onError: () => toast.error(t('mediaCollab.commentFailed', 'Gagal mengirim komentar.')),
   });
 
+  const resolveCommentMutation = useMutation({
+    mutationFn: (commentId: string) => mediaCollabService.resolveComment(commentId),
+    onSuccess: () => refetchComments(),
+    onError: () => toast.error(t('mediaCollab.resolveFailed', 'Gagal menyelesaikan komentar.')),
+  });
+
+  /* ---------- lightbox comment mutations (scoped to lightboxAsset) ---------- */
+  const lightboxAddCommentMutation = useMutation({
+    mutationFn: (text: string) =>
+      mediaCollabService.createComment({ assetId: lightboxAsset!.id, content: text }),
+    onSuccess: () => {
+      refetchLightboxComments();
+      toast.success(t('mediaCollab.commentSent', 'Komentar terkirim.'));
+    },
+    onError: () => toast.error(t('mediaCollab.commentFailed', 'Gagal mengirim komentar.')),
+  });
+
+  const lightboxResolveCommentMutation = useMutation({
+    mutationFn: (commentId: string) => mediaCollabService.resolveComment(commentId),
+    onSuccess: () => refetchLightboxComments(),
+    onError: () => toast.error(t('mediaCollab.resolveFailed', 'Gagal menyelesaikan komentar.')),
+  });
+
   /* ---------- star rating mutation ---------- */
   const starRatingMutation = useMutation({
     mutationFn: ({ assetId, rating }: { assetId: string; rating: number }) =>
       mediaCollabService.updateStarRating(assetId, rating),
     onSuccess: (updated) => {
-      // Optimistically patch the cache so the sheet shows updated stars immediately
+      // Optimistically patch the cache so sheet and lightbox both show updated stars immediately
       queryClient.setQueryData<MediaAsset[]>(['media-assets', projectId], (old = []) =>
         old.map((a) => (a.id === updated.id ? updated : a)),
       );
       if (selectedAsset?.id === updated.id) setSelectedAsset(updated);
+      if (lightboxAsset?.id === updated.id) setLightboxAsset(updated);
       toast.success(t('mediaReview.ratingUpdated', 'Star rating updated.'));
     },
     onError: () => toast.error(t('mediaReview.ratingFailed', 'Failed to update rating.')),
@@ -506,7 +543,7 @@ export default function MediaProjectDetailPageV2() {
     });
 
     return result;
-  }, [assets, filters]);
+  }, [assets, filters, activeFolderId]);
 
   const toggleSelect = useCallback(
     (id: string, index: number, shiftKey: boolean) => {
@@ -532,9 +569,36 @@ export default function MediaProjectDetailPageV2() {
     [filteredAssets],
   );
 
-  /* ---------- asset detail prev/next navigation ----------
-     Walks the visible (filtered) list. Skips VIDEO assets because those
-     open in the dedicated VideoReviewModal, not this image sheet. */
+  /* ---------- lightbox navigation (images only — grid tile click opens this) ---------- */
+  const imageAssets = useMemo(
+    () => filteredAssets.filter((a) => a.mediaType !== 'VIDEO'),
+    [filteredAssets],
+  );
+
+  const gotoAdjacentLightboxAsset = useCallback(
+    (dir: 1 | -1) => {
+      if (!lightboxAsset) return;
+      const idx = imageAssets.findIndex((a) => a.id === lightboxAsset.id);
+      if (idx === -1) return;
+      const next = imageAssets[idx + dir];
+      if (next) setLightboxAsset(next);
+    },
+    [lightboxAsset, imageAssets],
+  );
+
+  const lightboxAdjacency = useMemo(() => {
+    if (!lightboxAsset) return { hasPrev: false, hasNext: false, position: undefined };
+    const idx = imageAssets.findIndex((a) => a.id === lightboxAsset.id);
+    if (idx === -1) return { hasPrev: false, hasNext: false, position: undefined };
+    return {
+      hasPrev: idx > 0,
+      hasNext: idx < imageAssets.length - 1,
+      position: { current: idx + 1, total: imageAssets.length },
+    };
+  }, [lightboxAsset, imageAssets]);
+
+  /* ---------- asset detail sheet prev/next navigation ----------
+     Kept for the detail sheet; lightbox uses gotoAdjacentLightboxAsset above. */
   const gotoAdjacentAsset = useCallback(
     (dir: 1 | -1) => {
       if (!selectedAsset) return;
@@ -563,7 +627,6 @@ export default function MediaProjectDetailPageV2() {
   useEffect(() => {
     if (!selectedAsset) return;
     const handler = (e: KeyboardEvent) => {
-      // Don't hijack arrows while typing in the comment composer / inputs.
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'ArrowLeft') { e.preventDefault(); gotoAdjacentAsset(-1); }
@@ -583,67 +646,66 @@ export default function MediaProjectDetailPageV2() {
     return { total, images, videos, inReview };
   }, [assets]);
 
-  /* ---------- upload (simple, multi, with per-file progress + retry) --
-     Per-file progress is wired via mediaCollabService.uploadAsset's
-     onProgress callback. Failed files stay visible with a "Retry"
-     button so the operator doesn't lose track of what failed.
-     Drag-and-drop, chunked, R2 presigned uploads, conflict resolution,
-     and the duplicate check flow are deferred — see report.            */
-  const uploadSingleFile = async (file: File) => {
+  /* ---------- upload ---------- */
+  const uploadSingleItem = async (id: string, file: File) => {
     if (!projectId) return;
-    const key = `${file.name}-${file.size}`;
-    setUploadStates((prev) => ({ ...prev, [key]: { progress: 0 } }));
+
+    const setItem = (patch: Partial<UploadItem>) =>
+      setUploadQueue((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+
+    setItem({ status: 'uploading', progress: 0 });
     try {
       await mediaCollabService.uploadAsset(
         projectId,
         file,
         undefined,
-        undefined,
+        activeFolderId ?? undefined,
         undefined,
         (evt) => {
           const pct = evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0;
-          setUploadStates((prev) => ({ ...prev, [key]: { progress: pct } }));
+          setItem({ progress: pct });
         },
       );
-      // Remove from states on success so the gallery refreshes cleanly.
-      setUploadStates((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      });
+      setItem({ status: 'done', progress: 100 });
+      // Remove done item after a short delay so the user sees the ✓
+      setTimeout(() => {
+        setUploadQueue((prev) => prev.filter((it) => it.id !== id));
+      }, 1500);
       toast.success(t('mediaCollab.uploaded', '"{{name}}" diunggah.', { name: file.name }));
     } catch (err: any) {
-      const errMsg = err?.response?.data?.message ?? err?.message ?? 'error';
-      setUploadStates((prev) => ({ ...prev, [key]: { progress: 0, error: errMsg } }));
-      toast.error(t('mediaCollab.uploadFailed', 'Gagal unggah "{{name}}": {{error}}', { name: file.name, error: errMsg }));
+      const errMsg = err?.response?.data?.message ?? err?.message ?? 'Upload failed';
+      setItem({ status: 'error', error: errMsg, progress: 0 });
+      toast.error(t('mediaCollab.uploadFailed', 'Gagal unggah "{{name}}".', { name: file.name }));
     }
   };
 
   const handleFilesPicked = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    // Sequential upload — predictable progress, kinder to backend than
-    // a parallel storm of multipart requests.
-    for (const file of files) {
-      await uploadSingleFile(file);
+
+    // Stamp the queue with all files as 'queued' before any uploads start
+    const newItems: UploadItem[] = files.map((file, i) => ({
+      id: `${Date.now()}-${i}-${file.name}`,
+      file,
+      name: file.name,
+      status: 'queued',
+      progress: 0,
+    }));
+    setUploadQueue((prev) => [...prev, ...newItems]);
+
+    // Upload sequentially so the user sees each file advance one at a time
+    for (const item of newItems) {
+      await uploadSingleItem(item.id, item.file);
     }
     invalidateAssets();
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Retry a failed upload (the File object is gone, so we need a new pick).
-  // We expose a "Retry" button that simply re-opens the file picker.
-  const retryUpload = (key: string, name: string) => {
-    // We can't re-use the File object after the input resets, so we just
-    // clear the error and prompt the user to re-select. A future improvement
-    // would cache the File ref.
-    setUploadStates((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-    toast.info(t('mediaCollab.retryHint', 'Please re-select "{{name}}" to retry.', { name }));
-    fileInputRef.current?.click();
+  const retryUpload = async (id: string) => {
+    const item = uploadQueue.find((it) => it.id === id);
+    if (!item) return;
+    await uploadSingleItem(id, item.file);
+    invalidateAssets();
   };
 
   /* ---------- share link ----------
@@ -675,6 +737,7 @@ export default function MediaProjectDetailPageV2() {
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{}}
+      disableSmoothScroll
     >
       <PageContainer>{children}</PageContainer>
     </AppShell>
@@ -916,21 +979,69 @@ export default function MediaProjectDetailPageV2() {
             {/* Filter + sort bar */}
             <FilterSortBar
               filters={filters}
-              onChange={(f) => { setFilters(f); setVisibleCount(PAGE_SIZE); }}
+              onChange={(f) => { setFilters(f); }}
               resultCount={filteredAssets.length}
               totalCount={assets.length}
             />
           </div>
 
+          {/* Mobile folder picker — only visible below md breakpoint */}
+          {folderTree.length > 0 && (
+            <div className="block md:hidden mb-3">
+              <button
+                type="button"
+                onClick={() => setFolderSheetOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 rounded-md border border-border-subtle bg-bg-sunken/40 text-xs text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors w-full"
+              >
+                <FolderOpen className="h-3.5 w-3.5 shrink-0 text-text-tertiary" />
+                <span className="flex-1 text-left truncate">
+                  {activeFolderId
+                    ? (folderTree.find((f: any) => f.id === activeFolderId)?.name ?? t('mediaFolders.folder', 'Folder'))
+                    : t('mediaFolders.allFiles', 'All Files')}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-text-tertiary" />
+              </button>
+
+              <Sheet open={folderSheetOpen} onOpenChange={setFolderSheetOpen}>
+                <SheetContent side="left" className="p-0 w-[260px] bg-bg-base">
+                  <SheetHeader className="px-4 pt-4 pb-2">
+                    <SheetTitle className="text-sm">{t('mediaFolders.folders', 'Folders')}</SheetTitle>
+                    <SheetDescription className="sr-only">Navigate folders</SheetDescription>
+                  </SheetHeader>
+                  <div className="px-4 pb-4 overflow-y-auto max-h-[80vh]">
+                    <FolderSidebar
+                      folders={folderTree}
+                      loading={foldersLoading}
+                      selectedFolderId={activeFolderId}
+                      onSelectFolder={(id) => {
+                        setActiveFolderId(id);
+                        setFolderSheetOpen(false);
+                      }}
+                      onCreateFolder={async (parentId, name) => {
+                        await createFolderMutation.mutateAsync({ name, parentId });
+                      }}
+                      onRenameFolder={async (folderId, name) => {
+                        await renameFolderMutation.mutateAsync({ id: folderId, name });
+                      }}
+                      onDeleteFolder={async (folderId) => {
+                        await deleteFolderMutation.mutateAsync(folderId);
+                      }}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+          )}
+
           {/* Folder sidebar + main content area */}
           <div className="flex gap-5">
-            {/* Folder sidebar — hidden on mobile */}
+            {/* Folder sidebar — hidden on mobile, shown md+ */}
             <div className="hidden md:block shrink-0">
               <FolderSidebar
                 folders={folderTree}
                 loading={foldersLoading}
                 selectedFolderId={activeFolderId}
-                onSelectFolder={(id) => { setActiveFolderId(id); setVisibleCount(PAGE_SIZE); }}
+                onSelectFolder={(id) => { setActiveFolderId(id); }}
                 onCreateFolder={async (parentId, name) => {
                   await createFolderMutation.mutateAsync({ name, parentId });
                 }}
@@ -950,59 +1061,49 @@ export default function MediaProjectDetailPageV2() {
                 <div className="mb-3">
                   <FolderBreadcrumb
                     segments={breadcrumbSegments}
-                    onNavigate={(id) => { setActiveFolderId(id); setVisibleCount(PAGE_SIZE); }}
+                    onNavigate={(id) => { setActiveFolderId(id); }}
                   />
                 </div>
               )}
 
-          {/* Per-file upload tiles — show progress bar and error/retry */}
-          {Object.entries(uploadStates).length > 0 && (
-            <div className="mb-4 grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-              {Object.entries(uploadStates).map(([key, state]) => {
-                const name = key.split('-').slice(0, -1).join('-');
-                return (
-                  <div
-                    key={key}
-                    className={cn(
-                      'aspect-square rounded-md border flex flex-col items-center justify-center p-3 text-center',
-                      state.error
-                        ? 'border-danger/30 bg-danger/5'
-                        : 'border-border-subtle bg-bg-sunken/60',
-                    )}
-                  >
-                    {state.error ? (
-                      <>
-                        <span className="text-[11px] text-danger truncate w-full mb-2" title={state.error}>
-                          {t('mediaCollab.uploadError', 'Failed')}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-[10px] h-6 px-2 border-danger/40 text-danger hover:bg-danger/10"
-                          onClick={() => retryUpload(key, name)}
-                        >
-                          {t('mediaCollab.retry', 'Retry')}
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Loader2 className="h-5 w-5 text-text-tertiary animate-spin mb-2" />
-                        <span className="text-[11px] text-text-tertiary truncate w-full mb-1">
-                          {name}
-                        </span>
-                        {state.progress > 0 && (
-                          <div className="w-full bg-bg-sunken rounded-full h-1 overflow-hidden">
-                            <div
-                              className="h-1 bg-accent rounded-full transition-all"
-                              style={{ width: `${state.progress}%` }}
-                            />
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+          {/* Grid toolbar: Select All + Download All */}
+          {!assetsLoading && filteredAssets.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  if (selectedIds.size === filteredAssets.length) {
+                    clearSelection();
+                  } else {
+                    setSelectedIds(new Set(filteredAssets.map((a) => a.id)));
+                  }
+                }}
+              >
+                {selectedIds.size === filteredAssets.length && filteredAssets.length > 0
+                  ? t('mediaCollab.deselectAll', 'Deselect All')
+                  : t('mediaCollab.selectAll', 'Select All')}
+                <span className="ml-1.5 tabular-nums text-text-tertiary">
+                  ({filteredAssets.length})
+                </span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={bulkDownloadMutation.isPending}
+                onClick={() =>
+                  bulkDownloadMutation.mutateAsync(filteredAssets.map((a) => a.id))
+                }
+              >
+                <Download className="h-3.5 w-3.5 mr-1" />
+                {t('mediaCollab.downloadAll', 'Download All')}
+                <span className="ml-1.5 tabular-nums text-text-tertiary">
+                  ({filteredAssets.length})
+                </span>
+              </Button>
             </div>
           )}
 
@@ -1015,43 +1116,30 @@ export default function MediaProjectDetailPageV2() {
           ) : filteredAssets.length === 0 ? (
             <UploadZone onPick={() => fileInputRef.current?.click()} />
           ) : (
-            <>
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                {filteredAssets.slice(0, visibleCount).map((asset, index) => (
-                  <AssetTile
-                    key={asset.id}
-                    asset={asset}
-                    mediaToken={mediaToken}
-                    isSelected={selectedIds.has(asset.id)}
-                    onSelect={(shiftKey) => toggleSelect(asset.id, index, shiftKey)}
-                    onClick={() => {
-                      if (asset.mediaType === 'VIDEO') {
-                        setVideoReviewAsset(asset);
-                      } else {
-                        setSelectedAsset(asset);
-                      }
-                    }}
-                    onStarChange={(rating) =>
-                      starRatingMutation.mutate({ assetId: asset.id, rating })
+            <div
+              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3"
+              style={{ overflowAnchor: 'none' }}
+            >
+              {filteredAssets.map((asset, index) => (
+                <AssetTile
+                  key={asset.id}
+                  asset={asset}
+                  mediaToken={mediaToken}
+                  isSelected={selectedIds.has(asset.id)}
+                  onSelect={(shiftKey) => toggleSelect(asset.id, index, shiftKey)}
+                  onClick={() => {
+                    if (asset.mediaType === 'VIDEO') {
+                      setVideoReviewAsset(asset);
+                    } else {
+                      setLightboxAsset(asset);
                     }
-                  />
-                ))}
-              </div>
-              {filteredAssets.length > visibleCount && (
-                <div className="mt-5 flex justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                  >
-                    {t('mediaCollab.loadMore', 'Load more')}
-                    <span className="text-text-tertiary ml-1.5 tabular-nums">
-                      {filteredAssets.length - visibleCount}
-                    </span>
-                  </Button>
-                </div>
-              )}
-            </>
+                  }}
+                  onStarChange={(rating) =>
+                    starRatingMutation.mutate({ assetId: asset.id, rating })
+                  }
+                />
+              ))}
+            </div>
           )}
             </div>{/* end flex-1 right column */}
           </div>{/* end flex gap-5 sidebar+grid */}
@@ -1325,7 +1413,11 @@ export default function MediaProjectDetailPageV2() {
                     </h3>
                   </div>
 
-                  <CommentList comments={assetComments} />
+                  <CommentList
+                    comments={assetComments}
+                    onResolve={(id) => resolveCommentMutation.mutate(id)}
+                    resolvePending={resolveCommentMutation.isPending}
+                  />
 
                   <CommentComposer
                     onSubmit={(text) => addCommentMutation.mutate(text)}
@@ -1530,7 +1622,97 @@ export default function MediaProjectDetailPageV2() {
         }}
       />
 
-      {/* Lightbox */}
+      {/* Upload queue — fixed bottom-right panel so uploads never cause page scroll */}
+      {uploadQueue.length > 0 && (
+        <div className="fixed bottom-24 right-4 z-40 w-72 rounded-lg border border-border-subtle bg-bg-raised shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle bg-bg-sunken/60">
+            <span className="text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">
+              {t('mediaCollab.uploadQueue', 'Upload Queue')}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-text-tertiary tabular-nums">
+                {uploadQueue.filter((it) => it.status === 'done').length} / {uploadQueue.length}
+              </span>
+              {uploadQueue.every((it) => it.status === 'done' || it.status === 'error') && (
+                <button
+                  type="button"
+                  onClick={() => setUploadQueue([])}
+                  className="text-text-tertiary hover:text-text-primary transition-colors"
+                  title={t('mediaCollab.clearQueue', 'Clear')}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="max-h-60 overflow-y-auto divide-y divide-border-subtle">
+            {uploadQueue.map((item, idx) => (
+              <div key={item.id} className="flex items-center gap-3 px-3 py-2.5">
+                <span className="shrink-0 text-[10px] tabular-nums text-text-tertiary w-5 text-center">
+                  {idx + 1}
+                </span>
+                <div className="shrink-0 w-5 flex items-center justify-center">
+                  {item.status === 'queued' && (
+                    <div className="h-2 w-2 rounded-full bg-text-tertiary/40" />
+                  )}
+                  {item.status === 'uploading' && (
+                    <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" />
+                  )}
+                  {item.status === 'done' && (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                  )}
+                  {item.status === 'error' && (
+                    <X className="h-3.5 w-3.5 text-danger" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs truncate text-text-primary" title={item.name}>
+                      {item.name}
+                    </span>
+                    <span className={cn(
+                      'text-[10px] shrink-0 tabular-nums',
+                      item.status === 'error' ? 'text-danger' :
+                      item.status === 'done' ? 'text-success' :
+                      item.status === 'uploading' ? 'text-accent' : 'text-text-tertiary',
+                    )}>
+                      {item.status === 'queued' && t('mediaCollab.statusQueued', 'Waiting')}
+                      {item.status === 'uploading' && `${item.progress}%`}
+                      {item.status === 'done' && t('mediaCollab.statusDone', 'Done')}
+                      {item.status === 'error' && t('mediaCollab.statusError', 'Failed')}
+                    </span>
+                  </div>
+                  {item.status === 'uploading' && (
+                    <div className="mt-1 w-full bg-bg-base rounded-full h-1 overflow-hidden">
+                      <div
+                        className="h-1 bg-accent rounded-full transition-all duration-200"
+                        style={{ width: `${item.progress}%` }}
+                      />
+                    </div>
+                  )}
+                  {item.status === 'error' && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-danger truncate" title={item.error}>
+                        {item.error}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-5 px-1.5 text-[10px] text-danger hover:bg-danger/10 shrink-0"
+                        onClick={() => retryUpload(item.id)}
+                      >
+                        {t('mediaCollab.retry', 'Retry')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox — full-screen viewer opened by clicking a tile */}
       {lightboxAsset && (
         <LightboxOverlay
           src={getProxyUrl(
@@ -1540,6 +1722,60 @@ export default function MediaProjectDetailPageV2() {
           alt={lightboxAsset.originalName}
           downloadUrl={getProxyUrl(lightboxAsset.url, mediaToken)}
           onClose={() => setLightboxAsset(null)}
+          hasPrev={lightboxAdjacency.hasPrev}
+          hasNext={lightboxAdjacency.hasNext}
+          onPrev={() => gotoAdjacentLightboxAsset(-1)}
+          onNext={() => gotoAdjacentLightboxAsset(1)}
+          position={lightboxAdjacency.position}
+          infoPanel={(
+            <div className="p-4 space-y-5">
+              {/* Star rating */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2">
+                  {t('mediaReview.yourRating', 'Rating')}
+                </p>
+                <div className="flex items-center gap-3">
+                  <StarRating
+                    value={lightboxAsset.starRating ?? 0}
+                    onChange={(rating) =>
+                      starRatingMutation.mutate({ assetId: lightboxAsset.id, rating })
+                    }
+                    size="md"
+                  />
+                  {(lightboxAsset.starRating ?? 0) > 0 && (
+                    <span className="text-xs text-white/40 tabular-nums">
+                      {lightboxAsset.starRating}/5
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-white/10" />
+
+              {/* Comments */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageCircle className="h-3.5 w-3.5 text-white/40" />
+                  <span className="text-[10px] uppercase tracking-wider text-white/40">
+                    {t('mediaCollab.comments', 'Komentar')}
+                    {lightboxComments.length > 0 && (
+                      <span className="ml-1">({lightboxComments.length})</span>
+                    )}
+                  </span>
+                </div>
+                <LightboxCommentList
+                  comments={lightboxComments}
+                  onResolve={(id) => lightboxResolveCommentMutation.mutate(id)}
+                  resolvePending={lightboxResolveCommentMutation.isPending}
+                />
+                <LightboxCommentComposer
+                  onSubmit={(text) => lightboxAddCommentMutation.mutate(text)}
+                  isPending={lightboxAddCommentMutation.isPending}
+                />
+              </div>
+            </div>
+          )}
         />
       )}
 
@@ -1692,6 +1928,7 @@ function AssetTile({
       >
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={(e) => { e.stopPropagation(); onSelect(e.shiftKey); }}
           className={cn(
             'h-5 w-5 rounded border-2 flex items-center justify-center transition-colors',
@@ -1999,9 +2236,11 @@ interface CommentListProps {
     author: { id: string; name: string; email: string };
     status: 'OPEN' | 'RESOLVED';
   }>;
+  onResolve?: (commentId: string) => void;
+  resolvePending?: boolean;
 }
 
-function CommentList({ comments }: CommentListProps) {
+function CommentList({ comments, onResolve, resolvePending }: CommentListProps) {
   const { t } = useTranslation();
   if (comments.length === 0) {
     return (
@@ -2036,10 +2275,23 @@ function CommentList({ comments }: CommentListProps) {
                 </Badge>
               )}
             </div>
-            <DateDisplay
-              date={c.createdAt}
-              className="text-[10px] text-text-tertiary shrink-0"
-            />
+            <div className="flex items-center gap-1 shrink-0">
+              <DateDisplay
+                date={c.createdAt}
+                className="text-[10px] text-text-tertiary"
+              />
+              {c.status === 'OPEN' && onResolve && (
+                <button
+                  type="button"
+                  disabled={resolvePending}
+                  onClick={() => onResolve(c.id)}
+                  className="ml-1 text-[10px] text-text-tertiary hover:text-success transition-colors disabled:opacity-50"
+                  title={t('mediaCollab.resolveComment', 'Mark as resolved')}
+                >
+                  ✓
+                </button>
+              )}
+            </div>
           </div>
           <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line">
             {c.content}
@@ -2079,6 +2331,106 @@ function CommentComposer({
       <Button type="submit" size="sm" disabled={!text.trim() || isPending}>
         {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('mediaCollab.sendComment', 'Send')}
       </Button>
+    </form>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * Lightbox-specific comment components — dark-themed for use inside the
+ * full-screen black overlay panel.
+ * --------------------------------------------------------------------------- */
+
+function LightboxCommentList({ comments, onResolve, resolvePending }: CommentListProps) {
+  const { t } = useTranslation();
+  if (comments.length === 0) {
+    return (
+      <div className="rounded-md border border-white/10 bg-white/5 px-4 py-5 text-center text-xs text-white/35 mb-3">
+        {t('mediaCollab.noComments', 'No comments yet.')}
+      </div>
+    );
+  }
+  return (
+    <ol className="space-y-2.5 mb-3">
+      {comments.map((c) => (
+        <li
+          key={c.id}
+          className="p-3 rounded-md bg-white/5 border border-white/10"
+        >
+          <div className="flex items-baseline justify-between gap-2 mb-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <Avatar className="h-5 w-5 shrink-0">
+                <AvatarFallback className="bg-white/10 text-white/70 text-[9px] font-medium">
+                  {initialsOf(c.author?.name)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs font-medium text-white/80 truncate">
+                {c.author?.name ?? t('mediaCollab.anonymousAuthor', 'Anonymous')}
+              </span>
+              {c.status === 'RESOLVED' && (
+                <span className="shrink-0 text-[9px] font-medium uppercase tracking-wider text-emerald-400">
+                  ✓ {t('mediaCollab.resolved', 'Resolved')}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <DateDisplay date={c.createdAt} className="text-[10px] text-white/30" />
+              {c.status === 'OPEN' && onResolve && (
+                <button
+                  type="button"
+                  disabled={resolvePending}
+                  onClick={() => onResolve(c.id)}
+                  className="ml-1 text-[10px] text-white/30 hover:text-emerald-400 transition-colors disabled:opacity-50"
+                  title={t('mediaCollab.resolveComment', 'Mark as resolved')}
+                >
+                  ✓
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="text-xs text-white/60 leading-relaxed whitespace-pre-line">
+            {c.content}
+          </p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function LightboxCommentComposer({
+  onSubmit,
+  isPending,
+}: {
+  onSubmit: (text: string) => void;
+  isPending: boolean;
+}) {
+  const { t } = useTranslation();
+  const [text, setText] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = text.trim();
+    if (!value) return;
+    onSubmit(value);
+    setText('');
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-center gap-2">
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={t('mediaCollab.commentPlaceholder', 'Write a comment...')}
+        className="flex-1 min-w-0 rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+      />
+      <button
+        type="submit"
+        disabled={!text.trim() || isPending}
+        className="shrink-0 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-40 px-3 py-1.5 text-xs text-white font-medium transition-colors"
+      >
+        {isPending
+          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          : t('mediaCollab.sendComment', 'Send')}
+      </button>
     </form>
   );
 }

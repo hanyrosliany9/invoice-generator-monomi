@@ -16,8 +16,9 @@ import Lenis from 'lenis';
  *
  * Auto-disables for prefers-reduced-motion.
  */
-export const useSmoothScroll = () => {
+export const useSmoothScroll = (disabled = false) => {
   useEffect(() => {
+    if (disabled) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const main = document.querySelector('main');

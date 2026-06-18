@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, Eye, FileImage, Film, Folder, FolderOpen,
-  Image as ImageIcon, Home, Search, Star, User as UserIcon, X,
+  Image as ImageIcon, Home, Maximize2, Search, Star, User as UserIcon, X,
 } from 'lucide-react';
 import { AuroraBackground } from '@/components/monomi/AuroraBackground';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -18,6 +18,7 @@ import {
 } from '@/services/media-collab';
 import { getProxyUrl } from '@/utils/mediaProxy';
 import { cn } from '@/lib/utils';
+import { LightboxOverlay } from '@/components/media/LightboxOverlay';
 import { GuestFeedbackPanel } from './GuestFeedbackPanel';
 
 /* ------------------------------------------------------------------ */
@@ -569,6 +570,7 @@ function PreviewOverlay({
   const queryClient = useQueryClient();
   const src = getProxyUrl(asset.url, mediaToken);
   const isVideo = asset.mediaType === 'VIDEO';
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const isImage = asset.mediaType === 'IMAGE' || asset.mediaType === 'RAW_IMAGE';
 
   const idx = isImage ? imageAssets.findIndex((a) => a.id === asset.id) : -1;
@@ -638,6 +640,18 @@ function PreviewOverlay({
                   <span className="mx-1 h-4 w-px bg-border-default" />
                 </>
               )}
+              {isImage && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setLightboxOpen(true)}
+                  aria-label="Zoom"
+                  title="Zoom / fullscreen"
+                  className="text-text-tertiary hover:text-text-primary"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -662,7 +676,8 @@ function PreviewOverlay({
               <img
                 src={src}
                 alt={asset.originalName}
-                className="max-h-[70vh] max-w-full object-contain rounded-sm"
+                className="max-h-[70vh] max-w-full object-contain rounded-sm cursor-zoom-in"
+                onClick={() => setLightboxOpen(true)}
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
@@ -680,6 +695,16 @@ function PreviewOverlay({
           />
         </div>
       </div>
+
+      {/* Full-screen zoom lightbox — opens on top of the preview overlay */}
+      {lightboxOpen && isImage && (
+        <LightboxOverlay
+          src={src}
+          alt={asset.originalName}
+          downloadUrl={src}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }

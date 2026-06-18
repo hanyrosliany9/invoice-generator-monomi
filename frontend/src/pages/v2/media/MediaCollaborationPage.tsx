@@ -154,6 +154,7 @@ export default function MediaCollaborationPageV2() {
         footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
       }}
       topbar={{}}
+      disableSmoothScroll
     >
       <PageContainer>{children}</PageContainer>
     </AppShell>

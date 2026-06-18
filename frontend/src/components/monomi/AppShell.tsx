@@ -10,13 +10,18 @@ export interface AppShellProps {
   sidebar: SidebarProps;
   topbar?: TopbarProps;
   children: ReactNode;
+  /** Pass true on pages that manage their own scroll (media collab, galleries).
+   *  Lenis intercepts wheel events which breaks image zoom, timeline scrubbing,
+   *  and modal scroll-lock on those pages. */
+  disableSmoothScroll?: boolean;
 }
 
-export const AppShell = ({ sidebar, topbar, children }: AppShellProps) => {
+export const AppShell = ({ sidebar, topbar, children, disableSmoothScroll = false }: AppShellProps) => {
   const viewport = useViewport();
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Buttery scroll on the main scroll container. No-op on reduced-motion.
-  useSmoothScroll();
+  // Disabled on pages that manage scroll themselves (media collab, galleries).
+  useSmoothScroll(disableSmoothScroll);
 
   const isMobile = viewport === 'mobile';
   const isTablet = viewport === 'tablet';

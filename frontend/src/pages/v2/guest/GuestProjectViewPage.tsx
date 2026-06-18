@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertTriangle, FileImage, Film, Image as ImageIcon, Search,
-  ShieldCheck, User as UserIcon, X,
+  ShieldCheck, User as UserIcon, X, Maximize2,
 } from 'lucide-react';
 import { AuroraBackground } from '@/components/monomi/AuroraBackground';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { LightboxOverlay } from '@/components/media/LightboxOverlay';
 import { mediaCollabService, type MediaAsset } from '@/services/media-collab';
 import { getProxyUrl } from '@/utils/mediaProxy';
 import { cn } from '@/lib/utils';
@@ -384,6 +385,7 @@ function PreviewOverlay({
 }) {
   const src = getProxyUrl(asset.url, token);
   const isVideo = asset.mediaType === 'VIDEO';
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
     <div
@@ -406,6 +408,18 @@ function PreviewOverlay({
               {asset.originalName}
             </div>
           </div>
+          {!isVideo && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setLightboxOpen(true)}
+              aria-label="Zoom"
+              title="Zoom / fullscreen"
+              className="text-text-tertiary hover:text-text-primary"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon-sm"
@@ -431,16 +445,25 @@ function PreviewOverlay({
             <img
               src={src}
               alt={asset.originalName}
-              className="max-h-[78vh] max-w-full object-contain rounded-sm"
+              className="max-h-[78vh] max-w-full object-contain rounded-sm cursor-zoom-in"
+              onClick={() => setLightboxOpen(true)}
               onError={(e) => {
-                // Bare fallback if the proxy URL fails — keep the lightbox
-                // useful instead of a broken-image glyph.
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
           )}
         </div>
       </div>
+
+      {/* Full-screen zoom lightbox — opens on top of the preview overlay */}
+      {lightboxOpen && !isVideo && (
+        <LightboxOverlay
+          src={src}
+          alt={asset.originalName}
+          downloadUrl={src}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }

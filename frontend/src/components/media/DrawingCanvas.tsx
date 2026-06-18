@@ -81,6 +81,9 @@ export function DrawingCanvas({
   const [strokeWidth] = useState(3);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
+  // Ref mirrors historyIdx so Fabric event listeners (registered once on mount)
+  // always read the current index without a stale closure.
+  const historyIdxRef = useRef(-1);
   const [saving, setSaving] = useState(false);
   const [fabricLoaded, setFabricLoaded] = useState(false);
 
@@ -121,9 +124,12 @@ export function DrawingCanvas({
       const saveSnapshot = () => {
         const json = JSON.stringify(canvas.toJSON());
         setHistory((prev) => {
-          const slice = prev.slice(0, historyIdx + 1);
+          // Use ref (not closed-over state) so the current index is always fresh
+          const slice = prev.slice(0, historyIdxRef.current + 1);
           const next = [...slice, json];
-          setHistoryIdx(next.length - 1);
+          const newIdx = next.length - 1;
+          historyIdxRef.current = newIdx;
+          setHistoryIdx(newIdx);
           return next;
         });
       };
@@ -211,6 +217,7 @@ export function DrawingCanvas({
   const undo = () => {
     if (!fabricRef.current || historyIdx <= 0) return;
     const newIdx = historyIdx - 1;
+    historyIdxRef.current = newIdx;
     setHistoryIdx(newIdx);
     const { canvas } = fabricRef.current;
     canvas.loadFromJSON(history[newIdx], () => canvas.renderAll());
@@ -219,6 +226,7 @@ export function DrawingCanvas({
   const redo = () => {
     if (!fabricRef.current || historyIdx >= history.length - 1) return;
     const newIdx = historyIdx + 1;
+    historyIdxRef.current = newIdx;
     setHistoryIdx(newIdx);
     const { canvas } = fabricRef.current;
     canvas.loadFromJSON(history[newIdx], () => canvas.renderAll());
