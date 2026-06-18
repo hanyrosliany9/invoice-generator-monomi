@@ -42,6 +42,9 @@ function extractErrorMessage(error: unknown, t: (key: string, fallback: string) 
   if (status === 401) {
     return t('auth.invalidCredentials', 'Email atau password salah')
   }
+  if (status === 503 || status === 502) {
+    return t('auth.serverUnavailable', 'Server sedang tidak tersedia. Coba lagi dalam beberapa saat.')
+  }
   if (serverMsg) return serverMsg
   return err?.message ?? t('auth.invalidCredentials', 'Email atau password salah')
 }
