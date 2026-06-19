@@ -65,7 +65,6 @@ class TokenRefreshService {
     // Check if we have a refresh token at all
     const refreshToken = getRefreshToken();
     if (!refreshToken) {
-      console.warn('[TokenRefresh] No refresh token available');
       return;
     }
 

@@ -212,10 +212,7 @@ class DateTimeSyncService {
       }
 
       const data = await response.json()
-      // WorldClock returns UTC time, adjust for WIB (+7 hours)
-      const utcTime = new Date(data.currentDateTime)
-      const wibTime = new Date(utcTime.getTime() + (7 * 60 * 60 * 1000))
-      return wibTime
+      return new Date(data.currentDateTime)
 
     } catch (error) {
       console.warn('[DateTimeSync] WorldClock fetch failed:', error)
@@ -275,7 +272,8 @@ class DateTimeSyncService {
       }
 
       const data: TimeAPIResponse = await response.json()
-      return new Date(data.dateTime)
+      // dateTime from timeapi.io is timezone-naive local time; append offset so JS parses it as WIB
+      return new Date(data.dateTime + '+07:00')
 
     } catch (error) {
       console.warn('[DateTimeSync] timeapi.io fetch failed:', error)
