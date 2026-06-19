@@ -49,6 +49,21 @@ import { cn } from '@/lib/utils';
 /*  list — a half-working filter is worse than none.                   */
 /* ------------------------------------------------------------------ */
 
+interface MediaCollabShellProps { children: React.ReactNode; user: import('@/store/auth').User | null; }
+const MediaCollabShell = ({ children, user }: MediaCollabShellProps) => (
+  <AppShell
+    sidebar={{
+      brand: <MonomiBrand />,
+      sections: v2SidebarSections,
+      footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+    topbar={{}}
+    disableSmoothScroll
+  >
+    <PageContainer>{children}</PageContainer>
+  </AppShell>
+);
+
 export default function MediaCollaborationPageV2() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -145,32 +160,18 @@ export default function MediaCollaborationPageV2() {
   const hasActiveFilters = !!searchText;
   const resetFilters = () => setSearchText('');
 
-  /* ---- shell wrapper ---- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{}}
-      disableSmoothScroll
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
 
   /* ---- error short-circuit ---- */
   if (error) {
     return (
-      <Shell>
+      <MediaCollabShell user={user}>
         <EmptyState
           icon={<Film className="h-12 w-12" />}
           title={t('mediaCollaboration.errorTitle', 'Tidak bisa memuat proyek media')}
           description={error instanceof Error ? error.message : t('mediaCollaboration.errorGeneric', 'Terjadi kesalahan.')}
           action={<Button onClick={() => refetch()}>{t('mediaCollaboration.retry', 'Coba Lagi')}</Button>}
         />
-      </Shell>
+      </MediaCollabShell>
     );
   }
 
@@ -186,7 +187,7 @@ export default function MediaCollaborationPageV2() {
   };
 
   return (
-    <Shell>
+    <MediaCollabShell user={user}>
       <PageHeader
         title={t('mediaCollaboration.title', 'Kolaborasi Media')}
         description={t('mediaCollaboration.description', 'Ruang berbagi video dan foto untuk tim produksi — komentari, setujui, dan kirim ke klien.')}
@@ -405,7 +406,7 @@ export default function MediaCollaborationPageV2() {
           </form>
         </DialogContent>
       </Dialog>
-    </Shell>
+    </MediaCollabShell>
   );
 }
 

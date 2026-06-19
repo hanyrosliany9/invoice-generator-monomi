@@ -37,6 +37,7 @@ export class MediaAssetsService {
     projectId: string,
     userId: string,
     filenames: string[],
+    folderId?: string | null,
   ) {
     // Verify project access
     const hasAccess = await this.verifyProjectAccess(userId, projectId);
@@ -44,13 +45,17 @@ export class MediaAssetsService {
       throw new ForbiddenException("Access denied to this project");
     }
 
-    // Find existing assets with matching filenames
+    // Find existing assets with matching filenames, optionally scoped to a folder.
+    // folderId === undefined  → search across all folders in the project
+    // folderId === null       → search only root-level assets (unfiled)
+    // folderId === "uuid"     → search only that specific folder
     const existingAssets = await this.prisma.mediaAsset.findMany({
       where: {
         projectId,
         originalName: {
           in: filenames,
         },
+        ...(folderId !== undefined ? { folderId: folderId ?? null } : {}),
       },
       select: {
         id: true,
@@ -95,7 +100,7 @@ export class MediaAssetsService {
     userId: string,
     file: Express.Multer.File,
     description?: string,
-    folderId?: string,
+    folderId?: string | null,
     conflictResolution?: "skip" | "replace" | "keep-both",
   ) {
     try {
@@ -117,6 +122,8 @@ export class MediaAssetsService {
           where: {
             projectId,
             originalName: file.originalname,
+            // Scope conflict lookup to the same folder the file is being uploaded into
+            ...(folderId !== undefined ? { folderId: folderId ?? null } : {}),
           },
         });
 

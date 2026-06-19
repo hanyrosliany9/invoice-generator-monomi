@@ -111,6 +111,27 @@ const ASSET_STATUS_LABEL: Record<string, string> = {
 };
 
 /* ------------------------------------------------------------------ */
+/*  Stable shell wrapper — must live at module level.                  */
+/*  Defining this inside the page function creates a new component     */
+/*  type on every render, causing React to unmount+remount AppShell    */
+/*  (and its <main> scroll container) after every state update.        */
+/* ------------------------------------------------------------------ */
+interface MediaShellProps { children: React.ReactNode; user: import('@/store/auth').User | null; }
+const MediaShell = ({ children, user }: MediaShellProps) => (
+  <AppShell
+    sidebar={{
+      brand: <MonomiBrand />,
+      sections: v2SidebarSections,
+      footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
+    }}
+    topbar={{}}
+    disableSmoothScroll
+  >
+    <PageContainer>{children}</PageContainer>
+  </AppShell>
+);
+
+/* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -133,9 +154,21 @@ export default function MediaProjectDetailPageV2() {
     status: 'queued' | 'uploading' | 'done' | 'error';
     progress: number;
     error?: string;
+    conflictResolution?: 'skip' | 'replace' | 'keep-both';
   }
   const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  /* ---------- duplicate-upload dialog ---------- */
+  type DuplicateEntry = {
+    id: string; originalName: string; size: string;
+    uploadedAt: string; uploadedBy: string; url: string;
+  };
+  const [duplicateDialog, setDuplicateDialog] = useState<{
+    pendingFiles: File[];
+    duplicates: Record<string, DuplicateEntry>;
+  } | null>(null);
+  const [duplicateResolution, setDuplicateResolution] = useState<'skip' | 'replace' | 'keep-both'>('skip');
 
   /* ---------- new review-tool state ---------- */
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -426,9 +459,22 @@ export default function MediaProjectDetailPageV2() {
     onError: () => toast.error(t('mediaReview.bulkRateFailed', 'Failed to update ratings.')),
   });
 
+  const BULK_DOWNLOAD_LIMIT = 500;
+
   const bulkDownloadMutation = useMutation({
-    mutationFn: (ids: string[]) =>
-      mediaCollabService.bulkDownloadAssets(ids, `${project?.name ?? 'media'}-selection`),
+    mutationFn: (ids: string[]) => {
+      const capped = ids.slice(0, BULK_DOWNLOAD_LIMIT);
+      if (ids.length > BULK_DOWNLOAD_LIMIT) {
+        toast.warning(
+          t(
+            'mediaCollab.downloadLimitWarning',
+            'ZIP is limited to {{limit}} files. Downloading the first {{limit}} of {{total}}.',
+            { limit: BULK_DOWNLOAD_LIMIT, total: ids.length },
+          ),
+        );
+      }
+      return mediaCollabService.bulkDownloadAssets(capped, `${project?.name ?? 'media'}-selection`);
+    },
     onSuccess: () => {
       toast.success(t('mediaReview.bulkDownloadStarted', 'Download started.'));
     },
@@ -487,6 +533,22 @@ export default function MediaProjectDetailPageV2() {
     };
 
     return findPath(folderTree, activeFolderId, []) ?? [];
+  }, [activeFolderId, folderTree]);
+
+  // Folders visible inside the current view (root-level or children of active folder).
+  const visibleSubfolders = useMemo((): MediaFolder[] => {
+    if (activeFolderId === null) return folderTree;
+    const findNode = (nodes: MediaFolder[], id: string): MediaFolder | null => {
+      for (const n of nodes) {
+        if (n.id === id) return n;
+        if (n.children?.length) {
+          const found = findNode(n.children, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findNode(folderTree, activeFolderId)?.children ?? [];
   }, [activeFolderId, folderTree]);
 
   /* ---------- derived ---------- */
@@ -623,18 +685,42 @@ export default function MediaProjectDetailPageV2() {
     return { hasPrev, hasNext };
   }, [selectedAsset, filteredAssets]);
 
-  // Keyboard nav for the asset detail sheet (left/right arrows).
+  // Keyboard nav for the asset detail sheet (arrows) + star rating shortcuts (0-5).
   useEffect(() => {
     if (!selectedAsset) return;
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.key === 'ArrowLeft') { e.preventDefault(); gotoAdjacentAsset(-1); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); gotoAdjacentAsset(1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); gotoAdjacentAsset(-1); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); gotoAdjacentAsset(1); return; }
+      // 0-5 to set star rating (only when lightbox is closed to avoid conflict)
+      if (!lightboxAsset) {
+        const digit = parseInt(e.key, 10);
+        if (!isNaN(digit) && digit >= 0 && digit <= 5) {
+          e.preventDefault();
+          starRatingMutation.mutate({ assetId: selectedAsset.id, rating: digit });
+        }
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedAsset, gotoAdjacentAsset]);
+  }, [selectedAsset, lightboxAsset, gotoAdjacentAsset, starRatingMutation]);
+
+  // Star rating shortcuts (1-5) when lightbox is open. 0 is reserved by LightboxOverlay for zoom reset.
+  useEffect(() => {
+    if (!lightboxAsset) return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const digit = parseInt(e.key, 10);
+      if (!isNaN(digit) && digit >= 1 && digit <= 5) {
+        e.preventDefault();
+        starRatingMutation.mutate({ assetId: lightboxAsset.id, rating: digit });
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightboxAsset, starRatingMutation]);
 
   const kpis = useMemo(() => {
     const total = assets.length;
@@ -647,11 +733,30 @@ export default function MediaProjectDetailPageV2() {
   }, [assets]);
 
   /* ---------- upload ---------- */
-  const uploadSingleItem = async (id: string, file: File) => {
-    if (!projectId) return;
+
+  // Returns the outcome so batch callers can tally results for a summary toast.
+  // Pass silent=true to suppress the per-file success/skip toast (bulk mode).
+  // Error toasts are never suppressed — the user needs to know which files failed.
+  const uploadSingleItem = async (
+    id: string,
+    file: File,
+    conflictResolution?: 'skip' | 'replace' | 'keep-both',
+    opts?: { silent?: boolean },
+  ): Promise<'done' | 'skipped' | 'error'> => {
+    if (!projectId) return 'error';
 
     const setItem = (patch: Partial<UploadItem>) =>
       setUploadQueue((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+
+    // Handle skip client-side — no API call, just dismiss
+    if (conflictResolution === 'skip') {
+      setItem({ status: 'done', progress: 100 });
+      setTimeout(() => {
+        setUploadQueue((prev) => prev.filter((it) => it.id !== id));
+      }, 1500);
+      if (!opts?.silent) toast.info(t('mediaCollab.uploadSkipped', '"{{name}}" dilewati.', { name: file.name }));
+      return 'skipped';
+    }
 
     setItem({ status: 'uploading', progress: 0 });
     try {
@@ -659,8 +764,8 @@ export default function MediaProjectDetailPageV2() {
         projectId,
         file,
         undefined,
-        activeFolderId ?? undefined,
-        undefined,
+        activeFolderId,
+        conflictResolution,
         (evt) => {
           const pct = evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0;
           setItem({ progress: pct });
@@ -671,40 +776,111 @@ export default function MediaProjectDetailPageV2() {
       setTimeout(() => {
         setUploadQueue((prev) => prev.filter((it) => it.id !== id));
       }, 1500);
-      toast.success(t('mediaCollab.uploaded', '"{{name}}" diunggah.', { name: file.name }));
+      if (!opts?.silent) toast.success(t('mediaCollab.uploaded', '"{{name}}" diunggah.', { name: file.name }));
+      return 'done';
     } catch (err: any) {
       const errMsg = err?.response?.data?.message ?? err?.message ?? 'Upload failed';
       setItem({ status: 'error', error: errMsg, progress: 0 });
       toast.error(t('mediaCollab.uploadFailed', 'Gagal unggah "{{name}}".', { name: file.name }));
+      return 'error';
     }
+  };
+
+  // Show a single summary toast for a completed batch (Google Drive style).
+  const showBatchSummary = (done: number, skipped: number, failed: number) => {
+    const parts: string[] = [];
+    if (done > 0) parts.push(t('mediaCollab.uploadedCount', '{{n}} file diunggah', { n: done }));
+    if (skipped > 0) parts.push(t('mediaCollab.skippedCount', '{{n}} dilewati', { n: skipped }));
+    if (failed > 0) parts.push(t('mediaCollab.failedCount', '{{n}} gagal', { n: failed }));
+    if (parts.length === 0) return;
+    const msg = parts.join(', ');
+    if (failed === 0) toast.success(msg);
+    else if (done > 0 || skipped > 0) toast.warning(msg);
+    // All failed → individual error toasts already shown, no duplicate summary needed
+  };
+
+  // Shared helper: stamp queue items and upload sequentially.
+  // duplicates — map of filename → existing-asset returned by checkDuplicates
+  // resolution — conflict resolution choice from the dialog
+  const startUploadBatch = async (
+    files: File[],
+    duplicates: Record<string, unknown>,
+    resolution?: 'skip' | 'replace' | 'keep-both',
+  ) => {
+    const newItems: UploadItem[] = files.map((file, i) => ({
+      id: `${Date.now()}-${i}-${file.name}`,
+      file,
+      name: file.name,
+      status: 'queued' as const,
+      progress: 0,
+      conflictResolution: duplicates[file.name] ? resolution : undefined,
+    }));
+    setUploadQueue((prev) => [...prev, ...newItems]);
+
+    // Suppress per-file toasts in bulk mode; one summary at the end instead.
+    const isBulk = newItems.length > 1;
+    let done = 0, skipped = 0, failed = 0;
+    for (const item of newItems) {
+      const result = await uploadSingleItem(item.id, item.file, item.conflictResolution, { silent: isBulk });
+      if (result === 'done') done++;
+      else if (result === 'skipped') skipped++;
+      else failed++;
+    }
+    if (isBulk) showBatchSummary(done, skipped, failed);
+
+    invalidateAssets();
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleFilesPicked = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-
-    // Stamp the queue with all files as 'queued' before any uploads start
-    const newItems: UploadItem[] = files.map((file, i) => ({
-      id: `${Date.now()}-${i}-${file.name}`,
-      file,
-      name: file.name,
-      status: 'queued',
-      progress: 0,
-    }));
-    setUploadQueue((prev) => [...prev, ...newItems]);
-
-    // Upload sequentially so the user sees each file advance one at a time
-    for (const item of newItems) {
-      await uploadSingleItem(item.id, item.file);
-    }
-    invalidateAssets();
+    // Reset input immediately so the same file(s) can be picked again later
     if (fileInputRef.current) fileInputRef.current.value = '';
+
+    // Check for duplicates in the current folder before queuing
+    if (projectId) {
+      try {
+        const duplicates = await mediaCollabService.checkDuplicates(
+          projectId,
+          files.map((f) => f.name),
+          activeFolderId, // null = root, "uuid" = specific folder
+        );
+        if (Object.keys(duplicates).length > 0) {
+          // Surface the dialog so the user can choose skip / replace / keep-both
+          setDuplicateDialog({ pendingFiles: files, duplicates });
+          setDuplicateResolution('skip');
+          return;
+        }
+      } catch {
+        // If the check fails (network, auth), proceed with upload anyway
+      }
+    }
+
+    await startUploadBatch(files, {}, undefined);
   };
 
   const retryUpload = async (id: string) => {
     const item = uploadQueue.find((it) => it.id === id);
     if (!item) return;
-    await uploadSingleItem(id, item.file);
+    await uploadSingleItem(id, item.file, item.conflictResolution);
+    invalidateAssets();
+  };
+
+  const retryAllFailed = async () => {
+    const failedIds = uploadQueue
+      .filter((it) => it.status === 'error')
+      .map((it) => it.id);
+    const isBulk = failedIds.length > 1;
+    let done = 0, failed = 0;
+    for (const id of failedIds) {
+      const item = uploadQueue.find((it) => it.id === id);
+      if (!item) continue;
+      const result = await uploadSingleItem(id, item.file, item.conflictResolution, { silent: isBulk });
+      if (result === 'done') done++;
+      else if (result === 'error') failed++;
+    }
+    if (isBulk) showBatchSummary(done, 0, failed);
     invalidateAssets();
   };
 
@@ -728,25 +904,11 @@ export default function MediaProjectDetailPageV2() {
     }
   };
 
-  /* ---------- shell ---------- */
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <AppShell
-      sidebar={{
-        brand: <MonomiBrand />,
-        sections: v2SidebarSections,
-        footer: user ? <UserChip name={user.name} role={user.role} size="sm" /> : null,
-      }}
-      topbar={{}}
-      disableSmoothScroll
-    >
-      <PageContainer>{children}</PageContainer>
-    </AppShell>
-  );
 
   /* ---------- loading ---------- */
   if (projectLoading) {
     return (
-      <Shell>
+      <MediaShell user={user}>
         <div className="mb-6">
           <Skeleton className="h-4 w-32 mb-4" />
           <Skeleton className="h-10 w-64 mb-2" />
@@ -755,14 +917,14 @@ export default function MediaProjectDetailPageV2() {
         <Skeleton className="h-48 rounded-lg mb-4" />
         <Skeleton className="h-32 rounded-lg mb-4" />
         <Skeleton className="h-64 rounded-lg" />
-      </Shell>
+      </MediaShell>
     );
   }
 
   /* ---------- error ---------- */
   if (projectError || !project) {
     return (
-      <Shell>
+      <MediaShell user={user}>
         <EmptyState
           icon={<FolderOpen className="h-12 w-12" />}
           title={t('mediaCollab.notFound', 'Proyek tidak ditemukan')}
@@ -780,13 +942,13 @@ export default function MediaProjectDetailPageV2() {
             </div>
           }
         />
-      </Shell>
+      </MediaShell>
     );
   }
 
   /* ---------- render ---------- */
   return (
-    <Shell>
+    <MediaShell user={user}>
       {/* Back link */}
       <div className="mb-4">
         <Link
@@ -1066,6 +1228,30 @@ export default function MediaProjectDetailPageV2() {
                 </div>
               )}
 
+              {/* Folder cards — click to navigate into a subfolder */}
+              {visibleSubfolders.length > 0 && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
+                  {visibleSubfolders.map((folder) => (
+                    <button
+                      key={folder.id}
+                      type="button"
+                      onClick={() => setActiveFolderId(folder.id)}
+                      className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-md border border-border-subtle bg-bg-sunken/40 hover:bg-bg-raised hover:border-border-default transition-colors aspect-square text-center group"
+                    >
+                      <FolderOpen className="h-7 w-7 text-text-tertiary group-hover:text-accent transition-colors shrink-0" />
+                      <span className="text-[11px] text-text-secondary group-hover:text-text-primary transition-colors truncate w-full px-1">
+                        {folder.name}
+                      </span>
+                      {(folder._count?.assets ?? 0) > 0 && (
+                        <span className="text-[10px] text-text-tertiary tabular-nums">
+                          {folder._count!.assets}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
           {/* Grid toolbar: Select All + Download All */}
           {!assetsLoading && filteredAssets.length > 0 && (
             <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -1101,7 +1287,8 @@ export default function MediaProjectDetailPageV2() {
                 <Download className="h-3.5 w-3.5 mr-1" />
                 {t('mediaCollab.downloadAll', 'Download All')}
                 <span className="ml-1.5 tabular-nums text-text-tertiary">
-                  ({filteredAssets.length})
+                  ({Math.min(filteredAssets.length, BULK_DOWNLOAD_LIMIT)}
+                  {filteredAssets.length > BULK_DOWNLOAD_LIMIT && ` / ${filteredAssets.length}`})
                 </span>
               </Button>
             </div>
@@ -1633,6 +1820,18 @@ export default function MediaProjectDetailPageV2() {
               <span className="text-[10px] text-text-tertiary tabular-nums">
                 {uploadQueue.filter((it) => it.status === 'done').length} / {uploadQueue.length}
               </span>
+              {/* Retry All — shown when there are failures and nothing is actively uploading */}
+              {uploadQueue.some((it) => it.status === 'error') &&
+               !uploadQueue.some((it) => it.status === 'uploading' || it.status === 'queued') && (
+                <button
+                  type="button"
+                  onClick={retryAllFailed}
+                  className="text-[10px] font-medium text-danger hover:text-danger/70 transition-colors"
+                  title={t('mediaCollab.retryAll', 'Retry all failed uploads')}
+                >
+                  {t('mediaCollab.retryAll', 'Retry All')}
+                </button>
+              )}
               {uploadQueue.every((it) => it.status === 'done' || it.status === 'error') && (
                 <button
                   type="button"
@@ -1845,7 +2044,104 @@ export default function MediaProjectDetailPageV2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Shell>
+
+      {/* ── Duplicate-file resolution dialog ── */}
+      {duplicateDialog && (
+        <Dialog
+          open={!!duplicateDialog}
+          onOpenChange={(open) => { if (!open) setDuplicateDialog(null); }}
+        >
+          <DialogContent className="max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{t('mediaCollab.duplicateTitle', 'Files Already Exist')}</DialogTitle>
+              <DialogDescription>
+                {t(
+                  'mediaCollab.duplicateDesc',
+                  '{{n}} file(s) already exist in this folder. Choose how to handle them.',
+                  { n: Object.keys(duplicateDialog.duplicates).length },
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Resolution options */}
+            <div className="flex flex-col gap-2">
+              {(['skip', 'replace', 'keep-both'] as const).map((opt) => {
+                const label = opt === 'skip' ? t('mediaCollab.conflictSkip', 'Skip') : opt === 'replace' ? t('mediaCollab.conflictReplace', 'Replace') : t('mediaCollab.conflictKeepBoth', 'Keep Both');
+                const desc = opt === 'skip'
+                  ? t('mediaCollab.conflictSkipDesc', 'Do not upload files that already exist.')
+                  : opt === 'replace'
+                  ? t('mediaCollab.conflictReplaceDesc', 'Delete existing file and upload the new one.')
+                  : t('mediaCollab.conflictKeepBothDesc', 'Rename the new file with a timestamp suffix.');
+                return (
+                  <label
+                    key={opt}
+                    className={cn(
+                      'flex items-start gap-3 rounded-md border p-3 cursor-pointer transition-colors',
+                      duplicateResolution === opt
+                        ? 'border-accent bg-accent/5'
+                        : 'border-border-subtle hover:border-border-default',
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="conflictResolution"
+                      value={opt}
+                      checked={duplicateResolution === opt}
+                      onChange={() => setDuplicateResolution(opt)}
+                      className="mt-0.5 shrink-0"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-text-primary">{label}</div>
+                      <div className="text-xs text-text-tertiary mt-0.5">{desc}</div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            {/* List of conflicting files */}
+            <div className="rounded-md border border-border-subtle bg-bg-sunken/40 divide-y divide-border-subtle max-h-[180px] overflow-y-auto">
+              {Object.values(duplicateDialog.duplicates).map((dup) => (
+                <div key={dup.id} className="px-3 py-2 flex items-center gap-3 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs text-text-primary truncate">{dup.originalName}</div>
+                    <div className="text-[11px] text-text-tertiary">
+                      {formatBytes(Number(dup.size))} · {t('mediaCollab.uploadedBy', 'by')} {dup.uploadedBy}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Count of non-duplicate files that will always upload */}
+            {duplicateDialog.pendingFiles.filter((f) => !duplicateDialog.duplicates[f.name]).length > 0 && (
+              <p className="text-xs text-text-tertiary">
+                {t(
+                  'mediaCollab.newFilesAlwaysUpload',
+                  '{{n}} new file(s) will always be uploaded.',
+                  { n: duplicateDialog.pendingFiles.filter((f) => !duplicateDialog.duplicates[f.name]).length },
+                )}
+              </p>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDuplicateDialog(null)}>
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <Button
+                onClick={async () => {
+                  const { pendingFiles, duplicates } = duplicateDialog;
+                  setDuplicateDialog(null);
+                  await startUploadBatch(pendingFiles, duplicates, duplicateResolution);
+                }}
+              >
+                {t('mediaCollab.confirmUpload', 'Confirm Upload')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </MediaShell>
   );
 }
 

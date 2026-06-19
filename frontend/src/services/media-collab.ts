@@ -280,6 +280,7 @@ class MediaCollabService {
   async checkDuplicates(
     projectId: string,
     filenames: string[],
+    folderId?: string | null,
   ): Promise<Record<string, {
     id: string;
     originalName: string;
@@ -290,7 +291,9 @@ class MediaCollabService {
   }>> {
     const response = await apiClient.post(
       `/media-collab/assets/check-duplicates/${projectId}`,
-      { filenames },
+      // Include folderId so the backend scopes the check to the same folder.
+      // Pass null explicitly for root; omit (undefined) for project-wide search.
+      { filenames, ...(folderId !== undefined ? { folderId } : {}) },
     );
     return response.data.data;
   }
@@ -299,7 +302,7 @@ class MediaCollabService {
     projectId: string,
     file: File,
     description?: string,
-    folderId?: string,
+    folderId?: string | null,
     conflictResolution?: 'skip' | 'replace' | 'keep-both',
     onProgress?: (progressEvent: { loaded: number; total?: number }) => void,
   ): Promise<MediaAsset> {
@@ -308,8 +311,10 @@ class MediaCollabService {
     if (description) {
       formData.append('description', description);
     }
-    if (folderId) {
-      formData.append('folderId', folderId);
+    // Always append folderId when explicitly provided so the backend can scope
+    // the conflict check to the right folder. null = root → send '' sentinel.
+    if (folderId !== undefined) {
+      formData.append('folderId', folderId ?? '');
     }
     if (conflictResolution) {
       formData.append('conflictResolution', conflictResolution);

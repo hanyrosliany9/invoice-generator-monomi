@@ -1,18 +1,22 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, Eye, FileImage, Film, Folder, FolderOpen,
-  Image as ImageIcon, Home, Maximize2, Search, Star, User as UserIcon, X,
+  Image as ImageIcon, Home, Maximize2, Star, User as UserIcon, X,
 } from 'lucide-react';
 import { AuroraBackground } from '@/components/monomi/AuroraBackground';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { EmptyState } from '@/components/monomi/EmptyState';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  FilterSortBar,
+  DEFAULT_FILTERS,
+  type FilterState,
+} from '@/components/media/FilterSortBar';
 import {
   mediaCollabService, type MediaAsset, type MediaFolder,
 } from '@/services/media-collab';
@@ -41,10 +45,18 @@ import { GuestFeedbackPanel } from './GuestFeedbackPanel';
 /* ------------------------------------------------------------------ */
 
 export const PublicProjectViewPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { token: shareToken } = useParams<{ token: string }>();
 
-  const [search, setSearch] = useState('');
+  // Public gallery is always shown in English regardless of the admin app language
+  useEffect(() => {
+    const prev = i18n.language;
+    i18n.changeLanguage('en');
+    return () => { i18n.changeLanguage(prev); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [selected, setSelected] = useState<MediaAsset | null>(null);
 
@@ -102,15 +114,54 @@ export const PublicProjectViewPage = () => {
     return path;
   }, [currentFolderId, folders]);
 
-  /* ----- client-side search across the current folder ----- */
+  /* ----- client-side filtering across the current folder ----- */
   const filteredAssets = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return folderAssets;
-    return folderAssets.filter((a) =>
-      a.originalName.toLowerCase().includes(q)
-      || a.description?.toLowerCase().includes(q),
-    );
-  }, [folderAssets, search]);
+    let result = [...folderAssets];
+
+    // Filename / description search
+    const q = filters.search.trim().toLowerCase();
+    if (q) {
+      result = result.filter((a) =>
+        a.originalName.toLowerCase().includes(q)
+        || a.description?.toLowerCase().includes(q),
+      );
+    }
+
+    // Media type
+    if (filters.mediaType === 'IMAGE') {
+      result = result.filter((a) => a.mediaType === 'IMAGE' || a.mediaType === 'RAW_IMAGE');
+    } else if (filters.mediaType === 'VIDEO') {
+      result = result.filter((a) => a.mediaType === 'VIDEO');
+    }
+
+    // Min star rating
+    if (filters.minStar > 0) {
+      result = result.filter((a) => (a.starRating ?? 0) >= filters.minStar);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let cmp = 0;
+      switch (filters.sortBy) {
+        case 'originalName':
+          cmp = a.originalName.localeCompare(b.originalName);
+          break;
+        case 'size':
+          cmp = (Number(a.size) || 0) - (Number(b.size) || 0);
+          break;
+        case 'starRating':
+          cmp = (a.starRating ?? 0) - (b.starRating ?? 0);
+          break;
+        case 'uploadedAt':
+        default:
+          cmp = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+          break;
+      }
+      return filters.sortOrder === 'asc' ? cmp : -cmp;
+    });
+
+    return result;
+  }, [folderAssets, filters]);
 
   // Navigable images for lightbox prev/next.
   const imageAssets = useMemo(
@@ -185,7 +236,7 @@ export const PublicProjectViewPage = () => {
               </span>
               <span className="h-4 w-px bg-border-default" />
               <span className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
-                Galeri Publik
+                Public Gallery
               </span>
             </div>
             {projectLoading ? (
@@ -205,7 +256,7 @@ export const PublicProjectViewPage = () => {
                 className="border-info/30 bg-info/[0.08] text-info gap-1.5 px-2.5 py-1 text-xs"
               >
                 <Eye className="h-3 w-3" />
-                {project.publicViewCount ?? 0} tampilan
+                {project.publicViewCount ?? 0} views
               </Badge>
             )}
           </div>
@@ -218,7 +269,7 @@ export const PublicProjectViewPage = () => {
         {project?.description && (
           <GlassPanel surface="subtle" padding="md" className="mb-5">
             <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium mb-1.5">
-              Ringkasan Proyek
+              Project Summary
             </div>
             <p className="text-sm text-text-secondary leading-relaxed">
               {project.description}
@@ -228,26 +279,25 @@ export const PublicProjectViewPage = () => {
 
         {/* Gallery panel */}
         <GlassPanel surface="glass" padding="none" className="overflow-hidden">
-          {/* Toolbar: title + counts + search */}
-          <div className="flex flex-col gap-3 border-b border-border-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-baseline gap-3">
-              <h2 className="text-base font-display font-semibold tracking-tight text-text-primary">
-                Galeri Media
-              </h2>
-              <span className="text-xs text-text-tertiary tabular-nums">
-                {folderAssets.length} aset
-                {subfolders.length > 0 && ` · ${subfolders.length} folder`}
-              </span>
+          {/* Toolbar: title + counts + filter bar */}
+          <div className="flex flex-col gap-3 border-b border-border-subtle px-5 py-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-base font-display font-semibold tracking-tight text-text-primary">
+                  {t('guest.publicProjectView.galleryTitle', 'Media Gallery')}
+                </h2>
+                <span className="text-xs text-text-tertiary tabular-nums">
+                  {folderAssets.length} {t('guest.publicProjectView.assets', 'assets')}
+                  {subfolders.length > 0 && ` · ${subfolders.length} ${t('guest.publicProjectView.folders', 'folders')}`}
+                </span>
+              </div>
             </div>
-            <div className="relative w-full sm:max-w-[280px]">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('guest.publicProjectView.searchPlaceholder', 'Cari berkas...')}
-                className="bg-bg-sunken border-border-subtle pl-9 text-text-primary placeholder:text-text-tertiary"
-              />
-            </div>
+            <FilterSortBar
+              filters={filters}
+              onChange={setFilters}
+              resultCount={filteredAssets.length}
+              totalCount={folderAssets.length}
+            />
           </div>
 
           {/* Breadcrumb row — only when navigated below root. Stays
@@ -262,7 +312,7 @@ export const PublicProjectViewPage = () => {
                 className="h-7 px-2 text-text-tertiary hover:text-text-primary"
               >
                 <Home className="h-3.5 w-3.5" />
-                Root
+                Root Folder
               </Button>
               {folderPath.map((folder, idx) => (
                 <div key={folder.id} className="flex items-center gap-1">
@@ -299,19 +349,23 @@ export const PublicProjectViewPage = () => {
               <EmptyState
                 icon={<ImageIcon />}
                 title={
-                  search
-                    ? t('guest.publicProjectView.noFilesMatch', 'Tidak ada berkas yang cocok')
-                    : 'Folder ini kosong'
+                  filters.search
+                    ? t('guest.publicProjectView.noFilesMatch', 'No files match your search')
+                    : t('guest.publicProjectView.emptyFolderTitle', 'This folder is empty')
                 }
                 description={
-                  search
-                    ? t('guest.publicProjectView.tryOtherKeyword', 'Coba kata kunci lain atau hapus pencarian.')
-                    : t('guest.publicProjectView.emptyFolder', 'Belum ada aset atau folder di tingkat ini.')
+                  filters.search
+                    ? t('guest.publicProjectView.tryOtherKeyword', 'Try a different keyword or clear the search.')
+                    : t('guest.publicProjectView.emptyFolder', 'No assets or folders at this level yet.')
                 }
                 action={
-                  search ? (
-                    <Button variant="outline" size="sm" onClick={() => setSearch('')}>
-                      Hapus pencarian
+                  filters.search ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFilters((f) => ({ ...f, search: '' }))}
+                    >
+                      {t('guest.publicProjectView.clearSearch', 'Clear search')}
                     </Button>
                   ) : undefined
                 }
@@ -324,7 +378,7 @@ export const PublicProjectViewPage = () => {
                   <section>
                     <div className="mb-2.5 flex items-baseline justify-between">
                       <h3 className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-                        Folder
+                        {t('guest.publicProjectView.foldersLabel', 'Folders')}
                       </h3>
                       <span className="text-[11px] text-text-tertiary tabular-nums">
                         {subfolders.length}
@@ -348,7 +402,7 @@ export const PublicProjectViewPage = () => {
                     {subfolders.length > 0 && (
                       <div className="mb-2.5 flex items-baseline justify-between">
                         <h3 className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
-                          Aset
+                          {t('guest.publicProjectView.assetsLabel', 'Assets')}
                         </h3>
                         <span className="text-[11px] text-text-tertiary tabular-nums">
                           {filteredAssets.length}
@@ -401,7 +455,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
     <div className="relative min-h-screen w-full overflow-hidden bg-bg-base">
       <AuroraBackground />
       <div className="absolute top-6 right-8 z-10 text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
-        Monomi Studio · Galeri Publik
+        Monomi Studio · Public Gallery
       </div>
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         {children}
@@ -420,7 +474,7 @@ function ErrorPanel({ title, body }: { title: string; body: string }) {
     <GlassPanel surface="strong" padding="lg" className="w-full max-w-[460px]">
       <div className="mb-6">
         <div className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary mb-2">
-          Galeri Publik
+          Public Gallery
         </div>
         <h1 className="text-[36px] leading-none font-display font-semibold text-text-primary tracking-tight">
           monomi
@@ -430,7 +484,7 @@ function ErrorPanel({ title, body }: { title: string; body: string }) {
         <div className="flex items-center gap-2 mb-1 text-danger">
           <AlertTriangle className="h-5 w-5" />
           <span className="text-[10px] uppercase tracking-[0.16em] font-medium">
-            Tidak Dapat Dibuka
+            Cannot Open
           </span>
         </div>
         <h2 className="text-base font-display font-semibold tracking-tight text-text-primary">
@@ -475,7 +529,7 @@ function FolderTile({
           {folder.name}
         </div>
         <div className="mt-0.5 text-[11px] text-text-tertiary">
-          Buka folder
+          Open folder
         </div>
       </div>
     </button>
@@ -577,6 +631,36 @@ function PreviewOverlay({
   const prev = idx > 0 ? imageAssets[idx - 1] : null;
   const next = idx >= 0 && idx < imageAssets.length - 1 ? imageAssets[idx + 1] : null;
 
+  // Swipe-to-navigate on mobile
+  const swipeTouchStartX = useRef<number | null>(null);
+  const swipeTouchStartY = useRef<number | null>(null);
+  const mediaViewRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = mediaViewRef.current;
+    if (!el || !isImage) return;
+    const onStart = (e: TouchEvent) => {
+      swipeTouchStartX.current = e.touches[0].clientX;
+      swipeTouchStartY.current = e.touches[0].clientY;
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (swipeTouchStartX.current === null) return;
+      const dx = e.changedTouches[0].clientX - swipeTouchStartX.current;
+      const dy = Math.abs(e.changedTouches[0].clientY - (swipeTouchStartY.current ?? 0));
+      swipeTouchStartX.current = null;
+      swipeTouchStartY.current = null;
+      if (Math.abs(dx) < 50 || dy > Math.abs(dx) * 0.8) return;
+      if (dx > 0 && prev) onNavigate(prev);
+      else if (dx < 0 && next) onNavigate(next);
+    };
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchend', onEnd);
+    };
+  }, [isImage, prev, next, onNavigate]);
+
   // When the rating changes we optimistically patch the cached asset list so
   // the tile badge in the gallery behind the overlay updates immediately.
   const handleRatingChange = (newRating: number) => {
@@ -600,7 +684,7 @@ function PreviewOverlay({
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Left column: media viewer ── */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div ref={mediaViewRef} className="flex min-w-0 flex-1 flex-col">
           {/* Caption bar */}
           <div className="flex items-center justify-between gap-3 rounded-t-md border border-b-0 border-border-default bg-bg-panel px-4 py-3">
             <div className="min-w-0">
@@ -626,7 +710,7 @@ function PreviewOverlay({
                     onClick={() => prev && onNavigate(prev)}
                     className="text-text-tertiary hover:text-text-primary"
                   >
-                    Sebelumnya
+                    Previous
                   </Button>
                   <Button
                     variant="ghost"
@@ -635,7 +719,7 @@ function PreviewOverlay({
                     onClick={() => next && onNavigate(next)}
                     className="text-text-tertiary hover:text-text-primary"
                   >
-                    Berikutnya
+                    Next
                   </Button>
                   <span className="mx-1 h-4 w-px bg-border-default" />
                 </>
@@ -656,7 +740,7 @@ function PreviewOverlay({
                 variant="ghost"
                 size="icon-sm"
                 onClick={onClose}
-                aria-label="Tutup"
+                aria-label="Close"
                 className="text-text-tertiary hover:text-text-primary"
               >
                 <X className="h-4 w-4" />
@@ -703,6 +787,13 @@ function PreviewOverlay({
           alt={asset.originalName}
           downloadUrl={src}
           onClose={() => setLightboxOpen(false)}
+          infoPanel={(
+            <GuestFeedbackPanel
+              shareToken={shareToken}
+              asset={asset}
+              onRatingChange={handleRatingChange}
+            />
+          )}
         />
       )}
     </div>

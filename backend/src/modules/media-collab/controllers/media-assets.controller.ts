@@ -49,11 +49,14 @@ export class MediaAssetsController {
     @Request() req: AuthenticatedRequest,
     @Param("projectId") projectId: string,
     @Body("filenames") filenames: string[],
+    @Body("folderId") folderId?: string,
   ) {
     const duplicatesMap = await this.assetsService.checkDuplicates(
       projectId,
       req.user.id,
       filenames,
+      // null means root (unfiled); undefined means search project-wide
+      folderId === undefined ? undefined : folderId || null,
     );
 
     // Convert Map to plain object for JSON response
@@ -98,12 +101,15 @@ export class MediaAssetsController {
     @Body("conflictResolution")
     conflictResolution?: "skip" | "replace" | "keep-both",
   ) {
+    // '' is the root-folder sentinel (FormData can't carry null directly).
+    // undefined means "no folder context" (project-wide conflict scope).
+    const effectiveFolderId = folderId === "" ? null : folderId;
     return this.assetsService.upload(
       projectId,
       req.user.id,
       file,
       description,
-      folderId,
+      effectiveFolderId,
       conflictResolution,
     );
   }

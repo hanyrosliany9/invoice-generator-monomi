@@ -1,4 +1,10 @@
 /// <reference types="vite/client" />
+// Embed build time so every deploy produces a unique bundle hash.
+// Without this, Rollup can assign the same hash to two different builds when
+// only lazy-loaded chunks change (the entry point content is identical).
+if (import.meta.env.VITE_BUILD_TIME) {
+  (window as unknown as Record<string, unknown>).__BUILD_TIME__ = import.meta.env.VITE_BUILD_TIME;
+}
 import '@ant-design/v5-patch-for-react-19'
 import React from 'react'
 import ReactDOM from 'react-dom/client'

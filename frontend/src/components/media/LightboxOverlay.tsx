@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ZoomIn, ZoomOut, RotateCw, Download, X, ChevronLeft, ChevronRight, Info,
@@ -43,7 +43,7 @@ export function LightboxOverlay({
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
   const [rotate, setRotate] = useState(0);
-  const [showInfo, setShowInfo] = useState(false);
+  const [showInfo, setShowInfo] = useState(!!infoPanel);
 
   const zoomIn = () => setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
   const zoomOut = () => setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)));
@@ -56,6 +56,34 @@ export function LightboxOverlay({
     setRotate(0);
     // Don't close the info panel on navigation — user wants to keep rating/commenting
   }, [src]);
+
+  // Swipe-to-navigate for mobile (disabled when zoomed in so pinch-pan still works)
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  useEffect(() => {
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (touchStartX.current === null || zoom > 1) return;
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      const dy = Math.abs(e.changedTouches[0].clientY - (touchStartY.current ?? 0));
+      touchStartX.current = null;
+      touchStartY.current = null;
+      // Require a meaningful horizontal swipe that is wider than it is tall
+      if (Math.abs(dx) < 50 || dy > Math.abs(dx) * 0.8) return;
+      if (dx > 0 && onPrev && hasPrev) onPrev();
+      else if (dx < 0 && onNext && hasNext) onNext();
+    };
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [zoom, onPrev, onNext, hasPrev, hasNext]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
