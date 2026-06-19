@@ -922,6 +922,14 @@ class MediaCollabService {
     return response.data.data;
   }
 
+  async exportXmpZip(projectId: string, minRating = 1): Promise<Blob> {
+    const response = await apiClient.get(
+      `/media-collab/projects/${projectId}/export/xmp`,
+      { params: { minRating }, responseType: 'blob' },
+    );
+    return response.data;
+  }
+
   /**
    * Register assets in database after direct R2 upload
    */

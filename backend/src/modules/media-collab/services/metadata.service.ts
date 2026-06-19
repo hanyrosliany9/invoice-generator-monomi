@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
+import JSZip from "jszip";
 const ExifParser = require("exif-parser");
 
 /**
@@ -160,5 +161,82 @@ export class MetadataService {
     });
 
     return { success: true, updated: assetIds.length };
+  }
+
+  /**
+   * Export XMP sidecar files for all rated assets in a project as a ZIP buffer.
+   * Only assets with starRating >= minRating are included.
+   */
+  async exportXmpZip(
+    projectId: string,
+    userId: string,
+    minRating: number,
+  ): Promise<Buffer> {
+    // Verify the project exists and the user has access
+    const project = await this.prisma.mediaProject.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        collaborators: {
+          where: { userId },
+          select: { id: true },
+        },
+        createdBy: true,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException("Media project not found");
+    }
+
+    const isOwner = project.createdBy === userId;
+    const isCollaborator = project.collaborators.length > 0;
+    if (!isOwner && !isCollaborator) {
+      throw new NotFoundException("Media project not found");
+    }
+
+    // Query rated assets
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: {
+        projectId,
+        starRating: {
+          not: null,
+          gte: minRating,
+        },
+      },
+      select: {
+        id: true,
+        originalName: true,
+        starRating: true,
+      },
+    });
+
+    const zip = new JSZip();
+
+    for (const asset of assets) {
+      const xmpContent = `<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP Core 6.0">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about=""
+        xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+      <xmp:Rating>${asset.starRating}</xmp:Rating>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`;
+
+      // Replace original extension with .xmp
+      const dotIndex = asset.originalName.lastIndexOf(".");
+      const baseName =
+        dotIndex !== -1
+          ? asset.originalName.substring(0, dotIndex)
+          : asset.originalName;
+      const xmpFilename = `${baseName}.xmp`;
+
+      zip.file(xmpFilename, xmpContent);
+    }
+
+    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+    return zipBuffer;
   }
 }

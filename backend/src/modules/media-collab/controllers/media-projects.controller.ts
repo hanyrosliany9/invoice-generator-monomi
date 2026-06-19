@@ -8,7 +8,9 @@ import {
   Param,
   Request,
   Query,
+  Res,
 } from "@nestjs/common";
+import { Response } from "express";
 import {
   ApiTags,
   ApiOperation,
@@ -17,6 +19,7 @@ import {
 } from "@nestjs/swagger";
 import { RequireMediaRole } from "../../auth/decorators/auth.decorators";
 import { MediaProjectsService } from "../services/media-projects.service";
+import { MetadataService } from "../services/metadata.service";
 import { CreateMediaProjectDto } from "../dto/create-media-project.dto";
 import { UpdateMediaProjectDto } from "../dto/update-media-project.dto";
 import { AuthenticatedRequest } from "../interfaces/authenticated-request.interface";
@@ -26,7 +29,10 @@ import { AuthenticatedRequest } from "../interfaces/authenticated-request.interf
 @RequireMediaRole()
 @Controller("media-collab/projects")
 export class MediaProjectsController {
-  constructor(private readonly mediaProjectsService: MediaProjectsService) {}
+  constructor(
+    private readonly mediaProjectsService: MediaProjectsService,
+    private readonly metadataService: MetadataService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: "Create a new media project" })
@@ -127,5 +133,22 @@ export class MediaProjectsController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.mediaProjectsService.regeneratePublicShareLink(id, req.user.id);
+  }
+
+  @Get(":id/export/xmp")
+  @ApiOperation({ summary: "Export star ratings as XMP sidecar ZIP for all rated assets in a project" })
+  @ApiResponse({ status: 200, description: "ZIP file containing XMP sidecar files" })
+  @ApiResponse({ status: 404, description: "Project not found or access denied" })
+  async exportXmp(
+    @Param("id") projectId: string,
+    @Query("minRating") minRating: string,
+    @Request() req: AuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    const rating = parseInt(minRating ?? "1", 10) || 1;
+    const buffer = await this.metadataService.exportXmpZip(projectId, req.user.id, rating);
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="ratings-${projectId}.zip"`);
+    res.end(buffer);
   }
 }

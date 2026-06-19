@@ -190,6 +190,9 @@ export default function MediaProjectDetailPageV2() {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [newCollectionDialogOpen, setNewCollectionDialogOpen] = useState(false);
 
+  /* ---------- xmp export state ---------- */
+  const [xmpExporting, setXmpExporting] = useState(false);
+
   /* ---------- data ---------- */
   const {
     data: project,
@@ -832,6 +835,26 @@ export default function MediaProjectDetailPageV2() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const exportXmp = async () => {
+    setXmpExporting(true);
+    try {
+      const blob = await mediaCollabService.exportXmpZip(projectId!);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ratings-${projectId}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success('XMP ratings exported');
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setXmpExporting(false);
+    }
+  };
+
   const handleFilesPicked = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
@@ -968,6 +991,16 @@ export default function MediaProjectDetailPageV2() {
         }
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportXmp}
+              disabled={xmpExporting || kpis.total === 0}
+              title="Export star ratings as XMP sidecar files for Capture One / Lightroom"
+            >
+              <Download className="h-3.5 w-3.5" />
+              {xmpExporting ? 'Exporting…' : 'Export XMP'}
+            </Button>
             <Button
               size="sm"
               variant="outline"
