@@ -432,7 +432,6 @@ export class MediaAssetsService {
         },
       },
       orderBy,
-      take: 500, // hard cap — prevents runaway queries on very large projects
     });
 
     return assets;

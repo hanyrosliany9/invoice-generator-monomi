@@ -777,7 +777,6 @@ export class MediaProjectsService {
         metadata: true,
       },
       orderBy: { uploadedAt: "desc" },
-      take: 500, // hard cap — prevents runaway queries on very large projects
     });
   }
 
