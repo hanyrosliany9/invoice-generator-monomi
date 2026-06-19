@@ -250,8 +250,8 @@ export function LightboxOverlay({
           </Button>
         </div>
 
-        {/* Image + right panel side-by-side */}
-        <div className="flex-1 flex min-h-0 overflow-hidden">
+        {/* Image + right panel side-by-side (desktop) / stacked (mobile) */}
+        <div className="flex-1 flex min-h-0 overflow-hidden relative">
           {/* Scrollable image area */}
           <div className="flex-1 overflow-auto flex items-center justify-center p-4 select-none min-w-0">
             <img
@@ -269,27 +269,53 @@ export function LightboxOverlay({
             />
           </div>
 
-          {/* Info panel — slides in from right when showInfo is true */}
+          {/* Info panel — bottom sheet on mobile, right sidebar on desktop */}
           {showInfo && infoPanel && (
-            <div className="w-80 shrink-0 border-l border-white/10 bg-black/60 flex flex-col overflow-hidden">
+            <>
+              {/* Mobile: slide-up bottom sheet */}
+              <div className="md:hidden absolute inset-x-0 bottom-0 z-20 flex max-h-[58vh] flex-col border-t border-white/10 bg-[#0d0d0d]/95 backdrop-blur-sm">
+                {/* drag handle */}
+                <div className="flex shrink-0 items-center justify-between px-4 py-2.5 border-b border-white/10">
+                  <div className="mx-auto h-1 w-8 rounded-full bg-white/20" />
+                </div>
+                <div className="flex shrink-0 items-center justify-between px-4 py-2 border-b border-white/10">
+                  <span className="text-xs font-medium text-white/70 uppercase tracking-wider">
+                    {t('mediaReview.lightbox.details', 'Details')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowInfo(false)}
+                    className="text-white/40 hover:text-white/80 transition-colors p-1"
+                    title={t('mediaReview.lightbox.hideDetails', 'Hide details')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto overscroll-contain">
+                  {infoPanel}
+                </div>
+              </div>
 
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
-                <span className="text-xs font-medium text-white/70 uppercase tracking-wider">
-                  {t('mediaReview.lightbox.details', 'Details')}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowInfo(false)}
-                  className="text-white/40 hover:text-white/80 transition-colors"
-                  title={t('mediaReview.lightbox.hideDetails', 'Hide details')}
-                >
-                  <X className="h-4 w-4" />
-                </button>
+              {/* Desktop: right sidebar */}
+              <div className="hidden md:flex w-80 shrink-0 border-l border-white/10 bg-black/60 flex-col overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
+                  <span className="text-xs font-medium text-white/70 uppercase tracking-wider">
+                    {t('mediaReview.lightbox.details', 'Details')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowInfo(false)}
+                    className="text-white/40 hover:text-white/80 transition-colors"
+                    title={t('mediaReview.lightbox.hideDetails', 'Hide details')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  {infoPanel}
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                {infoPanel}
-              </div>
-            </div>
+            </>
           )}
         </div>
 

@@ -680,11 +680,11 @@ function PreviewOverlay({
     >
       {/* Outer shell — two-column layout on md+, stacked on mobile */}
       <div
-        className="relative flex max-h-[92vh] w-full max-w-[1400px] flex-col md:flex-row gap-3"
+        className="relative flex w-full max-w-[1400px] max-h-[92vh] overflow-y-auto md:overflow-hidden flex-col md:flex-row gap-3"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Left column: media viewer ── */}
-        <div ref={mediaViewRef} className="flex min-w-0 flex-1 flex-col">
+        <div ref={mediaViewRef} className="flex min-w-0 flex-col md:flex-1 shrink-0">
           {/* Caption bar */}
           <div className="flex items-center justify-between gap-3 rounded-t-md border border-b-0 border-border-default bg-bg-panel px-4 py-3">
             <div className="min-w-0">
@@ -748,19 +748,19 @@ function PreviewOverlay({
             </div>
           </div>
 
-          <div className="flex flex-1 items-center justify-center overflow-hidden rounded-b-md border border-border-default bg-bg-base p-4">
+          <div className="flex items-center justify-center overflow-hidden rounded-b-md border border-border-default bg-bg-base p-4">
             {isVideo ? (
               <video
                 src={src}
                 controls
                 autoPlay
-                className="max-h-[70vh] max-w-full rounded-sm"
+                className="max-h-[45vh] md:max-h-[70vh] max-w-full rounded-sm"
               />
             ) : (
               <img
                 src={src}
                 alt={asset.originalName}
-                className="max-h-[70vh] max-w-full object-contain rounded-sm cursor-zoom-in"
+                className="max-h-[45vh] md:max-h-[70vh] max-w-full object-contain rounded-sm cursor-zoom-in"
                 onClick={() => setLightboxOpen(true)}
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';

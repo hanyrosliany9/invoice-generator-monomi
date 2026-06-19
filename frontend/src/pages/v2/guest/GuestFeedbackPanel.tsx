@@ -281,7 +281,7 @@ export function GuestFeedbackPanel({
       </div>
 
       {/* Comment list */}
-      <div className="max-h-[280px] overflow-y-auto px-4 py-3 scrollbar-thin">
+      <div className="px-4 py-3">
         <div className="mb-3 flex items-center gap-2">
           <span className="text-[10px] uppercase tracking-[0.12em] text-text-tertiary font-medium">
             {t('guestReview.commentsSection', 'Komentar')}
