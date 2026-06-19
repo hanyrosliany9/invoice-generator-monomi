@@ -1295,7 +1295,7 @@ export default function MediaProjectDetailPageV2() {
           )}
 
           {assetsLoading ? (
-            <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3">
+            <div className="columns-3 sm:columns-4 lg:columns-5 xl:columns-6 gap-3">
               {Array.from({ length: 10 }).map((_, i) => (
                 <Skeleton
                   key={i}
@@ -1308,7 +1308,7 @@ export default function MediaProjectDetailPageV2() {
             <UploadZone onPick={() => fileInputRef.current?.click()} />
           ) : (
             <div
-              className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3"
+              className="columns-3 sm:columns-4 lg:columns-5 xl:columns-6 gap-3"
               style={{ overflowAnchor: 'none' }}
             >
               {filteredAssets.map((asset, index) => (

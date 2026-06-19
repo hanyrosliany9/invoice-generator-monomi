@@ -340,7 +340,7 @@ export const PublicProjectViewPage = () => {
           {/* Body */}
           <div className="p-5">
             {isLoading ? (
-              <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
+              <div className="columns-3 sm:columns-4 lg:columns-5 gap-3">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <Skeleton
                     key={i}
@@ -414,7 +414,7 @@ export const PublicProjectViewPage = () => {
                         </span>
                       </div>
                     )}
-                    <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
+                    <div className="columns-3 sm:columns-4 lg:columns-5 gap-3">
                       {filteredAssets.map((asset) => (
                         <AssetTile
                           key={asset.id}
