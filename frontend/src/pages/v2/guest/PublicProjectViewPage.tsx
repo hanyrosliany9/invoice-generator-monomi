@@ -340,9 +340,13 @@ export const PublicProjectViewPage = () => {
           {/* Body */}
           <div className="p-5">
             {isLoading ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-square w-full rounded-md" />
+                  <Skeleton
+                    key={i}
+                    className="mb-3 break-inside-avoid w-full rounded-md"
+                    style={{ aspectRatio: i % 3 === 0 ? '3/4' : i % 3 === 1 ? '16/9' : '1/1' }}
+                  />
                 ))}
               </div>
             ) : subfolders.length === 0 && filteredAssets.length === 0 ? (
@@ -393,6 +397,7 @@ export const PublicProjectViewPage = () => {
                         />
                       ))}
                     </div>
+
                   </section>
                 )}
 
@@ -409,7 +414,7 @@ export const PublicProjectViewPage = () => {
                         </span>
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
                       {filteredAssets.map((asset) => (
                         <AssetTile
                           key={asset.id}
@@ -552,26 +557,34 @@ function AssetTile({
     : null;
   const isVideo = asset.mediaType === 'VIDEO';
 
+  const aspectStyle = asset.width && asset.height
+    ? { aspectRatio: `${asset.width} / ${asset.height}` }
+    : undefined;
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'group block w-full text-left',
+        'group block w-full text-left break-inside-avoid mb-3',
         'rounded-md border border-border-subtle bg-bg-sunken overflow-hidden',
         'transition-colors hover:border-border-default focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60',
       )}
     >
-      <div className="relative aspect-square w-full bg-bg-base">
+      <div className="relative w-full bg-bg-base">
         {thumb ? (
           <img
             src={thumb}
             alt={asset.originalName}
             loading="lazy"
-            className="h-full w-full object-cover"
+            style={aspectStyle}
+            className="w-full block object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-text-tertiary">
+          <div
+            className="flex w-full items-center justify-center text-text-tertiary"
+            style={aspectStyle ?? { aspectRatio: '4/3' }}
+          >
             {isVideo ? <Film className="h-8 w-8" /> : <FileImage className="h-8 w-8" />}
           </div>
         )}
@@ -589,17 +602,18 @@ function AssetTile({
             {asset.starRating}
           </div>
         )}
-      </div>
-      <div className="px-3 py-2.5">
-        <div className="truncate text-xs text-text-primary" title={asset.originalName}>
-          {asset.originalName}
-        </div>
-        {asset.uploader?.name && (
-          <div className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-text-tertiary">
-            <UserIcon className="h-3 w-3 shrink-0" />
-            {asset.uploader.name}
+        {/* Caption overlay on hover */}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="truncate text-[11px] font-medium text-white" title={asset.originalName}>
+            {asset.originalName}
           </div>
-        )}
+          {asset.uploader?.name && (
+            <div className="mt-0.5 flex items-center gap-1 text-[10px] text-white/70">
+              <UserIcon className="h-2.5 w-2.5 shrink-0" />
+              {asset.uploader.name}
+            </div>
+          )}
+        </div>
       </div>
     </button>
   );

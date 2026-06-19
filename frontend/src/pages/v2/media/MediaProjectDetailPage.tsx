@@ -1295,16 +1295,20 @@ export default function MediaProjectDetailPageV2() {
           )}
 
           {assetsLoading ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3">
               {Array.from({ length: 10 }).map((_, i) => (
-                <Skeleton key={i} className="aspect-square rounded-md" />
+                <Skeleton
+                  key={i}
+                  className="mb-3 break-inside-avoid rounded-md"
+                  style={{ aspectRatio: i % 3 === 0 ? '3/4' : i % 3 === 1 ? '4/3' : '1/1' }}
+                />
               ))}
             </div>
           ) : filteredAssets.length === 0 ? (
             <UploadZone onPick={() => fileInputRef.current?.click()} />
           ) : (
             <div
-              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3"
+              className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3"
               style={{ overflowAnchor: 'none' }}
             >
               {filteredAssets.map((asset, index) => (
@@ -2173,21 +2177,26 @@ function AssetTile({
   const src = asset.thumbnailUrl ?? null;
   const proxied = src ? getProxyUrl(src, mediaToken) : null;
 
+  // Derive aspect ratio from metadata so placeholder matches real image before load
+  const aspectStyle = asset.width && asset.height
+    ? { aspectRatio: `${asset.width} / ${asset.height}` }
+    : undefined;
+
   return (
     <div
       className={cn(
-        'group relative aspect-square rounded-md overflow-hidden',
+        'group relative rounded-md overflow-hidden break-inside-avoid mb-3',
         'bg-bg-sunken border transition-colors',
         isSelected
           ? 'border-accent ring-2 ring-accent/40'
           : 'border-border-subtle hover:border-border-default',
       )}
     >
-      {/* Clickable image area */}
+      {/* Clickable image / placeholder area */}
       <button
         type="button"
         onClick={onClick}
-        className="absolute inset-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-navy/40"
+        className="block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-navy/40"
         aria-label={asset.originalName}
       >
         {proxied ? (
@@ -2195,13 +2204,17 @@ function AssetTile({
             src={proxied}
             alt={asset.originalName}
             loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover"
+            style={aspectStyle}
+            className="w-full block object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-text-tertiary">
+          <div
+            className="flex items-center justify-center text-text-tertiary"
+            style={aspectStyle ?? { aspectRatio: '4/3' }}
+          >
             {isVideo ? <Film className="h-8 w-8 stroke-1" /> : <ImageIcon className="h-8 w-8 stroke-1" />}
           </div>
         )}
