@@ -387,7 +387,7 @@ export class AssetsService {
     }
 
     // FIX 1: If depreciation-relevant fields changed, recalculate and upsert schedule
-    const deprecFields = ['purchasePrice', 'usefulLifeYears', 'residualValue', 'depreciationMethod'] as const;
+    const deprecFields = ['purchasePrice', 'purchaseDate', 'usefulLifeYears', 'residualValue', 'depreciationMethod'] as const;
     const needsRecalc = deprecFields.some((f) => (updateAssetDto as any)[f] !== undefined);
 
     if (needsRecalc && updated.purchasePrice) {
@@ -396,7 +396,12 @@ export class AssetsService {
         const residualValue = updated.residualValue
           ? parseFloat(updated.residualValue.toString())
           : purchasePrice * 0.1;
-        const usefulLifeYears = (updateAssetDto as any).usefulLifeYears ?? 5;
+        // Read from the full post-update record, not the incoming partial
+        // payload (matches residualValue above) — otherwise an update that
+        // doesn't happen to include usefulLifeYears (e.g. a date-only edit,
+        // or any other partial-patch caller) silently resets the schedule to
+        // a hardcoded 5-year life instead of keeping the asset's real one.
+        const usefulLifeYears = updated.usefulLifeYears ?? 5;
         const usefulLifeMonths = Math.round(usefulLifeYears * 12);
         const depreciableAmount = purchasePrice - residualValue;
         const depreciationPerMonth = depreciableAmount / usefulLifeMonths;
