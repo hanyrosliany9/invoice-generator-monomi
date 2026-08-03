@@ -1,0 +1,129 @@
+name: Deploy to Production
+
+# Push to master -> instant Telegram notification + typecheck gate -> SSH
+# deploy to the VPS -> Telegram notification of the result.
+#
+# The actual deploy SSH key (secrets.DEPLOY_SSH_KEY) is restricted server-side
+# via a `command=` forced-command in the VPS's authorized_keys, so it can ONLY
+# run:
+#   cd /home/dev/monomi-invoice && git pull origin master && ./scripts/deploy-prod.sh --build
+# regardless of what this workflow sends over the connection. If the deploy
+# sequence ever needs to change, update that authorized_keys line on the VPS
+# (as root) to match, not just this file.
+#
+# scripts/deploy-prod.sh already blocks until every service is healthy (or
+# fails loudly) — see that script for the full logic. Prisma migrations run
+# automatically on container start (see Dockerfile CMD), so no separate
+# migration step is needed here.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false # never cancel a deploy that's already in flight
+
+jobs:
+  notify-push:
+    name: Notify push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Send Telegram push notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          SHORT_SHA: ${{ github.event.after }}
+          ACTOR: ${{ github.actor }}
+          COMPARE_URL: ${{ github.event.compare }}
+        run: |
+          TEXT="Push to master by ${ACTOR}
+          ${SHORT_SHA:0:7} ${COMMIT_MSG}
+          ${COMPARE_URL}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}" \
+            || true
+
+  test-gate:
+    name: Test gate (typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: TypeScript typecheck
+        working-directory: backend
+        run: npx tsc --noEmit -p tsconfig.json
+
+  deploy:
+    name: Deploy to VPS
+    needs: test-gate
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20 # generous: cold docker build + health-check waits can take several minutes
+    steps:
+      - name: Notify deploy starting
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SHORT_SHA: ${{ github.sha }}
+        run: |
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="Deploying ${SHORT_SHA:0:7} to production..." \
+            || true
+
+      - name: Deploy via SSH
+        id: deploy
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The connected command doesn't matter -- the VPS's authorized_keys
+          # forced-command always runs the real deploy sequence instead.
+          ssh -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=15 \
+              -o ServerAliveInterval=30 \
+              -i ~/.ssh/deploy_key \
+              "${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}" \
+              "true"
+
+      - name: Notify deploy result
+        if: always()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SHORT_SHA: ${{ github.sha }}
+          RESULT: ${{ steps.deploy.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$RESULT" = "success" ]; then
+            TEXT="Deploy of ${SHORT_SHA:0:7} succeeded."
+          else
+            TEXT="Deploy of ${SHORT_SHA:0:7} FAILED. Logs: ${RUN_URL}"
+          fi
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}" \
+            || true
