@@ -14,15 +14,20 @@ export interface MonomiDatePickerProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  /** Earliest month the year/month dropdowns can reach. Default: 15 years ago. */
+  startMonth?: Date;
+  /** Latest month the year/month dropdowns can reach. Default: 3 years from now. */
+  endMonth?: Date;
 }
 
 export const MonomiDatePicker = ({
-  value, onChange, placeholder, disabled, className,
+  value, onChange, placeholder, disabled, className, startMonth, endMonth,
 }: MonomiDatePickerProps) => {
   const { t } = useTranslation();
   const idLocale = useDateLocale();
   const [open, setOpen] = useState(false);
   const placeholderText = placeholder ?? t('common.selectDate', 'Select date');
+  const today = new Date();
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -46,6 +51,12 @@ export const MonomiDatePicker = ({
           onSelect={(d) => { onChange?.(d); setOpen(false); }}
           locale={idLocale}
           weekStartsOn={1}
+          // Month/year dropdowns instead of only prev/next-month arrows --
+          // jumping to a date a year (or more) back used to take ~12 clicks.
+          captionLayout="dropdown"
+          defaultMonth={value ?? today}
+          startMonth={startMonth ?? new Date(today.getFullYear() - 15, 0)}
+          endMonth={endMonth ?? new Date(today.getFullYear() + 3, 11)}
         />
       </PopoverContent>
     </Popover>
