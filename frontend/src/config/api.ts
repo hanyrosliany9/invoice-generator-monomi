@@ -67,6 +67,17 @@ let isRefreshing = false;
 // Flag to prevent multiple logouts
 let isLoggingOut = false;
 
+// Retry/backoff for when the refresh endpoint itself is rate-limited.
+// Without this, a 429 on /auth/refresh fails instantly, every queued request
+// re-401s, and each one fires its own new refresh -- which is rate-limited
+// again, looping until the throttle window resets (incident 2026-08-03: a
+// burst of 401/429s with no way out short of a manual reload).
+const REFRESH_RETRY_MAX_ATTEMPTS = 3;
+const REFRESH_RETRY_BASE_DELAY_MS = 1000;
+const REFRESH_RETRY_MAX_DELAY_MS = 10000;
+
+const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
 /**
  * Process all queued requests with the new token
  */
@@ -95,42 +106,67 @@ const performTokenRefresh = async (): Promise<string> => {
   // That is fine — the httpOnly cookie carries it for browser clients.
   const refreshToken = getRefreshToken();
 
-  try {
-    // Use plain axios (not apiClient) to avoid interceptor loop.
-    // withCredentials ensures the httpOnly refreshToken cookie is sent.
-    const response = await axios.post(
-      `${API_CONFIG.BASE_URL}/auth/refresh`,
-      // Include body token only when available (backward compat for non-cookie clients).
-      refreshToken ? { refresh_token: refreshToken } : {},
-      {
-        headers: DEFAULT_HEADERS,
-        withCredentials: true,
-      },
-    );
+  let lastError: any;
 
-    // Backend wraps response in ApiResponse { data: {...}, message, status, timestamp }
-    const { access_token, refresh_token: new_refresh_token, expires_in } = response.data.data;
+  for (let attempt = 1; attempt <= REFRESH_RETRY_MAX_ATTEMPTS; attempt++) {
+    try {
+      // Use plain axios (not apiClient) to avoid interceptor loop.
+      // withCredentials ensures the httpOnly refreshToken cookie is sent.
+      const response = await axios.post(
+        `${API_CONFIG.BASE_URL}/auth/refresh`,
+        // Include body token only when available (backward compat for non-cookie clients).
+        refreshToken ? { refresh_token: refreshToken } : {},
+        {
+          headers: DEFAULT_HEADERS,
+          withCredentials: true,
+        },
+      );
 
-    // Update tokens in store atomically
-    updateTokens(access_token, new_refresh_token, expires_in);
+      // Backend wraps response in ApiResponse { data: {...}, message, status, timestamp }
+      const { access_token, refresh_token: new_refresh_token, expires_in } = response.data.data;
 
-    console.log('[API] Token refreshed successfully, expires:', new Date(Date.now() + expires_in * 1000).toISOString());
-    return access_token;
-  } catch (error: any) {
-    console.error('[API] Token refresh failed:', error?.response?.status);
+      // Update tokens in store atomically
+      updateTokens(access_token, new_refresh_token, expires_in);
 
-    // Only logout if refresh token is truly invalid (401)
-    if (error.response?.status === 401 && !isLoggingOut) {
-      isLoggingOut = true;
-      console.warn('[API] Refresh token invalid, logging out');
-      logout();
-      window.location.replace('/login?session_expired=true');
-      // Reset after a delay to allow page navigation
-      setTimeout(() => { isLoggingOut = false; }, 1000);
+      console.log('[API] Token refreshed successfully, expires:', new Date(Date.now() + expires_in * 1000).toISOString());
+      return access_token;
+    } catch (error: any) {
+      lastError = error;
+
+      // Rate-limited: back off and retry instead of failing instantly, so a
+      // burst of requests expiring at once doesn't cascade into a retry loop.
+      if (error.response?.status === 429 && attempt < REFRESH_RETRY_MAX_ATTEMPTS) {
+        const retryAfterHeader = error.response?.headers?.['retry-after'];
+        const retryAfterMs = retryAfterHeader ? Number(retryAfterHeader) * 1000 : NaN;
+        const backoffMs = Number.isFinite(retryAfterMs) && retryAfterMs > 0
+          ? Math.min(retryAfterMs, REFRESH_RETRY_MAX_DELAY_MS)
+          : Math.min(REFRESH_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1), REFRESH_RETRY_MAX_DELAY_MS);
+        console.warn(`[API] Token refresh rate-limited (429), retrying in ${backoffMs}ms (attempt ${attempt}/${REFRESH_RETRY_MAX_ATTEMPTS})`);
+        await sleep(backoffMs);
+        continue;
+      }
+
+      break;
     }
-
-    throw error;
   }
+
+  console.error('[API] Token refresh failed:', lastError?.response?.status);
+
+  // Only logout if refresh token is truly invalid (401)
+  if (lastError.response?.status === 401 && !isLoggingOut) {
+    isLoggingOut = true;
+    console.warn('[API] Refresh token invalid, logging out');
+    logout();
+    window.location.replace('/login?session_expired=true');
+    // Reset after a delay to allow page navigation
+    setTimeout(() => { isLoggingOut = false; }, 1000);
+  } else if (lastError.response?.status === 429) {
+    // Retries exhausted — tell the user instead of letting every widget on
+    // the page fail silently with no explanation.
+    toast.error(i18n.t('contexts.apiConfig.refreshRateLimited', 'Server is busy, please reload the page in a moment.'));
+  }
+
+  throw lastError;
 };
 
 // Request interceptor to add auth token

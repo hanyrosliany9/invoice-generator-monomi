@@ -7096,7 +7096,8 @@
   },
   "contexts": {
     "apiConfig": {
-      "accessDenied": "Akses ditolak — Anda tidak memiliki izin."
+      "accessDenied": "Akses ditolak — Anda tidak memiliki izin.",
+      "refreshRateLimited": "Server sedang sibuk, silakan muat ulang halaman sesaat lagi."
     },
     "accessibility": {
       "materaiRequired": "Materai diperlukan untuk transaksi ini",

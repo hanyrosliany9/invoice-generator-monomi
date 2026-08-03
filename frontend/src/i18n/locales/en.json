@@ -7097,7 +7097,8 @@
   },
   "contexts": {
     "apiConfig": {
-      "accessDenied": "Access denied — you do not have permission."
+      "accessDenied": "Access denied — you do not have permission.",
+      "refreshRateLimited": "Server is busy, please reload the page in a moment."
     },
     "accessibility": {
       "materaiRequired": "Materai required for this transaction",
