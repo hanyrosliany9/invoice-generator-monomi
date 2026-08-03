@@ -339,7 +339,7 @@ export class AssetsService {
     };
   }
 
-  async update(id: string, updateAssetDto: UpdateAssetDto) {
+  async update(id: string, updateAssetDto: UpdateAssetDto, userId?: string) {
     await this.findOne(id);
 
     const updated = await this.prisma.asset.update({
@@ -389,6 +389,44 @@ export class AssetsService {
     // FIX 1: If depreciation-relevant fields changed, recalculate and upsert schedule
     const deprecFields = ['purchasePrice', 'purchaseDate', 'usefulLifeYears', 'residualValue', 'depreciationMethod'] as const;
     const needsRecalc = deprecFields.some((f) => (updateAssetDto as any)[f] !== undefined);
+
+    // The schedule recalculation below only touches DepreciationSchedule (the
+    // forward-looking projection). Any depreciation entries ALREADY POSTED to
+    // the GL were computed from the OLD basis (old date/price/useful life) and
+    // don't get recalculated just because the schedule changes underneath
+    // them — leaving the ledger and the schedule permanently out of sync
+    // (incident 2026-08-03: 18 assets edited minutes after their August
+    // depreciation was posted, each left with a stale posted entry). Reverse
+    // every posted entry first — via the same reverseJournalEntry mechanism
+    // used elsewhere in this app, so the correction is a visible, audited
+    // reversal, not a silent overwrite — then delete the now-reversed
+    // DepreciationEntry rows so the next processMonthlyDepreciation run
+    // regenerates them correctly from the updated schedule.
+    if (needsRecalc) {
+      const postedEntries = await this.prisma.depreciationEntry.findMany({
+        where: { assetId: id, status: DepreciationStatus.POSTED },
+      });
+      for (const entry of postedEntries) {
+        try {
+          if (entry.journalEntryId) {
+            await this.journalService.reverseJournalEntry(
+              entry.journalEntryId,
+              userId ?? "system",
+            );
+          }
+          await this.prisma.depreciationEntry.delete({ where: { id: entry.id } });
+        } catch (error: any) {
+          this.logger.warn(
+            `Failed to reverse posted depreciation entry ${entry.id} for asset ${updated.assetCode}: ${error.message}`,
+          );
+        }
+      }
+      if (postedEntries.length > 0) {
+        this.logger.log(
+          `Reversed ${postedEntries.length} posted depreciation entr${postedEntries.length === 1 ? "y" : "ies"} for asset ${updated.assetCode} after a schedule-affecting edit`,
+        );
+      }
+    }
 
     if (needsRecalc && updated.purchasePrice) {
       try {

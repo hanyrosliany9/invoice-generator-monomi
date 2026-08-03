@@ -75,8 +75,12 @@ export class AssetsController {
 
   @Patch(":id")
   @RequireAdmin()
-  update(@Param("id") id: string, @Body() updateAssetDto: UpdateAssetDto) {
-    return this.assetsService.update(id, updateAssetDto);
+  update(
+    @Param("id") id: string,
+    @Body() updateAssetDto: UpdateAssetDto,
+    @Req() req: any,
+  ) {
+    return this.assetsService.update(id, updateAssetDto, req.user.id);
   }
 
   @Delete(":id")

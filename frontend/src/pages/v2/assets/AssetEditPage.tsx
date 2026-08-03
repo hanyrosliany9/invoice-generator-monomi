@@ -121,6 +121,12 @@ export default function AssetEditPageV2() {
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['asset', id] });
+      // Editing purchaseDate/purchasePrice/usefulLifeYears recalculates the
+      // depreciation schedule server-side, but nothing here told the
+      // Depreciation page (or this asset's own depreciation calc) to refetch
+      // -- so a cached pre-edit response kept showing until a hard reload.
+      queryClient.invalidateQueries({ queryKey: ['depreciation-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['asset-depreciation-calc', id] });
       toast.success(
         t('assets.edit.success', 'Perubahan untuk "{{name}}" tersimpan.', {
           name: updated.name || updated.assetCode,
