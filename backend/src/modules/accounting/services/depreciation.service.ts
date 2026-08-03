@@ -803,6 +803,21 @@ export class DepreciationService {
       const acquisitionJournalIds = allAssets
         .map((a) => a.acquisitionJournalId)
         .filter((id): id is string => !!id);
+      // A reversed purchase and its reversal are a fully cancelled pair (net
+      // zero GL effect) — exclude both sides. Without this, deleting an asset
+      // whose purchase was reversed (the delete itself never touches GL
+      // history — only the reversal does) leaves the ORIGINAL purchase entry
+      // looking like a still-outstanding unregistered asset, because netting
+      // below is per-journal-entry and the reversal is a separate entry.
+      const reversalLinks = await this.prisma.journalEntry.findMany({
+        where: { reversedEntryId: { not: null } },
+        select: { id: true, reversedEntryId: true },
+      });
+      const reversalRelatedIds = reversalLinks.flatMap((j) => [
+        j.id,
+        j.reversedEntryId as string,
+      ]);
+      const excludedJournalIds = [...acquisitionJournalIds, ...reversalRelatedIds];
       // GL postings to fixed-asset cost accounts whose journal isn't tied to a
       // registered asset (transactionId not an asset id, and not an acquisition
       // journal of a registered asset) → unregistered purchases.
@@ -813,8 +828,8 @@ export class DepreciationService {
           journalEntry: {
             isPosted: true,
             transactionId: { notIn: allAssetIds.length ? allAssetIds : ["_none_"] },
-            ...(acquisitionJournalIds.length
-              ? { id: { notIn: acquisitionJournalIds } }
+            ...(excludedJournalIds.length
+              ? { id: { notIn: excludedJournalIds } }
               : {}),
           },
         },
