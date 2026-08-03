@@ -3,8 +3,11 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  Logger,
 } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "../../prisma/prisma.service";
+import { wibParts } from "../../../common/utils/wib-date.util";
 import { JournalService } from "./journal.service";
 import {
   assetCoaForCategory,
@@ -28,10 +31,80 @@ import { Decimal } from "@prisma/client/runtime/library";
  */
 @Injectable()
 export class DepreciationService {
+  private readonly logger = new Logger(DepreciationService.name);
+
   constructor(
     private prisma: PrismaService,
     private journalService: JournalService,
   ) {}
+
+  /**
+   * PSAK 16 monthly automation: post depreciation for every WIB month up to
+   * and including the current one, so Accumulated Depreciation /
+   * Depreciation Expense reach the GL (and therefore the Balance Sheet /
+   * Income Statement) without requiring someone to click "Process" in the
+   * Depreciation page. Mirrors the manual auto-post action in
+   * DepreciationPageV2, but also catches up any month that was missed —
+   * e.g. before this cron existed, or if a run ever failed.
+   *
+   * NOTE: don't pass `new Date()` straight to processMonthlyDepreciation —
+   * it normalizes the period via getUTCFullYear()/getUTCMonth(), which is a
+   * different calendar day than "now in WIB" for roughly 7 hours around every
+   * WIB midnight (WIB = UTC+7). Around the 1st that mismatch silently shifts
+   * the whole run to the previous month, so the WIB month is computed here
+   * with `wibParts` and passed in as an already-UTC-normalized Date instead.
+   */
+  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT, {
+    timeZone: "Asia/Jakarta",
+  })
+  async runMonthlyDepreciationCron(): Promise<void> {
+    try {
+      await this.catchUpMissedDepreciation();
+    } catch (error: any) {
+      this.logger.error("Monthly depreciation cron failed", error?.stack ?? error);
+    }
+  }
+
+  /**
+   * Posts depreciation (autoPost) for every WIB month from the earliest
+   * active schedule's start date through the current WIB month. Idempotent —
+   * calculatePeriodDepreciation rejects a duplicate (assetId, periodDate),
+   * and processMonthlyDepreciation swallows that per-asset into `errors`
+   * rather than throwing, so re-running over already-posted months is safe
+   * and cheap (a handful of expected "already exists" errors, no duplicate
+   * postings).
+   */
+  async catchUpMissedDepreciation(): Promise<void> {
+    const earliest = await this.prisma.depreciationSchedule.aggregate({
+      _min: { startDate: true },
+      where: { isActive: true },
+    });
+    if (!earliest._min.startDate) return;
+
+    const startParts = wibParts(earliest._min.startDate);
+    const nowParts = wibParts(new Date());
+
+    let cursor = Date.UTC(startParts.year, startParts.month - 1, 1);
+    const end = Date.UTC(nowParts.year, nowParts.month - 1, 1);
+
+    while (cursor <= end) {
+      const periodDate = new Date(cursor);
+      const result = await this.processMonthlyDepreciation({
+        periodDate,
+        userId: "system",
+        autoPost: true,
+      });
+      if (result.posted > 0 || result.errors.length > 0) {
+        this.logger.log(
+          `Depreciation catch-up ${periodDate.toISOString().slice(0, 7)}: ` +
+            `processed ${result.processed}/${result.total}, posted ${result.posted}` +
+            (result.errors.length > 0 ? `, errors: ${result.errors.join("; ")}` : ""),
+        );
+      }
+      const next = new Date(cursor);
+      cursor = Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 1);
+    }
+  }
 
   /**
    * Create depreciation schedule for an asset

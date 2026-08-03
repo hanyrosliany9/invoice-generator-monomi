@@ -13,6 +13,7 @@ import { JournalService } from "../accounting/services/journal.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { CreatePaymentDto, UpdatePaymentDto, PaymentResponseDto } from "./dto";
 import { PaymentStatus } from "@prisma/client";
+import { accountForSource } from "../accounting/cash-accounts.util";
 
 @Injectable()
 export class PaymentsService {
@@ -225,11 +226,15 @@ export class PaymentsService {
         const servicesPaid = amt - reimbPaid;
 
         // Split the receipt so the reimburse is a closed loop on Cash (1-1010):
-        // advanced via CR Cash at SENT, returned via DR Cash here. Services → Bank.
+        // advanced via CR Cash at SENT, returned via DR Cash here. Services →
+        // whichever cash/bank account the client actually paid into.
+        const servicesAccountCode = accountForSource(
+          existingPayment.paymentMethod === "CASH" ? "CASH" : "BANK",
+        );
         const lineItems: any[] = [];
         if (servicesPaid > 0) {
           lineItems.push({
-            accountCode: "1-1020", // DR Bank (services receipt)
+            accountCode: servicesAccountCode, // DR Cash/Bank (services receipt, by actual payment method)
             description: `Payment from ${invoice.client.name}`,
             descriptionId: `Pembayaran dari ${invoice.client.name}`,
             debit: servicesPaid,

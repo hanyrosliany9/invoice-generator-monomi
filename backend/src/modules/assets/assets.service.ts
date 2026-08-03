@@ -28,6 +28,7 @@ import {
   AssetStatus,
   AssetCondition,
   TransactionType,
+  DepreciationStatus,
   Prisma,
 } from "@prisma/client";
 import * as QRCode from "qrcode";
@@ -472,8 +473,31 @@ export class AssetsService {
       );
     }
 
-    return this.prisma.asset.delete({
-      where: { id },
+    // Depreciation entries that already posted a journal entry have moved
+    // real balances into Accumulated Depreciation / Depreciation Expense on
+    // the GL. Hard-deleting the asset would strip those entries (or the DB
+    // cascade would) while leaving the posted GL balances behind — a
+    // permanent, unexplained residue on the Balance Sheet with no asset to
+    // point to. Route those assets through dispose() instead, which reverses
+    // the balances with a proper balanced journal entry.
+    const postedDepreciation = await this.prisma.depreciationEntry.count({
+      where: { assetId: id, status: DepreciationStatus.POSTED },
+    });
+    if (postedDepreciation > 0) {
+      throw new ConflictException(
+        "Aset ini memiliki penyusutan yang sudah diposting ke jurnal umum. " +
+          "Gunakan 'Dispose' agar saldo akumulasi penyusutan di neraca tetap akurat, bukan hapus langsung.",
+      );
+    }
+
+    // Explicitly clear depreciation records in the same transaction as the
+    // asset delete — don't rely solely on the DB's ON DELETE CASCADE, since
+    // that leaves the depreciation schedule/entries dangling whenever the
+    // constraint is missing on a given database (drifted/partially migrated).
+    return this.prisma.$transaction(async (tx) => {
+      await tx.depreciationEntry.deleteMany({ where: { assetId: id } });
+      await tx.depreciationSchedule.deleteMany({ where: { assetId: id } });
+      return tx.asset.delete({ where: { id } });
     });
   }
 

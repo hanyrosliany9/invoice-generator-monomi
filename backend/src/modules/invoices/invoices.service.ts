@@ -12,6 +12,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { QuotationsService } from "../quotations/quotations.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { JournalService } from "../accounting/services/journal.service";
+import { accountForSource } from "../accounting/cash-accounts.util";
 import { RevenueRecognitionService } from "../accounting/services/revenue-recognition.service";
 import { InvoiceCounterService } from "./services/invoice-counter.service";
 import { DocumentsService } from "../documents/documents.service";
@@ -1181,15 +1182,18 @@ export class InvoicesService {
       // on Cash (1-1010): it was advanced via CR Cash at invoice SENT, so the client's
       // repayment returns to Cash via DR Cash here (Cash nets back to where it started,
       // staying consistent with Piutang Lain-lain 1-2040 which also nets to zero).
-      //   • services portion → DR Bank 1-1020 / CR Trade AR 1-2010
+      //   • services portion → DR Cash/Bank (by actual paymentMethod) / CR Trade AR 1-2010
       //   • reimburse portion → DR Cash 1-1010 / CR Piutang Lain-lain 1-2040
       try {
         const reimbPaid = Math.min(reimbursePortion, amountToPay);
         const servicesPaid = amountToPay - reimbPaid;
+        const servicesAccountCode = accountForSource(
+          paymentData?.paymentMethod === "CASH" ? "CASH" : "BANK",
+        );
         const lineItems: any[] = [];
         if (servicesPaid > 0) {
           lineItems.push({
-            accountCode: "1-1020", // DR Bank (services receipt)
+            accountCode: servicesAccountCode, // DR Cash/Bank (services receipt, by actual payment method)
             debit: servicesPaid,
             credit: 0,
             description: `Payment for Invoice ${invoice.invoiceNumber}`,
