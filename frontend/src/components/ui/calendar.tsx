@@ -78,7 +78,17 @@ function Calendar({
           defaultClassNames.dropdown_root
         ),
         dropdown: cn(
-          "absolute inset-0 opacity-0 bg-transparent",
+          // The visible trigger is `caption_label` below; this <select> is an
+          // invisible (opacity-0) functional overlay on top of it. But when
+          // its native option-list popup opens, the BROWSER renders that
+          // popup using the select's own background-color/color -- not the
+          // custom-styled label's. `bg-transparent` left it with no explicit
+          // color, so the popup fell back to the OS default (white bg) while
+          // still inheriting this app's light dark-theme text color: white
+          // text on a white popup, unreadable. Giving it the app's actual
+          // popover tokens fixes the native popup without changing the
+          // (still invisible) trigger's own appearance.
+          "absolute inset-0 opacity-0 bg-popover text-popover-foreground",
           defaultClassNames.dropdown
         ),
         caption_label: cn(
