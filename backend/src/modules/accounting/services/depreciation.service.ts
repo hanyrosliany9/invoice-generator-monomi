@@ -553,7 +553,52 @@ export class DepreciationService {
 
     for (const schedule of activeSchedules) {
       try {
-        // Calculate depreciation
+        // Backfill any gap between this asset's last processed period (or
+        // its schedule start, if it has none yet) and the target period.
+        // calculatePeriodDepreciation derives "accumulated" purely from
+        // whatever entries already exist for EARLIER periods -- it has no
+        // notion of "how long this asset has actually been owned". So
+        // processing a period in isolation (e.g. the manual Process button
+        // run against an asset that's never been processed before) produces
+        // an accumulated figure that starts from zero at that period instead
+        // of reflecting the full history since acquisition. Filling every
+        // missing month first, in order, keeps each one's accumulated total
+        // building on the last -- exactly like catchUpMissedDepreciation
+        // does across all assets, but scoped to this one schedule so a
+        // single manual "process this month" click is self-healing too.
+        const lastEntry = await this.prisma.depreciationEntry.findFirst({
+          where: { assetId: schedule.assetId, periodDate: { lt: data.periodDate } },
+          orderBy: { periodDate: "desc" },
+        });
+        const scheduleStartMonth = new Date(
+          Date.UTC(schedule.startDate.getUTCFullYear(), schedule.startDate.getUTCMonth(), 1),
+        );
+        let backfillCursor = lastEntry
+          ? new Date(
+              Date.UTC(lastEntry.periodDate.getUTCFullYear(), lastEntry.periodDate.getUTCMonth() + 1, 1),
+            )
+          : scheduleStartMonth;
+
+        while (backfillCursor < data.periodDate) {
+          try {
+            const backfillEntry = await this.calculatePeriodDepreciation({
+              assetId: schedule.assetId,
+              periodDate: new Date(backfillCursor),
+              fiscalPeriodId: data.fiscalPeriodId,
+            });
+            if (data.autoPost) {
+              await this.postDepreciationEntry(backfillEntry.id, data.userId);
+            }
+          } catch {
+            // Already exists, or outside the schedule's active range --
+            // safe to skip and continue toward the target period.
+          }
+          backfillCursor = new Date(
+            Date.UTC(backfillCursor.getUTCFullYear(), backfillCursor.getUTCMonth() + 1, 1),
+          );
+        }
+
+        // Calculate depreciation for the actual target period
         const entry = await this.calculatePeriodDepreciation({
           assetId: schedule.assetId,
           periodDate: data.periodDate,
