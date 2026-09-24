@@ -18,9 +18,10 @@ import {
   HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Upload } from "@aws-sdk/lib-storage";
 import * as crypto from "crypto";
 import * as path from "path";
-import { Readable } from "stream";
+import { Readable, Transform } from "stream";
 
 /**
  * MediaService - Cloudflare R2 Integration
@@ -221,6 +222,133 @@ export class MediaService {
         error instanceof Error ? error.message : "Unknown error";
       throw new InternalServerErrorException(
         `Failed to upload file: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Upload a Readable stream to R2 (or local storage) without buffering
+   * the whole payload in memory.
+   *
+   * Intended for large, generated payloads (e.g. bulk-download ZIP archives)
+   * where the caller already has a stream and wants constant memory usage
+   * regardless of the total size. R2 uploads use the multipart `Upload`
+   * helper from `@aws-sdk/lib-storage`, which provides real backpressure
+   * against the source stream (bounded part size + queue size) instead of
+   * requiring the full body up front like `PutObjectCommand`.
+   *
+   * @param stream - Source data stream (e.g. archiver output)
+   * @param key - Destination key (R2 object key or local relative path)
+   * @param contentType - MIME type of the resulting object
+   * @param metadata - Optional object metadata (R2 only)
+   * @param onProgress - Optional callback invoked with cumulative bytes
+   *   written so far, so a caller (e.g. the bulk-download stall watchdog)
+   *   can treat real upload progress as activity even after the source
+   *   stream itself has stopped emitting (e.g. lib-storage flushing its
+   *   last buffered parts after `archive.finalize()`).
+   * @returns Upload result with URL, key, and actual bytes written
+   */
+  async uploadStream(
+    stream: Readable,
+    key: string,
+    contentType: string,
+    metadata?: Record<string, string>,
+    onProgress?: (bytesWritten: number) => void,
+  ): Promise<{ url: string; key: string; size: number }> {
+    // Reuse the same path-traversal guard applied to keys in getFileStream,
+    // since the caller supplies the key directly here.
+    if (key.includes("..") || key.startsWith("/") || key.includes("\0")) {
+      throw new ForbiddenException("Access denied: invalid or unsafe file key");
+    }
+
+    // Count bytes actually written by threading a counting Transform into
+    // the pipeline, rather than attaching a bare 'data' listener to
+    // `stream`. A 'data' listener switches the stream into flowing mode
+    // the instant it's attached — if the REAL consumer (Upload / pipeline)
+    // hasn't attached yet, whatever the source already pushed is delivered
+    // to that listener and then silently discarded, corrupting the head of
+    // the upload. Piping into a Transform preserves backpressure and never
+    // drops a chunk: the counted bytes are exactly the bytes that reach
+    // the destination.
+    let bytesWritten = 0;
+    const counter = new Transform({
+      transform(chunk: Buffer, _enc, cb) {
+        bytesWritten += chunk.length;
+        onProgress?.(bytesWritten);
+        cb(null, chunk);
+      },
+    });
+    // Forward a source error onto the counter so it isn't left dangling if
+    // `stream` errors before anything pipes out of `counter`.
+    stream.on("error", (err) => counter.destroy(err));
+    stream.pipe(counter);
+
+    try {
+      if (this.isR2Enabled()) {
+        const upload = new Upload({
+          client: this.s3Client,
+          params: {
+            Bucket: this.bucketName,
+            Key: key,
+            Body: counter,
+            ContentType: contentType,
+            Metadata: metadata,
+          },
+          partSize: 10 * 1024 * 1024, // 10MB parts
+          queueSize: 4, // At most 4 parts in flight -> real backpressure
+          leavePartsOnError: false,
+        });
+        if (onProgress) {
+          upload.on("httpUploadProgress", (progress) => {
+            if (typeof progress.loaded === "number") {
+              onProgress(progress.loaded);
+            }
+          });
+        }
+
+        await upload.done();
+        const url = `${this.publicUrl}/${key}`;
+
+        this.logger.log(
+          `✅ Stream uploaded to R2: ${key} (${bytesWritten} bytes)`,
+        );
+
+        return { url, key, size: bytesWritten };
+      } else {
+        // Fallback: stream directly to local disk for development
+        const fs = await import("fs");
+        const fsPromises = await import("fs").then((m) => m.promises);
+        const path_module = await import("path");
+        const { pipeline } = await import("stream/promises");
+
+        // key is expected as "<folder>/<filename...>" (mirrors uploadFile's local branch)
+        const folder = path_module.default.dirname(key);
+        const filename = path_module.default.basename(key);
+        const uploadDir = path_module.default.join(
+          process.cwd(),
+          "uploads",
+          folder === "." ? "" : folder,
+        );
+        await fsPromises.mkdir(uploadDir, { recursive: true });
+
+        const localPath = path_module.default.join(uploadDir, filename);
+        const writeStream = fs.createWriteStream(localPath);
+        await pipeline(counter, writeStream);
+
+        const url = `/api/v1/media/proxy/${key}`;
+
+        this.logger.log(
+          `✅ Stream uploaded to local storage: ${localPath} (${bytesWritten} bytes)`,
+        );
+
+        return { url, key, size: bytesWritten };
+      }
+    } catch (error) {
+      this.logger.error(`❌ Failed to upload stream:`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      throw new InternalServerErrorException(
+        `Failed to upload stream: ${errorMessage}`,
       );
     }
   }
@@ -491,12 +619,12 @@ export class MediaService {
   ): string {
     if (!this.jwtService) {
       throw new InternalServerErrorException(
-        'JwtService not available. Media token generation is not configured.',
+        "JwtService not available. Media token generation is not configured.",
       );
     }
 
     const payload = {
-      purpose: 'public-share',
+      purpose: "public-share",
       isPublic: true,
       shareToken,
       // scope ties this token to a specific project and its R2 key prefixes
@@ -507,11 +635,11 @@ export class MediaService {
       },
     };
 
-    const token = this.jwtService.sign(payload, { expiresIn: '24h' });
+    const token = this.jwtService.sign(payload, { expiresIn: "24h" });
 
     this.logger.debug(
       `✅ Generated scoped public-share media token for project: ${projectId} ` +
-      `(${payload.scope.keyPrefixes.length} key prefixes)`,
+        `(${payload.scope.keyPrefixes.length} key prefixes)`,
     );
 
     return token;
@@ -554,7 +682,9 @@ export class MediaService {
       ) {
         throw error;
       }
-      this.logger.warn(`❌ Invalid media access token: ${error instanceof Error ? error.message : "Unknown error"}`);
+      this.logger.warn(
+        `❌ Invalid media access token: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
       throw new UnauthorizedException("Invalid or expired media access token");
     }
   }
@@ -626,14 +756,8 @@ export class MediaService {
   }> {
     // Reject keys that contain path traversal sequences regardless of storage backend.
     // This blocks directory escape in local-storage fallback AND prevents malformed R2 keys.
-    if (
-      key.includes("..") ||
-      key.startsWith("/") ||
-      key.includes("\0")
-    ) {
-      throw new ForbiddenException(
-        "Access denied: invalid or unsafe file key",
-      );
+    if (key.includes("..") || key.startsWith("/") || key.includes("\0")) {
+      throw new ForbiddenException("Access denied: invalid or unsafe file key");
     }
 
     try {
@@ -649,7 +773,9 @@ export class MediaService {
         const timeoutMs = options?.timeoutMs || 30000; // Default 30s timeout
         const abortController = new AbortController();
         const timeoutId = setTimeout(() => {
-          this.logger.warn(`Timeout fetching file from R2: ${key} (${timeoutMs}ms)`);
+          this.logger.warn(
+            `Timeout fetching file from R2: ${key} (${timeoutMs}ms)`,
+          );
           abortController.abort();
         }, timeoutMs);
 
@@ -657,7 +783,9 @@ export class MediaService {
         const signal = options?.abortSignal || abortController.signal;
 
         try {
-          const response = await this.s3Client.send(command, { abortSignal: signal });
+          const response = await this.s3Client.send(command, {
+            abortSignal: signal,
+          });
 
           // Clear timeout on success
           clearTimeout(timeoutId);
@@ -792,7 +920,10 @@ export class MediaService {
    * @param file - Multer file object
    * @throws BadRequestException if validation fails
    */
-  private validateFile(file: Express.Multer.File, skipMimeValidation = false): void {
+  private validateFile(
+    file: Express.Multer.File,
+    skipMimeValidation = false,
+  ): void {
     // Check if file exists
     if (!file) {
       throw new BadRequestException("No file provided");
@@ -863,6 +994,52 @@ export class MediaService {
    */
   getPublicUrl(key: string): string {
     return `${this.publicUrl}/${key}`;
+  }
+
+  /**
+   * Generate a non-guessable, sanitized R2 key for a generated bulk-download
+   * ZIP artifact, reusing the same date-folder + random-hex-prefix +
+   * sanitized-basename scheme as generateKey() for uploaded files.
+   *
+   * Callers (e.g. the bulk-download worker) must never interpolate a
+   * client-supplied filename directly into an object key — that lets one
+   * user's job overwrite another user's ZIP at a predictable key. Here,
+   * `zipFilename` can only ever influence the human-readable basename
+   * portion of the key.
+   *
+   * Scoped separately from generateKey()'s extname-based logic: a
+   * client-supplied basename that sanitizes down to something starting
+   * with "." (e.g. "../../etc/passwd; rm -rf /" -> the ".zip" suffix
+   * lands right after the last "/") makes `path.extname` treat the whole
+   * thing as an extension-less dotfile, silently dropping ".zip" from the
+   * generated key. Building the key directly here guarantees it always
+   * ends in ".zip".
+   *
+   * Uses 16 hex chars (64 bits) of randomness rather than generateKey()'s
+   * 8 (32 bits) — a same-day collision on the same sanitized basename
+   * would silently overwrite another job's ZIP at a predictable-ish key,
+   * and download ZIPs are exactly the case where that matters most.
+   *
+   * @param zipFilename - Optional client-supplied human-readable basename (no extension)
+   * @returns Unique, sanitized key under "downloads/", e.g. "downloads/2026-09-24/ab12cd34ab12cd34-my-export.zip"
+   */
+  generateDownloadZipKey(zipFilename?: string): string {
+    const safeBase =
+      zipFilename && zipFilename.trim() ? zipFilename.trim() : "media-download";
+
+    const hash = crypto.randomBytes(8).toString("hex"); // 16 hex chars
+    const date = new Date().toISOString().split("T")[0];
+
+    // Sanitize the same way generateKey() does (strip to a safe basename),
+    // but without ever running it through path.extname, so a basename that
+    // sanitizes to something starting with "." can't eat the ".zip" suffix.
+    const basename = path
+      .basename(safeBase)
+      .replace(/[^a-zA-Z0-9-_]/g, "-")
+      .toLowerCase();
+    const safeName = basename || "media-download";
+
+    return `downloads/${date}/${hash}-${safeName}.zip`;
   }
 
   /**

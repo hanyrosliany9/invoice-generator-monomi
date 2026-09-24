@@ -462,26 +462,201 @@ export default function MediaProjectDetailPageV2() {
     onError: () => toast.error(t('mediaReview.bulkRateFailed', 'Failed to update ratings.')),
   });
 
-  const BULK_DOWNLOAD_LIMIT = 500;
+  /* ---------- async bulk download (job-based, handles thousands of assets) ---------- */
+  type BulkDownloadOutcome = { downloadUrl: string; archivedFiles: number };
+
+  const [bulkDownloadProgress, setBulkDownloadProgress] = useState<{
+    processedFiles: number;
+    totalFiles: number;
+    progress: number;
+  } | null>(null);
+
+  const bulkDownloadPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const bulkDownloadMountedRef = useRef(true);
+  const requestedDownloadCountRef = useRef(0);
+
+  const clearBulkDownloadPoll = useCallback(() => {
+    if (bulkDownloadPollRef.current !== null) {
+      clearInterval(bulkDownloadPollRef.current);
+      bulkDownloadPollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    bulkDownloadMountedRef.current = true;
+    return (): void => {
+      bulkDownloadMountedRef.current = false;
+      clearBulkDownloadPoll();
+    };
+  }, [clearBulkDownloadPoll]);
+
+  // Navigate to the presigned R2 URL directly instead of fetching it into a
+  // blob — bulk ZIPs can be multi-gigabyte and must stream straight to disk.
+  const triggerFileDownload = (url: string): void => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const pollBulkDownloadJob = useCallback(
+    (jobId: string): Promise<BulkDownloadOutcome> => {
+      const POLL_INTERVAL_MS = 2000;
+      // Sized from measured production throughput: the old synchronous endpoint
+      // took ~6 minutes to archive 500 assets, and the largest project here is
+      // ~4.5k assets / several GB, which must then also be uploaded to R2 before
+      // a download URL exists. 30 minutes would time out the UI on a job that is
+      // still progressing fine, so allow a generous ceiling — the server-side
+      // stall watchdog, not this timer, is what catches genuinely wedged jobs.
+      const MAX_WAIT_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+      // A ZIP job can run for many minutes, so a single failed status poll
+      // (transient 502 from the tunnel/proxy, brief network drop) must not
+      // abandon a download that is still completing server-side. Only give up
+      // after the status endpoint has been unreachable for several polls in a row.
+      const MAX_CONSECUTIVE_ERRORS = 10;
+
+      return new Promise<BulkDownloadOutcome>((resolve, reject) => {
+        const startedAt = Date.now();
+        let consecutiveErrors = 0;
+
+        const poll = async (): Promise<void> => {
+          try {
+            const status = await mediaCollabService.getBulkDownloadJobStatus(jobId);
+            if (!bulkDownloadMountedRef.current) return;
+            consecutiveErrors = 0;
+
+            if (status.status === 'completed' && status.downloadUrl != null && status.downloadUrl !== '') {
+              clearBulkDownloadPoll();
+              setBulkDownloadProgress({
+                processedFiles: status.totalFiles,
+                totalFiles: status.totalFiles,
+                progress: 100,
+              });
+              resolve({
+                downloadUrl: status.downloadUrl,
+                archivedFiles: status.processedFiles,
+              });
+              return;
+            }
+
+            if (status.status === 'failed') {
+              clearBulkDownloadPoll();
+              const serverError =
+                status.error != null && status.error !== ''
+                  ? status.error
+                  : t('mediaCollab.bulkDownloadJobFailed', 'Download failed on the server.');
+              reject(new Error(serverError));
+              return;
+            }
+
+            if (status.status === 'cancelled') {
+              clearBulkDownloadPoll();
+              reject(new Error(t('mediaCollab.bulkDownloadJobCancelled', 'Download was cancelled.')));
+              return;
+            }
+
+            setBulkDownloadProgress({
+              processedFiles: status.processedFiles,
+              totalFiles: status.totalFiles,
+              progress: status.progress,
+            });
+
+            if (Date.now() - startedAt > MAX_WAIT_MS) {
+              clearBulkDownloadPoll();
+              reject(
+                new Error(
+                  t(
+                    'mediaCollab.bulkDownloadJobTimeout',
+                    'Download is taking too long. Please try again later.',
+                  ),
+                ),
+              );
+            }
+          } catch (err) {
+            if (!bulkDownloadMountedRef.current) return;
+
+            consecutiveErrors += 1;
+            const gaveUp = consecutiveErrors >= MAX_CONSECUTIVE_ERRORS;
+            const timedOut = Date.now() - startedAt > MAX_WAIT_MS;
+            if (!gaveUp && !timedOut) {
+              // Keep polling — the job is very likely still running.
+              return;
+            }
+
+            clearBulkDownloadPoll();
+            reject(
+              err instanceof Error
+                ? err
+                : new Error(t('mediaCollab.bulkDownloadStatusError', 'Failed to check download status.')),
+            );
+          }
+        };
+
+        clearBulkDownloadPoll();
+        bulkDownloadPollRef.current = setInterval(poll, POLL_INTERVAL_MS);
+        poll();
+      });
+    },
+    [clearBulkDownloadPoll, t],
+  );
 
   const bulkDownloadMutation = useMutation({
-    mutationFn: (ids: string[]) => {
-      const capped = ids.slice(0, BULK_DOWNLOAD_LIMIT);
-      if (ids.length > BULK_DOWNLOAD_LIMIT) {
+    mutationFn: async (ids: string[]): Promise<BulkDownloadOutcome> => {
+      if (projectId == null) {
+        throw new Error('Missing project id');
+      }
+
+      setBulkDownloadProgress({ processedFiles: 0, totalFiles: ids.length, progress: 0 });
+      requestedDownloadCountRef.current = ids.length;
+
+      const created = await mediaCollabService.createBulkDownloadJob(
+        ids,
+        projectId,
+        `${project?.name ?? 'media'}-selection`,
+      );
+
+      if (created.downloadUrl != null && created.downloadUrl !== '') {
+        setBulkDownloadProgress({
+          processedFiles: created.totalFiles,
+          totalFiles: created.totalFiles,
+          progress: 100,
+        });
+        return { downloadUrl: created.downloadUrl, archivedFiles: created.totalFiles };
+      }
+
+      return pollBulkDownloadJob(created.jobId);
+    },
+    onSuccess: ({ downloadUrl, archivedFiles }) => {
+      triggerFileDownload(downloadUrl);
+
+      // The server tolerates individual unreadable assets, so a job can succeed
+      // with fewer files than were asked for. Say so rather than reporting a
+      // plain success for an incomplete ZIP.
+      const requested = requestedDownloadCountRef.current;
+      if (archivedFiles > 0 && requested > 0 && archivedFiles < requested) {
         toast.warning(
           t(
-            'mediaCollab.downloadLimitWarning',
-            'ZIP is limited to {{limit}} files. Downloading the first {{limit}} of {{total}}.',
-            { limit: BULK_DOWNLOAD_LIMIT, total: ids.length },
+            'mediaCollab.bulkDownloadPartial',
+            'Download started, but only {{archived}} of {{requested}} files could be included.',
+            { archived: archivedFiles, requested },
           ),
         );
+        return;
       }
-      return mediaCollabService.bulkDownloadAssets(capped, `${project?.name ?? 'media'}-selection`);
-    },
-    onSuccess: () => {
+
       toast.success(t('mediaReview.bulkDownloadStarted', 'Download started.'));
     },
-    onError: () => toast.error(t('mediaReview.bulkDownloadFailed', 'Download failed.')),
+    onError: (error: unknown) => {
+      clearBulkDownloadPoll();
+      const message = error instanceof Error && error.message !== '' ? error.message : undefined;
+      toast.error(message ?? t('mediaReview.bulkDownloadFailed', 'Download failed.'));
+    },
+    onSettled: () => {
+      setBulkDownloadProgress(null);
+    },
   });
 
   const bulkDeleteMutation = useMutation({
@@ -1320,10 +1495,25 @@ export default function MediaProjectDetailPageV2() {
                 <Download className="h-3.5 w-3.5 mr-1" />
                 {t('mediaCollab.downloadAll', 'Download All')}
                 <span className="ml-1.5 tabular-nums text-text-tertiary">
-                  ({Math.min(filteredAssets.length, BULK_DOWNLOAD_LIMIT)}
-                  {filteredAssets.length > BULK_DOWNLOAD_LIMIT && ` / ${filteredAssets.length}`})
+                  {bulkDownloadMutation.isPending && bulkDownloadProgress !== null
+                    ? `${bulkDownloadProgress.progress}%`
+                    : `(${filteredAssets.length})`}
                 </span>
               </Button>
+
+              {bulkDownloadMutation.isPending && bulkDownloadProgress !== null && (
+                <span className="text-xs text-text-tertiary tabular-nums">
+                  {t(
+                    'mediaCollab.bulkDownloadProgress',
+                    'Preparing ZIP: {{processed}}/{{total}} files ({{percent}}%)',
+                    {
+                      processed: bulkDownloadProgress.processedFiles,
+                      total: bulkDownloadProgress.totalFiles,
+                      percent: bulkDownloadProgress.progress,
+                    },
+                  )}
+                </span>
+              )}
             </div>
           )}
 

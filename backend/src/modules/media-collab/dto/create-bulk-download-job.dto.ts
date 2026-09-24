@@ -28,11 +28,13 @@ export class CreateBulkDownloadJobDto {
     ],
     type: [String],
     minItems: 1,
-    maxItems: 1000,
+    maxItems: 10000,
   })
   @IsArray()
   @ArrayMinSize(1, { message: "At least one asset ID is required" })
-  @ArrayMaxSize(1000, { message: "Maximum 1000 assets can be downloaded at once" })
+  @ArrayMaxSize(10000, {
+    message: "Maximum 10000 assets can be downloaded at once",
+  })
   @IsString({ each: true })
   assetIds: string[];
 
