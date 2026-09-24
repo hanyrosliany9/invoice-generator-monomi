@@ -6599,6 +6599,7 @@
     "selectAll": "Pilih Semua",
     "deselectAll": "Batal Pilih Semua",
     "bulkDownloadProgress": "Menyiapkan ZIP: {{processed}}/{{total}} file ({{percent}}%)",
+    "bulkDownloadJobNoId": "Server tidak mengembalikan id tugas unduhan.",
     "bulkDownloadPartial": "Unduhan dimulai, tetapi hanya {{archived}} dari {{requested}} file yang dapat disertakan.",
     "bulkDownloadJobFailed": "Unduhan gagal di server.",
     "bulkDownloadJobCancelled": "Unduhan dibatalkan.",

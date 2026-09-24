@@ -6509,6 +6509,7 @@
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
     "bulkDownloadProgress": "Preparing ZIP: {{processed}}/{{total}} files ({{percent}}%)",
+    "bulkDownloadJobNoId": "Server did not return a download job id.",
     "bulkDownloadPartial": "Download started, but only {{archived}} of {{requested}} files could be included.",
     "bulkDownloadJobFailed": "Download failed on the server.",
     "bulkDownloadJobCancelled": "Download was cancelled.",

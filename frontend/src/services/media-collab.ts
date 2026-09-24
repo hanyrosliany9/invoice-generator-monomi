@@ -451,7 +451,11 @@ class MediaCollabService {
       },
     );
 
-    return response.data.data;
+    // The backend's ResponseInterceptor skips its { success, data } envelope for
+    // any URL containing "/bulk-download" (an exclusion meant for the synchronous
+    // streaming endpoint), so these job endpoints return the bare DTO. Accept
+    // either shape — same defensive unwrap the public share-link variants use.
+    return response.data.data ?? response.data;
   }
 
   /**
@@ -462,7 +466,7 @@ class MediaCollabService {
    */
   async getBulkDownloadJobStatus(jobId: string): Promise<BulkDownloadJobStatus> {
     const response = await apiClient.get(`/media-collab/bulk-download/jobs/${jobId}`);
-    return response.data.data;
+    return response.data.data ?? response.data;
   }
 
   /**
@@ -473,7 +477,7 @@ class MediaCollabService {
    */
   async cancelBulkDownloadJob(jobId: string): Promise<{ success: boolean; message: string }> {
     const response = await apiClient.delete(`/media-collab/bulk-download/jobs/${jobId}`);
-    return response.data.data;
+    return response.data.data ?? response.data;
   }
 
   // ============================================

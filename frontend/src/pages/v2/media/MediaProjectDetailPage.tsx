@@ -618,6 +618,12 @@ export default function MediaProjectDetailPageV2() {
         `${project?.name ?? 'media'}-selection`,
       );
 
+      if (created?.jobId == null) {
+        throw new Error(
+          t('mediaCollab.bulkDownloadJobNoId', 'Server did not return a download job id.'),
+        );
+      }
+
       if (created.downloadUrl != null && created.downloadUrl !== '') {
         setBulkDownloadProgress({
           processedFiles: created.totalFiles,
