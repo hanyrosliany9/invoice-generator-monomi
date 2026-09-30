@@ -10,6 +10,7 @@ import {
   MediaAssetWithProject,
   MediaAssetWithVersions,
 } from "../types/prisma-extended.types";
+import { hasGlobalMediaReadAccess } from "../utils/media-access.util";
 
 /**
  * ComparisonService
@@ -25,7 +26,7 @@ export class ComparisonService {
    * Compare multiple assets side-by-side
    * Validates that user has access and assets are same type
    */
-  async compareAssets(assetIds: string[], userId: string) {
+  async compareAssets(assetIds: string[], userId: string, userRole?: string) {
     // Validate input
     if (assetIds.length < 2 || assetIds.length > 4) {
       throw new BadRequestException("Can compare 2-4 assets at a time");
@@ -61,6 +62,7 @@ export class ComparisonService {
     // Check user has access to all assets
     for (const asset of assets) {
       const hasAccess =
+        hasGlobalMediaReadAccess(userRole) ||
         asset.project.createdBy === userId ||
         asset.project.collaborators.length > 0;
 
@@ -105,6 +107,7 @@ export class ComparisonService {
     assetId: string,
     versionNumbers: number[],
     userId: string,
+    userRole?: string,
   ) {
     // Fetch the asset with versions and access info
     const asset = (await this.prisma.mediaAsset.findUnique({
@@ -143,6 +146,7 @@ export class ComparisonService {
 
     // Check user has access
     const hasAccess =
+      hasGlobalMediaReadAccess(userRole) ||
       asset.project.createdBy === userId ||
       asset.project.collaborators.length > 0;
 

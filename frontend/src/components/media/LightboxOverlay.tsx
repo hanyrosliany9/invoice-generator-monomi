@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   ZoomIn, ZoomOut, RotateCw, Download, X, ChevronLeft, ChevronRight, Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { downloadFile } from '@/utils/downloadFile';
 
 interface LightboxOverlayProps {
   src: string;
@@ -20,6 +22,8 @@ interface LightboxOverlayProps {
   infoPanel?: React.ReactNode;
   /** Fallback: when no infoPanel, ⓘ closes the lightbox and opens an external sheet. */
   onShowDetails?: () => void;
+  /** Videos are opened in a new tab instead of being buffered into a blob. */
+  isVideo?: boolean;
 }
 
 const ZOOM_STEP = 0.25;
@@ -39,6 +43,7 @@ export function LightboxOverlay({
   position,
   infoPanel,
   onShowDetails,
+  isVideo = false,
 }: LightboxOverlayProps) {
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
@@ -105,19 +110,10 @@ export function LightboxOverlay({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  const download = async () => {
-    const url = downloadUrl || src;
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = alt || 'download';
-      a.click();
-      URL.revokeObjectURL(a.href);
-    } catch {
-      window.open(url, '_blank');
-    }
+  const download = () => {
+    downloadFile(downloadUrl || src, alt || 'download', { isVideo }).catch(() => {
+      toast.error(t('mediaReview.lightbox.downloadFailed', 'Download failed. Please try again.'));
+    });
   };
 
   const hasInfoAction = !!(infoPanel || onShowDetails);
@@ -128,16 +124,16 @@ export function LightboxOverlay({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-xs text-white/60 truncate max-w-[35vw]">{alt}</span>
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-white/10 shrink-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="text-xs text-white/60 truncate sm:max-w-[35vw]">{alt}</span>
           {position && (
             <span className="text-[10px] text-white/35 tabular-nums shrink-0">
               {position.current} / {position.total}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* ⓘ Details — toggles inline panel or calls external handler */}
           {hasInfoAction && (
             <Button
@@ -163,13 +159,13 @@ export function LightboxOverlay({
             </Button>
           )}
 
-          <span className="h-4 w-px bg-white/15 mx-0.5" />
+          <span className="hidden sm:block h-4 w-px bg-white/15 mx-0.5" />
 
           {/* Zoom controls */}
           <Button
             variant="ghost"
             size="icon-sm"
-            className="text-white/70 hover:text-white hover:bg-white/10"
+            className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
             onClick={zoomOut}
             disabled={zoom <= ZOOM_MIN}
             title={t('mediaReview.lightbox.zoomOut', 'Zoom out (−)')}
@@ -180,7 +176,7 @@ export function LightboxOverlay({
           <button
             type="button"
             onClick={resetZoom}
-            className="text-xs text-white/60 hover:text-white tabular-nums min-w-[3.5rem] text-center px-1 py-1 rounded hover:bg-white/10 transition-colors"
+            className="hidden sm:block text-xs text-white/60 hover:text-white tabular-nums min-w-[3.5rem] text-center px-1 py-1 rounded hover:bg-white/10 transition-colors"
             title={t('mediaReview.lightbox.resetZoom', 'Reset zoom (0)')}
           >
             {Math.round(zoom * 100)}%
@@ -189,7 +185,7 @@ export function LightboxOverlay({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="text-white/70 hover:text-white hover:bg-white/10"
+            className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
             onClick={zoomIn}
             disabled={zoom >= ZOOM_MAX}
             title={t('mediaReview.lightbox.zoomIn', 'Zoom in (+)')}
@@ -201,7 +197,7 @@ export function LightboxOverlay({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="text-white/70 hover:text-white hover:bg-white/10"
+            className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
             onClick={rotateCw}
             title={t('mediaReview.lightbox.rotate', 'Rotate clockwise (R)')}
           >
@@ -214,6 +210,7 @@ export function LightboxOverlay({
             size="icon-sm"
             className="text-white/70 hover:text-white hover:bg-white/10"
             onClick={download}
+            aria-label={t('mediaReview.lightbox.download', 'Download')}
             title={t('mediaReview.lightbox.download', 'Download')}
           >
             <Download className="h-4 w-4" />
@@ -225,6 +222,7 @@ export function LightboxOverlay({
             size="icon-sm"
             className="text-white/70 hover:text-white hover:bg-white/10 ml-1"
             onClick={onClose}
+            aria-label={t('mediaReview.lightbox.close', 'Close (Esc)')}
             title={t('mediaReview.lightbox.close', 'Close (Esc)')}
           >
             <X className="h-4 w-4" />
@@ -337,7 +335,7 @@ export function LightboxOverlay({
       </div>
 
       {/* Keyboard hint */}
-      <div className="px-4 py-1.5 text-center text-[10px] text-white/25 shrink-0">
+      <div className="hidden sm:block px-4 py-1.5 text-center text-[10px] text-white/25 shrink-0">
         {t('mediaReview.lightbox.hint', '← → navigate · +/− zoom · R rotate · 0 reset · Esc close')}
       </div>
     </div>

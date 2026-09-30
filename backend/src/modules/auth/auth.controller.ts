@@ -10,6 +10,7 @@ import {
   Res,
   Delete,
   Param,
+  UnauthorizedException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -41,6 +42,28 @@ function setAuthCookies(res: Response, accessToken: string, refreshToken: string
   };
   res.cookie("accessToken", accessToken, { ...baseOpts, maxAge: ACCESS_TOKEN_MAX_AGE });
   res.cookie("refreshToken", refreshToken, { ...baseOpts, maxAge: REFRESH_TOKEN_MAX_AGE });
+}
+
+/**
+ * Pick the refresh token from the httpOnly cookie (preferred, XSS-safe) or the
+ * request body (backward compat for non-cookie clients).
+ *
+ * Both sources are untrusted input: the body is not run through a DTO here, so
+ * `refresh_token` may be missing, empty, or even an object/array. Only a
+ * non-empty string is accepted — anything else yields `undefined`, so a value
+ * like `{ "not": "x" }` can never reach Prisma as a query filter.
+ */
+export function extractRefreshToken(
+  cookieToken: unknown,
+  bodyToken: unknown,
+): string | undefined {
+  if (typeof cookieToken === "string" && cookieToken.length > 0) {
+    return cookieToken;
+  }
+  if (typeof bodyToken === "string" && bodyToken.length > 0) {
+    return bodyToken;
+  }
+  return undefined;
 }
 
 @ApiTags("Authentication")
@@ -176,13 +199,22 @@ export class AuthController {
     description: "Refresh token tidak valid atau kedaluwarsa",
   })
   async refresh(
-    @Body("refresh_token") bodyRefreshToken: string | undefined,
+    @Body("refresh_token") bodyRefreshToken: unknown,
     @Request() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
     // Hardening 2: accept refresh token from httpOnly cookie first (XSS-safe),
     // fall back to request body for backward compatibility with existing clients.
-    const refreshToken: string = req.cookies?.refreshToken ?? bodyRefreshToken;
+    const refreshToken = extractRefreshToken(
+      req.cookies?.refreshToken,
+      bodyRefreshToken,
+    );
+    // No usable token (e.g. expired session on a device whose cookie is gone):
+    // answer 401 so the client runs its normal "session expired -> login" path
+    // instead of the request reaching Prisma with `token: undefined` (500).
+    if (!refreshToken) {
+      throw new UnauthorizedException("Refresh token tidak ditemukan");
+    }
     const deviceInfo = {
       userAgent: req.headers["user-agent"],
       ipAddress: req.ip,
@@ -211,12 +243,16 @@ export class AuthController {
   async logout(
     @Request() req: any,
     @Res({ passthrough: true }) res: Response,
-    @Body("refresh_token") bodyRefreshToken?: string,
+    @Body("refresh_token") bodyRefreshToken?: unknown,
     @Body("logout_all") logoutAll?: boolean,
   ) {
     // Accept refresh token from cookie (preferred) or body (backward compat).
-    const refreshToken: string | undefined =
-      req.cookies?.refreshToken ?? bodyRefreshToken;
+    // Non-string values are discarded so they can never be used as a Prisma
+    // filter in revokeToken's updateMany (which would revoke other users' tokens).
+    const refreshToken = extractRefreshToken(
+      req.cookies?.refreshToken,
+      bodyRefreshToken,
+    );
 
     await this.authService.logout(
       req.user.id,

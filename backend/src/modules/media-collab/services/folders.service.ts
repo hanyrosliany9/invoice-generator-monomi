@@ -9,6 +9,7 @@ import { MediaService } from "../../media/media.service";
 import { CreateFolderDto } from "../dto/create-folder.dto";
 import { UpdateFolderDto } from "../dto/update-folder.dto";
 import { MoveAssetsDto } from "../dto/move-assets.dto";
+import { mediaProjectReadWhere } from "../utils/media-access.util";
 
 @Injectable()
 export class MediaFoldersService {
@@ -102,16 +103,16 @@ export class MediaFoldersService {
   /**
    * Get folder tree for a project
    */
-  async getFolderTree(userId: string, projectId: string) {
-    // Verify user has access to the project
+  async getFolderTree(userId: string, projectId: string, userRole?: string) {
+    // Verify user has access to the project (creator, collaborator, public
+    // project, or SUPER_ADMIN read access)
     const project = await this.prisma.mediaProject.findFirst({
       where: {
         id: projectId,
-        OR: [
-          { createdBy: userId },
-          { collaborators: { some: { userId } } },
-          { isPublic: true },
-        ],
+        ...mediaProjectReadWhere(userId, userRole, {
+          includeCreator: true,
+          includePublic: true,
+        }),
       },
     });
 
@@ -147,18 +148,19 @@ export class MediaFoldersService {
   /**
    * Get folder contents (subfolders and assets)
    */
-  async getFolderContents(userId: string, folderId: string) {
+  async getFolderContents(
+    userId: string,
+    folderId: string,
+    userRole?: string,
+  ) {
     // Get folder with access check
     const folder = await this.prisma.mediaFolder.findFirst({
       where: {
         id: folderId,
-        project: {
-          OR: [
-            { createdBy: userId },
-            { collaborators: { some: { userId } } },
-            { isPublic: true },
-          ],
-        },
+        project: mediaProjectReadWhere(userId, userRole, {
+          includeCreator: true,
+          includePublic: true,
+        }),
       },
       include: {
         project: {
@@ -235,17 +237,14 @@ export class MediaFoldersService {
   /**
    * Get folder breadcrumb path
    */
-  async getFolderPath(userId: string, folderId: string) {
+  async getFolderPath(userId: string, folderId: string, userRole?: string) {
     const folder = await this.prisma.mediaFolder.findFirst({
       where: {
         id: folderId,
-        project: {
-          OR: [
-            { createdBy: userId },
-            { collaborators: { some: { userId } } },
-            { isPublic: true },
-          ],
-        },
+        project: mediaProjectReadWhere(userId, userRole, {
+          includeCreator: true,
+          includePublic: true,
+        }),
       },
       include: {
         project: {

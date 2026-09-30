@@ -7054,6 +7054,8 @@
   },
   "guest": {
     "publicProjectView": {
+      "previous": "Sebelumnya",
+      "next": "Berikutnya",
       "incompleteLink": "Tautan Tidak Lengkap",
       "incompleteLinkBody": "Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.",
       "galleryNotFound": "Galeri Tidak Ditemukan",
@@ -7459,6 +7461,7 @@
       "platforms": "Platform"
     },
     "lightbox": {
+      "downloadFailed": "Unduhan gagal. Silakan coba lagi.",
       "open": "Buka lightbox",
       "zoomOut": "Perkecil (−)",
       "resetZoom": "Reset zoom (0)",

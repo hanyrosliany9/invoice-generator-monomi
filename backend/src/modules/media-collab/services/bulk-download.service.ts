@@ -11,7 +11,12 @@ import { Redis } from "ioredis";
 import * as crypto from "crypto";
 import { PrismaService } from "../../prisma/prisma.service";
 import { QUEUE_NAMES, REDIS_CLIENT } from "../../queue/queue.module";
-import { CreateBulkDownloadJobDto } from "../dto/create-bulk-download-job.dto";
+import {
+  BULK_DOWNLOAD_MAX_ASSETS,
+  CreateBulkDownloadJobDto,
+} from "../dto/create-bulk-download-job.dto";
+import { hasGlobalMediaReadAccess } from "../utils/media-access.util";
+import { assertActivePublicShare } from "../utils/public-share.util";
 import {
   BulkDownloadJobCreatedDto,
   BulkDownloadJobStatusDto,
@@ -142,13 +147,19 @@ export class BulkDownloadService {
   async createJob(
     dto: CreateBulkDownloadJobDto,
     userId: string,
+    userRole?: string,
   ): Promise<BulkDownloadJobCreatedDto> {
     const { assetIds, projectId, zipFilename } = dto;
 
     this.logger.log(`Creating bulk download job for ${assetIds.length} assets`);
 
-    // Validate user has access to the project
-    const hasAccess = await this.verifyProjectAccess(userId, projectId);
+    // Validate user has access to the project (downloading is a read, so the
+    // SUPER_ADMIN read bypass applies)
+    const hasAccess = await this.verifyProjectAccess(
+      userId,
+      projectId,
+      userRole,
+    );
     if (!hasAccess) {
       throw new ForbiddenException("Access denied to this project");
     }
@@ -349,25 +360,57 @@ export class BulkDownloadService {
   }
 
   /**
+   * Resolve the project behind a public share token and ensure the link is
+   * currently active (public + not expired). Does not bump the view counter.
+   */
+  private async resolveActivePublicProject(shareToken: string) {
+    if (typeof shareToken !== "string" || shareToken.length === 0) {
+      throw new NotFoundException("Public share link not found or disabled");
+    }
+    const project = await this.prisma.mediaProject.findUnique({
+      where: { publicShareToken: shareToken },
+      select: {
+        id: true,
+        isPublic: true,
+        publicShareExpiresAt: true,
+        createdBy: true,
+      },
+    });
+    assertActivePublicShare(project);
+    return project;
+  }
+
+  /**
    * Create a bulk download job for a public share link (no auth required)
    * Validates via shareToken; uses project creator's userId for R2 access.
+   *
+   * Every active public link may download, whatever its publicAccessLevel
+   * (owner decision) — VIEW_ONLY links are intentionally NOT rejected here.
    */
   async createPublicJob(
     shareToken: string,
     assetIds: string[],
     zipFilename?: string,
   ): Promise<BulkDownloadJobCreatedDto> {
-    // Validate share token and get project
-    const project = await this.prisma.mediaProject.findUnique({
-      where: { publicShareToken: shareToken },
-      select: { id: true, isPublic: true, createdBy: true },
-    });
-
-    if (!project || !project.isPublic) {
-      throw new NotFoundException("Public share link not found or disabled");
+    // Defensive re-check of the DTO constraints (the controller validates
+    // them too) so a non-array / oversized list can never reach Prisma.
+    if (
+      !Array.isArray(assetIds) ||
+      assetIds.length === 0 ||
+      assetIds.length > BULK_DOWNLOAD_MAX_ASSETS ||
+      !assetIds.every((id) => typeof id === "string")
+    ) {
+      throw new BadRequestException(
+        `assetIds must be 1-${BULK_DOWNLOAD_MAX_ASSETS} asset ID strings`,
+      );
     }
 
-    // Security: filter to only assets that belong to this public project
+    // Validate share token (public + not expired) and get project
+    const project = await this.resolveActivePublicProject(shareToken);
+
+    // Security (IDOR guard): only assets that belong to the project resolved
+    // from the token are kept; foreign IDs are silently dropped, matching the
+    // authenticated createJob behaviour.
     const validAssets = await this.prisma.mediaAsset.findMany({
       where: {
         id: { in: assetIds },
@@ -381,6 +424,12 @@ export class BulkDownloadService {
     }
 
     const validAssetIds = validAssets.map((a) => a.id);
+
+    if (validAssetIds.length !== new Set(assetIds).size) {
+      this.logger.warn(
+        `[Public] ${new Set(assetIds).size - validAssetIds.length} requested assets were not found or don't belong to the shared project`,
+      );
+    }
 
     // Check cache first
     const contentHash = this.generateContentHash(validAssetIds);
@@ -430,15 +479,25 @@ export class BulkDownloadService {
    * Validates that the job was created for this shareToken.
    */
   async getPublicJobStatus(jobId: string, shareToken: string): Promise<BulkDownloadJobStatusDto> {
+    // The link must still be active: disabling, expiring or regenerating a
+    // share also stops polling (and thus handing out the ZIP URL) for jobs
+    // created through it.
+    const project = await this.resolveActivePublicProject(shareToken);
+
     const job = await this.downloadQueue.getJob(jobId);
 
     if (!job) {
       throw new NotFoundException(`Job ${jobId} not found`);
     }
 
-    // Verify this job belongs to this public share link
+    // Verify this job was created through this public share link (and so for
+    // this project). Authenticated jobs carry no shareToken and never match.
     const jobData = job.data as BulkDownloadJobData;
-    if (jobData.shareToken !== shareToken) {
+    if (
+      typeof jobData.shareToken !== "string" ||
+      jobData.shareToken !== shareToken ||
+      jobData.projectId !== project.id
+    ) {
       throw new ForbiddenException("Access denied to this job");
     }
 
@@ -493,7 +552,11 @@ export class BulkDownloadService {
   private async verifyProjectAccess(
     userId: string,
     projectId: string,
+    userRole?: string,
   ): Promise<boolean> {
+    if (hasGlobalMediaReadAccess(userRole)) {
+      return true;
+    }
     const collaborator = await this.prisma.mediaCollaborator.findUnique({
       where: {
         projectId_userId: {

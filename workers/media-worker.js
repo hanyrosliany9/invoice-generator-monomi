@@ -166,13 +166,26 @@ export default {
     }
 
     // Preserve original filename for inline display / downloads
-    const originalName = object.customMetadata?.originalName;
+    // `?download=1` forces attachment so a plain link navigation saves the file
+    // (streamed to disk, no in-memory blob) instead of playing it inline.
+    const disposition = url.searchParams.get('download') === '1' ? 'attachment' : 'inline';
+    let fallbackName = key.split('/').pop() || 'download';
+    try {
+      fallbackName = decodeURIComponent(fallbackName);
+    } catch {
+      // malformed percent-encoding: keep the raw segment
+    }
+    const originalName = object.customMetadata?.originalName || (disposition === 'attachment' ? fallbackName : null);
     if (originalName) {
-      const encoded = encodeURIComponent(originalName);
-      headers.set(
-        'Content-Disposition',
-        `inline; filename="${originalName}"; filename*=UTF-8''${encoded}`,
-      );
+      const asciiName = originalName.replace(/[^\x20-\x7e]|["\\]/g, '_');
+      let dispositionValue = `${disposition}; filename="${asciiName}"`;
+      try {
+        // encodeURIComponent throws URIError on lone surrogates; never let that 500 the response.
+        dispositionValue += `; filename*=UTF-8''${encodeURIComponent(originalName)}`;
+      } catch {
+        // fall back to the ASCII name only
+      }
+      headers.set('Content-Disposition', dispositionValue);
     }
 
     // private  → Cloudflare CDN won't cache (avoids CDN+range stalling bug)

@@ -10,6 +10,10 @@ interface DeviceInfo {
   deviceId?: string;
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
 @Injectable()
 export class RefreshTokenService {
   private readonly logger = new Logger(RefreshTokenService.name);
@@ -54,6 +58,13 @@ export class RefreshTokenService {
    * Throws UnauthorizedException if invalid
    */
   async validateRefreshToken(token: string): Promise<string> {
+    // Defensive: callers must pass a non-empty string. `findUnique` with
+    // `token: undefined` throws a Prisma validation error (surfaced as 500),
+    // and a non-string would be interpreted as a query filter.
+    if (!isNonEmptyString(token)) {
+      throw new UnauthorizedException("Refresh token tidak valid");
+    }
+
     const refreshToken = await this.prisma.refreshToken.findUnique({
       where: { token },
       include: { user: true },
@@ -96,6 +107,12 @@ export class RefreshTokenService {
    * Revoke a refresh token
    */
   async revokeToken(token: string, reason: string): Promise<void> {
+    // Defensive: an undefined/object `token` in updateMany's `where` would
+    // match (and revoke) other users' tokens instead of failing.
+    if (!isNonEmptyString(token)) {
+      this.logger.warn("revokeToken called without a valid token; ignoring");
+      return;
+    }
     await this.prisma.refreshToken.updateMany({
       where: { token, isRevoked: false },
       data: {

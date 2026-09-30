@@ -41,7 +41,11 @@ export class ComparisonController {
     @Body() body: { assetIds: string[] },
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.comparisonService.compareAssets(body.assetIds, req.user.id);
+    return this.comparisonService.compareAssets(
+      body.assetIds,
+      req.user.id,
+      req.user.role,
+    );
   }
 
   @Post("versions")
@@ -60,6 +64,7 @@ export class ComparisonController {
       body.assetId,
       body.versionNumbers,
       req.user.id,
+      req.user.role,
     );
   }
 }

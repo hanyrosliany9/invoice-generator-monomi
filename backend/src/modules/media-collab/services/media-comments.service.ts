@@ -79,6 +79,18 @@ export class MediaCommentsService {
     return mapComment(created);
   }
 
+  /**
+   * Asset ID a comment belongs to (via its frame), or null if the comment
+   * does not exist. Used to scope reply parents to the target asset.
+   */
+  async getCommentAssetId(commentId: string): Promise<string | null> {
+    const comment = await this.prisma.frameComment.findUnique({
+      where: { id: commentId },
+      select: { frame: { select: { assetId: true } } },
+    });
+    return comment?.frame?.assetId ?? null;
+  }
+
   async findByFrame(frameId: string) {
     const results = await this.prisma.frameComment.findMany({
       where: { frameId },

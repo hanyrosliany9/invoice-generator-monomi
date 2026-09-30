@@ -11,6 +11,8 @@ import { MediaProcessingService } from "./media-processing.service";
 import { MetadataService } from "./metadata.service";
 import archiver from "archiver";
 import { PassThrough } from "stream";
+import { hasGlobalMediaReadAccess } from "../utils/media-access.util";
+import { assertActivePublicShare } from "../utils/public-share.util";
 
 /**
  * MediaAssetsService
@@ -373,9 +375,18 @@ export class MediaAssetsService {
   /**
    * Get all assets in a project
    */
-  async findAll(projectId: string, userId: string, filters?: any) {
-    // Verify access
-    const hasAccess = await this.verifyProjectAccess(userId, projectId);
+  async findAll(
+    projectId: string,
+    userId: string,
+    filters?: any,
+    userRole?: string,
+  ) {
+    // Verify access (read path: SUPER_ADMIN bypass applies)
+    const hasAccess = await this.verifyProjectAccess(
+      userId,
+      projectId,
+      userRole,
+    );
     if (!hasAccess) {
       throw new ForbiddenException("Access denied to this project");
     }
@@ -486,7 +497,7 @@ export class MediaAssetsService {
   /**
    * Get a single asset by ID
    */
-  async findOne(assetId: string, userId: string) {
+  async findOne(assetId: string, userId: string, userRole?: string) {
     const asset = await this.prisma.mediaAsset.findUnique({
       where: { id: assetId },
       include: {
@@ -539,10 +550,10 @@ export class MediaAssetsService {
       throw new NotFoundException("Asset not found");
     }
 
-    // Verify access
-    const hasAccess = asset.project.collaborators.some(
-      (collab) => collab.userId === userId,
-    );
+    // Verify access (collaborator, or SUPER_ADMIN read access)
+    const hasAccess =
+      hasGlobalMediaReadAccess(userRole) ||
+      asset.project.collaborators.some((collab) => collab.userId === userId);
 
     if (!hasAccess) {
       throw new ForbiddenException("Access denied to this asset");
@@ -776,6 +787,7 @@ export class MediaAssetsService {
   async bulkDownloadAssets(
     assetIds: string[],
     userId: string,
+    userRole?: string,
   ): Promise<{
     stream: PassThrough;
     filename: string;
@@ -807,7 +819,11 @@ export class MediaAssetsService {
     // 2. Verify user has access to all projects (assets may span multiple projects)
     const projectIds = [...new Set(assets.map((a) => a.projectId))];
     for (const projectId of projectIds) {
-      const hasAccess = await this.verifyProjectAccess(userId, projectId);
+      const hasAccess = await this.verifyProjectAccess(
+        userId,
+        projectId,
+        userRole,
+      );
       if (!hasAccess) {
         throw new ForbiddenException(
           `Access denied to project containing some assets`,
@@ -934,12 +950,10 @@ export class MediaAssetsService {
     // 1. Validate share token and get project
     const project = await this.prisma.mediaProject.findUnique({
       where: { publicShareToken: shareToken },
-      select: { id: true, isPublic: true },
+      select: { id: true, isPublic: true, publicShareExpiresAt: true },
     });
 
-    if (!project || !project.isPublic) {
-      throw new NotFoundException("Public share link not found or disabled");
-    }
+    assertActivePublicShare(project);
 
     // 2. Fetch only assets that belong to this public project (security filter)
     const assets = await this.prisma.mediaAsset.findMany({
@@ -1403,12 +1417,20 @@ export class MediaAssetsService {
   }
 
   /**
-   * Verify if user has access to project
+   * Verify if user has access to project.
+   *
+   * Pass `userRole` only from read-only call sites: SUPER_ADMIN then gets
+   * access without a collaborator row. Write paths (upload, duplicate check
+   * before upload) omit it and keep requiring collaborator membership.
    */
   private async verifyProjectAccess(
     userId: string,
     projectId: string,
+    userRole?: string,
   ): Promise<boolean> {
+    if (hasGlobalMediaReadAccess(userRole)) {
+      return true;
+    }
     const collaborator = await this.prisma.mediaCollaborator.findUnique({
       where: {
         projectId_userId: {

@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  AlertTriangle, Eye, FileImage, Film, Folder, FolderOpen,
-  Image as ImageIcon, Home, Maximize2, Star, User as UserIcon, X,
+  AlertTriangle, ChevronLeft, ChevronRight, Download, Eye, FileImage, Film, Folder, FolderOpen,
+  Image as ImageIcon, Home, Loader2, Maximize2, Star, User as UserIcon, X,
 } from 'lucide-react';
 import { AuroraBackground } from '@/components/monomi/AuroraBackground';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -21,6 +22,8 @@ import {
   mediaCollabService, type MediaAsset, type MediaFolder,
 } from '@/services/media-collab';
 import { getProxyUrl } from '@/utils/mediaProxy';
+import { downloadFile } from '@/utils/downloadFile';
+import { useBulkDownloadJob } from '@/hooks/useBulkDownloadJob';
 import { cn } from '@/lib/utils';
 import { LightboxOverlay } from '@/components/media/LightboxOverlay';
 import { GuestFeedbackPanel } from './GuestFeedbackPanel';
@@ -115,8 +118,8 @@ export const PublicProjectViewPage = () => {
   }, [currentFolderId, folders]);
 
   /* ----- client-side filtering across the current folder ----- */
-  const filteredAssets = useMemo(() => {
-    let result = [...folderAssets];
+  const applyFilters = useCallback((list: MediaAsset[]): MediaAsset[] => {
+    let result = [...list];
 
     // Filename / description search
     const q = filters.search.trim().toLowerCase();
@@ -161,7 +164,35 @@ export const PublicProjectViewPage = () => {
     });
 
     return result;
-  }, [folderAssets, filters]);
+  }, [filters]);
+
+  const filteredAssets = useMemo(() => applyFilters(folderAssets), [applyFilters, folderAssets]);
+
+  // Download All scope: the current folder plus every descendant subfolder
+  // (at root that is the whole project), with the same filters applied.
+  const downloadAssets = useMemo(() => {
+    const ids = new Set<string | null>([currentFolderId]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const f of folders) {
+        if (!ids.has(f.id) && ids.has(f.parentId ?? null)) {
+          ids.add(f.id);
+          grew = true;
+        }
+      }
+    }
+    return applyFilters(assets.filter((a) => ids.has(a.folderId ?? null)));
+  }, [assets, folders, currentFolderId, applyFilters]);
+
+  const zipFilename = useMemo(() => {
+    const safe = (project?.name ?? '')
+      .replace(/[^\p{L}\p{N} ._-]+/gu, '_')
+      .trim()
+      .slice(0, 150)
+      .trim();
+    return safe !== '' ? safe : 'media';
+  }, [project?.name]);
 
   // Navigable images for lightbox prev/next.
   const imageAssets = useMemo(
@@ -170,6 +201,17 @@ export const PublicProjectViewPage = () => {
     ),
     [filteredAssets],
   );
+
+  /* ----- Download All (zips the currently visible/filtered assets) ----- */
+  const {
+    start: startBulkDownload,
+    isPending: bulkDownloadPending,
+    progress: bulkDownloadProgress,
+  } = useBulkDownloadJob({
+    createJob: (ids, zipFilename) =>
+      mediaCollabService.createPublicBulkDownloadJob(shareToken!, ids, zipFilename),
+    getStatus: (jobId) => mediaCollabService.getPublicBulkDownloadJobStatus(shareToken!, jobId),
+  });
 
   /* ----- lightbox keyboard nav ----- */
   useEffect(() => {
@@ -281,8 +323,8 @@ export const PublicProjectViewPage = () => {
         <GlassPanel surface="glass" padding="none" className="overflow-hidden">
           {/* Toolbar: title + counts + filter bar */}
           <div className="flex flex-col gap-3 border-b border-border-subtle px-5 py-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <div className="flex items-baseline gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h2 className="text-base font-display font-semibold tracking-tight text-text-primary">
                   {t('guest.publicProjectView.galleryTitle', 'Media Gallery')}
                 </h2>
@@ -291,6 +333,45 @@ export const PublicProjectViewPage = () => {
                   {subfolders.length > 0 && ` · ${subfolders.length} ${t('guest.publicProjectView.folders', 'folders')}`}
                 </span>
               </div>
+              {downloadAssets.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {bulkDownloadPending && bulkDownloadProgress !== null && (
+                    <span className="text-xs text-text-tertiary tabular-nums">
+                      {t(
+                        'mediaCollab.bulkDownloadProgress',
+                        'Preparing ZIP: {{processed}}/{{total}} files ({{percent}}%)',
+                        {
+                          processed: bulkDownloadProgress.processedFiles,
+                          total: bulkDownloadProgress.totalFiles,
+                          percent: bulkDownloadProgress.progress,
+                        },
+                      )}
+                    </span>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 sm:h-8 text-xs"
+                    disabled={bulkDownloadPending}
+                    onClick={() =>
+                      startBulkDownload(
+                        downloadAssets.map((a) => a.id),
+                        zipFilename,
+                      )
+                    }
+                  >
+                    {bulkDownloadPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {t('mediaCollab.downloadAll', 'Download All')}
+                    <span className="tabular-nums text-text-tertiary">
+                      ({downloadAssets.length})
+                    </span>
+                  </Button>
+                </div>
+              )}
             </div>
             <FilterSortBar
               filters={filters}
@@ -635,6 +716,7 @@ function PreviewOverlay({
   onClose: () => void;
   onNavigate: (asset: MediaAsset) => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const src = getProxyUrl(asset.url, mediaToken);
   const isVideo = asset.mediaType === 'VIDEO';
@@ -700,8 +782,8 @@ function PreviewOverlay({
         {/* ── Left column: media viewer ── */}
         <div ref={mediaViewRef} className="flex min-w-0 flex-col md:flex-1 shrink-0">
           {/* Caption bar */}
-          <div className="flex items-center justify-between gap-3 rounded-t-md border border-b-0 border-border-default bg-bg-panel px-4 py-3">
-            <div className="min-w-0">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 rounded-t-md border border-b-0 border-border-default bg-bg-panel px-3 sm:px-4 py-3">
+            <div className="min-w-0 flex-1">
               <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
                 {asset.mediaType}
                 {isImage && imageAssets.length > 1 && (
@@ -714,7 +796,7 @@ function PreviewOverlay({
                 {asset.originalName}
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {isImage && (
                 <>
                   <Button
@@ -722,18 +804,22 @@ function PreviewOverlay({
                     size="sm"
                     disabled={!prev}
                     onClick={() => prev && onNavigate(prev)}
-                    className="text-text-tertiary hover:text-text-primary"
+                    aria-label={t('guest.publicProjectView.previous', 'Previous')}
+                    className="text-text-tertiary hover:text-text-primary max-sm:size-8 max-sm:px-0"
                   >
-                    Previous
+                    <ChevronLeft className="h-4 w-4 sm:hidden" />
+                    <span className="hidden sm:inline">{t('guest.publicProjectView.previous', 'Previous')}</span>
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     disabled={!next}
                     onClick={() => next && onNavigate(next)}
-                    className="text-text-tertiary hover:text-text-primary"
+                    aria-label={t('guest.publicProjectView.next', 'Next')}
+                    className="text-text-tertiary hover:text-text-primary max-sm:size-8 max-sm:px-0"
                   >
-                    Next
+                    <ChevronRight className="h-4 w-4 sm:hidden" />
+                    <span className="hidden sm:inline">{t('guest.publicProjectView.next', 'Next')}</span>
                   </Button>
                   <span className="mx-1 h-4 w-px bg-border-default" />
                 </>
@@ -750,6 +836,20 @@ function PreviewOverlay({
                   <Maximize2 className="h-4 w-4" />
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => {
+                  downloadFile(src, asset.originalName, { isVideo }).catch(() => {
+                    toast.error(t('mediaReview.lightbox.downloadFailed', 'Download failed. Please try again.'));
+                  });
+                }}
+                aria-label={t('mediaReview.lightbox.download', 'Download')}
+                title={t('mediaReview.lightbox.download', 'Download')}
+                className="text-text-tertiary hover:text-text-primary"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon-sm"

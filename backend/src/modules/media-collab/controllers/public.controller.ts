@@ -24,6 +24,7 @@ import { MetadataService } from "../services/metadata.service";
 import { MediaCommentsService } from "../services/media-comments.service";
 import { BulkDownloadService } from "../services/bulk-download.service";
 import { MediaService } from "../../media/media.service";
+import { CreatePublicBulkDownloadJobDto } from "../dto/create-bulk-download-job.dto";
 
 /**
  * Public API Controller
@@ -166,7 +167,14 @@ export class PublicController {
     @Param("assetId") assetId: string,
   ) {
     // Validate public link is active
-    await this.projectsService.getPublicProject(token);
+    const project = await this.projectsService.getPublicProject(token);
+
+    // IDOR guard: confirm the asset belongs to the project resolved by this token
+    const asset = await this.assetsService.findOneRaw(assetId);
+    if (!asset || asset.projectId !== project.id) {
+      throw new NotFoundException("Asset not found");
+    }
+
     return await this.commentsService.findByAsset(assetId);
   }
 
@@ -212,6 +220,20 @@ export class PublicController {
     const asset = await this.assetsService.findOneRaw(assetId);
     if (!asset || asset.projectId !== project.id) {
       throw new NotFoundException("Asset not found");
+    }
+
+    // IDOR guard for replies: the parent comment must be on this same asset,
+    // otherwise a guest could attach a reply to a comment in another project.
+    if (body.parentId != null) {
+      if (typeof body.parentId !== "string") {
+        throw new BadRequestException("parentId must be a string");
+      }
+      const parentAssetId = await this.commentsService.getCommentAssetId(
+        body.parentId,
+      );
+      if (parentAssetId !== assetId) {
+        throw new NotFoundException("Parent comment not found");
+      }
     }
 
     const guestName = (body.guestName || "Anonymous").trim();
@@ -330,27 +352,23 @@ export class PublicController {
    *
    * POST /media-collab/public/:token/async-bulk-download
    * Body: { assetIds: string[], zipFilename?: string }
-   * Returns: { jobId, status, totalFiles }
+   * Returns: { jobId, status, totalFiles, message, downloadUrl?, expiresAt? }
+   *
+   * Allowed for every active public link regardless of publicAccessLevel
+   * (VIEW_ONLY included) — owner decision. Asset IDs outside the shared
+   * project are dropped by the service (IDOR guard).
    */
   @Post(":token/async-bulk-download")
   @ApiOperation({
     summary: "Create async bulk download job via public link (no auth required)",
   })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        assetIds: { type: "array", items: { type: "string" } },
-        zipFilename: { type: "string" },
-      },
-      required: ["assetIds"],
-    },
-  })
+  @ApiBody({ type: CreatePublicBulkDownloadJobDto })
   @ApiResponse({ status: 201, description: "Job created, poll for status" })
+  @ApiResponse({ status: 400, description: "Invalid assetIds (empty, not strings, or too many)" })
   @ApiResponse({ status: 404, description: "Share link not found or no assets" })
   async createPublicBulkDownloadJob(
     @Param("token") token: string,
-    @Body() body: { assetIds: string[]; zipFilename?: string },
+    @Body() body: CreatePublicBulkDownloadJobDto,
   ) {
     return this.bulkDownloadService.createPublicJob(token, body.assetIds, body.zipFilename);
   }

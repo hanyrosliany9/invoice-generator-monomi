@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import JSZip from "jszip";
+import { hasGlobalMediaReadAccess } from "../utils/media-access.util";
 const ExifParser = require("exif-parser");
 
 /**
@@ -171,6 +172,7 @@ export class MetadataService {
     projectId: string,
     userId: string,
     minRating: number,
+    userRole?: string,
   ): Promise<Buffer> {
     // Verify the project exists and the user has access
     const project = await this.prisma.mediaProject.findUnique({
@@ -191,7 +193,7 @@ export class MetadataService {
 
     const isOwner = project.createdBy === userId;
     const isCollaborator = project.collaborators.length > 0;
-    if (!isOwner && !isCollaborator) {
+    if (!isOwner && !isCollaborator && !hasGlobalMediaReadAccess(userRole)) {
       throw new NotFoundException("Media project not found");
     }
 

@@ -59,7 +59,11 @@ export class MediaFoldersController {
     @Request() req: AuthenticatedRequest,
     @Param("projectId") projectId: string,
   ) {
-    return this.foldersService.getFolderTree(req.user.id, projectId);
+    return this.foldersService.getFolderTree(
+      req.user.id,
+      projectId,
+      req.user.role,
+    );
   }
 
   @Get(":folderId")
@@ -74,7 +78,11 @@ export class MediaFoldersController {
     @Request() req: AuthenticatedRequest,
     @Param("folderId") folderId: string,
   ) {
-    return this.foldersService.getFolderContents(req.user.id, folderId);
+    return this.foldersService.getFolderContents(
+      req.user.id,
+      folderId,
+      req.user.role,
+    );
   }
 
   @Get(":folderId/path")
@@ -89,7 +97,11 @@ export class MediaFoldersController {
     @Request() req: AuthenticatedRequest,
     @Param("folderId") folderId: string,
   ) {
-    return this.foldersService.getFolderPath(req.user.id, folderId);
+    return this.foldersService.getFolderPath(
+      req.user.id,
+      folderId,
+      req.user.role,
+    );
   }
 
   @Patch(":folderId")

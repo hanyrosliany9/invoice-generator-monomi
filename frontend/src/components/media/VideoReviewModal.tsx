@@ -27,12 +27,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Pencil, MessageSquare, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Pencil, MessageSquare, Info, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { getProxyUrl } from '@/utils/mediaProxy';
+import { downloadFile } from '@/utils/downloadFile';
 import { mediaCollabService, type MediaAsset } from '@/services/media-collab';
 import { VideoPlayer, type VideoPlayerHandle } from './VideoPlayer';
 import { Timeline, type TimelineMarker } from './Timeline';
@@ -398,11 +399,32 @@ export function VideoReviewModal({
               activateDraw();
             }
           }}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          {drawingActive
+          aria-label={drawingActive
             ? t('videoReview.drawingActive', 'Drawing')
             : t('videoReview.draw', 'Draw')}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">
+            {drawingActive
+              ? t('videoReview.drawingActive', 'Drawing')
+              : t('videoReview.draw', 'Draw')}
+          </span>
+        </Button>
+
+        {/* Download */}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-white/60 hover:text-white hover:bg-white/10 h-8 w-8 shrink-0"
+          onClick={() => {
+            downloadFile(videoSrc, asset.originalName, { isVideo: true }).catch(() => {
+              toast.error(t('mediaReview.lightbox.downloadFailed', 'Download failed. Please try again.'));
+            });
+          }}
+          aria-label={t('mediaReview.lightbox.download', 'Download')}
+          title={t('mediaReview.lightbox.download', 'Download')}
+        >
+          <Download className="h-4 w-4" />
         </Button>
 
         {/* Close */}

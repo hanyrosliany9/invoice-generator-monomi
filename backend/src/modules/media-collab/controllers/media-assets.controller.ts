@@ -121,13 +121,18 @@ export class MediaAssetsController {
     @Param("projectId") projectId: string,
     @Query() filters: AssetFilters,
   ) {
-    return this.assetsService.findAll(projectId, req.user.id, filters);
+    return this.assetsService.findAll(
+      projectId,
+      req.user.id,
+      filters,
+      req.user.role,
+    );
   }
 
   @Get(":id")
   @ApiOperation({ summary: "Get a single asset by ID" })
   findOne(@Request() req: AuthenticatedRequest, @Param("id") id: string) {
-    return this.assetsService.findOne(id, req.user.id);
+    return this.assetsService.findOne(id, req.user.id, req.user.role);
   }
 
   @Put(":id/status")
@@ -236,6 +241,7 @@ export class MediaAssetsController {
       await this.assetsService.bulkDownloadAssets(
         bulkDownloadDto.assetIds,
         req.user.id,
+        req.user.role,
       );
 
     // Use custom filename if provided

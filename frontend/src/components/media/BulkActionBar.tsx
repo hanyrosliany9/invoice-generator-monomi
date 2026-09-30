@@ -56,8 +56,10 @@ export function BulkActionBar({
       {/* Floating bar — fixed at bottom center */}
       <div
         className={cn(
-          'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-          'flex items-center gap-2 px-4 py-2.5 rounded-xl',
+          // Mobile: full-width bottom bar that wraps. Desktop: floating centered pill.
+          'fixed inset-x-0 bottom-0 z-50 justify-center rounded-t-xl border-b-0 pb-[calc(0.625rem+env(safe-area-inset-bottom))]',
+          'md:inset-x-auto md:bottom-6 md:left-1/2 md:-translate-x-1/2 md:flex-nowrap md:rounded-xl md:border-b md:pb-2.5',
+          'flex flex-wrap items-center gap-2 px-3 pt-2.5 md:px-4',
           'bg-bg-raised border border-border-default shadow-xl backdrop-blur-md',
           'animate-in fade-in slide-in-from-bottom-2 duration-200',
         )}
@@ -72,12 +74,13 @@ export function BulkActionBar({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs border-border-subtle"
+            className="h-9 md:h-7 text-xs border-border-subtle"
             disabled={busy}
             onClick={onMoveToFolder}
+            aria-label={t('mediaFolders.moveTo', 'Move to…')}
           >
             <FolderOpen className="h-3.5 w-3.5" />
-            {t('mediaFolders.moveTo', 'Move to…')}
+            <span className="hidden sm:inline">{t('mediaFolders.moveTo', 'Move to…')}</span>
           </Button>
         )}
 
@@ -86,12 +89,13 @@ export function BulkActionBar({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs border-border-subtle"
+            className="h-9 md:h-7 text-xs border-border-subtle"
             disabled={busy}
             onClick={onCompare}
+            aria-label={t('mediaCompare.compareButton', 'Compare')}
           >
             <Columns className="h-3.5 w-3.5" />
-            {t('mediaCompare.compareButton', 'Compare')}
+            <span className="hidden sm:inline">{t('mediaCompare.compareButton', 'Compare')}</span>
           </Button>
         )}
 
@@ -107,7 +111,7 @@ export function BulkActionBar({
         >
           <SelectTrigger
             size="sm"
-            className="h-7 text-xs bg-bg-sunken border-border-subtle text-text-secondary w-[110px]"
+            className="h-9 md:h-7 text-xs bg-bg-sunken border-border-subtle text-text-secondary w-[110px]"
           >
             {isRating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -132,32 +136,34 @@ export function BulkActionBar({
         <Button
           size="sm"
           variant="outline"
-          className="h-7 text-xs border-border-subtle"
+          className="h-9 md:h-7 text-xs border-border-subtle"
           disabled={busy}
           onClick={onBulkDownload}
+          aria-label={t('mediaReview.bulkDownload', 'Download')}
         >
           {isDownloading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <Download className="h-3.5 w-3.5" />
           )}
-          {t('mediaReview.bulkDownload', 'Download')}
+          <span className="hidden sm:inline">{t('mediaReview.bulkDownload', 'Download')}</span>
         </Button>
 
         {/* Delete */}
         <Button
           size="sm"
           variant="outline"
-          className="h-7 text-xs border-danger/40 text-danger hover:bg-danger/10"
+          className="h-9 md:h-7 text-xs border-danger/40 text-danger hover:bg-danger/10"
           disabled={busy}
           onClick={() => setDeleteDialogOpen(true)}
+          aria-label={t('mediaReview.bulkDelete', 'Delete')}
         >
           {isDeleting ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <Trash2 className="h-3.5 w-3.5" />
           )}
-          {t('mediaReview.bulkDelete', 'Delete')}
+          <span className="hidden sm:inline">{t('mediaReview.bulkDelete', 'Delete')}</span>
         </Button>
 
         {/* Clear selection */}
@@ -165,7 +171,7 @@ export function BulkActionBar({
           type="button"
           onClick={onClearSelection}
           disabled={busy}
-          className="ml-1 text-text-tertiary hover:text-text-primary transition-colors"
+          className="ml-1 flex h-9 w-9 md:h-auto md:w-auto items-center justify-center text-text-tertiary hover:text-text-primary transition-colors"
           aria-label={t('mediaReview.clearSelection', 'Clear selection')}
         >
           <X className="h-4 w-4" />

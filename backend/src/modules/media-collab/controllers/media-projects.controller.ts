@@ -51,9 +51,13 @@ export class MediaProjectsController {
   @ApiResponse({ status: 200, description: "List of projects" })
   findAll(@Request() req: AuthenticatedRequest, @Query("bizProjectId") bizProjectId?: string) {
     if (bizProjectId) {
-      return this.mediaProjectsService.findByBizProject(bizProjectId);
+      return this.mediaProjectsService.findByBizProject(
+        bizProjectId,
+        req.user.id,
+        req.user.role,
+      );
     }
-    return this.mediaProjectsService.findAll(req.user.id);
+    return this.mediaProjectsService.findAll(req.user.id, req.user.role);
   }
 
   @Get(":id")
@@ -62,7 +66,7 @@ export class MediaProjectsController {
   @ApiResponse({ status: 403, description: "Access denied" })
   @ApiResponse({ status: 404, description: "Project not found" })
   findOne(@Request() req: AuthenticatedRequest, @Param("id") id: string) {
-    return this.mediaProjectsService.findOne(id, req.user.id);
+    return this.mediaProjectsService.findOne(id, req.user.id, req.user.role);
   }
 
   @Put(":id")
@@ -146,7 +150,12 @@ export class MediaProjectsController {
     @Res() res: Response,
   ) {
     const rating = parseInt(minRating ?? "1", 10) || 1;
-    const buffer = await this.metadataService.exportXmpZip(projectId, req.user.id, rating);
+    const buffer = await this.metadataService.exportXmpZip(
+      projectId,
+      req.user.id,
+      rating,
+      req.user.role,
+    );
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="ratings-${projectId}.zip"`);
     res.end(buffer);

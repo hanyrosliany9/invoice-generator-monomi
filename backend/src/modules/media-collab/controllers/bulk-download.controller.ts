@@ -74,7 +74,7 @@ export class BulkDownloadController {
     @Request() req: any,
   ): Promise<BulkDownloadJobCreatedDto> {
     const userId = req.user.id;
-    return this.bulkDownloadService.createJob(dto, userId);
+    return this.bulkDownloadService.createJob(dto, userId, req.user.role);
   }
 
   @Get("jobs/:jobId")

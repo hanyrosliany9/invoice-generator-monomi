@@ -7055,6 +7055,8 @@
   },
   "guest": {
     "publicProjectView": {
+      "previous": "Previous",
+      "next": "Next",
       "incompleteLink": "Incomplete Link",
       "incompleteLinkBody": "This share link appears to be broken or incomplete. Please ask the sender to reshare the link.",
       "galleryNotFound": "Gallery Not Found",
@@ -7460,6 +7462,7 @@
       "platforms": "Platforms"
     },
     "lightbox": {
+      "downloadFailed": "Download failed. Please try again.",
       "open": "Open lightbox",
       "zoomOut": "Zoom out (−)",
       "resetZoom": "Reset zoom (0)",

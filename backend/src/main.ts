@@ -10,8 +10,10 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
 import { ValidationInterceptor } from "./common/interceptors/validation.interceptor";
 import { getErrorMessage } from "./common/utils/error-handling.util";
 import { validateUrls } from "./config/url.config";
+import { registerLargeJsonBodyRoutes } from "./config/body-parser.config";
 
 const logger = new Logger("Bootstrap");
+const API_GLOBAL_PREFIX = "api/v1";
 
 async function bootstrap() {
   try {
@@ -144,6 +146,12 @@ async function bootstrap() {
       return apiCors(req, res, next);
     });
 
+    // Larger JSON body limit (1mb) for the async "Download All" routes only;
+    // everything else keeps Nest's default 100kb. Registered after CORS so
+    // disallowed origins are rejected before any large body is parsed, and
+    // before listen() so it runs ahead of Nest's default JSON parser.
+    registerLargeJsonBodyRoutes(app, API_GLOBAL_PREFIX);
+
     // Global validation pipe
     app.useGlobalPipes(
       new ValidationPipe({
@@ -172,7 +180,7 @@ async function bootstrap() {
 
     // API prefix — MCP + OAuth endpoints must NOT be prefixed; Claude.ai
     // discovers them at the root via /.well-known.
-    app.setGlobalPrefix("api/v1", {
+    app.setGlobalPrefix(API_GLOBAL_PREFIX, {
       exclude: [
         { path: ".well-known/oauth-authorization-server", method: RequestMethod.GET },
         { path: ".well-known/oauth-protected-resource", method: RequestMethod.GET },

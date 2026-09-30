@@ -4,8 +4,16 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsOptional,
+  MaxLength,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+
+/**
+ * Upper bound on asset IDs per async bulk-download job. Shared by the
+ * authenticated and public-share endpoints so "Download All" behaves the same
+ * on both (raised from 500 so every asset in a project can be archived).
+ */
+export const BULK_DOWNLOAD_MAX_ASSETS = 10000;
 
 /**
  * DTO for creating an async bulk download job
@@ -28,12 +36,12 @@ export class CreateBulkDownloadJobDto {
     ],
     type: [String],
     minItems: 1,
-    maxItems: 10000,
+    maxItems: BULK_DOWNLOAD_MAX_ASSETS,
   })
   @IsArray()
   @ArrayMinSize(1, { message: "At least one asset ID is required" })
-  @ArrayMaxSize(10000, {
-    message: "Maximum 10000 assets can be downloaded at once",
+  @ArrayMaxSize(BULK_DOWNLOAD_MAX_ASSETS, {
+    message: `Maximum ${BULK_DOWNLOAD_MAX_ASSETS} assets can be downloaded at once`,
   })
   @IsString({ each: true })
   assetIds: string[];
@@ -52,5 +60,38 @@ export class CreateBulkDownloadJobDto {
   })
   @IsOptional()
   @IsString()
+  zipFilename?: string;
+}
+
+/**
+ * DTO for creating an async bulk download job through a public share link
+ * (POST /media-collab/public/:token/async-bulk-download).
+ *
+ * Same limits as the authenticated job. There is no projectId: the project is
+ * resolved from the share token, and asset IDs outside that project are
+ * dropped by the service.
+ */
+export class CreatePublicBulkDownloadJobDto {
+  @ApiProperty({
+    description: "Array of asset IDs to download (must belong to the shared project)",
+    type: [String],
+    minItems: 1,
+    maxItems: BULK_DOWNLOAD_MAX_ASSETS,
+  })
+  @IsArray()
+  @ArrayMinSize(1, { message: "At least one asset ID is required" })
+  @ArrayMaxSize(BULK_DOWNLOAD_MAX_ASSETS, {
+    message: `Maximum ${BULK_DOWNLOAD_MAX_ASSETS} assets can be downloaded at once`,
+  })
+  @IsString({ each: true })
+  assetIds: string[];
+
+  @ApiPropertyOptional({
+    description: "Custom filename for the ZIP archive (without .zip extension)",
+    example: "project-media-export",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
   zipFilename?: string;
 }

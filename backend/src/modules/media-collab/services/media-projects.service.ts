@@ -10,9 +10,14 @@ import { MediaService } from "../../media/media.service";
 import { CreateMediaProjectDto } from "../dto/create-media-project.dto";
 import { UpdateMediaProjectDto } from "../dto/update-media-project.dto";
 import {
+  assertActivePublicShare,
   generatePublicShareToken,
   generatePublicShareUrl,
 } from "../utils/public-share.util";
+import {
+  hasGlobalMediaReadAccess,
+  mediaProjectReadWhere,
+} from "../utils/media-access.util";
 
 /**
  * MediaProjectsService
@@ -157,17 +162,13 @@ export class MediaProjectsService {
   }
 
   /**
-   * Get all projects accessible by user
+   * Get all projects accessible by user.
+   * Collaborators see their projects; SUPER_ADMIN sees every project
+   * (read-only visibility, see media-access.util.ts).
    */
-  async findAll(userId: string) {
+  async findAll(userId: string, userRole?: string) {
     const projects = await this.prisma.mediaProject.findMany({
-      where: {
-        collaborators: {
-          some: {
-            userId: userId,
-          },
-        },
-      },
+      where: mediaProjectReadWhere(userId, userRole),
       include: {
         client: true,
         project: true,
@@ -196,11 +197,22 @@ export class MediaProjectsService {
   }
 
   /**
-   * Get all media projects linked to a business project
+   * Get the media projects linked to a business project that the user may
+   * read. Same visibility rule as findAll: collaborators see their projects;
+   * SUPER_ADMIN sees every linked project (read-only, see media-access.util.ts).
    */
-  async findByBizProject(bizProjectId: string) {
+  async findByBizProject(
+    bizProjectId: string,
+    userId: string,
+    userRole?: string,
+  ) {
     return this.prisma.mediaProject.findMany({
-      where: { projectId: bizProjectId },
+      where: {
+        AND: [
+          { projectId: bizProjectId },
+          mediaProjectReadWhere(userId, userRole),
+        ],
+      },
       include: {
         client: true,
         project: { select: { id: true, number: true, description: true } },
@@ -214,7 +226,7 @@ export class MediaProjectsService {
   /**
    * Get a single project by ID
    */
-  async findOne(projectId: string, userId: string) {
+  async findOne(projectId: string, userId: string, userRole?: string) {
     const project = await this.prisma.mediaProject.findUnique({
       where: { id: projectId },
       include: {
@@ -282,10 +294,10 @@ export class MediaProjectsService {
       throw new NotFoundException("Media project not found");
     }
 
-    // Verify user has access
-    const hasAccess = project.collaborators.some(
-      (collab) => collab.userId === userId,
-    );
+    // Verify user has access (collaborator, or SUPER_ADMIN read access)
+    const hasAccess =
+      hasGlobalMediaReadAccess(userRole) ||
+      project.collaborators.some((collab) => collab.userId === userId);
 
     if (!hasAccess) {
       throw new ForbiddenException("Access denied to this project");
@@ -686,16 +698,7 @@ export class MediaProjectsService {
       },
     });
 
-    if (!project || !project.isPublic) {
-      throw new NotFoundException("Public share link not found or disabled");
-    }
-
-    if (
-      project.publicShareExpiresAt &&
-      project.publicShareExpiresAt.getTime() < Date.now()
-    ) {
-      throw new NotFoundException("This public share link has expired");
-    }
+    assertActivePublicShare(project);
 
     // Increment view count
     await this.prisma.mediaProject.update({
@@ -720,16 +723,7 @@ export class MediaProjectsService {
       where: { publicShareToken: token },
     });
 
-    if (!project || !project.isPublic) {
-      throw new NotFoundException("Public share link not found or disabled");
-    }
-
-    if (
-      project.publicShareExpiresAt &&
-      project.publicShareExpiresAt.getTime() < Date.now()
-    ) {
-      throw new NotFoundException("This public share link has expired");
-    }
+    assertActivePublicShare(project);
 
     return this.prisma.mediaAsset.findMany({
       where: { projectId: project.id },
@@ -790,12 +784,10 @@ export class MediaProjectsService {
   async getPublicProjectKeyPrefixes(token: string): Promise<string[]> {
     const project = await this.prisma.mediaProject.findUnique({
       where: { publicShareToken: token },
-      select: { id: true, isPublic: true },
+      select: { id: true, isPublic: true, publicShareExpiresAt: true },
     });
 
-    if (!project || !project.isPublic) {
-      throw new NotFoundException("Public share link not found or disabled");
-    }
+    assertActivePublicShare(project);
 
     // Fetch the R2 `key` for every asset in this project.
     // `thumbnailUrl` is stored as a full URL (not a bare R2 key), so we only
@@ -856,9 +848,7 @@ export class MediaProjectsService {
       where: { publicShareToken: token },
     });
 
-    if (!project || !project.isPublic) {
-      throw new NotFoundException("Public share link not found or disabled");
-    }
+    assertActivePublicShare(project);
 
     return this.prisma.mediaFolder.findMany({
       where: { projectId: project.id },
