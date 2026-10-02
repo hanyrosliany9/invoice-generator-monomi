@@ -19,6 +19,7 @@ import { useAuthStore } from '@/store/auth';
 import { assetService, type CreateAssetRequest } from '@/services/assets';
 
 import { AssetForm, type AssetFormValues } from './AssetForm';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const FORM_ID = 'asset-create-form';
 
@@ -120,7 +121,9 @@ export default function AssetCreatePageV2() {
             { label: t('assets.create.title', 'Aset Baru') },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="aset-penyusutan" anchor="identitas" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -147,6 +150,7 @@ export default function AssetCreatePageV2() {
                 )}
               </Button>
             </div>
+            </>
           }
         />
 

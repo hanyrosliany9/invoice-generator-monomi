@@ -28,6 +28,7 @@ import { vendorService } from '@/services/vendors';
 import type { CreateVendorRequest } from '@/types/vendor';
 
 import { VendorForm, type VendorFormValues } from './VendorForm';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 // Mirrors the rest of v2 so chrome stays identical; "Vendors" stays
 // highlighted in the sidebar while creating.
@@ -122,7 +123,9 @@ export default function VendorCreatePageV2() {
             { label: t('vendors.create.title', 'Vendor Baru') },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="vendor-pembelian" anchor="identitas" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -149,6 +152,7 @@ export default function VendorCreatePageV2() {
                 )}
               </Button>
             </div>
+            </>
           }
         />
 

@@ -29,6 +29,7 @@ import { useAuthStore } from '@/store/auth';
 import { clientService, type UpdateClientRequest } from '@/services/clients';
 
 import { ClientForm, type ClientFormValues, emptyClientFormValues } from './ClientForm';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const FORM_ID = 'client-edit-form';
 
@@ -248,7 +249,9 @@ export default function ClientEditPageV2() {
             { label: t('clients.edit.crumb', 'Ubah') },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="klien-baru" anchor="ubah" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -275,6 +278,7 @@ export default function ClientEditPageV2() {
                 )}
               </Button>
             </div>
+            </>
           }
         />
 

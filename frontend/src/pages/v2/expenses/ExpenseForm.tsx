@@ -32,6 +32,7 @@ import {
   WithholdingTaxType,
   EFakturStatus,
 } from '@/types/expense';
+import { expenseStatusLabel } from './expense-status';
 
 /* ============================================================== */
 /*  Schema — shared between Create & Edit. Indonesian copy lives    */
@@ -147,6 +148,7 @@ const STATUS_OPTIONS: Array<{ value: typeof STATUS_VALUES[number]; label: string
   { value: 'DRAFT',     label: 'Draft' },
   { value: 'SUBMITTED', label: 'Submitted' },
   { value: 'APPROVED',  label: 'Approved' },
+  { value: 'PAID',      label: 'Paid' },
   { value: 'REJECTED',  label: 'Rejected' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
@@ -340,8 +342,6 @@ export interface ExpenseFormProps {
    * replaced by a read-only chip and the value can't be changed.
    */
   lockedProjectId?: string;
-  /** "Simpan & Ajukan" (create only). When omitted, the secondary CTA is hidden. */
-  onSubmitAndApprove?: (payload: ExpenseFormPayload) => void;
   onSubmit: (payload: ExpenseFormPayload) => void;
   onCancel?: () => void;
   /**
@@ -360,7 +360,6 @@ export const ExpenseForm = ({
   formId = 'expense-form',
   lockedProjectId,
   onSubmit,
-  onSubmitAndApprove,
   onCancel,
   embedded = false,
 }: ExpenseFormProps) => {
@@ -514,17 +513,6 @@ export const ExpenseForm = ({
     }
     onSubmit(payload);
   };
-
-  const submitAndApprove = handleSubmit((values) => {
-    const payload = buildPayload(values);
-    if (!payload || !onSubmitAndApprove) {
-      if (!payload) toast.error(t('expenseForm.categoryNotResolved', 'Expense category could not be resolved — please re-select it and try again.'));
-      return;
-    }
-    onSubmitAndApprove(payload);
-  }, () => {
-    toast.error(t('expenseForm.fixErrors', 'Please fix the highlighted fields before saving.'));
-  });
 
   /* ---------- render ---------- */
   return (
@@ -879,7 +867,7 @@ export const ExpenseForm = ({
                           </SelectTrigger>
                           <SelectContent className="bg-bg-raised border-border-subtle">
                             {PPN_CATEGORY_OPTIONS.map((o) => (
-                              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                              <SelectItem key={o.value} value={o.value}>{t(`expenseForm.opt.ppn.${o.value}`, o.label)}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -907,8 +895,8 @@ export const ExpenseForm = ({
                           {WITHHOLDING_OPTIONS.map((o) => (
                             <SelectItem key={o.value} value={o.value}>
                               <div className="flex flex-col items-start">
-                                <span>{o.label}</span>
-                                <span className="text-[10px] text-text-tertiary">{o.hint}</span>
+                                <span>{t(`expenseForm.opt.wht.${o.value}.label`, o.label)}</span>
+                                <span className="text-[10px] text-text-tertiary">{t(`expenseForm.opt.wht.${o.value}.hint`, o.hint)}</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -1122,7 +1110,7 @@ export const ExpenseForm = ({
                       </SelectTrigger>
                       <SelectContent className="bg-bg-raised border-border-subtle">
                         {EFAKTUR_STATUS_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value}>{t(`expenseForm.opt.efaktur.${o.value}`, o.label)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1179,7 +1167,7 @@ export const ExpenseForm = ({
                         </SelectTrigger>
                         <SelectContent className="bg-bg-raised border-border-subtle">
                           {STATUS_OPTIONS.map((o) => (
-                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                            <SelectItem key={o.value} value={o.value}>{expenseStatusLabel(t, o.value)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -1294,32 +1282,13 @@ export const ExpenseForm = ({
             </GlassPanel>
           )}
 
-          {/* Create-only secondary CTA. Edit doesn't expose this — status
-              transitions happen on the detail page through dedicated APIs. */}
-          {mode === 'create' && onSubmitAndApprove && (
+          {/* Create records the expense as PAID and posts the journal right away
+              (see ExpensesService.create). Say so; there is no draft/approval path. */}
+          {mode === 'create' && (
             <GlassPanel surface="subtle" padding="md">
-              <div className="space-y-2">
-                <p className="text-[11px] text-text-tertiary leading-relaxed">
-                  {t('expenseForm.submitNote', 'Save as draft to review later, or submit immediately for approval.')}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-border-subtle text-text-secondary hover:text-text-primary"
-                  disabled={isSubmitting}
-                  onClick={submitAndApprove}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {t('expenseForm.submitting', 'Submitting...')}
-                    </>
-                  ) : (
-                    t('expenseForm.saveAndSubmit', 'Save & Submit for Approval')
-                  )}
-                </Button>
-              </div>
+              <p className="text-[11px] text-text-tertiary leading-relaxed">
+                {t('expenseForm.paidNote', 'Saving records this expense as paid and posts it to the General Ledger right away. The payment source above decides whether Cash or Bank decreases. Made a mistake? Edit the amount (the journal is re-posted) or delete it from the expense page (the journal is reversed).')}
+              </p>
             </GlassPanel>
           )}
         </aside>
@@ -1335,7 +1304,7 @@ export const ExpenseForm = ({
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <p className="text-[11px] text-text-tertiary">
             {mode === 'create'
-              ? t('expenseForm.bottomBar.createHint', 'Expense will be saved as DRAFT. Fields marked * are required.')
+              ? t('expenseForm.bottomBar.createHint', 'Saved as paid and posted to the journal immediately. Fields marked * are required.')
               : t('expenseForm.bottomBar.editHint', 'Changes are applied when you click "Save".')}
           </p>
           <div className="flex items-center gap-2">
@@ -1361,7 +1330,9 @@ export const ExpenseForm = ({
                   {t('expenseForm.saving', 'Saving...')}
                 </>
               ) : (
-                t('expenseForm.save', 'Save')
+                mode === 'create'
+                  ? t('expenseForm.saveCreate', 'Record Expense')
+                  : t('expenseForm.save', 'Save')
               )}
             </Button>
           </div>

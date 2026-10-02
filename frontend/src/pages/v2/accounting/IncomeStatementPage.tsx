@@ -33,6 +33,7 @@ import {
   type IncomeStatement,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Expense sub-type grouping. Editorial intent: split expenses into  */
@@ -287,7 +288,9 @@ export default function IncomeStatementPageV2() {
           title={t('incomeStatement.title', 'Laporan Laba Rugi')}
           description={t('incomeStatement.subtitle', 'Pendapatan dikurangi beban — periode berjalan, dari pendapatan kotor hingga laba bersih.')}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="akuntansi-dasar" anchor="laba-rugi" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -311,6 +314,7 @@ export default function IncomeStatementPageV2() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            </>
           }
         />
 

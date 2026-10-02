@@ -1,5 +1,5 @@
 import { type ClipboardEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, ArrowLeft, Clock, Loader2, Mail } from 'lucide-react';
 import { AuroraBackground } from '@/components/monomi/AuroraBackground';
@@ -256,6 +256,9 @@ export default function LoginPage() {
             <p className="text-[10px] uppercase tracking-[0.18em] text-text-tertiary">
               {t('portal.login.footer', 'Akses hanya untuk kontak klien yang terdaftar')}
             </p>
+            <Link to="/bantuan" className="mt-3 inline-flex min-h-9 items-center text-xs text-text-secondary underline-offset-4 hover:underline">
+              {t('guides.ui.needHelp', 'Butuh bantuan?')}
+            </Link>
           </div>
         </GlassPanel>
       </div>

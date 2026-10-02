@@ -34,6 +34,7 @@ import {
   type BalanceSheetAccount,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — duplicates the v2 nav and adds the Akuntansi group at   */
@@ -306,7 +307,9 @@ export default function BalanceSheetPageV2() {
           title={t('accounting.balanceSheet.title')}
           description={t('accounting.balanceSheet.description')}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="akuntansi-dasar" anchor="neraca" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -330,6 +333,7 @@ export default function BalanceSheetPageV2() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            </>
           }
         />
 

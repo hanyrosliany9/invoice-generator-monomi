@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -34,6 +35,7 @@ import { paymentService } from '@/services/payments';
 import { RecordPaymentModal } from './RecordPaymentModal';
 import { cn } from '@/lib/utils';
 import { getInitials } from '@/utils/initials';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — must mirror the v2 list/dashboard exactly so the active  */
@@ -45,15 +47,6 @@ import { getInitials } from '@/utils/initials';
 /*  reader sees the same vocabulary in both contexts.                  */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT:     'Draft',
-  SENT:      'Sent',
-  PAID:      'Paid',
-  OVERDUE:   'Overdue',
-  PENDING:   'Pending',
-  CANCELLED: 'Cancelled',
-};
-
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
   PAID:      'default',
   SENT:      'secondary',
@@ -63,7 +56,19 @@ const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['v
   OVERDUE:   'destructive',
 };
 
-const getStatusLabel   = (s?: string) => STATUS_LABEL[s?.toUpperCase() ?? ''] ?? (s ?? '—');
+// Labels go through the same i18n keys as the list page's status filter.
+const STATUS_LABEL_KEY: Partial<Record<string, [string, string]>> = {
+  DRAFT:     ['invoices.status.draft', 'Draft'],
+  SENT:      ['invoices.status.sent', 'Sent'],
+  PAID:      ['invoices.status.paid', 'Paid'],
+  OVERDUE:   ['invoices.status.overdue', 'Overdue'],
+  PENDING:   ['invoices.status.pending', 'Pending'],
+  CANCELLED: ['invoices.status.cancelled', 'Cancelled'],
+};
+const getStatusLabel = (t: TFunction, s?: string) => {
+  const entry = STATUS_LABEL_KEY[s?.toUpperCase() ?? ''];
+  return entry !== undefined ? t(entry[0], entry[1]) : (s ?? '—');
+};
 const getStatusVariant = (s?: string) => STATUS_BADGE_VARIANT[s?.toUpperCase() ?? ''] ?? 'secondary';
 
 /* ------------------------------------------------------------------ */
@@ -332,9 +337,11 @@ export default function InvoiceDetailPageV2() {
           t('invoiceDetail.subtitle', 'Invoice details, payment history, and related actions.')
         }
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="invoice" anchor="dari-penawaran" />
+            <div className="flex items-center gap-2">
             <Badge variant={getStatusVariant(invoice.status)} className="h-7 px-3">
-              {getStatusLabel(invoice.status)}
+              {getStatusLabel(t, invoice.status)}
             </Badge>
             {PrimaryAction}
             <DropdownMenu>
@@ -381,6 +388,7 @@ export default function InvoiceDetailPageV2() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          </>
         }
       />
 

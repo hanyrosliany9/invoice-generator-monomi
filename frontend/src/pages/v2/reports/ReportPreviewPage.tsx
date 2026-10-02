@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { ArrowLeft, Eye, FileText, Loader2, Mail, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -85,6 +86,7 @@ export default function ReportPreviewPage() {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <GuideHelpLink slug="laporan-bulanan" anchor="pratinjau-klien" />
             <Button asChild size="sm" variant="outline">
               <Link to={`/reports/${report.id}`}><ArrowLeft className="h-4 w-4" />{t('reportBuilder.backToReport', 'Back to Report')}</Link>
             </Button>

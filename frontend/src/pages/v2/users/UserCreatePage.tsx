@@ -30,6 +30,7 @@ import { userService } from '@/services/users';
 import type { CreateUserRequest } from '@/types/user';
 
 import { UserForm, type UserFormValues } from './UserForm';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const FORM_ID = 'user-create-form';
 
@@ -130,7 +131,9 @@ export default function UserCreatePageV2() {
             { label: t('users.create.title', 'Pengguna Baru') },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="pengguna-peran" anchor="peran" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -157,6 +160,7 @@ export default function UserCreatePageV2() {
                 )}
               </Button>
             </div>
+            </>
           }
         />
 

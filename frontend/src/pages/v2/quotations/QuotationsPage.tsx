@@ -60,6 +60,7 @@ import { useAuthStore } from '@/store/auth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { quotationService, type Quotation } from '@/services/quotations';
 import type { ColumnDef } from '@tanstack/react-table';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 type StatusKey = 'DRAFT' | 'SENT' | 'APPROVED' | 'DECLINED' | 'REVISED';
 
@@ -581,7 +582,9 @@ export default function QuotationsPageV2() {
             'Manage client quotations — from draft through to invoice conversion.',
           )}
           actions={
-            <Button
+            <>
+              <GuideHelpLink slug="quotation" anchor="daftar" />
+              <Button
               size="sm"
               onClick={() => navigate('/quotations/new')}
               className="gap-2"
@@ -589,6 +592,7 @@ export default function QuotationsPageV2() {
               <Plus className="h-4 w-4" />
               {t('quotations.new', 'New Quotation')}
             </Button>
+            </>
           }
         />
 
@@ -639,7 +643,7 @@ export default function QuotationsPageV2() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t(
-                    'quotations.search',
+                    'quotations.search.placeholder',
                     'Search number, client, or project…',
                   )}
                   className="pl-9 bg-bg-sunken border-border-subtle text-text-primary placeholder:text-text-tertiary"

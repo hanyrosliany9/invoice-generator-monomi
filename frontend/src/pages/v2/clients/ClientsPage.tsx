@@ -45,6 +45,7 @@ import { useAuthStore } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { clientService, type Client } from '@/services/clients';
 import { getInitials } from '@/utils/initials';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 
 const isActive = (status?: string) => (status ?? 'active') === 'active';
@@ -277,13 +278,16 @@ export default function ClientsPageV2() {
             'Kelola data klien, kontak, dan riwayat transaksi bisnis Anda.',
           )}
           actions={
-            <Button
+            <>
+              <GuideHelpLink slug="klien-baru" anchor="daftar" />
+              <Button
               onClick={() => navigate('/clients/new')}
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
             >
               <Plus className="h-4 w-4" />
               {t('clients.create.title', 'Klien Baru')}
             </Button>
+            </>
           }
         />
 

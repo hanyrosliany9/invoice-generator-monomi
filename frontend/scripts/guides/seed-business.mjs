@@ -1,0 +1,213 @@
+/**
+ * "(Demo)" business data for the staff guides: quotations, invoices, payments,
+ * expenses, vendors, assets and production documents. Everything is created
+ * through the staff API (so it behaves like real data) and carries the marker
+ * in a name/description field that cleanup.mjs searches.
+ */
+import pg from 'pg';
+import { api, cfg, DEMO } from './lib.mjs';
+
+const isoDay = (offsetDays, hour = 0) => {
+  const d = new Date();
+  d.setUTCHours(hour, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + offsetDays);
+  return d.toISOString();
+};
+
+/** Create a quotation from line items (PPN 11% optional). */
+async function mkQuotation({ clientId, projectId, items, ppn = true, validDays = 30, scope, terms, status }) {
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const tax = ppn ? Math.round(subtotal * 0.11) : 0;
+  const q = await api('POST', '/quotations', {
+    clientId, projectId, amountPerProject: subtotal, totalAmount: subtotal + tax, subtotalAmount: subtotal,
+    includeTax: ppn, taxRate: ppn ? 11 : 0, taxAmount: tax, validUntil: isoDay(validDays), scopeOfWork: scope,
+    terms: terms ?? 'Pembayaran 14 hari setelah invoice diterima. Revisi maksimal 2 kali.',
+    priceBreakdown: {
+      products: items.map((i) => ({ ...i, subtotal: i.price * i.quantity })), total: subtotal, calculatedAt: new Date().toISOString(),
+    },
+  });
+  for (const st of status ?? []) await api('PATCH', `/quotations/${q.id}/status`, { status: st });
+  return q;
+}
+
+export async function seedBusiness(ids) {
+  const out = {};
+  const ptl = await api('GET', '/project-types');
+  const types = Array.isArray(ptl) ? ptl : (ptl.items || ptl.data || []);
+  const production = types.find((p) => p.code === 'PRODUCTION') ?? types[0];
+  const mkProject = (description, clientId, output, price, items) => api('POST', '/projects', {
+    description, output, projectTypeId: production.id, clientId, startDate: isoDay(-10).slice(0, 10), endDate: isoDay(75).slice(0, 10),
+    estimatedBudget: price, products: items,
+  });
+
+  // Projects used by the sales flow ----------------------------------------
+  const vidItems = [
+    { name: 'Video Profil Gerai (60 detik)', description: 'Konsep, syuting 1 hari, editing', price: 8500000, quantity: 1 },
+    { name: 'Foto Produk Menu', description: '20 foto, retouch dasar', price: 3000000, quantity: 1 },
+  ];
+  out.projectVideo = (await mkProject(`Video Profil Gerai Kopi Senja ${DEMO}`, ids.client, 'Video profil 60 detik + 20 foto produk', 11500000, vidItems)).id;
+  out.projectBatik = (await mkProject(`Katalog Foto Koleksi Batik ${DEMO}`, ids.client2, '30 foto katalog', 4500000,
+    [{ name: 'Foto Katalog Koleksi', description: '30 foto, 1 hari', price: 4500000, quantity: 1 }])).id;
+
+  // Quotations ---------------------------------------------------------------
+  // Draft: waiting to be sent.
+  out.qDraft = await mkQuotation({
+    clientId: ids.client, projectId: ids.project2, items: [
+      { name: 'Video Promosi Lebaran 30 detik', description: 'Konsep, syuting, editing', price: 7500000, quantity: 1 },
+      { name: 'Cutdown 15 detik untuk Reels', description: '2 versi', price: 1500000, quantity: 1 },
+    ], scope: 'Produksi video promosi Lebaran untuk Instagram dan TikTok.',
+  });
+  // Sent: the client is deciding.
+  out.qSent = await mkQuotation({
+    clientId: ids.client, projectId: ids.project, items: [
+      { name: 'Paket Konten Bulanan', description: '20 konten per bulan', price: 5000000, quantity: 3 },
+    ], scope: 'Pengelolaan konten media sosial selama 3 bulan.', status: ['SENT'],
+  });
+  // Approved: the invoice is generated automatically.
+  out.qApproved = await mkQuotation({
+    clientId: ids.client, projectId: out.projectVideo, items: vidItems, ppn: false,
+    scope: 'Video profil gerai dan foto produk menu terbaru.', status: ['SENT', 'APPROVED'],
+  });
+  // Declined: can be revised.
+  out.qDeclined = await mkQuotation({
+    clientId: ids.client2, projectId: ids.projectBatik, items: [
+      { name: 'Paket Konten Instagram', description: '12 konten per bulan', price: 4000000, quantity: 2 },
+    ], ppn: false, scope: 'Konten Instagram 2 bulan.', status: ['SENT', 'DECLINED'],
+  });
+  // Approved + paid (Batik): feeds the "paid" invoice.
+  out.qPaid = await mkQuotation({
+    clientId: ids.client2, projectId: out.projectBatik,
+    items: [{ name: 'Foto Katalog Koleksi', description: '30 foto, 1 hari', price: 4500000, quantity: 1 }],
+    ppn: false, scope: 'Foto katalog koleksi batik.', status: ['SENT', 'APPROVED'],
+  });
+
+  // Invoices -----------------------------------------------------------------
+  const dbq = new pg.Client({ connectionString: cfg.dbUrl });
+  await dbq.connect();
+  const invOf = async (q) => {
+    const r = await dbq.query(`SELECT id, "totalAmount" FROM invoices WHERE "quotationId" = $1 ORDER BY "createdAt" LIMIT 1`, [q.id]);
+    return r.rows[0];
+  };
+  // The invoice generated by an approved quotation starts as a DRAFT: the
+  // guide sends it from the UI.
+  const invA = await invOf(out.qApproved);
+  out.invDraft = invA.id;
+  // Batik: sent, with a partial payment, so "record payment" has a balance left.
+  const invB = await invOf(out.qPaid);
+  out.invPartial = invB.id;
+  await api('PATCH', `/invoices/${invB.id}/status`, { status: 'SENT' });
+  const pay = await api('POST', '/payments', { invoiceId: invB.id, amount: 2000000, paymentDate: isoDay(-2), paymentMethod: 'BANK_TRANSFER', transactionRef: 'TRF-DEMO-0042' });
+  await api('PATCH', `/payments/${pay.id}/confirm`, {});
+
+  const mkInvoice = (clientId, projectId, amount, description, dueOffset) => api('POST', '/invoices', {
+    clientId, projectId, dueDate: isoDay(dueOffset), amountPerProject: amount, totalAmount: amount,
+    paymentInfo: 'Transfer ke BCA 1234567890 a.n. Monomi Agency', terms: 'Pembayaran 14 hari setelah invoice diterima.', materaiRequired: amount > 5000000,
+    scopeOfWork: description, priceBreakdown: { products: [{ name: description, description, price: amount, quantity: 1, subtotal: amount }], total: amount },
+  });
+  // Paid in full.
+  const paid = await mkInvoice(ids.client, ids.project, 5000000, 'Paket Konten Bulanan September', 20);
+  out.invPaid = paid.id;
+  await api('PATCH', `/invoices/${paid.id}/status`, { status: 'SENT' });
+  const pay2 = await api('POST', '/payments', { invoiceId: paid.id, amount: 5000000, paymentDate: isoDay(-1), paymentMethod: 'BANK_TRANSFER', transactionRef: 'TRF-DEMO-0043' });
+  await api('PATCH', `/payments/${pay2.id}/confirm`, {});
+  // Past its due date (the API refuses past due dates, so back-date it directly).
+  const over = await mkInvoice(ids.client2, ids.projectBatik, 2500000, 'Retouch tambahan 15 foto', 20);
+  out.invOverdue = over.id;
+  await api('PATCH', `/invoices/${over.id}/status`, { status: 'SENT' });
+  await dbq.query(`UPDATE invoices SET "dueDate" = $1 WHERE id = $2`, [isoDay(-9), over.id]);
+  await api('PATCH', `/invoices/${over.id}/status`, { status: 'OVERDUE' });
+  await dbq.end();
+
+  // Vendors --------------------------------------------------------------------
+  const vendors = [
+    ['Rental Kamera Sinema Jakarta', 'SERVICE_PROVIDER', 'Budi Santoso', 'demo.rental@contoh.co.id', '+6281300001111', 'Jakarta Selatan', 'DKI Jakarta'],
+    ['Studio Musik Nada Baru', 'SERVICE_PROVIDER', 'Rina Kusuma', 'demo.nada@contoh.co.id', '+6281300002222', 'Bandung', 'Jawa Barat'],
+    ['Toko Elektronik Maju Jaya', 'SUPPLIER', 'Agus Wijaya', 'demo.maju@contoh.co.id', '+6281300003333', 'Bandung', 'Jawa Barat'],
+  ];
+  out.vendors = [];
+  for (const [name, vendorType, contactPerson, email, phone, city, province] of vendors) {
+    const v = await api('POST', '/vendors', {
+      name: `${name} ${DEMO}`, vendorType, contactPerson, email, phone, city, province, country: 'Indonesia', address: `Jl. Contoh No. ${out.vendors.length + 10}, ${city}`,
+      paymentTerms: 'NET 14', bankName: 'BCA', bankAccountNumber: '1234567890', bankAccountName: name, isActive: true,
+    });
+    out.vendors.push(v.id);
+  }
+
+  // Expenses (approved flow is shown in the guide itself) ----------------------
+  const cats = await api('GET', '/expenses/categories');
+  const catList = Array.isArray(cats) ? cats : (cats?.data || cats?.items || []);
+  const byCode = (code) => catList.find((c) => c.code === code) ?? catList[0];
+  out.expenses = [];
+  if (catList.length > 0) {
+    const mkExpense = (cat, description, gross, vendorName, dayOffset, project, ppnOn = true) => {
+      const ppn = ppnOn ? Math.round(gross * 0.11) : 0;
+      return api('POST', '/expenses', {
+        categoryId: cat.id, accountCode: cat.accountCode, accountName: cat.nameId || cat.name, expenseClass: cat.expenseClass,
+        description: `${description} ${DEMO}`, vendorName, grossAmount: gross, ppnAmount: ppn, ppnRate: ppnOn ? 0.11 : 0, ppnCategory: ppnOn ? 'CREDITABLE' : 'EXEMPT',
+        withholdingAmount: 0, netAmount: gross + ppn, totalAmount: gross + ppn, expenseDate: isoDay(dayOffset), currency: 'IDR', isTaxDeductible: true,
+        paymentSource: 'BANK', isBillable: false, projectId: project, clientId: project ? ids.client : undefined,
+      });
+    };
+    out.expenseCategory = byCode('5_3020').id;
+    out.expenses.push((await mkExpense(byCode('5_3020'), 'Sewa kamera dan lensa syuting 2 hari', 3500000, `Rental Kamera Sinema Jakarta ${DEMO}`, -6, out.projectVideo)).id);
+    out.expenses.push((await mkExpense(byCode('5_3030'), 'Sewa lokasi syuting gerai', 1800000, `Studio Musik Nada Baru ${DEMO}`, -5, out.projectVideo, false)).id);
+    out.expenses.push((await mkExpense(byCode('MISCELLANEOUS'), 'Konsumsi tim syuting', 750000, `Warung Makan Sederhana ${DEMO}`, -4, out.projectVideo, false)).id);
+  }
+
+  // Production documents for the video-profile project --------------------------
+  const sl = await api('POST', '/shot-lists', { name: `Shot List Video Profil Gerai ${DEMO}`, projectId: out.projectVideo, description: 'Daftar shot untuk syuting 1 hari di gerai Kopi Senja.' });
+  out.shotList = sl.id;
+  const scenes = [
+    ['1', 'Eksterior Gerai', 'Gerai Kopi Senja, Bandung', 'EXT', 'DAY', [
+      ['1A', 'LS', 'Eye level', 'Static', 'Shot lebar fasad gerai saat pagi hari', 10],
+      ['1B', 'MS', 'Low angle', 'Dolly in', 'Pelanggan masuk melewati pintu kaca', 15],
+    ]],
+    ['2', 'Barista di Bar', 'Gerai Kopi Senja, Bandung', 'INT', 'DAY', [
+      ['2A', 'CU', 'Eye level', 'Static', 'Tangan barista menuang espresso', 20],
+      ['2B', 'ECU', 'High angle', 'Slider', 'Susu bertemu kopi dalam gelas', 20],
+      ['2C', 'MS', 'Eye level', 'Handheld', 'Barista menyerahkan pesanan ke pelanggan', 15],
+    ]],
+  ];
+  for (const [sceneNumber, name, location, intExt, dayNight, shots] of scenes) {
+    const sc = await api('POST', '/shot-list-scenes', { shotListId: sl.id, sceneNumber, name, location, intExt, dayNight });
+    for (const [shotNumber, shotSize, cameraAngle, cameraMovement, description, estimatedTime] of shots) {
+      await api('POST', '/shots', { sceneId: sc.id, shotNumber, shotSize, shotType: shotSize, cameraAngle, cameraMovement, description, estimatedTime, lens: '35mm', frameRate: '24', camera: 'A-Cam' });
+    }
+  }
+  const sched = await api('POST', '/schedules', { name: `Jadwal Syuting Video Profil ${DEMO}`, projectId: out.projectVideo, shotListId: sl.id, startDate: isoDay(5), pagesPerDay: 5 });
+  out.schedule = sched.id;
+
+  // Staff + salary payments ------------------------------------------------------
+  const now = new Date();
+  const staffRows = [
+    ['Raka Pratama', 'Videografer', 7000000, 'raka'],
+    ['Siti Nurhaliza', 'Editor Video', 6000000, 'siti'],
+  ];
+  out.staff = [];
+  for (const [name, position, baseSalary, key] of staffRows) {
+    const st = await api('POST', '/salaries/staff', {
+      name: `${name} ${DEMO}`, position, baseSalary, email: `demo.${key}@contoh.co.id`, phone: '+62 812 5550 0000',
+      joinedDate: isoDay(-300), bankName: 'BCA', bankAccount: '7771230000',
+    });
+    out.staff.push(st.id);
+  }
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const salPaid = await api('POST', '/salaries/payments', {
+    staffId: out.staff[1], month: prev.getMonth() + 1, year: prev.getFullYear(), baseSalary: 6000000, allowances: 500000, deductions: 0,
+    paidAt: isoDay(-3),
+  });
+  out.salaryPaid = salPaid.id;
+  const salDraft = await api('POST', '/salaries/payments', {
+    staffId: out.staff[0], month: now.getMonth() + 1, year: now.getFullYear(), baseSalary: 7000000, allowances: 750000, deductions: 150000,
+  });
+  out.salaryDraft = salDraft.id;
+
+  // Asset -------------------------------------------------------------------------
+  const asset = await api('POST', '/assets', {
+    name: `Kamera Mirrorless Sony A7 IV ${DEMO}`, category: 'Camera', manufacturer: 'Sony', model: 'A7 IV', serialNumber: 'DEMO-A7IV-0001',
+    purchaseDate: isoDay(-120), purchasePrice: 38000000, usefulLifeYears: 4, residualValue: 3000000, location: 'Studio Bandung',
+    supplier: 'Toko Elektronik Maju Jaya', paymentSource: 'BANK',
+  });
+  out.asset = asset?.id;
+  return out;
+}

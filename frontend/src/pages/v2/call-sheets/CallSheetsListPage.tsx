@@ -53,6 +53,7 @@ import { callSheetsApi } from '@/services/callSheets';
 import { projectService } from '@/services/projects';
 import type { CallSheet, CallSheetStatus, CallSheetType } from '@/types/callSheet';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical contract to other v2 list pages.              */
@@ -290,7 +291,8 @@ export default function CallSheetsListPageV2() {
   const handleDelete = (cs: CallSheet) => {
     if (confirm(t(
       'callSheets.confirmDelete',
-      `Hapus call sheet "${cs.productionName || `#${cs.callSheetNumber}`}"? Tindakan ini tidak bisa dibatalkan.`,
+      'Hapus call sheet "{{name}}"? Tindakan ini tidak bisa dibatalkan.',
+      { name: cs.productionName || `#${cs.callSheetNumber}` },
     ))) {
       deleteMutation.mutate(cs.id);
     }
@@ -350,10 +352,13 @@ export default function CallSheetsListPageV2() {
           'Kelola dokumen produksi: jadwal panggilan kru, talent, dan lokasi shoot.',
         )}
         actions={
-          <Button onClick={() => setCreateOpen(true)} size="sm">
+          <>
+            <GuideHelpLink slug="call-sheet" anchor="daftar" />
+            <Button onClick={() => setCreateOpen(true)} size="sm">
             <Plus className="h-4 w-4" />
             {t('callSheets.new', 'Call Sheet Baru')}
           </Button>
+          </>
         }
       />
 

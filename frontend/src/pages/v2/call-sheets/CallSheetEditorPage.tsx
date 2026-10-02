@@ -84,6 +84,7 @@ import type {
   MealType, SpecialReqType,
 } from '@/types/callSheet';
 import { DEPARTMENTS } from '@/constants/departments';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 // Google Maps is loaded at runtime via useGoogleMapsLoader; type the global loosely.
 declare global {
@@ -1219,7 +1220,8 @@ export default function CallSheetEditorPageV2() {
     if (!callSheet) return;
     if (window.confirm(t(
       'callSheets.editor.confirmDelete',
-      `Hapus call sheet "${callSheet.productionName || `#${callSheet.callSheetNumber}`}"?`,
+      'Hapus call sheet "{{name}}"?',
+      { name: callSheet.productionName || `#${callSheet.callSheetNumber}` },
     ))) {
       deleteMutation.mutate();
     }
@@ -1383,7 +1385,9 @@ export default function CallSheetEditorPageV2() {
             : null,
         ].filter(Boolean).join(' · ')}
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="call-sheet" anchor="info" />
+            <div className="flex items-center gap-2">
             <span
               className={cn(
                 'inline-flex items-center rounded-full border px-2.5 py-0.5',
@@ -1426,6 +1430,7 @@ export default function CallSheetEditorPageV2() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          </>
         }
       />
 

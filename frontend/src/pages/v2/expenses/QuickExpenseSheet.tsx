@@ -59,7 +59,6 @@ export function QuickExpenseSheet({
 
   const onCreated = (
     created: { id: string; expenseNumber?: string },
-    submitted: boolean,
   ) => {
     queryClient.invalidateQueries({ queryKey: ['expenses'] });
     // A new expense posts a GL journal — refresh all accounting pages so it shows.
@@ -77,9 +76,7 @@ export function QuickExpenseSheet({
 
     onOpenChange(false);
     toast.success(
-      submitted
-        ? t('quickExpense.successSubmitted', 'Expense {{n}} created and submitted.', { n: created.expenseNumber || '' })
-        : t('quickExpense.success', 'Expense {{n}} created.', { n: created.expenseNumber || '' }),
+      t('quickExpense.success', 'Expense {{n}} created.', { n: created.expenseNumber || '' }),
       {
         action: {
           label: t('quickExpense.view', 'View'),
@@ -92,33 +89,7 @@ export function QuickExpenseSheet({
   const createMutation = useMutation({
     mutationFn: (data: CreateExpenseFormData) => expenseService.createExpense(data),
     onMutate: () => setIsSubmitting(true),
-    onSuccess: (created) => onCreated(created, false),
-    onError: (err: unknown) => {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : t('quickExpense.error', 'Failed to create expense. Please try again.'),
-      );
-    },
-    onSettled: () => setIsSubmitting(false),
-  });
-
-  const submitAndApproveMutation = useMutation({
-    mutationFn: async (data: CreateExpenseFormData) => {
-      const created = await expenseService.createExpense(data);
-      try {
-        await expenseService.submitExpense(created.id);
-      } catch (err) {
-        toast.error(
-          t('quickExpense.submitWarn', 'Expense saved but approval submission failed: {{m}}', {
-            m: (err as Error).message,
-          }),
-        );
-      }
-      return created;
-    },
-    onMutate: () => setIsSubmitting(true),
-    onSuccess: (created) => onCreated(created, true),
+    onSuccess: (created) => onCreated(created),
     onError: (err: unknown) => {
       toast.error(
         err instanceof Error
@@ -131,9 +102,6 @@ export function QuickExpenseSheet({
 
   const handleSubmit = async (payload: ExpenseFormPayload) => {
     createMutation.mutate(await buildCreateExpensePayload(payload));
-  };
-  const handleSubmitAndApprove = async (payload: ExpenseFormPayload) => {
-    submitAndApproveMutation.mutate(await buildCreateExpensePayload(payload));
   };
 
   return (
@@ -166,7 +134,6 @@ export function QuickExpenseSheet({
             defaultValues={{ projectId, isBillable: false, ...(prefill ?? {}) }}
             isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
-            onSubmitAndApprove={handleSubmitAndApprove}
             onCancel={() => onOpenChange(false)}
           />
           </div>
@@ -201,7 +168,7 @@ export function QuickExpenseSheet({
               onClick={() => { addAnotherRef.current = true; }}
               title={t('quickExpense.saveAddAnotherHint', 'Save and keep this form open for the next expense')}
             >
-              {t('quickExpense.saveAddAnother', 'Save & add another')}
+              {t('quickExpense.saveAddAnother', 'Record & add another')}
             </Button>
             <Button
               type="submit"
@@ -217,7 +184,7 @@ export function QuickExpenseSheet({
                   {t('quickExpense.saving', 'Saving...')}
                 </>
               ) : (
-                t('quickExpense.save', 'Save Expense')
+                t('quickExpense.save', 'Record Expense')
               )}
             </Button>
           </div>

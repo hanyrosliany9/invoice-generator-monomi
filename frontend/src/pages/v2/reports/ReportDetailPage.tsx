@@ -9,6 +9,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, MoreHorizontal, Pencil, Trash2, Download, CheckCircle2, RefreshCw,
@@ -202,6 +203,7 @@ export default function ReportDetailPageV2() {
         description={report.description || t('reportDetail.subtitle2', 'This is the report as the client sees it.')}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <GuideHelpLink slug="laporan-bulanan" anchor="tayangkan" />
             <Badge
               variant="outline"
               className={cn('border-transparent px-3 h-7 text-[11px] font-medium uppercase tracking-wider', statusChipClass(report.status))}

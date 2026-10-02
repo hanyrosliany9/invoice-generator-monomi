@@ -51,7 +51,8 @@
     "remove": "Remove",
     "copy": "Copy",
     "fromDate": "From",
-    "toDate": "To"
+    "toDate": "To",
+    "uploading": "Uploading…"
   },
   "table": {
     "number": "Number",
@@ -85,7 +86,8 @@
     "sessionExpired": "Your session has expired. Please sign in again.",
     "rateLimited": "Too many login attempts. Please try again in a few minutes.",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "serverUnavailable": "The server is unavailable. Please try again in a moment."
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -181,7 +183,8 @@
     "financialReports": "Financial Reports",
     "assetsDepreciation": "Assets & Depreciation",
     "depreciation": "Depreciation",
-    "fixedAssets": "Assets"
+    "fixedAssets": "Assets",
+    "guides": "Guides"
   },
   "breadcrumb": {
     "client": "Client",
@@ -425,7 +428,8 @@
       "toast": {
         "createFailed": "Failed to create quotation.",
         "updated": "Quotation updated successfully.",
-        "updateFailed": "Failed to update quotation."
+        "updateFailed": "Failed to update quotation.",
+        "created": "Quotation {{number}} created."
       },
       "validUntil": "Valid Until",
       "clientPlaceholder": "Select client…",
@@ -493,7 +497,8 @@
       }
     },
     "search": {
-      "clear": "Clear search"
+      "clear": "Clear search",
+      "placeholder": "Search number, client, or project…"
     },
     "subtitle": "Manage client quotations — from draft through to invoice conversion.",
     "toast": {
@@ -713,7 +718,8 @@
       "statusHelp": "Status changes are processed via a separate endpoint.",
       "clientSearch": "Search by name or company…",
       "noClients": "No clients yet",
-      "projectSearch": "Search by project number or description…"
+      "projectSearch": "Search by project number or description…",
+      "scopePh": "Example:\n- E-commerce website development\n- Payment gateway integration\n- Internal team training"
     },
     "kpi": {
       "drafts": "Drafts",
@@ -842,7 +848,8 @@
       "addProject": "New Project",
       "addFirstProject": "Create Project",
       "addQuotation": "New Quotation",
-      "addFirstQuotation": "Create Quotation"
+      "addFirstQuotation": "Create Quotation",
+      "confirmDelete": "Delete client \"{{name}}\"? This cannot be undone."
     },
     "directory": "Client Directory",
     "edit": {
@@ -1547,7 +1554,8 @@
         "closingValue": "Closing Value",
         "months": "months",
         "labelFirst": "First Period",
-        "labelLast": "Last Period"
+        "labelLast": "Last Period",
+        "hint": "{{total}} periods in total · showing only the first and last periods"
       },
       "maintenance": {
         "addBtn": "Log Maintenance",
@@ -1645,7 +1653,8 @@
       "depGroupI": "Group I — 4 years",
       "depGroupII": "Group II — 8 years",
       "depGroupIII": "Group III — 16 years",
-      "depGroupIV": "Group IV — 20 years"
+      "depGroupIV": "Group IV — 20 years",
+      "editNote": "Changes are saved when you press \"Save\"."
     },
     "kpi": {
       "depreciating": "Actively Depreciating",
@@ -1713,7 +1722,17 @@
       "nextDateLabel": "Next Maintenance Date",
       "submitBtn": "Save Maintenance Log",
       "success": "Maintenance record saved.",
-      "error": "Failed to save maintenance record."
+      "error": "Failed to save maintenance record.",
+      "types": {
+        "preventive": "Preventive",
+        "corrective": "Corrective",
+        "inspection": "Inspection",
+        "calibration": "Calibration",
+        "cleaning": "Cleaning",
+        "repair": "Repair",
+        "replacement": "Replacement",
+        "other": "Other"
+      }
     },
     "manufacturer": "Manufacturer",
     "messages": {
@@ -1825,7 +1844,17 @@
       "broken": "Broken",
       "retired": "Retired"
     },
-    "groupValue": "Acquisition Value"
+    "groupValue": "Acquisition Value",
+    "conditionValue": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "broken": "Broken"
+    },
+    "confirmDelete": "Delete asset {{name}}? This cannot be undone.",
+    "statusUpdated": "Asset status updated.",
+    "statusUpdateFailed": "Failed to update status."
   },
   "builder": {
     "addSection": "Add Section",
@@ -1985,7 +2014,8 @@
       "saved": "Changes saved.",
       "send": "Mark as Sent",
       "pdfDownloaded": "PDF downloaded successfully.",
-      "pdfFailed": "Failed to download PDF."
+      "pdfFailed": "Failed to download PDF.",
+      "confirmDelete": "Delete call sheet \"{{name}}\"?"
     },
     "empty": {
       "desc": "Create your first call sheet for a production.",
@@ -2037,7 +2067,8 @@
     "colStatus": "Status",
     "crew": "crew",
     "talent": "talent",
-    "callSheetActions": "Call sheet actions"
+    "callSheetActions": "Call sheet actions",
+    "confirmDelete": "Delete call sheet \"{{name}}\"? This cannot be undone."
   },
   "collections": {
     "detail": {
@@ -2091,7 +2122,9 @@
       "selectAtLeastOne": "Select at least one asset.",
       "smartSub": "Smart collection — updated automatically based on criteria.",
       "confirmDeleteTitle": "Delete collection?",
-      "confirmRemoveTitle": "Remove from collection?"
+      "confirmRemoveTitle": "Remove from collection?",
+      "confirmDelete": "Delete collection \"{{name}}\"? This cannot be undone.",
+      "confirmRemove": "Remove \"{{name}}\" from the collection? The asset will not be deleted from the project."
     },
     "media": "Media",
     "project": "Project",
@@ -2670,7 +2703,8 @@
       "statusActiveSub": "Can log in and access the system.",
       "statusHint": "Inactive users cannot sign in to the system.",
       "statusInactiveSub": "Account is retained but cannot log in.",
-      "statusSelfHint": "You cannot deactivate your own account."
+      "statusSelfHint": "You cannot deactivate your own account.",
+      "editNote": "Changes are saved when you press \"Save\"."
     },
     "kpi": {
       "active": "Active",
@@ -2793,7 +2827,8 @@
       "notFoundDesc": "The vendor you're looking for does not exist or has been deleted.",
       "relationsSub": "Overview of transactions linked to this vendor.",
       "termsSub": "Payment terms, currency, and basic audit trail.",
-      "deleteSuccess": "Vendor \"{{name}}\" deleted successfully."
+      "deleteSuccess": "Vendor \"{{name}}\" deleted successfully.",
+      "confirmDelete": "Delete vendor \"{{name}}\"? This cannot be undone."
     },
     "directory": "Vendor Directory",
     "edit": {
@@ -2990,7 +3025,10 @@
       "actionDelete": "Delete",
       "filterAccountType": "Account Type",
       "searchPlaceholderAlt": "Search by code or account name...",
-      "actionViewGL": "View in GL"
+      "actionViewGL": "View in GL",
+      "exportSuccess": "Excel exported successfully.",
+      "exportFail": "Failed to export Excel.",
+      "exportExcel": "Excel"
     },
     "arAging": {
       "title": "Accounts Receivable Aging",
@@ -3979,7 +4017,9 @@
       "exportPdfSuccess": "PDF exported successfully.",
       "exportPdfFail": "Failed to export PDF.",
       "exportExcelSuccess": "Excel exported successfully.",
-      "exportExcelFail": "Failed to export Excel."
+      "exportExcelFail": "Failed to export Excel.",
+      "syncNote": "Each cash/bank account's opening, inflow, outflow and closing for this month are calculated automatically from posted journal entries — and chained from the previous period.",
+      "txnRelatedCoa": "Related COA"
     },
     "bankTransfers": {
       "actionApprove": "Approve",
@@ -4482,7 +4522,7 @@
     "createTitle": "New Shot List",
     "createDesc": "Create a new shot list for your production.",
     "fieldName": "Name",
-    "fieldProject": "Project (optional)",
+    "fieldProject": "Project",
     "fieldDescription": "Description",
     "namePlaceholder": "Shot list name",
     "noProject": "No description",
@@ -4494,7 +4534,9 @@
     "noProjectsFound": "No projects found",
     "colShots": "Shots",
     "colScenes": "Scenes",
-    "actionsLabel": "Actions"
+    "actionsLabel": "Actions",
+    "nameMin": "Name must be at least 2 characters",
+    "projectRequired": "A project must be selected"
   },
   "projectCalendar": {
     "title": "Project Calendar",
@@ -4736,7 +4778,9 @@
       "notifications": "Notifications",
       "notificationsDesc": "Email and push",
       "backup": "Data Backup",
-      "backupDesc": "Auto backup and manual download"
+      "backupDesc": "Auto backup and manual download",
+      "mobile": "Mobile App",
+      "mobileDesc": "Download the Android app"
     },
     "profile": {
       "title": "Profile",
@@ -4861,6 +4905,18 @@
       "downloadDesc": "Full database backup as an SQL file.",
       "saveLabel": "Save Backup Settings",
       "timeFormatInvalid": "Time must be in HH:MM format"
+    },
+    "mobile": {
+      "title": "Mobile App",
+      "desc": "Install the Monomi app on your Android phone for on-the-go access.",
+      "version": "Version 1.0.0",
+      "installNote": "Enable \"Install from unknown sources\" on your phone before installing.",
+      "download": "Download APK",
+      "howToInstall": "How to install:",
+      "step1": "Download the APK file above",
+      "step2": "Open your phone's Settings → Security → Enable \"Install unknown apps\"",
+      "step3": "Open the downloaded APK file and tap Install",
+      "step4": "Launch Monomi and log in with your account"
     }
   },
   "cashBankBalance": {
@@ -4930,7 +4986,12 @@
     "glPosted": "GL ✓",
     "glPending": "GL —",
     "glPostedAria": "Posted to the General Ledger",
-    "glPendingAria": "Not yet posted to the General Ledger"
+    "glPendingAria": "Not yet posted to the General Ledger",
+    "exportPdfSuccess": "PDF exported successfully.",
+    "exportPdfFail": "Failed to export PDF.",
+    "exportExcelSuccess": "Excel exported successfully.",
+    "exportExcelFail": "Failed to export Excel.",
+    "export": "Export"
   },
   "expenseDetail": {
     "error": {
@@ -5081,14 +5142,17 @@
       "billableExplain": "On save this posts DR Piutang Lain-lain (1-2040) / CR Cash — a receivable from the client, not a 5-xxx/6-xxx expense. When the client pays you back, record the reimbursement from the expense to reverse it (DR Cash / CR Piutang Lain-lain). The chosen category is kept for reference only.",
       "classification": "Classification",
       "reimbursableClassification": "Other Receivable · Piutang Lain-lain (1-2040)",
-      "reimbursableClassificationHint": "Reimbursable pass-through — no expense category needed."
+      "reimbursableClassificationHint": "Reimbursable pass-through — no expense category needed.",
+      "billableAmount": "Reimbursable amount",
+      "billableAmountPlaceholder": "Defaults to total",
+      "billableAmountHint": "Amount recoverable from the client. Leave empty to recover the full total. Reimbursable costs do not reduce project margin."
     },
     "noCategories": "No expense categories yet",
     "submitNote": "Save as draft to review later, or submit immediately for approval.",
     "submitting": "Submitting...",
     "saveAndSubmit": "Save & Submit for Approval",
     "bottomBar": {
-      "createHint": "Expense will be saved as DRAFT. Fields marked * are required.",
+      "createHint": "Recorded as paid and posted to the journal immediately. Fields marked * are required.",
       "editHint": "Changes are applied when you click \"Save\"."
     },
     "cancel": "Cancel",
@@ -5098,7 +5162,41 @@
     "sourceCash": "Cash",
     "optional": "optional",
     "categoryNotResolved": "Expense category could not be resolved — please re-select it and try again.",
-    "fixErrors": "Please fix the highlighted fields before saving."
+    "fixErrors": "Please fix the highlighted fields before saving.",
+    "paidNote": "Saving records this expense as paid and posts it to the General Ledger right away. The payment source above decides whether Cash or Bank decreases. Made a mistake? Edit the amount (the journal is re-posted) or delete it from the expense page (the journal is reversed).",
+    "saveCreate": "Record Expense",
+    "opt": {
+      "ppn": {
+        "CREDITABLE": "Creditable",
+        "NON_CREDITABLE": "Non-Creditable",
+        "EXEMPT": "VAT Exempt"
+      },
+      "wht": {
+        "NONE": {
+          "label": "None",
+          "hint": "No income tax withholding"
+        },
+        "PPH23": {
+          "label": "PPh 23 (Services)",
+          "hint": "2% — services, equipment rental"
+        },
+        "PPH4_2": {
+          "label": "PPh 4(2) (Rent)",
+          "hint": "10% — building rental & interest"
+        },
+        "PPH15": {
+          "label": "PPh 15 (Freight)",
+          "hint": "±2.65% — freight & aviation"
+        }
+      },
+      "efaktur": {
+        "NOT_REQUIRED": "Not Required",
+        "REQUIRED": "Required",
+        "UPLOADED": "Uploaded",
+        "VALIDATED": "Validated",
+        "REJECTED": "Rejected by DGT"
+      }
+    }
   },
   "expenseCreate": {
     "success": "Expense {{n}} created successfully.",
@@ -5112,7 +5210,7 @@
     "crumb": "New",
     "cancel": "Cancel",
     "saving": "Saving...",
-    "save": "Save",
+    "save": "Record Expense",
     "viewExpense": "View",
     "projectsLabel": "Projects",
     "projectCrumb": "Project",
@@ -5327,7 +5425,23 @@
     "reimbursableEmpty": "No pass-through costs. Use this for money you pay on the client’s behalf and bill back — it books to Piutang Lain-lain, not project expense.",
     "billReimbursables": "Bill to client",
     "billedBadge": "Billed",
-    "unbilledBadge": "Not billed"
+    "unbilledBadge": "Not billed",
+    "productionHub": "Production Hub",
+    "decksSection": "Creative Decks",
+    "noDecks": "No decks yet",
+    "noDecksDesc": "Create a creative deck or mood board for this project.",
+    "callSheetsSection": "Call Sheets",
+    "noCallSheets": "No call sheets yet",
+    "noCallSheetsDesc": "Create a call sheet from a shooting schedule to brief your crew.",
+    "callSheetFallback": "Call Sheet #{{n}}",
+    "crewCount": "{{count}} crew",
+    "castCount": "{{count}} cast",
+    "mediaProjectsSection": "Media Collaboration",
+    "newMediaProject": "New Media Space",
+    "noMediaProjects": "No media spaces yet",
+    "noMediaProjectsDesc": "Create a shared media space to collaborate on selects with your client.",
+    "assetCount": "{{count}} assets",
+    "shared": "Shared"
   },
   "projectForm": {
     "identity": {
@@ -5428,7 +5542,8 @@
     "save": "Save",
     "backToClient": "Back to client",
     "clientsLabel": "Clients",
-    "clientCrumb": "Client"
+    "clientCrumb": "Client",
+    "backToList": "Back to Projects"
   },
   "projectEdit": {
     "success": "Changes for \"{{name}}\" saved.",
@@ -5882,7 +5997,8 @@
     "selected": "Selected Day",
     "upcoming": "Next 14 Days",
     "upcomingEmpty": {
-      "title": "No upcoming agenda"
+      "title": "No upcoming agenda",
+      "desc": "Nothing scheduled in the next 14 days."
     },
     "upcomingTitle": "Upcoming Agenda"
   },
@@ -6071,7 +6187,8 @@
       "schedule": "Schedule",
       "scheduleDate": "Schedule Date",
       "time": "Time",
-      "title": "Add Content"
+      "title": "Add Content",
+      "clientRequired": "This project has no client yet."
     },
     "detailSheet": {
       "created": "Created",
@@ -6215,7 +6332,29 @@
     "sc_move1": "Move 1px",
     "sc_move10": "Move 10px",
     "sc_bringFront": "Bring to front",
-    "sc_sendBack": "Send to back"
+    "sc_sendBack": "Send to back",
+    "speakerNotes": "Speaker Notes",
+    "notesPlaceholder": "Add speaker notes for this slide…",
+    "noSlideSelected": "Select a slide to edit its notes",
+    "zoomOut": "Zoom out",
+    "currentZoom": "Current zoom",
+    "zoomIn": "Zoom in",
+    "zoomFit": "Fit to window",
+    "reorderError": "Failed to reorder slides",
+    "transitionError": "Failed to save transition",
+    "titleUpdated": "Deck title updated",
+    "titleUpdateError": "Failed to update title",
+    "clickToRename": "Click to rename",
+    "insertTable": "Insert Table",
+    "table": "Table",
+    "insertChart": "Insert Chart",
+    "chart": "Chart",
+    "insertIcon": "Insert Icon",
+    "icon": "Icon",
+    "findReplace": "Find & Replace (Ctrl+F / Ctrl+H)",
+    "toggleNotes": "Speaker Notes",
+    "transition": "Transition",
+    "duration": "Duration"
   },
   "shotListEditor": {
     "saveSuccess": "Shot list saved",
@@ -6552,7 +6691,9 @@
     "specialReqAddFailed": "Failed to add special requirement.",
     "specialReqUpdateFailed": "Failed to update special requirement.",
     "specialReqRemoved": "Special requirement removed.",
-    "specialReqRemoveFailed": "Failed to remove special requirement."
+    "specialReqRemoveFailed": "Failed to remove special requirement.",
+    "poweredByGoogle": "Powered by Google",
+    "addressAutocompleteHint": "Pick a suggestion so weather & sun-times auto-fill can locate the shoot."
   },
   "mediaCollab": {
     "loadMore": "Load more",
@@ -6721,7 +6862,30 @@
     "roleCommenter": "Commenter",
     "roleEditor": "Editor",
     "confirmDeleteAssetTitle": "Delete asset?",
-    "inviteEmailInvalid": "Enter a valid email address."
+    "inviteEmailInvalid": "Enter a valid email address.",
+    "resolveFailed": "Failed to resolve the comment.",
+    "uploadSkipped": "\"{{name}}\" was skipped.",
+    "uploadedCount": "{{n}} files uploaded",
+    "skippedCount": "{{n}} skipped",
+    "failedCount": "{{n}} failed",
+    "uploadQueue": "Upload Queue",
+    "retryAll": "Retry all failed uploads",
+    "clearQueue": "Clear",
+    "statusQueued": "Waiting",
+    "statusDone": "Done",
+    "statusError": "Failed",
+    "duplicateTitle": "Files Already Exist",
+    "duplicateDesc": "{{n}} file(s) already exist in this folder. Choose how to handle them.",
+    "conflictSkip": "Skip",
+    "conflictReplace": "Replace",
+    "conflictKeepBoth": "Keep Both",
+    "conflictSkipDesc": "Do not upload files that already exist.",
+    "conflictReplaceDesc": "Delete existing file and upload the new one.",
+    "conflictKeepBothDesc": "Rename the new file with a timestamp suffix.",
+    "uploadedBy": "by",
+    "newFilesAlwaysUpload": "{{n}} new file(s) will always be uploaded.",
+    "confirmUpload": "Confirm Upload",
+    "resolveComment": "Mark as resolved"
   },
   "salaries": {
     "pageTitle": "Staff Salaries",
@@ -6817,7 +6981,9 @@
       "base": "Base Salary",
       "deductions": "Deductions",
       "netPay": "Net Pay",
-      "staffSearch": "Search by name or position..."
+      "staffSearch": "Search by name or position...",
+      "basePlaceholder": "Select a staff member",
+      "baseAutoHint": "Auto-filled from the staff member’s registered salary."
     },
     "createPayment": "Create Payment",
     "updatePayment": "Update Payment",
@@ -6889,7 +7055,11 @@
       "payStaff": "Pay This Staff",
       "error": "Cannot load staff details"
     },
-    "backToSalaries": "Back to Salaries"
+    "backToSalaries": "Back to Salaries",
+    "staffCreated": "Staff member created.",
+    "staffCreateFailed": "Failed to create staff member.",
+    "staffUpdated": "Staff member updated.",
+    "staffUpdateFailed": "Failed to update staff member."
   },
   "systemReport": {
     "backToReports": "Back to Reports",
@@ -7365,9 +7535,9 @@
     "openFull": "Open full form",
     "cancel": "Cancel",
     "saving": "Saving...",
-    "save": "Save Expense",
+    "save": "Record Expense",
     "savedAddAnother": "Expense {{n}} saved — add another.",
-    "saveAddAnother": "Save & add another",
+    "saveAddAnother": "Record & add another",
     "saveAddAnotherHint": "Save and keep this form open for the next expense"
   },
   "recordPayment": {
@@ -7590,9 +7760,16 @@
       "rotate": "Rotate clockwise (R)",
       "download": "Download",
       "close": "Close (Esc)",
-      "hint": "+/− zoom · R rotate · 0 reset · Esc close"
+      "hint": "+/− zoom · R rotate · 0 reset · Esc close",
+      "hideDetails": "Hide details",
+      "showDetails": "Show details — rating & comments",
+      "prev": "Previous (←)",
+      "details": "Details",
+      "next": "Next (→)"
     },
-    "shiftClickHint": "Shift-click to select a range"
+    "shiftClickHint": "Shift-click to select a range",
+    "prevAsset": "Previous asset",
+    "nextAsset": "Next asset"
   },
   "guestReview": {
     "feedbackHeader": "Leave Feedback",
@@ -7652,7 +7829,8 @@
     "folderRenamed": "Folder renamed.",
     "folderRenameFailed": "Failed to rename folder.",
     "folderDeleted": "Folder deleted.",
-    "folderDeleteFailed": "Failed to delete folder."
+    "folderDeleteFailed": "Failed to delete folder.",
+    "folder": "Folder"
   },
   "mediaCollections": {
     "new": "New Collection",
@@ -7790,7 +7968,10 @@
     "statusPending": "Pending",
     "statusAccepted": "Accepted",
     "statusExpired": "Expired",
-    "statusRevoked": "Revoked"
+    "statusRevoked": "Revoked",
+    "accessLevelUpdated": "Access level updated",
+    "accessLevelUpdateError": "Failed to update access level",
+    "accessLevel": "Anyone with link"
   },
   "deckPublic": {
     "eyebrow": "Public Deck",
@@ -7831,7 +8012,10 @@
     "laserPointer": "Laser pointer (P)",
     "startAutoPlay": "Start auto-play",
     "pauseAutoPlay": "Pause auto-play",
-    "exit": "Exit presentation (Esc)"
+    "exit": "Exit presentation (Esc)",
+    "notesCaption": "Speaker notes caption (N)",
+    "audienceView": "Audience view",
+    "presenterView": "Presenter view (S)"
   },
   "schedules": {
     "title": "Shooting Schedules",
@@ -7874,7 +8058,9 @@
     "noShotListsFound": "No shot lists for this project",
     "fieldStartDate": "Start Date",
     "fieldPagesPerDay": "Pages / Day",
-    "createSubmit": "Create Schedule"
+    "createSubmit": "Create Schedule",
+    "nameMin": "Name must be at least 2 characters",
+    "projectRequired": "A project must be selected"
   },
   "scheduleEditor": {
     "description": "Organize scenes into shoot days. Reorder strips, add meal breaks and company moves, or auto-schedule from a shot list.",
@@ -7975,7 +8161,24 @@
     "fieldMoveFrom": "From",
     "fieldMoveTo": "To",
     "fieldMoveTravel": "Travel (min)",
-    "fieldMoveNotes": "Notes"
+    "fieldMoveNotes": "Notes",
+    "stripDuplicated": "Scene duplicated",
+    "importFromShotList": "Import from shot list",
+    "colScene": "Scene",
+    "colIntExt": "I/E",
+    "colDayNight": "D/N",
+    "colDescription": "Description / Set",
+    "colLocation": "Location",
+    "colPages": "Pages",
+    "duplicateScene": "Duplicate scene",
+    "quickAddHint": "Type a scene and press Enter to add the next",
+    "importSuccess": "Scenes imported into Day {{n}}",
+    "importFailed": "Failed to import scenes",
+    "importTitle": "Import scenes from a shot list",
+    "importDesc": "Every scene from the selected shot list is added to Day {{n}} as strips. You can reorder or auto-schedule them afterwards.",
+    "importNoLists": "No shot lists found for this project.",
+    "importSceneCount": "{{count}} scenes",
+    "importButton": "Import scenes"
   },
   "realizeExpense": {
     "title": "Record actual expense",
@@ -8064,7 +8267,8 @@
       "loadError": "Unable to load data. Check your connection and try again.",
       "retry": "Try again",
       "logout": "Log out",
-      "switchClient": "Switch client"
+      "switchClient": "Switch client",
+      "back": "Back"
     },
     "picker": {
       "title": "Choose a client",
@@ -8407,5 +8611,1053 @@
     "liveNote": "Status: {{status}}. Already visible to the client.",
     "pdf": "Preview PDF",
     "button": "Preview as client"
+  },
+  "guides": {
+    "ui": {
+      "staffTitle": "Guides",
+      "staffSubtitle": "Step-by-step help for the Monomi team, with pictures.",
+      "clientTitle": "Help",
+      "clientSubtitle": "How to use the Monomi client portal, step by step.",
+      "search": "Search guides…",
+      "searchLabel": "Search guides",
+      "all": "All",
+      "noResults": "No guides match.",
+      "noResultsHint": "Try another keyword or clear the filter.",
+      "minutes": "~{{count}} min",
+      "stepsCount": "{{count}} steps",
+      "steps": "Steps",
+      "stepOf": "Step {{n}} of {{total}}",
+      "toc": "Steps",
+      "openPage": "Open this page",
+      "tip": "Tip",
+      "zoom": "Enlarge image",
+      "zoomClose": "Close",
+      "imageAlt": "Screenshot of step {{n}}: {{title}}",
+      "badgeNote": "The orange numbers in the picture point to the part being described.",
+      "back": "All guides",
+      "backClient": "All help",
+      "notFound": "Guide not found",
+      "notFoundDesc": "This guide does not exist or has moved.",
+      "related": "Related guides",
+      "next": "Next guide",
+      "help": "Guide",
+      "helpClient": "Help",
+      "needHelp": "Need help?",
+      "demoNote": "Pictures use sample (Demo) data, not real client data.",
+      "subGuide": "Sub-guide",
+      "adminOnly": "Admins only",
+      "topic": {
+        "report": "Reports",
+        "content": "Content",
+        "client": "Clients",
+        "media": "Media",
+        "login": "Access",
+        "deck": "Decks",
+        "sales": "Sales & Billing",
+        "production": "Production",
+        "marketing": "Marketing",
+        "finance": "Finance & Accounting",
+        "admin": "Administration"
+      }
+    },
+    "items": {
+      "laporan-bulanan": {
+        "title": "Monthly social media report",
+        "purpose": "Create the monthly report for a client, fill in the numbers and send it to the client portal.",
+        "steps": {
+          "daftar": {
+            "title": "Open Social Media Reports and click New Report",
+            "body": "This page lists every report and the projects that still need one this month.",
+            "tip": "Last month already has a report? Use \"Copy last report\" so sections and charts are ready."
+          },
+          "identitas": {
+            "title": "Pick the project and month, then click Save & Continue",
+            "body": "Choose the project (1), the month (2) and a title. A project can have one report per month.",
+            "tip": "The title is filled in for you; change it if needed."
+          },
+          "bagian-data": {
+            "title": "Choose how to fill in the data",
+            "body": "A section is one table of numbers with its charts. There are three ways: upload a file, type in a table, or headline numbers."
+          },
+          "unggah-file": {
+            "title": "Way 1: upload a CSV or Excel file",
+            "body": "Give the section a title, then choose a .csv, .xlsx or .xls file (max 5 MB). No file yet? Download a template with the right columns.",
+            "tip": "One row per day. The date column is recognised automatically."
+          },
+          "pratinjau-file": {
+            "title": "Check how the file was read",
+            "body": "The app shows the number of rows and columns, the type of each column and the first rows. Check them before adding the section.",
+            "tip": "If some dates fall outside the report month you will be asked to confirm."
+          },
+          "ketik-tabel": {
+            "title": "Way 2: type straight into the table",
+            "body": "Pick a starting table such as Instagram daily (1); every date of the month is already there. Then type the numbers into the cells (2).",
+            "tip": "Numbers can be written 1.234 or 12,5."
+          },
+          "tempel-excel": {
+            "title": "Or paste from Excel",
+            "body": "Click Paste from Excel (1), paste the table including the header row (2), then click Use pasted table (3)."
+          },
+          "angka-utama": {
+            "title": "Way 3: just fill in the headline numbers",
+            "body": "Good when there are only a few totals, such as new followers or engagement rate. Each number becomes a card in the report."
+          },
+          "grafik": {
+            "title": "Set up the charts",
+            "body": "Charts appear automatically once the section exists. Change the chart type (1), the columns shown (2), then click Save (3).",
+            "tip": "Charts without data are hidden from the client."
+          },
+          "pratinjau-klien": {
+            "title": "Preview what the client will see",
+            "body": "Click Preview as client. It looks exactly like the portal; the client cannot see it while it is still a draft."
+          },
+          "tayangkan": {
+            "title": "Mark as done: publish to the portal",
+            "body": "On the report page open the More actions menu and choose Publish to portal (no email). The status becomes Completed and the client can see it right away."
+          },
+          "kirim": {
+            "title": "Send to client",
+            "body": "Click Send to client to email a link to every active portal contact. Check the recipient list, then click Send email.",
+            "tip": "No contacts yet? Add them in the Client Portal card on the client page."
+          },
+          "kembali-draf": {
+            "title": "Move back to draft when you need to edit",
+            "body": "A live report can go back to draft with Back to draft (1). It disappears from the portal until you publish it again."
+          },
+          "salin": {
+            "title": "Copy to another month",
+            "body": "Open More actions, choose Copy to next month, pick the month and year, then click Copy. Sections and charts are copied as a draft; you only enter the new numbers."
+          }
+        }
+      },
+      "perencana-konten": {
+        "title": "Content planner",
+        "purpose": "Plan, schedule and preview Instagram and TikTok content for one client.",
+        "steps": {
+          "pilih-klien": {
+            "title": "Pick a client in Content Calendar",
+            "body": "Open Content Calendar and choose a client (1). Monomi itself is there too, marked Internal (2).",
+            "tip": "Only clients with a Social Media Management project appear."
+          },
+          "kalender": {
+            "title": "Get to know the calendar page",
+            "body": "Add Content (1) creates new content. The tabs above the calendar (2) switch the view: Month, List, Instagram and TikTok."
+          },
+          "buat-konten": {
+            "title": "Write the caption, pick platforms and content type",
+            "body": "Fill in the caption (1), pick the platforms (2), then the type: Photo/Video, Carousel, Reel or Story (3).",
+            "tip": "Each type has its own media rules, shown under the option."
+          },
+          "media-jadwal": {
+            "title": "Add media and set the schedule",
+            "body": "Click Add to choose media (1), then pick a date (2) and time (3). Times are always WIB, not your browser time zone. Click Schedule (4); without a date the content is saved as a draft."
+          },
+          "detail-aksi": {
+            "title": "Open a post to see its actions",
+            "body": "Click a post on the calendar. Duplicate (1) makes a draft copy, Publish (2) marks it as live. There are also Edit, Archive and Delete."
+          },
+          "terbitkan": {
+            "title": "Mark as published",
+            "body": "Set the real date (1) and time it went live, then click Mark published (2). The app does not post to Instagram or TikTok by itself.",
+            "tip": "A post labelled Overdue has a schedule in the past; mark it published or reschedule it."
+          },
+          "seret": {
+            "title": "Drag a post to reschedule",
+            "body": "Drag a post card (1) to another day in the Month view. The time stays. Click Undo (2) if it was a mistake."
+          },
+          "aksi-massal": {
+            "title": "Select several posts at once",
+            "body": "In List view tick several posts. The bar above (1) offers Change status, Shift schedule and Delete for all of them."
+          },
+          "pratinjau-ig": {
+            "title": "See the posts as on an Instagram profile",
+            "body": "The Instagram tab shows the client profile and its grid (1). Click Open phone preview (2) for a full-screen view.",
+            "tip": "The profile comes from the client record; fill in username and bio on the client page."
+          },
+          "highlights": {
+            "title": "Manage Instagram Highlights",
+            "body": "Click Highlights, give it a title (1), choose vertical 9:16 media (2), then click Create Highlight (3). The first media becomes the cover."
+          },
+          "pratinjau-tiktok": {
+            "title": "See the posts as on TikTok",
+            "body": "The TikTok tab shows the client TikTok profile. Click Open TikTok preview (1) to view it in a phone frame."
+          },
+          "bagikan": {
+            "title": "Share the preview with the client by link",
+            "body": "Click Share, then Enable sharing link. Copy the link (2) and send it to the client; no login needed. Turn it off any time."
+          }
+        }
+      },
+      "konten-monomi": {
+        "title": "Monomi’s own content",
+        "purpose": "Plan the Monomi account’s own posts and fill in its Instagram profile.",
+        "steps": {
+          "klien-monomi": {
+            "title": "Open the Monomi client page",
+            "body": "Monomi is recorded as an Internal client (1). Click Edit (2) to fill in its social profile.",
+            "tip": "An internal client cannot be deleted and has no client portal."
+          },
+          "profil-instagram": {
+            "title": "Fill in the Instagram profile",
+            "body": "In the Instagram Profile section fill in the username (1) and bio (2). Do the same for TikTok, then save."
+          },
+          "planner-monomi": {
+            "title": "Plan posts in Content Calendar",
+            "body": "Choose Monomi in Content Calendar. The profile you just filled in shows on the Instagram tab (1), and posts are created like for any other client."
+          }
+        }
+      },
+      "portal-klien": {
+        "title": "Client portal: give a client access",
+        "purpose": "Add client contacts so they can sign in to the portal and see reports, media, decks and the content plan.",
+        "steps": {
+          "kartu": {
+            "title": "Open the client page and find the Client Portal card",
+            "body": "This card (1) lists the contacts who may sign in, and the portal link (2) you can copy.",
+            "tip": "The internal client (Monomi) has no portal."
+          },
+          "tambah-kontak": {
+            "title": "Add a contact",
+            "body": "Fill in the name (1) and email (2), then click Add contact (3). The client signs in with a 6-digit code emailed to that address, no password."
+          },
+          "aktif-undang": {
+            "title": "Turn access on or off, or send an invitation",
+            "body": "The Active switch (1) allows or closes access without deleting the contact. Send invitation (2) emails the portal link.",
+            "tip": "A deactivated contact cannot request a new code."
+          },
+          "dilihat-klien": {
+            "title": "This is what the client sees",
+            "body": "After signing in the client only sees their own data in four tabs (1): Content, Reports (only published ones), Media and Decks."
+          }
+        }
+      },
+      "kolaborasi-media": {
+        "title": "Media collaboration",
+        "purpose": "Collect photos and videos from a shoot, review them with the client and share them by link.",
+        "steps": {
+          "proyek-baru": {
+            "title": "Create a media project",
+            "body": "In Media Collaboration click New Project, enter a project name (1), then click Create Project (2).",
+            "tip": "Link it to the client and project so the client sees it in the portal."
+          },
+          "unggah": {
+            "title": "Upload assets",
+            "body": "Open the project, then click Upload Asset (1). Pick many photos and videos at once; upload progress shows on screen."
+          },
+          "folder": {
+            "title": "Keep things tidy with folders",
+            "body": "The Folder panel is at the left of the gallery. Click the add icon (1) to create a folder; All Files (2) shows everything."
+          },
+          "pilih-unduh": {
+            "title": "Select assets, then download",
+            "body": "Click Select on an asset (1), or Select All (2). The bar at the bottom (3) offers Move, Rate, Download and Delete. Download All archives every asset in the project."
+          },
+          "pilih-hp": {
+            "title": "On a phone: the selection bar",
+            "body": "After selecting, the action bar sticks to the bottom of the screen with move, compare, rating, download and delete."
+          },
+          "rating": {
+            "title": "Rate and comment",
+            "body": "Click an asset to open it. Give stars (1) and write a comment (2) in the right panel; the team and the client see the same feedback."
+          },
+          "tautan": {
+            "title": "Manage the public link",
+            "body": "Click Manage Sharing. Copy the link (1) to send to the client without login, set an expiry (3), or Deactivate (2) when it is no longer needed."
+          }
+        }
+      },
+      "masuk-portal": {
+        "title": "Signing in to the portal",
+        "purpose": "Sign in with the 6-digit code sent to your email, no password needed.",
+        "steps": {
+          "email": {
+            "title": "Enter your email",
+            "body": "Type the email Monomi has on file (1), then tap Send code (2).",
+            "tip": "It must be the registered email; if not, contact the Monomi team."
+          },
+          "kode": {
+            "title": "Enter the 6-digit code",
+            "body": "Open your email, copy the 6-digit code and type it in the field (1). The code is valid for a few minutes.",
+            "tip": "No email? Check your spam folder or tap Resend code."
+          },
+          "pilih-klien": {
+            "title": "Choose a client",
+            "body": "If your account is linked to several clients, tap one of them (1)."
+          },
+          "beranda": {
+            "title": "Get to know the portal",
+            "body": "Four tabs (1) organise it: Content, Reports, Media and Decks. Switch client (2) if you have access to more than one.",
+            "tip": "The EN/ID button changes the language."
+          }
+        }
+      },
+      "membaca-laporan": {
+        "title": "Reading the monthly report",
+        "purpose": "See the summary, charts and data table of the social media report, then download it as a PDF.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Reports tab",
+            "body": "The newest report is on top. Tap View report (1) to open it."
+          },
+          "ringkasan": {
+            "title": "Start with the Summary",
+            "body": "This month’s headline numbers are in the Summary (2). Tap Download PDF (1) to save the report; preparing it can take up to 30 seconds.",
+            "tip": "The chips under the title jump to each section of the report."
+          },
+          "grafik": {
+            "title": "Read the charts",
+            "body": "Tap or hold a chart (1) to see the numbers on a given date. The sentence under it sums up the change."
+          },
+          "data": {
+            "title": "Look at the data table",
+            "body": "The Data Table (1) holds the numbers per day. Swipe sideways to see other columns."
+          }
+        }
+      },
+      "media-klien": {
+        "title": "Viewing and downloading media",
+        "purpose": "Open the photo and video gallery, rate files, leave comments and download them.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Media tab",
+            "body": "Each gallery is one project. Tap one (1)."
+          },
+          "galeri": {
+            "title": "Browse the gallery",
+            "body": "Tap Download All (1) to download everything as one archive. The All/Photo/Video filter (2), search and sorting help you find files."
+          },
+          "lightbox": {
+            "title": "Open a file",
+            "body": "Tap a photo or video to open it. The arrows move to other files, and the download icon (1) saves this one."
+          },
+          "rating": {
+            "title": "Rate and comment",
+            "body": "Tap a star (1) to rate, then write your feedback (2) and send it. The Monomi team sees it right away."
+          }
+        }
+      },
+      "deck-klien": {
+        "title": "Viewing decks and commenting",
+        "purpose": "Open a presentation from Monomi, move between slides and comment on a slide.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Decks tab",
+            "body": "Decks shared by Monomi appear here. Tap one (1)."
+          },
+          "slide": {
+            "title": "Move between slides",
+            "body": "Use the arrows or tap the slide list to move (2). Export PDF (1) saves the deck."
+          },
+          "komentar": {
+            "title": "Comment on a slide",
+            "body": "Type a comment (1) for the slide that is open, then tap send. Every slide has its own comments."
+          }
+        }
+      },
+      "rencana-konten-klien": {
+        "title": "Viewing the content plan",
+        "purpose": "See the content Monomi has planned for your Instagram and TikTok.",
+        "steps": {
+          "rencana": {
+            "title": "Open the Content tab",
+            "body": "The preview (1) shows the profile and content grid like in the Instagram app. It is read-only; you cannot change anything."
+          },
+          "ponsel": {
+            "title": "Open the full-screen preview",
+            "body": "Tap Open phone preview to see the grid in a phone frame; tap Close to go back."
+          }
+        }
+      },
+      "klien-baru": {
+        "title": "Clients: add, edit and view history",
+        "purpose": "Record a new client with contact, tax number and bank details, then see all their projects, quotations and invoices on one page.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Klien menu",
+            "body": "This list holds every client. Click Klien Baru (1) to add one, or type a name in the search box (2) to find an existing client.",
+            "tip": "Search first, so the same client is not recorded twice."
+          },
+          "identitas": {
+            "title": "Fill in the client identity",
+            "body": "Enter the Nama Klien (1) and Perusahaan. Add the NPWP (2) if the client has one; it is printed on documents. Choose the Termin Pembayaran (3), for example Net 14 hari, as the default for this client's new invoices.",
+            "tip": "Only Nama Klien is required. You can complete the rest later with Edit. Leave the Status Klien switch on (Aktif)."
+          },
+          "kontak": {
+            "title": "Add contact, bank account and address",
+            "body": "Fill in the Narahubung (1), Email (2) and Telepon. Write the Rekening Bank (3) as bank, account number and owner name. The Alamat Lengkap (4) is used on official documents such as invoices and receipts. Click Simpan at the top right when done.",
+            "tip": "The contact e-mail is also used when you give the client portal access (see the client portal guide)."
+          },
+          "profil": {
+            "title": "The client page after saving",
+            "body": "After saving you land on the client page. From here click Edit (1) to change the data, or the three-dot menu (2) for other actions. The Portal Klien card below is used to give portal access."
+          },
+          "riwayat": {
+            "title": "View the project history",
+            "body": "Scroll down: the Riwayat Proyek card (1) lists all projects of this client. Click a project to open it."
+          },
+          "riwayat-invoice": {
+            "title": "View quotation and invoice history",
+            "body": "Riwayat Invoice (1) and Riwayat Penawaran (2) show every billing document of the client with its status, so you can see what is still unpaid without opening other menus."
+          },
+          "ubah": {
+            "title": "Edit client data",
+            "body": "Click Edit on the client page, change the fields you need (1), then click Simpan (2). Changes apply to new documents; existing documents stay as they are.",
+            "tip": "A client you no longer work with is better switched off with Status Klien (Aktif) than deleted, so the history is kept."
+          }
+        }
+      },
+      "proyek-baru": {
+        "title": "Projects: create and manage",
+        "purpose": "Create a project for a client with type, dates, product list and cost estimate, then change its status and open the Production Hub.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Proyek menu",
+            "body": "All projects are here. Click Proyek Baru (1) to create one, or find an old project with the search box (2).",
+            "tip": "A project must exist before you create a quotation or invoice, because both are always linked to one project."
+          },
+          "identitas": {
+            "title": "Fill in description and output",
+            "body": "Write a short Deskripsi Proyek (1), then the Output (2), the final deliverable you promised, for example \"Video 30 detik\". The Lingkup Pekerjaan (3) may be used to spell out tasks and number of revisions.",
+            "tip": "The description and scope are printed on quotations and invoices, so write them clearly for the client."
+          },
+          "klien-jenis": {
+            "title": "Choose the client and project type",
+            "body": "Pick the Klien (1) from the list; type to search. Choose the Jenis Proyek (2): the type decides the project number prefix. Also set the start and end dates in the Tanggal section.",
+            "tip": "Client not there yet? Add it first with the Clients guide."
+          },
+          "produk": {
+            "title": "Enter products and services",
+            "body": "Each row is one billable item: item name (1), short description, Jml and Harga (2). Click Tambah Baris (3) for the next item. The Total Estimasi below is calculated automatically.",
+            "tip": "These rows are reused when you create a quotation, so enter prices carefully."
+          },
+          "anggaran": {
+            "title": "Enter the cost estimate",
+            "body": "Click Tambah Baris Biaya to estimate production cost: choose a Kategori Biaya (1), the Tipe Biaya (2) Langsung or Tidak Langsung, and the Estimasi Biaya (3). From this the app estimates the project margin.",
+            "tip": "This section is optional and internal only; the client does not see it."
+          },
+          "detail": {
+            "title": "Save and view the project page",
+            "body": "After saving, the project page shows the status (1), the Pusat Produksi (Production Hub) button (2) and the Edit button (3). Below are the totals billed and received, expenses, margin, and the invoices and quotations linked to this project."
+          },
+          "status": {
+            "title": "Change the project status",
+            "body": "Open the Tindakan lainnya menu and choose Mulai Proyek (1) when work starts. The same menu holds Duplikasi and shortcuts to create a Shot List, Call Sheet, Deck and Content for this project."
+          },
+          "production-hub": {
+            "title": "Open the Production Hub",
+            "body": "The Production Hub (Pusat Produksi) gathers this project's call sheets, schedules, shot lists, decks and media spaces. At the top is the Tautan Akses Tamu (1) for sharing with the client, and the Baru buttons (2) to create documents. See the Pusat Produksi guide for details."
+          }
+        }
+      },
+      "quotation": {
+        "title": "Quotation: from offer to invoice",
+        "purpose": "Create a quotation with items and VAT, send it to the client, record approval or rejection, make a revision, and see the invoice that is created automatically.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Quotation menu",
+            "body": "The list of quotations with their status: Draf, Terkirim, Disetujui, Ditolak. Click Penawaran Baru (1) to create one, and use the status filter (2) to narrow the list.",
+            "tip": "Quotation flow: Draf, Terkirim, then Disetujui or Ditolak."
+          },
+          "klien-proyek": {
+            "title": "Choose the client and project",
+            "body": "Pick the Klien (1), then the Proyek (2) that belongs to that client. Set the Berlaku Sampai date (3): after it the quotation counts as expired.",
+            "tip": "A project that already has a product list fills in the quotation items automatically."
+          },
+          "item": {
+            "title": "Fill in the quotation items",
+            "body": "Write the item name (1), description, quantity and price (2). Click Tambah item (3) for the next row. The subtotal is calculated automatically."
+          },
+          "ppn": {
+            "title": "Turn on VAT when needed",
+            "body": "Tick Sertakan PPN 11% (1) when the client needs it, usually clients with an NPWP. The Ringkasan Nilai (2) shows the subtotal, tax and the total that will appear on the document.",
+            "tip": "Make sure the item prices do not include VAT yet; the app adds 11% on top of the subtotal."
+          },
+          "ketentuan": {
+            "title": "Set the payment terms",
+            "body": "Choose Pembayaran Penuh or Termin (1) if payment is in instalments, then check the Syarat & Ketentuan (2) printed on the document. Click Simpan; the quotation is saved as a Draf.",
+            "tip": "A draft can still be changed from the Aksi penawaran menu, option Ubah."
+          },
+          "kirim": {
+            "title": "Send the quotation",
+            "body": "Open the draft quotation (1) and click Kirim (2). The status changes to Terkirim. The three-dot menu (3), Aksi penawaran, holds Ubah and Pratinjau PDF so you can check how the document looks.",
+            "tip": "Use Pratinjau PDF before sending to be sure client data and prices are right."
+          },
+          "setujui": {
+            "title": "Record the client's decision",
+            "body": "When the client replies, open the quotation with status Terkirim (1). Click Setujui (3) if the client agrees, or Tolak (2) if not.",
+            "tip": "Record the decision as soon as the client replies, so the invoice can be created on time."
+          },
+          "disetujui": {
+            "title": "An approved quotation becomes an invoice",
+            "body": "An approved quotation shows Disetujui (1) and an invoice is created automatically with status Draft (see the Invoice guide). Click Lihat Invoice (2) to open it. If the total is above Rp 5.000.000, a Materai diperlukan marker (3) appears and the invoice will later ask for a stamp duty.",
+            "tip": "Approved by mistake? The Aksi penawaran menu has Buka Kembali (Batalkan Persetujuan), which voids the invoices that are not yet paid."
+          },
+          "revisi": {
+            "title": "Revise a rejected quotation",
+            "body": "A quotation with status Ditolak (1) can be revised: click Buat Revisi (2). The app creates a new draft copy and marks the old one as Direvisi. Change the price or scope, then send it again."
+          }
+        }
+      },
+      "invoice": {
+        "title": "Invoices: status, PDF and stamp duty",
+        "purpose": "Manage invoices from draft to paid: send, check status, print the PDF, and follow the stamp-duty reminder for invoices above Rp 5.000.000.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Invoice menu",
+            "body": "This page is titled Invoice. The cards at the top summarise Belum Tertagih (2), Jatuh Tempo and Lunas Bulan Ini. Invoices are created automatically when a quotation is approved; use Invoice Baru (1) when you bill without a quotation."
+          },
+          "status": {
+            "title": "Understand invoice statuses",
+            "body": "The status filter (1) shows five statuses: Draf (not sent), Terkirim (waiting for payment), Lunas (paid in full), Jatuh Tempo (past the due date and not paid) and Dibatalkan.",
+            "tip": "Lunas and Jatuh Tempo follow from payments and the due date, so you only need to record payments."
+          },
+          "dari-penawaran": {
+            "title": "An invoice from a quotation",
+            "body": "An invoice created from an approved quotation has status Draf (1) and shows its quotation number (2). Check the contents, then click Kirim (3) when ready to bill."
+          },
+          "materai": {
+            "title": "The stamp-duty reminder",
+            "body": "For invoices above Rp 5.000.000 the invoice page shows a Materai diperlukan warning (1): stick a Rp 10.000 stamp on the printed copy before sending it to the client. The line in the summary (2) reads Belum diterapkan.",
+            "tip": "Sticking the stamp is a manual step on paper. The app only reminds you and records that the stamp was applied."
+          },
+          "materai-tempel": {
+            "title": "Record that the stamp is applied",
+            "body": "After sticking the stamp, open Edit on the invoice, tick Materai sudah ditempel (1), then click Simpan (2). The warning on the invoice page goes away."
+          },
+          "pdf": {
+            "title": "Print or download the PDF",
+            "body": "In the Tindakan lainnya menu choose Pratinjau PDF (1). The document opens in a preview window with a Unduh button. Print from here when a stamp must be applied.",
+            "tip": "Print first, stick the stamp, and only then send it when the invoice is above Rp 5.000.000."
+          },
+          "kirim": {
+            "title": "Send the invoice",
+            "body": "Click Kirim on a Draf (draft) invoice. The status becomes Terkirim (1) and the Catat Pembayaran button (2) appears. Payments are recorded with the Payments and receivables guide.",
+            "tip": "A sent invoice cannot return to Draf; if something is wrong, edit or cancel it and create a new one."
+          }
+        }
+      },
+      "piutang-pembayaran": {
+        "title": "Payments and receivables",
+        "purpose": "Record client payments on invoices, keep an eye on overdue invoices, and read the Piutang Usaha page to see who has not paid.",
+        "steps": {
+          "tombol": {
+            "title": "Open the invoice being paid",
+            "body": "Open an invoice with status Terkirim. The Catat Pembayaran button (1) is at the top right, and the Pembayaran card (2) shows the amount Dibayar, the Sisa and the number of transactions."
+          },
+          "form": {
+            "title": "Enter the payment",
+            "body": "Enter the Jumlah (1), Tanggal Pembayaran and Metode (2) such as Transfer Bank. Type the transfer reference in the notes so it is easy to match against the bank statement, then click Catat Pembayaran (3).",
+            "tip": "Click \"Bayar lunas sisa tagihan\" to fill in the remaining amount automatically. Partial payments (instalments) are also allowed."
+          },
+          "hasil": {
+            "title": "See the result",
+            "body": "The payment appears in the Pembayaran section of the invoice and the balance goes down (1). Once payments cover the invoice, the status becomes Lunas and the accounting journal is created automatically."
+          },
+          "jatuh-tempo": {
+            "title": "Watch for overdue invoices",
+            "body": "On the Invoice page, the Jatuh Tempo card (1) adds up invoices past their due date, and the Jatuh Tempo badge (2) marks the row. Contact the client and record the payment as soon as the money arrives."
+          },
+          "piutang": {
+            "title": "Read the Piutang Usaha page",
+            "body": "Menu Akuntansi, Penjualan, Piutang Usaha summarises total receivables (1) and every invoice with its age, for example 1-30 Hari or > 90 Hari. Filter with Semua Umur (2) or Semua Klien. The PDF and Excel buttons (3) export the report.",
+            "tip": "This page is admin only and also lists invoices that are already Lunas as a register; the receivables total only counts what is still unpaid."
+          }
+        }
+      },
+      "shot-list": {
+        "title": "Shot List: planning the shots",
+        "purpose": "Build the list of shots for one production project: shot size, camera, movement and duration, then download it as a PDF for the crew.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Shot List menu",
+            "body": "All shot lists are here. Click Shot List Baru (1) to create one, or filter by project with Semua Proyek (2).",
+            "tip": "This menu is open to every role, including videographers."
+          },
+          "buat": {
+            "title": "Create a new shot list",
+            "body": "Enter the Nama (1), choose the Proyek (2) and add a short description if needed. Click Buat Shot List (3); the editor opens right away.",
+            "tip": "A shot list always belongs to one project. Create the project first if it does not exist."
+          },
+          "shot": {
+            "title": "Add shots",
+            "body": "Each row is one take. Fill in the Deskripsi (1) of the action or subject, the Tipe (2) such as LS or CU, camera and movement, and the duration in seconds. Click Tambah Shot (3) for the next row, then click Simpan.",
+            "tip": "Press Enter in a row to add the next shot straight away."
+          },
+          "urutan": {
+            "title": "Reorder and duplicate",
+            "body": "The up and down arrows change the order, the copy icon (1) duplicates a shot, and the bin icon deletes it. Numbering follows the row order."
+          },
+          "pdf": {
+            "title": "Save and download the PDF",
+            "body": "Click Simpan (2) to save all changes, then Unduh PDF (1) to get a document you can share with the crew. The text at the bottom tells you when there are unsaved changes.",
+            "tip": "Do not close the page before saving; new rows are only stored after you click Simpan."
+          }
+        }
+      },
+      "jadwal-syuting": {
+        "title": "Shooting Schedule: stripboard by day",
+        "purpose": "Arrange scenes into shoot days, import them from a shot list, and schedule automatically by location or day and night.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Jadwal Syuting menu",
+            "body": "The list of shooting schedules per project. Click Jadwal Baru (1), or filter by project (2)."
+          },
+          "buat": {
+            "title": "Create a new schedule",
+            "body": "Enter the Nama (1), choose the Proyek and pick the shot list to link (2) so its scenes can be imported. Set the Tanggal Mulai (3) and pages per day, then click Buat Jadwal.",
+            "tip": "Choose the project first; the available shot lists follow that project."
+          },
+          "hari": {
+            "title": "Add shoot days",
+            "body": "Click Tambah Hari Syuting (1) for every day of shooting. Each day appears as a HARI 1, HARI 2 card with its number of scenes and pages."
+          },
+          "impor-menu": {
+            "title": "Open the day menu",
+            "body": "On a day card, click the pencil icon (Aksi hari syuting) and choose Impor dari shot list (1). The same menu has Edit hari for date and location, and Hapus hari."
+          },
+          "impor-dialog": {
+            "title": "Import scenes from a shot list",
+            "body": "Select a shot list (1) and click Impor adegan (2). Every scene of the shot list is added as a strip on that day.",
+            "tip": "The import fills Day 1. For other days, move strips by dragging or use Jadwalkan Otomatis."
+          },
+          "strip": {
+            "title": "Arrange the strips of each day",
+            "body": "Each day holds scene strips (1) with number, INT/EXT, day/night, location and pages. Edit directly in the row, add scenes with the empty row at the bottom, and drag to reorder."
+          },
+          "otomatis": {
+            "title": "Schedule automatically",
+            "body": "Choose the Kelompokkan (1) criterion such as Lokasi, INT / EXT or Siang / Malam, then click Jadwalkan Otomatis (2). Scenes are packed into the days you already created up to the pages-per-day target. Download the PDF at the top right when final.",
+            "tip": "Add enough shoot days first; scenes only fill days that exist."
+          }
+        }
+      },
+      "call-sheet": {
+        "title": "Call Sheet: crew call times",
+        "purpose": "Create a call sheet for one shoot day: call times, location, crew and activities, then mark it ready and download the PDF.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Call Sheet menu",
+            "body": "The list of call sheets with their status. Click Call Sheet Baru (1), or search by production name, location or director (2)."
+          },
+          "buat": {
+            "title": "Create a new call sheet",
+            "body": "Choose the Jenis (1) such as Foto or Film, enter the Nama Produksi (2) and pick the Tanggal Shoot. Set Hari ke and Total Hari when shooting several days. Click Buat & Buka Editor (3).",
+            "tip": "The production name appears in the PDF title; use a name the crew recognises."
+          },
+          "info": {
+            "title": "Fill in production info and call times",
+            "body": "Enter the Sutradara (1) and Produser (2), then set the Waktu Panggilan such as Call Kru (3), Shot Pertama and Makan Siang. The format is free, for example \"06:30\".",
+            "tip": "Times are shown as typed in the PDF."
+          },
+          "lokasi": {
+            "title": "Fill in location and weather",
+            "body": "Enter the Nama Lokasi (1), address and parking notes. Once the location is saved, the Isi Otomatis buttons (2) can fill in weather, sunrise and sunset times, and the nearest hospital.",
+            "tip": "Pick the address from the suggestions so the auto-fill can locate the shoot."
+          },
+          "kru": {
+            "title": "Add activities and crew",
+            "body": "Tambah Aktivitas (1) for the day's schedule and Tambah Kru (2) for the full crew list with department, position and call time. There are also sections for Talent, Model, Wardrobe and HMU.",
+            "tip": "A new row is labelled BARU and is stored on the server when you fill it in and save."
+          },
+          "siap": {
+            "title": "Mark ready and download the PDF",
+            "body": "Click Simpan Call Sheet, then Tandai Siap (1) when the document is final. The three-dot menu holds Unduh PDF (2) to share with the crew, and Hapus.",
+            "tip": "The Draft status changes to ready once marked."
+          }
+        }
+      },
+      "production-hub": {
+        "title": "Pusat Produksi (Production Hub): share with the client",
+        "purpose": "One page per project that gathers call sheets, schedules, shot lists, decks and media, with a read-only guest link for the client.",
+        "steps": {
+          "buka": {
+            "title": "Open the Production Hub from the project",
+            "body": "On the project page, click Pusat Produksi (1). Only admins can open this page."
+          },
+          "isi": {
+            "title": "See what is inside",
+            "body": "The hub (Pusat Produksi) groups the project's Call Sheet (1), Jadwal Syuting (2), Shot List, Deck Kreatif and Kolaborasi Media. The button on each card (Call Sheet Baru, Jadwal Baru and so on) creates a new document for this project."
+          },
+          "tautan": {
+            "title": "Create the guest access link",
+            "body": "Click Buat Tautan on the Tautan Akses Tamu card (1). A read-only link appears and can be copied with Salin. Ganti Tautan creates a new link (the old one stops working) and Cabut Akses closes access.",
+            "tip": "Anyone who holds the link can view it. Do not post it publicly, and revoke it (Cabut Akses) when the project is finished."
+          },
+          "tamu": {
+            "title": "What the client sees",
+            "body": "The client opens the link without logging in and sees a Read-only page with this project's call sheets, schedules, shot lists, decks and media spaces, without any financial data."
+          }
+        }
+      },
+      "deck-presentasi": {
+        "title": "Presentation Decks: create, edit and share",
+        "purpose": "Build a slide deck for a pitch or report, fill it with text, share it by link or by inviting collaborators, and export it as a PDF.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Deck Presentasi menu",
+            "body": "Each deck is a card with its status and slide count. Click Deck Baru (1) to create one, or Impor (2) to bring in an existing presentation.",
+            "tip": "This menu is open to every role."
+          },
+          "buat": {
+            "title": "Create a new deck",
+            "body": "Enter the Judul (1), a short description, and choose the Ukuran Kanvas (2) such as 16:9 HD. Click Buat Deck (3); the editor opens with one blank slide."
+          },
+          "editor": {
+            "title": "Get to know the editor",
+            "body": "The toolbar at the top (1) holds Text, Shapes, Line, Image, Table, Chart and Icon. The slide list is on the left with the Slide Baru button (2), and the Properti panel (3) on the right sets size, colour and position of the selected element.",
+            "tip": "Changes are saved automatically; the Tersimpan indicator in the top bar shows the state."
+          },
+          "teks-menu": {
+            "title": "Insert text",
+            "body": "Click Text in the toolbar, then pick a style: Title, Subtitle, Body text or Caption (1). A text element appears on the slide."
+          },
+          "teks": {
+            "title": "Change the text",
+            "body": "Double-click the text on the slide, select everything with Ctrl+A, then type the new content. Click outside the text to leave edit mode.",
+            "tip": "A selected element can be moved by dragging and resized in the Properti panel."
+          },
+          "slide-baru": {
+            "title": "Add a slide from a template",
+            "body": "Click Slide Baru (2) for a blank slide, or the arrow next to it (1) to choose a template such as Slide Judul, Mood Board, Storyboard and Daftar Shot."
+          },
+          "bagikan-tombol": {
+            "title": "Share or export",
+            "body": "The Bagikan button (1) opens the access settings, and Ekspor (2) downloads the deck. The Presentasi button starts a full-screen slideshow."
+          },
+          "bagikan": {
+            "title": "Set the public link and collaborators",
+            "body": "In the Bagikan deck dialog (1), turn on Tautan publik so anyone with the link can view, then choose the access level. For collaborators, enter an e-mail (2), choose a role such as Editor, and click Undang (3).",
+            "tip": "The public link can be switched off at any time. A published client deck also appears in the client portal."
+          },
+          "ekspor": {
+            "title": "Export as PDF",
+            "body": "Click Ekspor and choose the PDF quality (1): Draf (fast), Standar or Tinggi (slow). The last option exports the current slide as a PNG.",
+            "tip": "Use Draf for internal proofing and Tinggi only for the final version."
+          }
+        }
+      },
+      "media-downloader": {
+        "title": "Media Downloader: download from a link",
+        "purpose": "Download a video or image from YouTube, Instagram, TikTok, Twitter, Facebook or Vimeo just by pasting its link.",
+        "steps": {
+          "tautan": {
+            "title": "Paste the link",
+            "body": "Open the Media Downloader menu. Paste the link of the video or image into the field (1), or click Tempel (2) to take it from the clipboard. Six platforms are supported.",
+            "tip": "Use it only for content you are entitled to download, for example client material or permitted references."
+          },
+          "kualitas": {
+            "title": "Choose the quality",
+            "body": "Choose the Kualitas (1), for example Kualitas Terbaik. Turn on Audio saja (2) to extract the sound as an MP3."
+          },
+          "unduh": {
+            "title": "Download and check the history",
+            "body": "Click Unduh Sekarang (1). The result appears in Riwayat sesi (2) with its status, and the cards above count this session's downloads. The history is cleared when the page is closed.",
+            "tip": "A failed download can be retried from the history. If it keeps failing, the link may be private."
+          }
+        }
+      },
+      "pengeluaran": {
+        "title": "Expenses: record costs and their tax",
+        "purpose": "Record business expenses with category, vendor, VAT and withholding tax, and link them to a project; the journal is created automatically.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Pengeluaran menu",
+            "body": "This list shows every expense with a summary above it. Click Pengeluaran Baru (1) to record one, or Kategori (2) to manage categories. Use the search (3) and filters to find old records.",
+            "tip": "This menu is admin only."
+          },
+          "detail": {
+            "title": "Fill in the expense details",
+            "body": "Choose the Kategori Pengeluaran (1), enter the date and the Jumlah Kotor (2) before tax. Choose the Bayar dari (3) balance: Kas or Bank. Write a clear Deskripsi so it is easy to find.",
+            "tip": "The category decides the expense account in the journal. Pick the best fit, for example Sewa Properti & Peralatan for rented shooting gear."
+          },
+          "vendor": {
+            "title": "Fill in the payee",
+            "body": "Enter the Nama Vendor (1) that was paid. The vendor NPWP and address (2) are optional but useful for tax documents."
+          },
+          "pajak": {
+            "title": "Set VAT and income tax when applicable",
+            "body": "Open the PPN & PPh section. Turn on Termasuk PPN (1) if the vendor charges VAT, and choose the PPh (2) if tax is withheld. The summary on the right (3) shows the total that will be recorded.",
+            "tip": "Leave it off when the vendor charges no tax."
+          },
+          "proyek": {
+            "title": "Link to a project and client",
+            "body": "Choose the Proyek Terkait (2) so the cost enters the project margin; the client is filled in automatically. Turn on Dapat Ditagihkan ke Klien (1) when this cost will be passed on to the client.",
+            "tip": "Dapat Ditagihkan moves the cost to other receivables instead of expenses. Turn it on only if it will really be billed."
+          },
+          "tersimpan": {
+            "title": "Save the expense",
+            "body": "Click Catat Pengeluaran. The expense is recorded as Lunas (paid) straight away and appears in the list (1) with its EXP number, status and the GL tick (2), which means its journal is already in the general ledger.",
+            "tip": "There is no draft status: as soon as it is recorded, the Cash or Bank balance you chose decreases in the ledger. Recorded it wrongly? Edit the amount (the journal is re-posted) or delete it from the detail page (the journal is reversed)."
+          },
+          "jurnal": {
+            "title": "View the detail and its journal",
+            "body": "Click the expense row to open it. Lihat jurnal (1) opens the related journal, Rincian Pajak (2) shows VAT and the total, and Edit (3) changes the data."
+          },
+          "kategori": {
+            "title": "Manage categories",
+            "body": "The Kategori page holds each category's PSAK account code, expense class and tax rules. Use Tambah Kategori to create a new one.",
+            "tip": "Change a category only if you understand the effect on accounts; a category already used in journals should not be deleted."
+          }
+        }
+      },
+      "akuntansi-dasar": {
+        "title": "Basic accounting: journals and reports",
+        "purpose": "How to view journals, record a manual journal, read cash and bank balances, and open the profit and loss statement, balance sheet and chart of accounts.",
+        "steps": {
+          "jurnal": {
+            "title": "View the Jurnal",
+            "body": "Menu Akuntansi, Jurnal holds every journal, automatic and manual. The cards at the top (1) summarise the number of entries and total debit. Filter by Tipe (2), date or status, and click Jurnal Baru (3) to record one yourself.",
+            "tip": "Invoices, payments, expenses and salaries create their own journals. You do not need to enter them again."
+          },
+          "jurnal-baru": {
+            "title": "Start a manual journal",
+            "body": "Choose the Tipe Transaksi (1), enter a Deskripsi (2) of at least 10 characters, and a Nomor Dokumen (3) if there is a voucher. The entry date decides the fiscal period.",
+            "tip": "Use manual journals for things that have no page of their own, such as an owner's capital deposit or an adjustment."
+          },
+          "jurnal-baris": {
+            "title": "Fill in the journal lines",
+            "body": "Each line picks an account, then a debit or credit (1). Total debit must equal total credit; the Saldo Jurnal card (2) turns to Seimbang when it is right. Click Simpan Draft to save, or Simpan & Posting (3) to post it to the ledger.",
+            "tip": "A posted journal is not edited; corrections are made with a reversing or adjusting entry."
+          },
+          "kas-bank": {
+            "title": "Read Saldo Kas & Bank",
+            "body": "Choose the period (1) to see the opening balance, inflow, outflow and closing balance of each cash and bank account. Total Kas & Bank (2) is computed from posted journals. Click Hitung Ulang (3) if the figures look behind."
+          },
+          "laba-rugi": {
+            "title": "Open the Laporan Laba Rugi",
+            "body": "Choose the date range (1) to see revenue minus expenses down to net profit. The Ekspor button (2) downloads the report.",
+            "tip": "The other financial reports are in menu Akuntansi, Laporan: Buku Besar, Arus Kas, Neraca and Neraca Saldo."
+          },
+          "neraca": {
+            "title": "Open the Neraca",
+            "body": "The balance sheet shows assets, liabilities and equity at a given date. The line at the top (1) tells you whether the balance sheet balances. If it does not, some journal needs checking."
+          },
+          "bagan-akun": {
+            "title": "See the Bagan Akun",
+            "body": "The chart of accounts holds all standard Indonesian PSAK accounts. Search for an account (1) by code or name, and add a new one with Akun Baru (2).",
+            "tip": "Accounts marked Sistem and Kontrol are used automatically by the app. Do not change them without a reason."
+          }
+        }
+      },
+      "aset-penyusutan": {
+        "title": "Assets and depreciation",
+        "purpose": "Record production equipment as fixed assets, set the useful life, and run the monthly depreciation according to PSAK 16.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Aset menu",
+            "body": "Manajemen Aset lists all equipment: cameras, lenses, lights and more, with their status. Click Aset Baru (1) to add one, or search by code, name, model or serial (2)."
+          },
+          "identitas": {
+            "title": "Fill in the asset identity",
+            "body": "Enter the Nama Aset (1) and choose the Kategori (2). The asset code is generated automatically. Add manufacturer, model and serial number for warranty claims."
+          },
+          "akuisisi": {
+            "title": "Fill in the purchase data",
+            "body": "Enter the Tanggal Pembelian and Harga Pembelian (1), then choose the Sumber Dana (2): Cash, Bank Transfer or Credit. Supplier and invoice number are optional.",
+            "tip": "Buying an asset creates a journal automatically from the chosen source of funds."
+          },
+          "penyusutan-form": {
+            "title": "Set the depreciation",
+            "body": "Choose the Kelompok Penyusutan (1); the useful life (2) is filled in by group and can be adjusted. Enter the Nilai Sisa (3) if any. Click Simpan.",
+            "tip": "Depreciation uses the straight-line method according to PSAK 16."
+          },
+          "detail": {
+            "title": "View the asset page",
+            "body": "After saving, the asset page shows the acquisition value, book value and the Skema Penyusutan (1) with monthly depreciation. The Proses Penyusutan button (2) opens the depreciation page.",
+            "tip": "Assets can also be borrowed, reserved and have maintenance logged from this page."
+          },
+          "proses": {
+            "title": "Run monthly depreciation",
+            "body": "In menu Akuntansi, Penyusutan Aset, set the period and click Proses Depresiasi (1). Total Akumulasi (2) and the book value are updated, and the depreciation journal is created automatically.",
+            "tip": "Run it once a month, after all assets bought that month are recorded."
+          }
+        }
+      },
+      "vendor-pembelian": {
+        "title": "Vendors and purchases",
+        "purpose": "Record vendors with their tax number and bank account, then record purchases from them as accounts payable or direct payment.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Vendor menu",
+            "body": "The vendor list with category and PKP status filters. Click Vendor Baru (1) to add one, or search by name, code, contact or city (2)."
+          },
+          "identitas": {
+            "title": "Fill in vendor identity and contact",
+            "body": "Enter the Nama Vendor (1), choose the Kategori Vendor such as Supplier or Penyedia Layanan, then fill in the Narahubung (2) and Email (3)."
+          },
+          "pajak": {
+            "title": "Fill in tax data",
+            "body": "The Pajak & NPWP section (1) holds the NPWP, the Status PKP (Non-PKP by default) and the Alamat Pajak. Fill it in when the vendor issues tax invoices, so input VAT can be recorded correctly.",
+            "tip": "PKP status means the vendor is a taxable entrepreneur that charges VAT."
+          },
+          "bank": {
+            "title": "Fill in bank account and terms",
+            "body": "The Perbankan & Pembayaran section (1) holds Nama Bank, Nomor Rekening, Atas Nama and the Termin Pembayaran such as NET 14 or NET 30. Click Simpan when complete."
+          },
+          "pembelian": {
+            "title": "Record a purchase",
+            "body": "Menu Akuntansi, Pembelian, then Pembelian Baru. Choose the Kontak (Vendor) (1) and the Pembayaran method (2): Hutang Usaha (kredit) if it is unpaid, or Kas/Bank if paid at once. Fill in the Deskripsi (3), account and price, then click Simpan Pembelian (4).",
+            "tip": "The transaction number (PUR) is filled in automatically."
+          },
+          "hutang": {
+            "title": "Keep track of accounts payable",
+            "body": "Unpaid purchases appear in Hutang Usaha with total obligations per vendor. PDF (1) and Excel export the report.",
+            "tip": "Payables are computed from purchase journals so they always match the ledger."
+          }
+        }
+      },
+      "gaji": {
+        "title": "Employee salaries",
+        "purpose": "Record employee data and monthly salary payments; paid salaries automatically go into the journal.",
+        "steps": {
+          "karyawan": {
+            "title": "Open the Gaji menu",
+            "body": "The Karyawan tab holds the staff list and summary cards for this month's payroll. Click Tambah Karyawan (1) for new data, or Pembayaran Baru (2) to record a salary.",
+            "tip": "The Gaji menu is in the Akuntansi group and is admin only."
+          },
+          "karyawan-baru": {
+            "title": "Add an employee",
+            "body": "Enter the Nama Lengkap (1), Posisi, e-mail and phone. The Gaji Pokok (2) becomes the default salary for payments. Also fill in the bank name and account number, then click Buat Karyawan (3)."
+          },
+          "pembayaran": {
+            "title": "Create a salary payment",
+            "body": "Choose the Karyawan (1), month and year; Gaji Pokok is filled in automatically. Enter Tunjangan (2) and Potongan if any. The summary (3) shows the net pay. Click Buat Pembayaran.",
+            "tip": "Leave Tanggal Pembayaran empty to save it as a Draft. Entering a date marks it Dibayar straight away."
+          },
+          "draft": {
+            "title": "Track drafts and payments",
+            "body": "The Pembayaran tab lists every payment with its status: Draft or Dibayar. The Draft Belum Dibayar card at the top reminds you of salaries still waiting.",
+            "tip": "An employee has only one payment per month."
+          }
+        }
+      },
+      "penjualan": {
+        "title": "Sales (manual sales journal)",
+        "purpose": "The sales report lists all sales as journals. Use it to see receivables, mark them paid, or record sales that have no invoice.",
+        "steps": {
+          "laporan": {
+            "title": "Open the Laporan Penjualan",
+            "body": "Menu Akuntansi, Penjualan, Laporan Penjualan. The Belum Lunas card (1) shows current receivables. Sales from invoices appear automatically; click + Penjualan (2) to add a manual sale.",
+            "tip": "For sales to clients, just create an invoice (see the Invoice guide). A manual sale is only for cases without an invoice."
+          },
+          "lunas": {
+            "title": "Mark a sale as paid",
+            "body": "Click Tandai Lunas on its row. Choose the receiving account in Terima ke (1), for example Kas or Bank, then click Tandai Lunas (2). The settlement journal is created and the ledger, receivables, and cash and bank are updated.",
+            "tip": "For invoices, it is better to record the payment on the invoice so its payment history stays complete."
+          },
+          "baru": {
+            "title": "Record a new sale",
+            "body": "Choose the Pelanggan (1) and the Pembayaran method (2): Piutang Usaha (kredit) if unpaid, or Kas/Bank if paid at once. Fill in the Nama Item (3), revenue account, quantity and price, then click Simpan Penjualan (4).",
+            "tip": "The sale number (SALE) is filled in automatically."
+          }
+        }
+      },
+      "dashboard-navigasi": {
+        "title": "Dashboard and navigation",
+        "purpose": "Get to know the Dashboard, the side menu, the Ctrl+K quick search, and the Indonesian and English language switch.",
+        "steps": {
+          "dashboard": {
+            "title": "Read the Dashboard",
+            "body": "The Dashboard (admin only) summarises the business: Belum Tertagih (1) shows the total of unpaid invoices, the Status Invoice chart (3) splits invoices by status, and the quick buttons are Invoice Baru (2) and Penawaran Baru.",
+            "tip": "Videographers are taken straight to Kolaborasi Media because they have no Dashboard access."
+          },
+          "menu": {
+            "title": "Use the side menu",
+            "body": "The menu is grouped: Workspace (Klien (1), Proyek, Quotation, Invoice), Marketing, Produksi (Shot List (2)), Akuntansi, and a last group holding Panduan (3) and Pengaturan. Menu items that do not match your role are hidden."
+          },
+          "palet": {
+            "title": "Search quickly with Ctrl+K",
+            "body": "Press Ctrl+K (or Cmd+K on a Mac) on any page, then type a page name, for example \"invoice\". Choose the result with the arrows and Enter. Esc closes the search.",
+            "tip": "The Search field in the top bar opens the same search."
+          },
+          "bahasa": {
+            "title": "Switch language",
+            "body": "The EN and ID buttons at the top right (1) switch the language of the whole app instantly. Your choice is remembered for the next visit.",
+            "tip": "Documents for clients stay in Indonesian."
+          }
+        }
+      },
+      "pengguna-peran": {
+        "title": "Users and roles",
+        "purpose": "Add team accounts, choose their role, and switch access on or off. Admin only.",
+        "steps": {
+          "daftar": {
+            "title": "Open the Pengguna menu",
+            "body": "The list of team accounts with their role and status. Click Pengguna Baru (1) to add one, or filter by role (2).",
+            "tip": "This menu only appears for Admin and Super Admin."
+          },
+          "peran": {
+            "title": "Fill in identity and choose a role",
+            "body": "Enter the Nama Lengkap and Email (2), which becomes the login name. Choose the Peran (1): Super Admin (full access), Admin (invoices, projects, clients, accounting, media) or Videografer (media and production only).",
+            "tip": "Give the smallest role that is needed. A Videografer cannot open financial data."
+          },
+          "sandi": {
+            "title": "Set the initial password",
+            "body": "Enter a strong initial Kata Sandi (1) then click Simpan (2). Give the password to the person through a safe channel; they can change it themselves in Pengaturan, Keamanan.",
+            "tip": "The Aktif status can be switched off at any time to close access without deleting the account."
+          },
+          "hasil": {
+            "title": "The new account appears in the list",
+            "body": "The new account appears (1) with its role. The Aktif switch on its row opens or closes login access, and the cards on top count users by role."
+          }
+        }
+      }
+    }
+  },
+  "productionHub": {
+    "title": "Production Hub",
+    "totalItems": "{{count}} items",
+    "shareTitle": "Guest Access Link",
+    "shareDesc": "Share a read-only link with your client. They can view decks, shot lists, schedules, call sheets, and media spaces — nothing else.",
+    "copied": "Copied",
+    "copy": "Copy",
+    "rotate": "Rotate",
+    "revoke": "Revoke",
+    "generateLink": "Generate Link",
+    "callSheets": "Call Sheets",
+    "callSheetsDesc": "Day-of crew briefings with call times, locations, and shot lists.",
+    "newCallSheet": "New Call Sheet",
+    "noCallSheets": "No call sheets yet",
+    "noCallSheetsDesc": "Generate from a schedule or create a standalone call sheet.",
+    "callSheetN": "Call Sheet #{{n}}",
+    "crew": "{{n}} crew",
+    "cast": "{{n}} cast",
+    "schedules": "Shooting Schedules",
+    "schedulesDesc": "Day-by-day shoot schedule and strip board for the production team.",
+    "newSchedule": "New Schedule",
+    "noSchedules": "No schedules yet",
+    "noSchedulesDesc": "Build the day-by-day plan and generate call sheets from it.",
+    "days": "{{n}} days",
+    "shotLists": "Shot Lists",
+    "shotListsDesc": "Scene-by-scene shot breakdown for the photography team.",
+    "newShotList": "New Shot List",
+    "noShotLists": "No shot lists yet",
+    "noShotListsDesc": "Plan every scene and setup before shoot day.",
+    "shots": "{{n}} shots",
+    "decks": "Creative Decks",
+    "decksDesc": "Mood boards, concepts, and creative briefs for client approval.",
+    "newDeck": "New Deck",
+    "noDecks": "No decks yet",
+    "noDecksDesc": "Start with a mood board or concept deck.",
+    "mediaProjects": "Media Collaboration",
+    "mediaProjectsDesc": "Shared spaces for uploading selects, client review, and asset approval.",
+    "newMediaProject": "New Media Space",
+    "noMediaProjects": "No media spaces yet",
+    "noMediaProjectsDesc": "Create a shared space to deliver selects and get client approval.",
+    "assets": "{{n}} assets",
+    "shared": "Shared"
+  },
+  "expenseStatus": {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "paid": "Paid",
+    "cancelled": "Cancelled"
+  },
+  "expensePayment": {
+    "unpaid": "Unpaid",
+    "partiallyPaid": "Partially Paid",
+    "paid": "Paid"
   }
 }

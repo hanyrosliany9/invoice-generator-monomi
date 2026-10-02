@@ -36,6 +36,7 @@ import {
   getSales, markSalePaid, exportSalesPDF, exportSalesExcel, type SaleRow,
 } from '@/services/accounting';
 import { invoiceService } from '@/services/invoices';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const toNumber = (v: unknown): number => {
   if (v === null || v === undefined) return 0;
@@ -159,7 +160,9 @@ export default function SalesReportPageV2() {
             { label: t('accounting.salesReport.title', 'Sales Report') },
           ]}
           actions={
-            <div className="flex flex-wrap items-center gap-2">
+            <>
+              <GuideHelpLink slug="penjualan" anchor="laporan" />
+              <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <Download className="h-4 w-4" />
                 PDF
@@ -190,6 +193,7 @@ export default function SalesReportPageV2() {
                 {t('accounting.salesReport.newSale', '+ Penjualan')}
               </Button>
             </div>
+            </>
           }
         />
 

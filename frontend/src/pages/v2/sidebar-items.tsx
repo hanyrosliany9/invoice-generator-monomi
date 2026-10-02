@@ -30,6 +30,7 @@ import {
   UserCog,
   Settings,
   Layers,
+  LifeBuoy,
 } from 'lucide-react';
 import type { SidebarSection } from '@/components/monomi/Sidebar';
 
@@ -156,6 +157,8 @@ export const v2SidebarSections: SidebarSection[] = [
       { label: 'nav.reports', icon: i(BarChart3), href: '/reports', requiresAdmin: true },
       // Milestones — visible to all roles
       { label: 'nav.milestones', icon: i(Trophy), href: '/milestones' },
+      // In-app step-by-step guides — all roles.
+      { label: 'nav.guides', icon: i(LifeBuoy), href: '/panduan' },
       // User management is available to ADMIN + SUPER_ADMIN (they're equivalent).
       { label: 'nav.users', icon: i(UserCog), href: '/users', requiresAdmin: true },
       // Settings is for ALL roles: the page self-filters so non-super-admins

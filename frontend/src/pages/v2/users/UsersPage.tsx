@@ -49,6 +49,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { userService } from '@/services/users';
 import type { User, UserRole } from '@/types/user';
 import { getInitials } from '@/utils/initials';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 
 // Role badge styling — kept inline so we can think about it as a
@@ -317,13 +318,16 @@ export default function UsersPageV2() {
             'Kelola akun, peran, dan akses tim ke sistem.',
           )}
           actions={
-            <Button
+            <>
+              <GuideHelpLink slug="pengguna-peran" anchor="daftar" />
+              <Button
               onClick={() => navigate('/users/new')}
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
             >
               <Plus className="h-4 w-4" />
               {t('users.create.title', 'Pengguna Baru')}
             </Button>
+            </>
           }
         />
 

@@ -29,6 +29,7 @@ import {
   createSale, getChartOfAccounts, getNextSaleNumber,
   type SalePaymentMethod,
 } from '@/services/accounting';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 interface LineRow {
   itemName: string;
@@ -202,7 +203,9 @@ export default function SalesCreatePageV2() {
             { label: t('accounting.salesCreate.crumb', 'New Sale') },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="penjualan" anchor="baru" />
+              <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => navigate('/accounting/sales')} disabled={isSubmitting}>
                 {t('accounting.salesCreate.cancel', 'Cancel')}
               </Button>
@@ -212,6 +215,7 @@ export default function SalesCreatePageV2() {
                   : t('accounting.salesCreate.save', 'Save Sale')}
               </Button>
             </div>
+            </>
           }
         />
 

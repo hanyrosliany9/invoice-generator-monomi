@@ -37,6 +37,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { salaryService, type SalaryPayment, type Staff } from '@/services/salaries';
 import { RecordSalaryPaymentModal } from './RecordSalaryPaymentModal';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -443,7 +444,9 @@ export default function SalariesPage() {
         title={t('salaries.pageTitle', 'Staff Salaries')}
         description={t('salaries.pageSubtitle', 'Manage staff payroll and monthly salary payments.')}
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="gaji" anchor="karyawan" />
+            <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -457,6 +460,7 @@ export default function SalariesPage() {
               {t('salaries.newStaff', 'Add Staff')}
             </Button>
           </div>
+          </>
         }
       />
 

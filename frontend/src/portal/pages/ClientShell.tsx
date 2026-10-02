@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, ChevronDown, Film, Grid3x3, LayoutTemplate, LogOut } from 'lucide-react';
+import { BarChart3, ChevronDown, Film, Grid3x3, LayoutTemplate, LifeBuoy, LogOut } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/monomi/LanguageSwitcher';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 import { cn } from '@/lib/utils';
@@ -60,6 +60,14 @@ export default function ClientShell() {
           </Link>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            <Link
+              to="/bantuan"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs text-text-tertiary transition-colors hover:bg-bg-sunken hover:text-text-primary"
+              aria-label={t('guides.ui.helpClient', 'Bantuan')}
+            >
+              <LifeBuoy className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t('guides.ui.helpClient', 'Bantuan')}</span>
+            </Link>
             <button
               type="button"
               onClick={() => void logout()}

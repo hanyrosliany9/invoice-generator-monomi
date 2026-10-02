@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Save, AlertTriangle, Layers, Eye, Copy, Loader2, ExternalLink,
@@ -340,6 +341,7 @@ export default function ReportBuilderPageV2() {
         actions={
           isEditMode && report ? (
             <div className="flex flex-wrap items-center gap-2">
+              <GuideHelpLink slug="laporan-bulanan" anchor="bagian-data" />
               <Button asChild variant="outline" size="sm">
                 <Link to={`/reports/${report.id}/preview`} onClick={confirmLeave}>
                   <Eye className="h-4 w-4" />
@@ -352,7 +354,9 @@ export default function ReportBuilderPageV2() {
                 </Link>
               </Button>
             </div>
-          ) : undefined
+          ) : (
+            <GuideHelpLink slug="laporan-bulanan" anchor="identitas" />
+          )
         }
       />
 

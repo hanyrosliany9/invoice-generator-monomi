@@ -35,6 +35,7 @@ import { useAuthStore } from '@/store/auth';
 import { invoiceService, type Invoice } from '@/services/invoices';
 import { InvoiceStatus } from '@/types/invoice';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 // Re-aliases for the bulk-toolbar dropdown (same component, different context).
 const BulkMenu = DropdownMenu;
@@ -330,10 +331,13 @@ export default function InvoicesPageV2() {
           title={t('invoices.title', 'Invoices')}
           description={t('invoices.subtitle', 'Manage client invoices — send, mark as paid, and track overdue ones.')}
           actions={
-            <Button onClick={() => navigate('/invoices/new')} size="sm">
+            <>
+              <GuideHelpLink slug="invoice" anchor="daftar" />
+              <Button onClick={() => navigate('/invoices/new')} size="sm">
               <Plus className="h-4 w-4" />
               {t('invoices.new', 'New Invoice')}
             </Button>
+            </>
           }
         />
 

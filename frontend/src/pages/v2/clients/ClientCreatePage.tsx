@@ -26,6 +26,7 @@ import { useAuthStore } from '@/store/auth';
 import { clientService, type CreateClientRequest } from '@/services/clients';
 
 import { ClientForm, type ClientFormValues } from './ClientForm';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 // Mirrors DashboardPage / ClientsPage so the chrome reads identically
 // across the v2 surface; "Clients" stays highlighted while creating.
@@ -111,7 +112,9 @@ export default function ClientCreatePageV2() {
             { label: t('clients.create.title', 'Klien Baru') },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="klien-baru" anchor="identitas" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -138,6 +141,7 @@ export default function ClientCreatePageV2() {
                 )}
               </Button>
             </div>
+            </>
           }
         />
 

@@ -54,6 +54,7 @@ import { invoiceService, type Invoice } from '@/services/invoices';
 import { quotationService, type Quotation } from '@/services/quotations';
 import { PortalContactsCard } from './PortalContactsCard';
 import { getInitials } from '@/utils/initials';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  SectionHeader — hoisted to module scope to prevent remount on     */
@@ -521,7 +522,9 @@ export default function ClientDetailPageV2() {
               : t('clients.detail.headerSubNoCompany', 'Profil bisnis & riwayat transaksi')
           }
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="klien-baru" anchor="profil" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -575,6 +578,7 @@ export default function ClientDetailPageV2() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            </>
           }
         />
 

@@ -43,6 +43,7 @@ import { useAuthStore } from '@/store/auth';
 import { decksApi } from '@/services/decks';
 import type { Deck, DeckStatus, CreateDeckDto } from '@/types/deck';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — same nav set as the rest of v2 so active states read     */
@@ -249,7 +250,9 @@ export default function DecksPageV2() {
           title={t('decks.title', 'Presentation Decks')}
           description={t('decks.description', 'Slide collections for pitches, moodboards, and storyboards. Open to edit each slide\'s content.')}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="deck-presentasi" anchor="daftar" />
+              <div className="flex items-center gap-2">
               <input
                 ref={importInputRef}
                 type="file"
@@ -277,6 +280,7 @@ export default function DecksPageV2() {
                 {t('decks.newDeck', 'New Deck')}
               </Button>
             </div>
+            </>
           }
         />
 

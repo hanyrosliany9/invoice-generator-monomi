@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/store/auth';
 import { salaryService, type CreateStaffData } from '@/services/salaries';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 export default function StaffFormPage() {
   const { t } = useTranslation();
@@ -108,10 +109,13 @@ export default function StaffFormPage() {
           title={isEdit ? t('salaries.staff.editTitle', 'Edit Staff Member') : t('salaries.staff.createTitle', 'Add Staff Member')}
           description={t('salaries.staff.formDesc', 'Manage staff information and payroll details.')}
           actions={
-            <Button variant="outline" size="sm" onClick={() => navigate('/salaries')}>
+            <>
+              <GuideHelpLink slug="gaji" anchor="karyawan-baru" />
+              <Button variant="outline" size="sm" onClick={() => navigate('/salaries')}>
               <ArrowLeft className="h-4 w-4" />
               {t('salaries.back', 'Back')}
             </Button>
+            </>
           }
         />
 

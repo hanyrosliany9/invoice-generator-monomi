@@ -35,6 +35,7 @@ import {
   type VideoQuality,
 } from '@/services/mediaDownloaderService';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation — same vocabulary as every other v2 list page, plus a   */
@@ -334,12 +335,15 @@ export default function MediaDownloaderPageV2() {
         title={t('mediaDownloader.title', 'Pengunduh Media')}
         description={t('mediaDownloader.description', 'Tempel tautan dari YouTube, Instagram, TikTok, Twitter, Facebook, atau Vimeo. Kami mengurus formatnya — Anda terima file.')}
         actions={
-          <Badge
+          <>
+            <GuideHelpLink slug="media-downloader" anchor="tautan" />
+            <Badge
             variant="outline"
             className="border-border-subtle text-text-tertiary px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider"
           >
             {t('mediaDownloader.platformsSupported', '6 platform didukung')}
           </Badge>
+          </>
         }
       />
 

@@ -42,6 +42,7 @@ import { useAuthStore } from '@/store/auth';
 import { schedulesApi, type Schedule } from '@/services/schedules';
 import { shotListsApi } from '@/services/shotLists';
 import { projectService } from '@/services/projects';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Create form                                                        */
@@ -165,10 +166,13 @@ export default function SchedulesPageV2() {
           title={t('schedules.title', 'Shooting Schedules')}
           description={t('schedules.description', 'Stripboard schedules for film production. Open a schedule to organize scenes across shoot days.')}
           actions={
-            <Button onClick={() => setCreateOpen(true)} size="sm">
+            <>
+              <GuideHelpLink slug="jadwal-syuting" anchor="daftar" />
+              <Button onClick={() => setCreateOpen(true)} size="sm">
               <Plus className="h-4 w-4" />
               {t('schedules.newSchedule', 'New Schedule')}
             </Button>
+            </>
           }
         />
 
@@ -487,7 +491,7 @@ function CreateScheduleDialog({
               aria-invalid={!!errors.name}
             />
             {errors.name?.message && (
-              <p className="text-xs text-danger">{errors.name.message}</p>
+              <p className="text-xs text-danger">{t('schedules.nameMin', 'Name must be at least 2 characters')}</p>
             )}
           </div>
 
@@ -512,7 +516,7 @@ function CreateScheduleDialog({
               )}
             />
             {errors.projectId?.message && (
-              <p className="text-xs text-danger">{errors.projectId.message}</p>
+              <p className="text-xs text-danger">{t('schedules.projectRequired', 'A project must be selected')}</p>
             )}
           </div>
 

@@ -39,6 +39,7 @@ import {
   exportDepreciationExcel,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
@@ -194,7 +195,9 @@ export default function DepreciationPageV2() {
         title={t('accounting.depreciation.title')}
         description={t('accounting.depreciation.description')}
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="aset-penyusutan" anchor="proses" />
+            <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleExportPDF}>
               <Download className="h-4 w-4" />
               PDF
@@ -217,6 +220,7 @@ export default function DepreciationPageV2() {
               {t('accounting.depreciation.process')}
             </Button>
           </div>
+          </>
         }
       />
 

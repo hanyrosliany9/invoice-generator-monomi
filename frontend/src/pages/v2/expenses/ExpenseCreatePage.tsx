@@ -24,6 +24,7 @@ import {
   type ExpenseFormValues,
 } from './ExpenseForm';
 import { buildCreateExpensePayload } from './expense-payload';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const FORM_ID = 'expense-create-form';
 
@@ -68,15 +69,12 @@ export default function ExpenseCreatePageV2() {
   // newly created expense so the user can still jump to it.
   const handleCreated = (
     created: { id: string; expenseNumber?: string },
-    submitted: boolean,
   ) => {
     queryClient.invalidateQueries({ queryKey: ['expenses'] });
     invalidateAccountingQueries(queryClient); // new expense posts a GL journal
     const viewHref = `/expenses/${created.id}?from=${encodeURIComponent(backTo)}`;
     toast.success(
-      submitted
-        ? t('expenseCreate.successSubmitted', 'Expense {{n}} created and submitted.', { n: created.expenseNumber || '' })
-        : t('expenseCreate.success', 'Expense {{n}} created successfully.', { n: created.expenseNumber || '' }),
+      t('expenseCreate.success', 'Expense {{n}} created successfully.', { n: created.expenseNumber || '' }),
       {
         action: {
           label: t('expenseCreate.viewExpense', 'View'),
@@ -90,35 +88,7 @@ export default function ExpenseCreatePageV2() {
   const createMutation = useMutation({
     mutationFn: (data: CreateExpenseFormData) => expenseService.createExpense(data),
     onMutate: () => setIsSubmitting(true),
-    onSuccess: (created) => handleCreated(created, false),
-    onError: (err: unknown) => {
-      const message =
-        err instanceof Error
-          ? err.message
-          : t('expenseCreate.error', 'Failed to create expense. Please try again.');
-      toast.error(message);
-    },
-    onSettled: () => setIsSubmitting(false),
-  });
-
-  const submitAndApproveMutation = useMutation({
-    mutationFn: async (data: CreateExpenseFormData) => {
-      const created = await expenseService.createExpense(data);
-      try {
-        await expenseService.submitExpense(created.id);
-      } catch (err) {
-        toast.error(
-          t(
-            'expenseCreate.submitWarn',
-            'Expense saved but approval submission failed: {{m}}',
-            { m: (err as Error).message },
-          ),
-        );
-      }
-      return created;
-    },
-    onMutate: () => setIsSubmitting(true),
-    onSuccess: (created) => handleCreated(created, true),
+    onSuccess: (created) => handleCreated(created),
     onError: (err: unknown) => {
       const message =
         err instanceof Error
@@ -132,11 +102,6 @@ export default function ExpenseCreatePageV2() {
   const handleSubmit = async (payload: ExpenseFormPayload) => {
     const apiPayload = await buildCreateExpensePayload(payload);
     createMutation.mutate(apiPayload);
-  };
-
-  const handleSubmitAndApprove = async (payload: ExpenseFormPayload) => {
-    const apiPayload = await buildCreateExpensePayload(payload);
-    submitAndApproveMutation.mutate(apiPayload);
   };
 
   // Breadcrumb: stay in project context when we came from a project.
@@ -183,7 +148,9 @@ export default function ExpenseCreatePageV2() {
           description={t('expenseCreate.subtitle', 'Record expenses with automatic PPN and PPh calculations per Indonesian standards.')}
           breadcrumbs={breadcrumbs}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="pengeluaran" anchor="detail" />
+              <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -206,10 +173,11 @@ export default function ExpenseCreatePageV2() {
                     {t('expenseCreate.saving', 'Saving...')}
                   </>
                 ) : (
-                  t('expenseCreate.save', 'Save')
+                  t('expenseCreate.save', 'Record Expense')
                 )}
               </Button>
             </div>
+            </>
           }
         />
 
@@ -220,7 +188,6 @@ export default function ExpenseCreatePageV2() {
           lockedProjectId={prefilledProjectId}
           isSubmitting={isSubmitting}
           onSubmit={handleSubmit}
-          onSubmitAndApprove={handleSubmitAndApprove}
           onCancel={() => navigate(backTo)}
         />
       </PageContainer>

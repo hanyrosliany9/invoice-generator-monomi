@@ -28,6 +28,7 @@ import {
   createPurchase, getChartOfAccounts, getNextPurchaseNumber,
   type PurchasePaymentMethod,
 } from '@/services/accounting';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 interface LineRow {
   accountCode: string;
@@ -172,7 +173,9 @@ export default function PurchaseCreatePageV2() {
             { label: t('accounting.purchaseCreate.crumb', 'New Purchase') },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="vendor-pembelian" anchor="pembelian" />
+              <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => navigate('/accounting/purchases')} disabled={isSubmitting}>
                 {t('accounting.purchaseCreate.cancel', 'Cancel')}
               </Button>
@@ -182,6 +185,7 @@ export default function PurchaseCreatePageV2() {
                   : t('accounting.purchaseCreate.save', 'Save Purchase')}
               </Button>
             </div>
+            </>
           }
         />
 

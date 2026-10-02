@@ -53,6 +53,7 @@ import {
   type PKPStatus,
 } from '@/types/vendor';
 import { getInitials } from '@/utils/initials';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 // Vendor type → editorial chip. Same vocabulary as the form, single
 // place that decides "what looks like what" so the table never drifts.
@@ -390,13 +391,16 @@ export default function VendorsPageV2() {
             'Kelola supplier, penyedia jasa, dan mitra procurement Anda.',
           )}
           actions={
-            <Button
+            <>
+              <GuideHelpLink slug="vendor-pembelian" anchor="daftar" />
+              <Button
               onClick={() => navigate('/vendors/new')}
               className="bg-brand-cream text-brand-black hover:bg-brand-cream/90"
             >
               <Plus className="h-4 w-4" />
               {t('vendors.create.title', 'Vendor Baru')}
             </Button>
+            </>
           }
         />
 

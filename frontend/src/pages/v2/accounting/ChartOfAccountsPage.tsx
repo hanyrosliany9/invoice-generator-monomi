@@ -47,6 +47,7 @@ import {
   exportChartOfAccountsExcel,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
@@ -291,7 +292,9 @@ export default function ChartOfAccountsPageV2() {
         title={t('accounting.chartOfAccounts.title')}
         description={t('accounting.chartOfAccounts.description')}
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="akuntansi-dasar" anchor="bagan-akun" />
+            <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -310,6 +313,7 @@ export default function ChartOfAccountsPageV2() {
               {t('accounting.chartOfAccounts.newAccount')}
             </Button>
           </div>
+          </>
         }
       />
 

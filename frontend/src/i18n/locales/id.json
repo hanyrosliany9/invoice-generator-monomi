@@ -51,7 +51,8 @@
     "remove": "Hapus",
     "copy": "Salin",
     "fromDate": "Dari",
-    "toDate": "Sampai"
+    "toDate": "Sampai",
+    "uploading": "Mengunggah…"
   },
   "table": {
     "number": "Nomor",
@@ -107,7 +108,7 @@
       "prospectDesc": "Tahap awal identifikasi dan pendekatan calon klien",
       "quotationDesc": "Penyusunan penawaran harga dan scope kerja",
       "approvedDesc": "Klien menyetujui penawaran dan siap memulai proyek",
-      "invoicingDesc": "Penerbitan tagihan dan administrasi keuangan",
+      "invoicingDesc": "Penerbitan invoice dan administrasi keuangan",
       "paymentTitle": "Proses Pembayaran",
       "paymentDesc": "Follow-up pembayaran dan konfirmasi penerimaan",
       "paymentFollowUp": "Follow-up pembayaran",
@@ -143,7 +144,8 @@
     "financialReports": "Laporan",
     "assetsDepreciation": "Aset & Depresiasi",
     "depreciation": "Depresiasi",
-    "fixedAssets": "Aset Tetap"
+    "fixedAssets": "Aset Tetap",
+    "guides": "Panduan"
   },
   "auth": {
     "login": "Masuk",
@@ -169,7 +171,8 @@
     "sessionExpired": "Sesi Anda telah berakhir. Silakan masuk kembali.",
     "rateLimited": "Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.",
     "showPassword": "Tampilkan kata sandi",
-    "hidePassword": "Sembunyikan kata sandi"
+    "hidePassword": "Sembunyikan kata sandi",
+    "serverUnavailable": "Server sedang tidak tersedia. Coba lagi dalam beberapa saat."
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -516,16 +519,17 @@
       "toast": {
         "createFailed": "Gagal membuat penawaran.",
         "updated": "Penawaran berhasil diperbarui.",
-        "updateFailed": "Gagal memperbarui penawaran."
+        "updateFailed": "Gagal memperbarui penawaran.",
+        "created": "Penawaran {{number}} berhasil dibuat."
       },
       "validUntil": "Berlaku Sampai",
       "clientPlaceholder": "Pilih klien…",
       "createSubtitle": "Buat penawaran baru — pilih klien, tambahkan rincian item, dan tentukan ketentuan.",
       "editingSubtitle": "Perbarui penawaran ini sebelum dikirim atau direvisi.",
       "includeTaxHint": "Wajib untuk klien dengan NPWP. Pajak dihitung dari subtotal.",
-      "materaiHint": "nilai melebihi Rp 5.000.000 — siapkan materai saat mencetak tagihan.",
+      "materaiHint": "nilai melebihi Rp 5.000.000 — siapkan materai saat mencetak invoice.",
       "materaiRequired": "Materai diperlukan",
-      "milestoneHint": "Kelola termin pembayaran dari halaman detail untuk menghindari konflik dengan tagihan yang sudah diterbitkan.",
+      "milestoneHint": "Kelola termin pembayaran dari halaman detail untuk menghindari konflik dengan invoice yang sudah diterbitkan.",
       "milestoneNotice": "Penawaran ini menggunakan pembayaran berbasis termin.",
       "noClients": "Belum ada klien.",
       "noProjects": "Tidak ada proyek untuk klien ini.",
@@ -549,9 +553,9 @@
       "terminRemove": "Hapus termin",
       "terminAdd": "Tambah Termin",
       "terminTotal": "Total persentase",
-      "terminReadonly": "Termin tidak dapat diubah karena tagihan sudah diterbitkan untuk salah satu tahap. Batalkan tagihan terlebih dahulu.",
+      "terminReadonly": "Termin tidak dapat diubah karena invoice sudah diterbitkan untuk salah satu tahap. Batalkan invoice terlebih dahulu.",
       "terminInvalid": "Mohon periksa kembali termin pembayaran.",
-      "termsPlaceholder": "1. Pembayaran Net 30 sejak tanggal tagihan.\n2. Termasuk PPN 11%.\n3. Maksimal 3 revisi.\n4. ...",
+      "termsPlaceholder": "1. Pembayaran Net 30 sejak tanggal invoice.\n2. Termasuk PPN 11%.\n3. Maksimal 3 revisi.\n4. ...",
       "clientSearch": "Cari berdasarkan nama atau perusahaan…",
       "projectSearch": "Cari berdasarkan nomor atau deskripsi…"
     },
@@ -584,21 +588,22 @@
       }
     },
     "search": {
-      "clear": "Hapus pencarian"
+      "clear": "Hapus pencarian",
+      "placeholder": "Cari nomor, klien, atau proyek…"
     },
-    "subtitle": "Kelola penawaran klien — dari draf hingga konversi menjadi tagihan.",
+    "subtitle": "Kelola penawaran klien — dari draf hingga konversi menjadi invoice.",
     "toast": {
-      "approved": "Penawaran disetujui — tagihan dibuat secara otomatis.",
+      "approved": "Penawaran disetujui — invoice dibuat secara otomatis.",
       "sent": "Penawaran dikirim ke klien.",
       "declined": "Penawaran ditolak.",
       "statusUpdated": "Status berhasil diperbarui.",
       "statusError": "Gagal memperbarui status penawaran.",
-      "reopened": "Penawaran dibuka kembali ke Draf. Tagihan yang dibuat otomatis dihapus.",
+      "reopened": "Penawaran dibuka kembali ke Draf. Invoice yang dibuat otomatis dihapus.",
       "reopenError": "Gagal membuka kembali penawaran.",
       "deleted": "Penawaran berhasil dihapus.",
       "deleteError": "Gagal menghapus penawaran.",
-      "invoiceCreated": "Tagihan {{number}} berhasil dibuat.",
-      "invoiceError": "Gagal membuat tagihan dari penawaran.",
+      "invoiceCreated": "Invoice {{number}} berhasil dibuat.",
+      "invoiceError": "Gagal membuat invoice dari penawaran.",
       "pdfDownloaded": "PDF berhasil diunduh.",
       "pdfError": "Gagal mengunduh PDF.",
       "viewInvoice": "Lihat faktur",
@@ -615,13 +620,13 @@
       "approve": "Setujui",
       "decline": "Tolak",
       "revise": "Buat Revisi",
-      "reopenConfirm": "Buka kembali penawaran ini ke Draf? Tagihan yang dibuat otomatis akan dihapus (hanya jika belum dikirim/dibayar). Lanjutkan?",
+      "reopenConfirm": "Buka kembali penawaran ini ke Draf? Invoice yang dibuat otomatis akan dihapus (hanya jika belum dikirim/dibayar). Lanjutkan?",
       "reopen": "Buka Kembali (Batalkan Persetujuan)",
-      "createInvoice": "Buat Tagihan",
+      "createInvoice": "Buat Invoice",
       "downloadPdf": "Unduh PDF",
       "deleteConfirm": "Hapus penawaran {{number}}? Tindakan ini tidak dapat dibatalkan.",
       "delete": "Hapus",
-      "viewInvoice": "Lihat Faktur",
+      "viewInvoice": "Lihat Invoice",
       "previewPdf": "Pratinjau PDF",
       "reviseConfirm": "Buat draf revisi baru dari quotation yang ditolak ini? Yang asli akan ditandai sebagai Revised.",
       "generateTerminInvoice": "Buat Invoice Termin"
@@ -641,7 +646,7 @@
     }
   },
   "invoices": {
-    "title": "Tagihan",
+    "title": "Invoice",
     "create": "Buat Invoice",
     "number": "Nomor Invoice",
     "creationDate": "Tanggal Pembuatan",
@@ -664,15 +669,15 @@
       "edit": "Ubah",
       "markPaid": "Tandai Lunas",
       "send": "Kirim",
-      "menuAriaLabel": "Aksi tagihan",
+      "menuAriaLabel": "Aksi invoice",
       "view": "Lihat",
       "markSent": "Tandai Terkirim",
       "markOverdue": "Tandai Jatuh Tempo",
-      "cancel": "Batalkan Tagihan",
+      "cancel": "Batalkan Invoice",
       "changeStatus": "Ubah Status"
     },
     "detail": {
-      "backToList": "Kembali ke Tagihan",
+      "backToList": "Kembali ke Invoice",
       "billedTo": "Ditagihkan kepada",
       "col": {
         "desc": "Deskripsi",
@@ -682,8 +687,8 @@
       },
       "due": "Jatuh Tempo",
       "error": {
-        "desc": "Tagihan ini mungkin sudah dihapus atau Anda tidak memiliki akses.",
-        "title": "Tagihan tidak ditemukan"
+        "desc": "Invoice ini mungkin sudah dihapus atau Anda tidak memiliki akses.",
+        "title": "Invoice tidak ditemukan"
       },
       "grandTotal": "Total",
       "issued": "Diterbitkan",
@@ -691,7 +696,7 @@
       "lumpSum": "Biaya proyek",
       "materai": {
         "title": "Materai diperlukan",
-        "desc": "Tagihan ini melebihi Rp 5.000.000 dan memerlukan materai Rp 10.000. Tempelkan materai pada cetakan sebelum dikirim ke klien."
+        "desc": "Invoice ini melebihi Rp 5.000.000 dan memerlukan materai Rp 10.000. Tempelkan materai pada cetakan sebelum dikirim ke klien."
       },
       "materaiApplied": "Terpasang",
       "materaiLine": "Materai",
@@ -706,7 +711,7 @@
       "project": "Proyek",
       "quotation": "Dari Penawaran",
       "remaining": "Sisa",
-      "subtitle": "Rincian tagihan, riwayat pembayaran, dan tindakan terkait.",
+      "subtitle": "Rincian invoice, riwayat pembayaran, dan tindakan terkait.",
       "subtotal": "Subtotal",
       "summary": "Ringkasan",
       "tax": "PPN",
@@ -714,15 +719,15 @@
       "totalDue": "Total Tagihan"
     },
     "empty": {
-      "desc": "Mulailah dengan membuat tagihan pertama Anda.",
+      "desc": "Mulailah dengan membuat invoice pertama Anda.",
       "filtered": {
         "desc": "Coba ubah atau hapus filter Anda.",
-        "title": "Tidak ada tagihan yang cocok dengan filter Anda"
+        "title": "Tidak ada invoice yang cocok dengan filter Anda"
       },
-      "title": "Belum ada tagihan"
+      "title": "Belum ada invoice"
     },
     "error": {
-      "title": "Tidak dapat memuat tagihan"
+      "title": "Tidak dapat memuat invoice"
     },
     "filter": {
       "allMaterai": "Semua Materai",
@@ -737,8 +742,8 @@
     "form": {
       "addItem": "Tambah Baris",
       "autoNumber": "Dibuat otomatis setelah disimpan",
-      "backToInvoice": "Kembali ke Tagihan",
-      "backToList": "Kembali ke Tagihan",
+      "backToInvoice": "Kembali ke Invoice",
+      "backToList": "Kembali ke Invoice",
       "client": "Klien",
       "col": {
         "desc": "Deskripsi",
@@ -751,7 +756,7 @@
       "createTitle": "Invoice Baru",
       "creatingHint": "Invoice akan dibuat sebagai Draft.",
       "dueDate": "Jatuh Tempo",
-      "editDescPlain": "Perubahan tersimpan ke catatan tagihan.",
+      "editDescPlain": "Perubahan tersimpan ke catatan invoice.",
       "editTitle": "Ubah Invoice",
       "editingHint": "Perubahan akan diterapkan setelah disimpan.",
       "grandTotal": "Total",
@@ -764,7 +769,7 @@
       "materaiTitle": "Materai diperlukan",
       "materaiToggle": "Wajib materai",
       "noProjects": "Belum ada proyek untuk klien ini",
-      "notFoundTitle": "Tagihan tidak ditemukan",
+      "notFoundTitle": "Invoice tidak ditemukan",
       "number": "Nomor Invoice",
       "paymentInfo": "Informasi Pembayaran",
       "paymentInfoRestored": "Template default diterapkan",
@@ -797,14 +802,15 @@
       "updateError": "Gagal memperbarui invoice",
       "updateSuccess": "Invoice berhasil diperbarui",
       "useDefault": "Pakai default",
-      "createDesc": "Buat tagihan baru untuk klien — pilih proyek, isi rincian, dan simpan sebagai draft.",
-      "editDesc": "Mengubah {{n}} — perubahan tersimpan ke catatan tagihan.",
+      "createDesc": "Buat invoice baru untuk klien — pilih proyek, isi rincian, dan simpan sebagai draft.",
+      "editDesc": "Mengubah {{n}} — perubahan tersimpan ke catatan invoice.",
       "materaiDesc": "Total melebihi Rp 5.000.000 — tempel materai Rp 10.000 pada cetakan sebelum dikirim.",
-      "notFoundDesc": "Tagihan ini mungkin sudah dihapus atau Anda tidak memiliki akses.",
+      "notFoundDesc": "Invoice ini mungkin sudah dihapus atau Anda tidak memiliki akses.",
       "statusHelp": "Perubahan status akan diproses melalui endpoint terpisah.",
       "clientSearch": "Cari nama atau perusahaan…",
       "noClients": "Belum ada klien",
-      "projectSearch": "Cari nomor atau deskripsi proyek…"
+      "projectSearch": "Cari nomor atau deskripsi proyek…",
+      "scopePh": "Contoh:\n- Pengembangan website e-commerce\n- Integrasi payment gateway\n- Training tim internal"
     },
     "kpi": {
       "drafts": "Draf",
@@ -820,11 +826,11 @@
       "revenueGroup": "Pendapatan (jasa)",
       "reimburseGroup": "Reimbursement · Piutang Lain-lain"
     },
-    "new": "Tagihan Baru",
+    "new": "Invoice Baru",
     "search": {
       "placeholder": "Cari berdasarkan nomor, klien, atau proyek..."
     },
-    "subtitle": "Kelola tagihan klien — kirim, tandai lunas, dan pantau yang jatuh tempo.",
+    "subtitle": "Kelola invoice klien — kirim, tandai lunas, dan pantau yang jatuh tempo.",
     "table": {
       "amount": "Jumlah",
       "date": "Tanggal",
@@ -833,10 +839,10 @@
       "status": "Status"
     },
     "markPaid": {
-      "notes": "Ditandai lunas dari daftar tagihan (v2)"
+      "notes": "Ditandai lunas dari daftar invoice (v2)"
     },
-    "statusChanged": "Status tagihan diperbarui menjadi {{status}}",
-    "confirmDelete": "Hapus tagihan {{number}}?",
+    "statusChanged": "Status invoice diperbarui menjadi {{status}}",
+    "confirmDelete": "Hapus invoice {{number}}?",
     "status": {
       "draft": "Draf",
       "sent": "Terkirim",
@@ -926,7 +932,8 @@
       "addProject": "Proyek Baru",
       "addFirstProject": "Buat Proyek",
       "addQuotation": "Penawaran Baru",
-      "addFirstQuotation": "Buat Penawaran"
+      "addFirstQuotation": "Buat Penawaran",
+      "confirmDelete": "Hapus klien \"{{name}}\"? Tindakan ini tidak bisa dibatalkan."
     },
     "name": "Nama",
     "email": "Email",
@@ -1323,7 +1330,8 @@
         "closingValue": "Saldo Akhir",
         "months": "bulan",
         "labelFirst": "Periode Pertama",
-        "labelLast": "Periode Terakhir"
+        "labelLast": "Periode Terakhir",
+        "hint": "{{total}} periode total · hanya menampilkan periode pertama dan terakhir"
       },
       "maintenance": {
         "addBtn": "Catat Perawatan",
@@ -1414,7 +1422,17 @@
       "nextDateLabel": "Tanggal Perawatan Berikutnya",
       "submitBtn": "Simpan Catatan Perawatan",
       "success": "Catatan perawatan berhasil disimpan.",
-      "error": "Gagal menyimpan catatan perawatan."
+      "error": "Gagal menyimpan catatan perawatan.",
+      "types": {
+        "preventive": "Preventif",
+        "corrective": "Korektif",
+        "inspection": "Inspeksi",
+        "calibration": "Kalibrasi",
+        "cleaning": "Pembersihan",
+        "repair": "Perbaikan",
+        "replacement": "Penggantian",
+        "other": "Lainnya"
+      }
     },
     "messages": {
       "checkOutSuccess": "Aset berhasil di-checkout",
@@ -1524,7 +1542,8 @@
       "depGroupI": "Kelompok I — 4 tahun",
       "depGroupII": "Kelompok II — 8 tahun",
       "depGroupIII": "Kelompok III — 16 tahun",
-      "depGroupIV": "Kelompok IV — 20 tahun"
+      "depGroupIV": "Kelompok IV — 20 tahun",
+      "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\"."
     },
     "kpi": {
       "depreciating": "Aktif Disusutkan",
@@ -1602,7 +1621,17 @@
       "broken": "Rusak",
       "retired": "Pensiun"
     },
-    "groupValue": "Nilai Perolehan"
+    "groupValue": "Nilai Perolehan",
+    "conditionValue": {
+      "excellent": "Sangat Baik",
+      "good": "Baik",
+      "fair": "Cukup",
+      "poor": "Buruk",
+      "broken": "Rusak"
+    },
+    "confirmDelete": "Hapus aset {{name}}? Tindakan ini tidak bisa dibatalkan.",
+    "statusUpdated": "Status aset diperbarui.",
+    "statusUpdateFailed": "Gagal memperbarui status."
   },
   "currency": {
     "idr": "Rp",
@@ -2001,7 +2030,7 @@
     "emptyDay": "Tidak ada agenda pada hari ini.",
     "kpi": {
       "due30": "Jatuh Tempo 30 Hari",
-      "due30Sub": "tagihan & penawaran",
+      "due30Sub": "invoice & penawaran",
       "events": "Acara Mendatang",
       "eventsSub": "meeting & milestone",
       "moneyDue": "Nilai Tertagih",
@@ -2022,7 +2051,7 @@
       "desc": "Tidak ada yang dijadwalkan dalam 14 hari ke depan."
     },
     "upcomingTitle": "Agenda Mendatang",
-    "subtitle": "Satu pandangan untuk jatuh tempo tagihan, masa berlaku penawaran, tenggat proyek, dan acara tim.",
+    "subtitle": "Satu pandangan untuk jatuh tempo invoice, masa berlaku penawaran, tenggat proyek, dan acara tim.",
     "contentCalendar": {
       "statusDraft": "Draf",
       "statusScheduled": "Terjadwal",
@@ -2076,7 +2105,8 @@
       "saved": "Perubahan tersimpan.",
       "send": "Tandai Terkirim",
       "pdfDownloaded": "PDF berhasil diunduh.",
-      "pdfFailed": "Gagal mengunduh PDF."
+      "pdfFailed": "Gagal mengunduh PDF.",
+      "confirmDelete": "Hapus call sheet \"{{name}}\"?"
     },
     "empty": {
       "desc": "Buat call sheet pertama untuk produksi Anda.",
@@ -2128,7 +2158,8 @@
     "colStatus": "Status",
     "crew": "kru",
     "talent": "talent",
-    "callSheetActions": "Aksi call sheet"
+    "callSheetActions": "Aksi call sheet",
+    "confirmDelete": "Hapus call sheet \"{{name}}\"? Tindakan ini tidak bisa dibatalkan."
   },
   "collections": {
     "detail": {
@@ -2182,7 +2213,9 @@
       "selectAtLeastOne": "Pilih minimal satu aset.",
       "smartSub": "Koleksi cerdas — diperbarui otomatis berdasarkan kriteria.",
       "confirmDeleteTitle": "Hapus koleksi?",
-      "confirmRemoveTitle": "Hapus dari koleksi?"
+      "confirmRemoveTitle": "Hapus dari koleksi?",
+      "confirmDelete": "Hapus koleksi \"{{name}}\"? Tindakan ini tidak bisa dibatalkan.",
+      "confirmRemove": "Hapus \"{{name}}\" dari koleksi? Aset tidak akan terhapus dari proyek."
     },
     "media": "Media",
     "project": "Proyek",
@@ -2386,7 +2419,7 @@
         "isActive": "Aktif",
         "isActiveHint": "Kategori nonaktif tetap tersimpan tapi tidak muncul saat membuat biaya baru.",
         "isBillable": "Dapat Ditagihkan ke Klien",
-        "isBillableHint": "Biaya pada kategori ini bisa di-passthrough ke tagihan klien.",
+        "isBillableHint": "Biaya pada kategori ini bisa di-passthrough ke invoice klien.",
         "name": "Nama (English)",
         "nameId": "Nama (Bahasa Indonesia)",
         "pphRate": "Tarif PPh (%)",
@@ -2643,7 +2676,7 @@
       "noNotesDesc": "Ruang lingkup pekerjaan dan syarat belum diisi untuk penawaran ini.",
       "history": "Riwayat",
       "createdBy": "Dibuat oleh",
-      "relatedInvoices": "Tagihan Terkait",
+      "relatedInvoices": "Invoice Terkait",
       "viewInvoice": "Lihat →"
     },
     "pdfPreview": {
@@ -2761,7 +2794,8 @@
       "statusActiveSub": "Bisa login dan mengakses sistem.",
       "statusHint": "Pengguna nonaktif tidak dapat masuk ke sistem.",
       "statusInactiveSub": "Akun tersimpan tapi tidak bisa login.",
-      "statusSelfHint": "Anda tidak dapat menonaktifkan akun Anda sendiri."
+      "statusSelfHint": "Anda tidak dapat menonaktifkan akun Anda sendiri.",
+      "editNote": "Perubahan disimpan saat Anda menekan \"Simpan\"."
     },
     "kpi": {
       "active": "Aktif",
@@ -2884,7 +2918,8 @@
       "notFoundDesc": "Vendor yang Anda cari tidak ada atau telah dihapus.",
       "relationsSub": "Ringkasan transaksi yang terhubung dengan vendor ini.",
       "termsSub": "Termin pembayaran, mata uang, dan jejak audit dasar.",
-      "deleteSuccess": "Vendor \"{{name}}\" berhasil dihapus."
+      "deleteSuccess": "Vendor \"{{name}}\" berhasil dihapus.",
+      "confirmDelete": "Hapus vendor \"{{name}}\"? Tindakan ini tidak bisa dibatalkan."
     },
     "directory": "Daftar Vendor",
     "edit": {
@@ -3081,7 +3116,10 @@
       "actionDelete": "Hapus",
       "filterAccountType": "Tipe Akun",
       "searchPlaceholderAlt": "Cari kode atau nama akun...",
-      "actionViewGL": "Lihat di Buku Besar"
+      "actionViewGL": "Lihat di Buku Besar",
+      "exportSuccess": "Excel berhasil diekspor.",
+      "exportFail": "Gagal mengekspor Excel.",
+      "exportExcel": "Excel"
     },
     "arAging": {
       "title": "Aging Piutang",
@@ -3552,7 +3590,7 @@
       "filterAgingLabel": "Umur",
       "colNumber": "Nomor",
       "colClient": "Klien",
-      "colInvoiceDate": "Tgl Faktur",
+      "colInvoiceDate": "Tgl Invoice",
       "colDueDate": "Jatuh Tempo",
       "colDaysOverdue": "Hari Terlambat",
       "colAging": "Umur",
@@ -4069,7 +4107,9 @@
       "exportPdfSuccess": "PDF berhasil diekspor.",
       "exportPdfFail": "Gagal mengekspor PDF.",
       "exportExcelSuccess": "Excel berhasil diekspor.",
-      "exportExcelFail": "Gagal mengekspor Excel."
+      "exportExcelFail": "Gagal mengekspor Excel.",
+      "syncNote": "Saldo awal, pemasukan, pengeluaran, dan saldo akhir tiap akun kas/bank bulan ini dihitung otomatis dari jurnal yang sudah diposting, dan diteruskan dari periode sebelumnya.",
+      "txnRelatedCoa": "Akun terkait"
     },
     "bankTransfers": {
       "actionApprove": "Setujui",
@@ -4572,7 +4612,7 @@
     "createTitle": "Shot List Baru",
     "createDesc": "Buat shot list baru untuk produksi Anda.",
     "fieldName": "Nama",
-    "fieldProject": "Proyek (opsional)",
+    "fieldProject": "Proyek",
     "fieldDescription": "Deskripsi",
     "namePlaceholder": "Nama shot list",
     "noProject": "Tanpa deskripsi",
@@ -4584,7 +4624,9 @@
     "noProjectsFound": "Proyek tidak ditemukan",
     "colShots": "Shot",
     "colScenes": "Scene",
-    "actionsLabel": "Aksi"
+    "actionsLabel": "Aksi",
+    "nameMin": "Nama minimal 2 karakter",
+    "projectRequired": "Pilih sebuah proyek"
   },
   "projectCalendar": {
     "title": "Kalender Proyek",
@@ -4821,12 +4863,14 @@
       "companyDesc": "Identitas dan kontak bisnis",
       "banks": "Rekening Bank",
       "banksDesc": "Tujuan pembayaran di invoice",
-      "invoicing": "Faktur & Penomoran",
+      "invoicing": "Invoice & Penomoran",
       "invoicingDesc": "Termin, prefix, dan Materai",
       "notifications": "Notifikasi",
       "notificationsDesc": "Email dan push",
       "backup": "Cadangan Data",
-      "backupDesc": "Backup otomatis dan unduhan manual"
+      "backupDesc": "Backup otomatis dan unduhan manual",
+      "mobile": "Aplikasi Mobile",
+      "mobileDesc": "Unduh aplikasi Android"
     },
     "profile": {
       "title": "Profil",
@@ -4894,7 +4938,7 @@
       "saveLabel": "Simpan Rekening"
     },
     "invoicing": {
-      "title": "Faktur & Penomoran",
+      "title": "Invoice & Penomoran",
       "desc": "Default termin pembayaran, prefix penomoran, dan ambang batas Materai.",
       "saveSuccess": "Pengaturan faktur tersimpan.",
       "saveError": "Gagal menyimpan pengaturan faktur.",
@@ -4911,7 +4955,7 @@
       "quotationPrefixHint": "Contoh: QT- menjadi QT-2026-001",
       "autoMateraiReminder": "Pengingat Materai Otomatis",
       "autoMateraiReminderHint": "Tampilkan pengingat saat invoice melebihi ambang batas.",
-      "saveLabel": "Simpan Faktur",
+      "saveLabel": "Simpan Invoice",
       "termsRequired": "Termin wajib dipilih",
       "mustBeNumber": "Harus berupa angka",
       "notNegative": "Tidak boleh negatif",
@@ -4951,6 +4995,18 @@
       "downloadDesc": "Cadangan lengkap basis data sebagai berkas SQL.",
       "saveLabel": "Simpan Cadangan",
       "timeFormatInvalid": "Format waktu harus HH:MM"
+    },
+    "mobile": {
+      "title": "Aplikasi Mobile",
+      "desc": "Pasang aplikasi Monomi di ponsel Android Anda agar bisa diakses di mana saja.",
+      "version": "Versi 1.0.0",
+      "installNote": "Aktifkan \"Instal dari sumber tidak dikenal\" di ponsel Anda sebelum memasang.",
+      "download": "Unduh APK",
+      "howToInstall": "Cara memasang:",
+      "step1": "Unduh file APK di atas",
+      "step2": "Buka Pengaturan ponsel → Keamanan → aktifkan \"Instal aplikasi tidak dikenal\"",
+      "step3": "Buka file APK yang sudah diunduh dan ketuk Instal",
+      "step4": "Buka Monomi dan masuk dengan akun Anda"
     }
   },
   "cashBankBalance": {
@@ -5020,7 +5076,12 @@
     "glPosted": "GL ✓",
     "glPending": "GL —",
     "glPostedAria": "Sudah diposting ke Buku Besar",
-    "glPendingAria": "Belum diposting ke Buku Besar"
+    "glPendingAria": "Belum diposting ke Buku Besar",
+    "exportPdfSuccess": "PDF berhasil diekspor.",
+    "exportPdfFail": "Gagal mengekspor PDF.",
+    "exportExcelSuccess": "Excel berhasil diekspor.",
+    "exportExcelFail": "Gagal mengekspor Excel.",
+    "export": "Ekspor"
   },
   "expenseDetail": {
     "error": {
@@ -5171,14 +5232,17 @@
       "billableExplain": "Saat disimpan, jurnal: D Piutang Lain-lain (1-2040) / K Kas — piutang dari klien, bukan beban 5-xxx/6-xxx. Saat klien membayar kembali, catat penagihan dari expense untuk membalik jurnal (D Kas / K Piutang Lain-lain). Kategori yang dipilih hanya sebagai referensi.",
       "classification": "Klasifikasi",
       "reimbursableClassification": "Piutang Lain-lain (1-2040)",
-      "reimbursableClassificationHint": "Talangan ke klien — tidak perlu kategori beban."
+      "reimbursableClassificationHint": "Talangan ke klien — tidak perlu kategori beban.",
+      "billableAmount": "Jumlah yang ditagihkan ulang",
+      "billableAmountPlaceholder": "Default: total pengeluaran",
+      "billableAmountHint": "Jumlah yang bisa ditagihkan kembali ke klien. Kosongkan untuk menagihkan seluruh total. Biaya yang ditagihkan ulang tidak mengurangi margin proyek."
     },
     "noCategories": "Belum ada kategori pengeluaran",
     "submitNote": "Simpan sebagai draf untuk ditinjau nanti, atau kirim langsung untuk persetujuan.",
     "submitting": "Mengirim...",
     "saveAndSubmit": "Simpan & Kirim untuk Persetujuan",
     "bottomBar": {
-      "createHint": "Pengeluaran akan disimpan sebagai DRAF. Kolom bertanda * wajib diisi.",
+      "createHint": "Dicatat sebagai LUNAS dan langsung diposting ke jurnal. Kolom bertanda * wajib diisi.",
       "editHint": "Perubahan diterapkan saat Anda klik \"Simpan\"."
     },
     "cancel": "Batal",
@@ -5188,7 +5252,41 @@
     "sourceCash": "Kas",
     "optional": "opsional",
     "categoryNotResolved": "Kategori beban tidak dapat ditentukan — pilih ulang dan coba lagi.",
-    "fixErrors": "Perbaiki kolom yang ditandai sebelum menyimpan."
+    "fixErrors": "Perbaiki kolom yang ditandai sebelum menyimpan.",
+    "paidNote": "Saat dicatat, pengeluaran langsung berstatus Lunas dan diposting ke Buku Besar. Sumber pembayaran di atas menentukan apakah saldo Kas atau Bank yang berkurang. Salah catat? Edit jumlahnya (jurnal diposting ulang) atau hapus dari halaman pengeluaran (jurnal dibalik).",
+    "saveCreate": "Catat Pengeluaran",
+    "opt": {
+      "ppn": {
+        "CREDITABLE": "Dapat Dikreditkan",
+        "NON_CREDITABLE": "Tidak Dapat Dikreditkan",
+        "EXEMPT": "Bebas PPN"
+      },
+      "wht": {
+        "NONE": {
+          "label": "Tidak ada",
+          "hint": "Tanpa pemotongan PPh"
+        },
+        "PPH23": {
+          "label": "PPh 23 (Jasa)",
+          "hint": "2% — jasa, sewa peralatan"
+        },
+        "PPH4_2": {
+          "label": "PPh 4(2) (Sewa)",
+          "hint": "10% — sewa bangunan & bunga"
+        },
+        "PPH15": {
+          "label": "PPh 15 (Pelayaran/Penerbangan)",
+          "hint": "±2,65% — angkutan laut & udara"
+        }
+      },
+      "efaktur": {
+        "NOT_REQUIRED": "Tidak Wajib",
+        "REQUIRED": "Wajib",
+        "UPLOADED": "Sudah Diunggah",
+        "VALIDATED": "Tervalidasi",
+        "REJECTED": "Ditolak DJP"
+      }
+    }
   },
   "expenseCreate": {
     "success": "Pengeluaran {{n}} berhasil dibuat.",
@@ -5202,7 +5300,7 @@
     "crumb": "Baru",
     "cancel": "Batal",
     "saving": "Menyimpan...",
-    "save": "Simpan",
+    "save": "Catat Pengeluaran",
     "viewExpense": "Lihat",
     "projectsLabel": "Proyek",
     "projectCrumb": "Proyek",
@@ -5337,7 +5435,7 @@
       "marginSub": "estimasi keuntungan bersih",
       "marginLoss": "estimasi kerugian"
     },
-    "invoicesSection": "Faktur Terkait",
+    "invoicesSection": "Invoice Terkait",
     "noInvoices": "Belum ada faktur",
     "noInvoicesDesc": "Belum ada faktur yang dibuat untuk proyek ini.",
     "quotationsSection": "Penawaran Terkait",
@@ -5417,7 +5515,23 @@
     "reimbursableEmpty": "Belum ada biaya talangan. Gunakan ini untuk uang yang Anda bayarkan atas nama klien dan ditagihkan kembali — dibukukan ke Piutang Lain-lain, bukan beban proyek.",
     "billReimbursables": "Tagih ke klien",
     "billedBadge": "Ditagih",
-    "unbilledBadge": "Belum ditagih"
+    "unbilledBadge": "Belum ditagih",
+    "productionHub": "Pusat Produksi",
+    "decksSection": "Deck Kreatif",
+    "noDecks": "Belum ada deck",
+    "noDecksDesc": "Buat deck kreatif atau mood board untuk proyek ini.",
+    "callSheetsSection": "Call Sheet",
+    "noCallSheets": "Belum ada call sheet",
+    "noCallSheetsDesc": "Buat call sheet dari jadwal syuting untuk mem-briefing kru.",
+    "callSheetFallback": "Call Sheet #{{n}}",
+    "crewCount": "{{count}} kru",
+    "castCount": "{{count}} pemain",
+    "mediaProjectsSection": "Kolaborasi Media",
+    "newMediaProject": "Ruang Media Baru",
+    "noMediaProjects": "Belum ada ruang media",
+    "noMediaProjectsDesc": "Buat ruang media bersama untuk berkolaborasi memilih hasil dengan klien.",
+    "assetCount": "{{count}} aset",
+    "shared": "Dibagikan"
   },
   "projectForm": {
     "identity": {
@@ -5518,7 +5632,8 @@
     "save": "Simpan",
     "backToClient": "Kembali ke klien",
     "clientsLabel": "Klien",
-    "clientCrumb": "Klien"
+    "clientCrumb": "Klien",
+    "backToList": "Kembali ke Proyek"
   },
   "projectEdit": {
     "success": "Perubahan untuk \"{{name}}\" tersimpan.",
@@ -5540,10 +5655,10 @@
   },
   "invoiceDetail": {
     "error": {
-      "title": "Faktur tidak ditemukan",
-      "desc": "Faktur ini mungkin telah dihapus atau Anda tidak memiliki akses."
+      "title": "Invoice tidak ditemukan",
+      "desc": "Invoice ini mungkin telah dihapus atau Anda tidak memiliki akses."
     },
-    "backToList": "Kembali ke Tagihan",
+    "backToList": "Kembali ke Invoice",
     "retry": "Coba Lagi",
     "confirmDelete": "Hapus faktur {{number}}? Tindakan ini tidak dapat dibatalkan.",
     "action": {
@@ -5565,7 +5680,7 @@
     "due": "Jatuh Tempo",
     "materai": {
       "title": "Materai diperlukan",
-      "desc": "Faktur ini melebihi Rp 5.000.000 dan memerlukan materai Rp 10.000. Tempelkan materai pada salinan cetak sebelum dikirim ke klien."
+      "desc": "Invoice ini melebihi Rp 5.000.000 dan memerlukan materai Rp 10.000. Tempelkan materai pada salinan cetak sebelum dikirim ke klien."
     },
     "items": "Rincian Item",
     "col": {
@@ -5598,19 +5713,19 @@
     }
   },
   "invoiceCreate": {
-    "backToList": "Kembali ke Tagihan",
-    "title": "Faktur Baru",
+    "backToList": "Kembali ke Invoice",
+    "title": "Invoice Baru",
     "desc": "Buat faktur baru untuk klien — pilih proyek, isi detail, dan simpan sebagai draf.",
-    "titleReimbursable": "Faktur Reimburse Baru",
+    "titleReimbursable": "Invoice Reimburse Baru",
     "descReimbursable": "Tagih klien untuk biaya talangan yang belum tertagih pada proyek ini."
   },
   "invoiceEdit": {
-    "notFoundTitle": "Faktur tidak ditemukan",
-    "notFoundDesc": "Faktur ini mungkin telah dihapus atau Anda tidak memiliki akses.",
-    "backToList": "Kembali ke Tagihan",
+    "notFoundTitle": "Invoice tidak ditemukan",
+    "notFoundDesc": "Invoice ini mungkin telah dihapus atau Anda tidak memiliki akses.",
+    "backToList": "Kembali ke Invoice",
     "retry": "Coba Lagi",
-    "backToInvoice": "Kembali ke Faktur",
-    "title": "Edit Faktur",
+    "backToInvoice": "Kembali ke Invoice",
+    "title": "Edit Invoice",
     "desc": "Mengedit {{n}} — perubahan disimpan ke catatan faktur.",
     "descPlain": "Perubahan disimpan ke catatan faktur."
   },
@@ -5939,7 +6054,7 @@
   },
   "calendarPage": {
     "title": "Kalender",
-    "subtitle": "Tagihan, penawaran, proyek, dan acara ditampilkan di grid bulanan.",
+    "subtitle": "Invoice, penawaran, proyek, dan acara ditampilkan di grid bulanan.",
     "today": "Hari Ini",
     "noItems": "Tidak ada item hari ini.",
     "selectedDay": "Hari Terpilih",
@@ -5949,7 +6064,7 @@
     "noUpcomingItems": "Tidak ada item mendatang.",
     "overdue": "Terlewat",
     "kind": {
-      "invoice": "Tagihan",
+      "invoice": "Invoice",
       "quotation": "Penawaran",
       "project": "Proyek",
       "event": "Acara"
@@ -5972,7 +6087,8 @@
     "selected": "Hari Terpilih",
     "upcoming": "14 Hari ke Depan",
     "upcomingEmpty": {
-      "title": "Tidak ada agenda mendatang"
+      "title": "Tidak ada agenda mendatang",
+      "desc": "Tidak ada jadwal dalam 14 hari ke depan."
     },
     "upcomingTitle": "Agenda Mendatang"
   },
@@ -6161,7 +6277,8 @@
       "schedule": "Jadwalkan",
       "scheduleDate": "Tanggal Jadwal",
       "time": "Waktu",
-      "title": "Tambah Konten"
+      "title": "Tambah Konten",
+      "clientRequired": "Proyek ini belum memiliki klien."
     },
     "detailSheet": {
       "created": "Dibuat",
@@ -6305,7 +6422,29 @@
     "sc_move1": "Geser 1px",
     "sc_move10": "Geser 10px",
     "sc_bringFront": "Bawa ke depan",
-    "sc_sendBack": "Kirim ke belakang"
+    "sc_sendBack": "Kirim ke belakang",
+    "speakerNotes": "Catatan Pembicara",
+    "notesPlaceholder": "Tambahkan catatan pembicara untuk slide ini…",
+    "noSlideSelected": "Pilih slide untuk mengedit catatannya",
+    "zoomOut": "Perkecil",
+    "currentZoom": "Zoom saat ini",
+    "zoomIn": "Perbesar",
+    "zoomFit": "Sesuaikan dengan jendela",
+    "reorderError": "Gagal mengatur ulang urutan slide",
+    "transitionError": "Gagal menyimpan transisi",
+    "titleUpdated": "Judul deck diperbarui",
+    "titleUpdateError": "Gagal memperbarui judul",
+    "clickToRename": "Klik untuk mengganti nama",
+    "insertTable": "Sisipkan Tabel",
+    "table": "Tabel",
+    "insertChart": "Sisipkan Grafik",
+    "chart": "Grafik",
+    "insertIcon": "Sisipkan Ikon",
+    "icon": "Ikon",
+    "findReplace": "Cari & Ganti (Ctrl+F / Ctrl+H)",
+    "toggleNotes": "Catatan Pembicara",
+    "transition": "Transisi",
+    "duration": "Durasi"
   },
   "shotListEditor": {
     "saveSuccess": "Shot list tersimpan",
@@ -6642,7 +6781,9 @@
     "specialReqAddFailed": "Gagal menambah kebutuhan khusus.",
     "specialReqUpdateFailed": "Gagal memperbarui kebutuhan khusus.",
     "specialReqRemoved": "Kebutuhan khusus dihapus.",
-    "specialReqRemoveFailed": "Gagal menghapus kebutuhan khusus."
+    "specialReqRemoveFailed": "Gagal menghapus kebutuhan khusus.",
+    "poweredByGoogle": "Didukung oleh Google",
+    "addressAutocompleteHint": "Pilih salah satu saran agar cuaca dan jam matahari terisi otomatis sesuai lokasi syuting."
   },
   "mediaCollab": {
     "loadMore": "Muat lainnya",
@@ -6811,7 +6952,30 @@
     "roleCommenter": "Pengomentar",
     "roleEditor": "Editor",
     "confirmDeleteAssetTitle": "Hapus aset?",
-    "inviteEmailInvalid": "Masukkan alamat email yang valid."
+    "inviteEmailInvalid": "Masukkan alamat email yang valid.",
+    "resolveFailed": "Gagal menyelesaikan komentar.",
+    "uploadSkipped": "\"{{name}}\" dilewati.",
+    "uploadedCount": "{{n}} file diunggah",
+    "skippedCount": "{{n}} dilewati",
+    "failedCount": "{{n}} gagal",
+    "uploadQueue": "Antrean Unggahan",
+    "retryAll": "Ulangi semua unggahan yang gagal",
+    "clearQueue": "Bersihkan",
+    "statusQueued": "Menunggu",
+    "statusDone": "Selesai",
+    "statusError": "Gagal",
+    "duplicateTitle": "File Sudah Ada",
+    "duplicateDesc": "{{n}} file sudah ada di folder ini. Pilih cara menanganinya.",
+    "conflictSkip": "Lewati",
+    "conflictReplace": "Timpa",
+    "conflictKeepBoth": "Simpan Keduanya",
+    "conflictSkipDesc": "Jangan unggah file yang sudah ada.",
+    "conflictReplaceDesc": "Hapus file yang ada dan unggah yang baru.",
+    "conflictKeepBothDesc": "Beri nama file baru dengan akhiran waktu.",
+    "uploadedBy": "oleh",
+    "newFilesAlwaysUpload": "{{n}} file baru akan tetap diunggah.",
+    "confirmUpload": "Konfirmasi Unggah",
+    "resolveComment": "Tandai selesai"
   },
   "salaries": {
     "pageTitle": "Gaji Karyawan",
@@ -6907,7 +7071,9 @@
       "base": "Gaji Pokok",
       "deductions": "Potongan",
       "netPay": "Gaji Bersih",
-      "staffSearch": "Cari berdasarkan nama atau jabatan..."
+      "staffSearch": "Cari berdasarkan nama atau jabatan...",
+      "basePlaceholder": "Pilih karyawan",
+      "baseAutoHint": "Terisi otomatis dari gaji yang terdaftar untuk karyawan ini."
     },
     "createPayment": "Buat Pembayaran",
     "updatePayment": "Perbarui Pembayaran",
@@ -6979,7 +7145,11 @@
       "payStaff": "Bayar Staf Ini",
       "error": "Tidak dapat memuat detail staf"
     },
-    "backToSalaries": "Kembali ke Penggajian"
+    "backToSalaries": "Kembali ke Penggajian",
+    "staffCreated": "Karyawan berhasil dibuat.",
+    "staffCreateFailed": "Gagal membuat karyawan.",
+    "staffUpdated": "Data karyawan diperbarui.",
+    "staffUpdateFailed": "Gagal memperbarui data karyawan."
   },
   "systemReport": {
     "backToReports": "Kembali ke Laporan",
@@ -6995,19 +7165,19 @@
     "revenue": {
       "total": "Total Pendapatan",
       "average": "Rata-rata / Periode",
-      "invoices": "Faktur",
+      "invoices": "Invoice",
       "byPeriod": "Pendapatan per Periode"
     },
     "payment": {
-      "overdueCount": "Faktur Jatuh Tempo",
+      "overdueCount": "Invoice Jatuh Tempo",
       "overdueAmount": "Nilai Jatuh Tempo",
       "statuses": "Kelompok Status",
-      "byStatus": "Faktur menurut Status",
+      "byStatus": "Invoice menurut Status",
       "status": "Status",
       "count": "Jumlah",
       "amount": "Nilai",
-      "overdueList": "Faktur Jatuh Tempo",
-      "invoice": "Faktur",
+      "overdueList": "Invoice Jatuh Tempo",
+      "invoice": "Invoice",
       "client": "Klien"
     },
     "clients": {
@@ -7015,7 +7185,7 @@
       "ranked": "Diperingkat",
       "top": "Klien Teratas berdasarkan Pendapatan",
       "name": "Klien",
-      "invoices": "Faktur",
+      "invoices": "Invoice",
       "revenue": "Pendapatan"
     },
     "projects": {
@@ -7035,7 +7205,7 @@
     "noRevenue": "Tidak ada pendapatan tercatat untuk periode ini.",
     "topClients": "Klien Teratas (sepanjang waktu)",
     "topProjects": "Proyek Teratas (sepanjang waktu)",
-    "paymentStatus": "Faktur menurut Status (sepanjang waktu)",
+    "paymentStatus": "Invoice menurut Status (sepanjang waktu)",
     "client": "Klien",
     "project": "Proyek",
     "revenue": "Pendapatan",
@@ -7051,7 +7221,7 @@
       "outstandingSub": "menunggu pembayaran",
       "overdue": "Jatuh Tempo",
       "overdueSub": "{{n}} faktur",
-      "conversion": "Penawaran → Faktur",
+      "conversion": "Penawaran → Invoice",
       "conversionSub": "tingkat konversi",
       "paymentRate": "Tingkat Pembayaran",
       "paymentRateSub": "faktur lunas",
@@ -7364,15 +7534,15 @@
     "openFull": "Buka formulir lengkap",
     "cancel": "Batal",
     "saving": "Menyimpan...",
-    "save": "Simpan Pengeluaran",
+    "save": "Catat Pengeluaran",
     "savedAddAnother": "Pengeluaran {{n}} tersimpan — tambah lagi.",
-    "saveAddAnother": "Simpan & tambah lagi",
+    "saveAddAnother": "Catat & tambah lagi",
     "saveAddAnotherHint": "Simpan dan biarkan formulir terbuka untuk pengeluaran berikutnya"
   },
   "recordPayment": {
     "title": "Catat Pembayaran",
     "subtitle": "Catat pembayaran untuk faktur ini.",
-    "subtitleNamed": "Faktur {{n}}",
+    "subtitleNamed": "Invoice {{n}}",
     "outstanding": "Sisa Tagihan",
     "amount": "Jumlah (IDR)",
     "payFull": "Bayar lunas sisa tagihan",
@@ -7421,10 +7591,10 @@
     "groupClients": "Klien",
     "groupProjects": "Proyek",
     "groupQuotations": "Penawaran",
-    "groupInvoices": "Faktur",
+    "groupInvoices": "Invoice",
     "groupUsers": "Pengguna",
     "newQuotation": "Penawaran Baru",
-    "newInvoice": "Faktur Baru",
+    "newInvoice": "Invoice Baru",
     "newClient": "Klien Baru",
     "newProject": "Proyek Baru",
     "hintNavigate": "navigasi",
@@ -7490,7 +7660,7 @@
     },
     "field": {
       "code": "Kode",
-      "prefix": "Awalan Faktur",
+      "prefix": "Awalan Invoice",
       "name": "Nama",
       "namePlaceholder": "Fotografi",
       "description": "Deskripsi",
@@ -7589,9 +7759,16 @@
       "rotate": "Putar searah jarum jam (R)",
       "download": "Unduh",
       "close": "Tutup (Esc)",
-      "hint": "+/− zoom · R putar · 0 reset · Esc tutup"
+      "hint": "+/− zoom · R putar · 0 reset · Esc tutup",
+      "hideDetails": "Sembunyikan detail",
+      "showDetails": "Tampilkan detail: rating & komentar",
+      "prev": "Sebelumnya (←)",
+      "details": "Detail",
+      "next": "Berikutnya (→)"
     },
-    "shiftClickHint": "Shift-klik untuk memilih rentang"
+    "shiftClickHint": "Shift-klik untuk memilih rentang",
+    "prevAsset": "Aset sebelumnya",
+    "nextAsset": "Aset berikutnya"
   },
   "guestReview": {
     "feedbackHeader": "Tinggalkan Masukan",
@@ -7651,7 +7828,8 @@
     "folderRenamed": "Folder berhasil diubah namanya.",
     "folderRenameFailed": "Gagal mengubah nama folder.",
     "folderDeleted": "Folder berhasil dihapus.",
-    "folderDeleteFailed": "Gagal menghapus folder."
+    "folderDeleteFailed": "Gagal menghapus folder.",
+    "folder": "Folder"
   },
   "mediaCollections": {
     "new": "Koleksi Baru",
@@ -7789,7 +7967,10 @@
     "statusPending": "Menunggu",
     "statusAccepted": "Diterima",
     "statusExpired": "Kedaluwarsa",
-    "statusRevoked": "Dicabut"
+    "statusRevoked": "Dicabut",
+    "accessLevelUpdated": "Tingkat akses diperbarui",
+    "accessLevelUpdateError": "Gagal memperbarui tingkat akses",
+    "accessLevel": "Siapa saja dengan tautan"
   },
   "deckPublic": {
     "eyebrow": "Deck Publik",
@@ -7830,7 +8011,10 @@
     "laserPointer": "Penunjuk laser (P)",
     "startAutoPlay": "Mulai putar otomatis",
     "pauseAutoPlay": "Jeda putar otomatis",
-    "exit": "Keluar presentasi (Esc)"
+    "exit": "Keluar presentasi (Esc)",
+    "notesCaption": "Teks catatan pembicara (N)",
+    "audienceView": "Tampilan audiens",
+    "presenterView": "Tampilan presenter (S)"
   },
   "schedules": {
     "title": "Jadwal Syuting",
@@ -7873,7 +8057,9 @@
     "noShotListsFound": "Tidak ada daftar shot untuk proyek ini",
     "fieldStartDate": "Tanggal Mulai",
     "fieldPagesPerDay": "Halaman / Hari",
-    "createSubmit": "Buat Jadwal"
+    "createSubmit": "Buat Jadwal",
+    "nameMin": "Nama minimal 2 karakter",
+    "projectRequired": "Pilih sebuah proyek"
   },
   "scheduleEditor": {
     "description": "Tata adegan ke dalam hari syuting. Atur ulang strip, tambahkan istirahat makan dan perpindahan, atau jadwalkan otomatis dari daftar shot.",
@@ -7974,7 +8160,24 @@
     "fieldMoveFrom": "Dari",
     "fieldMoveTo": "Ke",
     "fieldMoveTravel": "Perjalanan (mnt)",
-    "fieldMoveNotes": "Catatan"
+    "fieldMoveNotes": "Catatan",
+    "stripDuplicated": "Adegan diduplikasi",
+    "importFromShotList": "Impor dari shot list",
+    "colScene": "Adegan",
+    "colIntExt": "I/E",
+    "colDayNight": "D/N",
+    "colDescription": "Deskripsi / Set",
+    "colLocation": "Lokasi",
+    "colPages": "Hal.",
+    "duplicateScene": "Duplikat adegan",
+    "quickAddHint": "Ketik nama adegan lalu tekan Enter untuk menambah adegan berikutnya",
+    "importSuccess": "Adegan diimpor ke Hari {{n}}",
+    "importFailed": "Gagal mengimpor adegan",
+    "importTitle": "Impor adegan dari shot list",
+    "importDesc": "Setiap adegan dari shot list yang dipilih ditambahkan ke Hari {{n}} sebagai strip. Urutan bisa diatur ulang atau dijadwalkan otomatis setelahnya.",
+    "importNoLists": "Belum ada shot list untuk proyek ini.",
+    "importSceneCount": "{{count}} adegan",
+    "importButton": "Impor adegan"
   },
   "realizeExpense": {
     "title": "Catat pengeluaran nyata",
@@ -8063,7 +8266,8 @@
       "loadError": "Tidak dapat memuat data. Periksa koneksi Anda lalu coba lagi.",
       "retry": "Coba lagi",
       "logout": "Keluar",
-      "switchClient": "Ganti klien"
+      "switchClient": "Ganti klien",
+      "back": "Kembali"
     },
     "picker": {
       "title": "Pilih klien",
@@ -8406,5 +8610,1053 @@
     "liveNote": "Status: {{status}}. Sudah terlihat oleh klien.",
     "pdf": "Pratinjau PDF",
     "button": "Pratinjau sebagai klien"
+  },
+  "guides": {
+    "ui": {
+      "staffTitle": "Panduan",
+      "staffSubtitle": "Langkah demi langkah untuk tim Monomi, lengkap dengan gambar.",
+      "clientTitle": "Bantuan",
+      "clientSubtitle": "Cara memakai portal klien Monomi, langkah demi langkah.",
+      "search": "Cari panduan…",
+      "searchLabel": "Cari panduan",
+      "all": "Semua",
+      "noResults": "Tidak ada panduan yang cocok.",
+      "noResultsHint": "Coba kata kunci lain atau hapus filter.",
+      "minutes": "±{{count}} menit",
+      "stepsCount": "{{count}} langkah",
+      "steps": "Langkah",
+      "stepOf": "Langkah {{n}} dari {{total}}",
+      "toc": "Daftar langkah",
+      "openPage": "Buka halaman ini",
+      "tip": "Tips",
+      "zoom": "Perbesar gambar",
+      "zoomClose": "Tutup",
+      "imageAlt": "Tangkapan layar langkah {{n}}: {{title}}",
+      "badgeNote": "Angka oranye pada gambar menunjukkan bagian yang dimaksud.",
+      "back": "Semua panduan",
+      "backClient": "Semua bantuan",
+      "notFound": "Panduan tidak ditemukan",
+      "notFoundDesc": "Panduan ini tidak ada atau sudah dipindahkan.",
+      "related": "Panduan terkait",
+      "next": "Panduan berikutnya",
+      "help": "Panduan",
+      "helpClient": "Bantuan",
+      "needHelp": "Butuh bantuan?",
+      "demoNote": "Gambar memakai data contoh (Demo), bukan data klien sebenarnya.",
+      "subGuide": "Sub-panduan",
+      "adminOnly": "Khusus admin",
+      "topic": {
+        "report": "Laporan",
+        "content": "Konten",
+        "client": "Klien",
+        "media": "Media",
+        "login": "Akses",
+        "deck": "Deck",
+        "sales": "Penjualan & Penagihan",
+        "production": "Produksi",
+        "marketing": "Marketing",
+        "finance": "Keuangan & Akuntansi",
+        "admin": "Administrasi"
+      }
+    },
+    "items": {
+      "laporan-bulanan": {
+        "title": "Laporan media sosial bulanan",
+        "purpose": "Buat laporan bulanan untuk klien, isi angkanya, lalu kirim ke portal klien.",
+        "steps": {
+          "daftar": {
+            "title": "Buka Laporan Sosial Media dan klik Laporan Baru",
+            "body": "Halaman ini menampilkan semua laporan dan proyek yang belum punya laporan bulan ini.",
+            "tip": "Bulan lalu sudah ada laporan? Pakai \"Salin laporan terakhir\" supaya bagian dan grafiknya langsung siap."
+          },
+          "identitas": {
+            "title": "Pilih proyek dan bulan, lalu klik Simpan & Lanjutkan",
+            "body": "Isi proyek (1), bulan (2), dan judul. Satu proyek hanya bisa punya satu laporan per bulan.",
+            "tip": "Judul terisi otomatis; ubah bila perlu."
+          },
+          "bagian-data": {
+            "title": "Pilih cara mengisi data",
+            "body": "Satu bagian adalah satu tabel angka beserta grafiknya. Ada tiga cara: unggah file, ketik di tabel, atau angka utama."
+          },
+          "unggah-file": {
+            "title": "Cara 1: unggah file CSV atau Excel",
+            "body": "Beri judul bagian, lalu pilih file .csv, .xlsx, atau .xls (maks. 5 MB). Belum punya file? Unduh template dengan kolom yang benar.",
+            "tip": "Satu baris per hari. Kolom tanggal dikenali otomatis."
+          },
+          "pratinjau-file": {
+            "title": "Periksa hasil bacaan file",
+            "body": "Aplikasi menampilkan jumlah baris dan kolom, jenis tiap kolom, dan beberapa baris pertama. Periksa sebelum menambah bagian.",
+            "tip": "Jika ada tanggal di luar bulan laporan, Anda akan diminta mengonfirmasi dulu."
+          },
+          "ketik-tabel": {
+            "title": "Cara 2: ketik langsung di tabel",
+            "body": "Pilih tabel awal seperti Instagram harian (1); semua tanggal bulan itu sudah terisi. Lalu ketik angkanya di sel (2).",
+            "tip": "Angka boleh ditulis 1.234 atau 12,5."
+          },
+          "tempel-excel": {
+            "title": "Atau tempel dari Excel",
+            "body": "Klik Tempel dari Excel (1), tempel tabel beserta baris judulnya (2), lalu klik Pakai tabel yang ditempel (3)."
+          },
+          "angka-utama": {
+            "title": "Cara 3: isi angka utama saja",
+            "body": "Cocok bila hanya ada beberapa total, misalnya pengikut baru atau engagement rate. Tiap angka menjadi satu kartu di laporan."
+          },
+          "grafik": {
+            "title": "Atur grafik",
+            "body": "Setelah bagian dibuat, grafik muncul otomatis. Ubah tipe grafik (1), kolom yang ditampilkan (2), lalu klik Simpan (3).",
+            "tip": "Grafik tanpa data disembunyikan dari klien."
+          },
+          "pratinjau-klien": {
+            "title": "Pratinjau seperti yang dilihat klien",
+            "body": "Klik Pratinjau sebagai klien. Tampilannya sama persis dengan portal; klien belum bisa melihatnya selama masih draf."
+          },
+          "tayangkan": {
+            "title": "Tandai selesai: tayangkan di portal",
+            "body": "Di halaman laporan, buka menu Tindakan lainnya dan pilih Tayangkan di portal (tanpa email). Status berubah menjadi Selesai dan laporan langsung terlihat oleh klien."
+          },
+          "kirim": {
+            "title": "Kirim ke klien",
+            "body": "Klik Kirim ke klien untuk mengirim email berisi tautan ke semua kontak portal yang aktif. Periksa daftar penerima, lalu klik Kirim email.",
+            "tip": "Belum ada kontak? Tambahkan di kartu Portal Klien pada halaman klien."
+          },
+          "kembali-draf": {
+            "title": "Kembalikan ke draf bila perlu mengubah",
+            "body": "Laporan yang sudah tayang bisa dikembalikan ke draf lewat Kembalikan ke draf (1). Laporan hilang dari portal sampai Anda menayangkannya lagi."
+          },
+          "salin": {
+            "title": "Salin ke bulan lain",
+            "body": "Buka Tindakan lainnya, pilih Salin ke bulan depan, tentukan bulan dan tahun, lalu klik Salin. Bagian dan grafik ikut tersalin sebagai draf; Anda hanya mengisi angka baru."
+          }
+        }
+      },
+      "perencana-konten": {
+        "title": "Perencana konten",
+        "purpose": "Rencanakan, jadwalkan, dan pratinjau konten Instagram dan TikTok untuk satu klien.",
+        "steps": {
+          "pilih-klien": {
+            "title": "Pilih klien di Kalender Konten",
+            "body": "Buka Kalender Konten lalu pilih klien (1). Monomi sendiri juga ada, bertanda Internal (2).",
+            "tip": "Hanya klien yang punya proyek Manajemen Media Sosial yang muncul."
+          },
+          "kalender": {
+            "title": "Kenali halaman kalender",
+            "body": "Tambah Konten (1) membuat konten baru. Tab di atas kalender (2) mengganti tampilan: Bulan, Daftar, Instagram, dan TikTok."
+          },
+          "buat-konten": {
+            "title": "Tulis keterangan, pilih platform dan tipe konten",
+            "body": "Isi keterangan (1), pilih platform (2), lalu tipe: Foto/Video, Carousel, Reel, atau Story (3).",
+            "tip": "Setiap tipe punya aturan media sendiri, tertulis di bawah pilihannya."
+          },
+          "media-jadwal": {
+            "title": "Tambahkan media dan atur jadwal",
+            "body": "Klik Tambah untuk memilih media (1), lalu pilih tanggal (2) dan jam (3). Jam selalu dalam WIB, tidak mengikuti zona waktu browser. Klik Jadwalkan (4); tanpa tanggal, konten tersimpan sebagai draf."
+          },
+          "detail-aksi": {
+            "title": "Buka konten untuk melihat aksinya",
+            "body": "Klik konten di kalender. Duplikat (1) membuat salinan draf, Terbitkan (2) menandainya sudah tayang. Ada juga Edit, Arsipkan, dan Hapus."
+          },
+          "terbitkan": {
+            "title": "Tandai sudah terbit",
+            "body": "Tentukan tanggal (1) dan jam tayang yang sebenarnya, lalu klik Tandai terbit (2). Aplikasi tidak memposting otomatis ke Instagram atau TikTok.",
+            "tip": "Konten berlabel Terlambat berarti jadwalnya sudah lewat; tandai terbit atau jadwalkan ulang."
+          },
+          "seret": {
+            "title": "Seret konten untuk menjadwal ulang",
+            "body": "Seret kartu konten (1) ke tanggal lain di tampilan Bulan. Jam tetap. Klik Urungkan (2) bila salah."
+          },
+          "aksi-massal": {
+            "title": "Pilih beberapa konten sekaligus",
+            "body": "Di tampilan Daftar, centang beberapa konten. Bilah di atas (1) menyediakan Ubah status, Geser jadwal, dan Hapus untuk semuanya."
+          },
+          "pratinjau-ig": {
+            "title": "Lihat konten seperti di profil Instagram",
+            "body": "Tab Instagram menampilkan profil klien dan grid kontennya (1). Klik Buka pratinjau ponsel (2) untuk tampilan layar penuh.",
+            "tip": "Profil diambil dari data klien; isi username dan bio di halaman klien."
+          },
+          "highlights": {
+            "title": "Kelola Highlight Instagram",
+            "body": "Klik Highlights, beri judul (1), pilih media vertikal 9:16 (2), lalu klik Buat Highlight (3). Media pertama menjadi sampul."
+          },
+          "pratinjau-tiktok": {
+            "title": "Lihat konten seperti di TikTok",
+            "body": "Tab TikTok menampilkan profil TikTok klien. Klik Buka pratinjau TikTok (1) untuk melihat dalam bingkai ponsel."
+          },
+          "bagikan": {
+            "title": "Bagikan pratinjau ke klien lewat tautan",
+            "body": "Klik Bagikan, lalu Aktifkan tautan berbagi. Salin tautannya (2) dan kirim ke klien; mereka tidak perlu login. Nonaktifkan kapan saja."
+          }
+        }
+      },
+      "konten-monomi": {
+        "title": "Konten Monomi sendiri",
+        "purpose": "Rencanakan konten akun Monomi sendiri dan isi profil Instagram-nya.",
+        "steps": {
+          "klien-monomi": {
+            "title": "Buka halaman klien Monomi",
+            "body": "Monomi tercatat sebagai klien Internal (1). Klik Edit (2) untuk mengisi profil sosialnya.",
+            "tip": "Klien internal tidak bisa dihapus dan tidak punya portal klien."
+          },
+          "profil-instagram": {
+            "title": "Isi profil Instagram",
+            "body": "Pada bagian Profil Instagram, isi username (1) dan bio (2). Lakukan hal yang sama untuk TikTok, lalu simpan."
+          },
+          "planner-monomi": {
+            "title": "Rencanakan konten di Kalender Konten",
+            "body": "Pilih Monomi di Kalender Konten. Profil yang baru diisi tampil di tab Instagram (1), dan konten dibuat seperti untuk klien lain."
+          }
+        }
+      },
+      "portal-klien": {
+        "title": "Portal klien: beri akses ke klien",
+        "purpose": "Tambahkan kontak klien agar bisa masuk ke portal dan melihat laporan, media, deck, dan rencana konten.",
+        "steps": {
+          "kartu": {
+            "title": "Buka halaman klien dan cari kartu Portal Klien",
+            "body": "Kartu ini (1) berisi kontak yang boleh masuk, serta tautan portal (2) yang bisa disalin.",
+            "tip": "Klien internal (Monomi) tidak memiliki portal."
+          },
+          "tambah-kontak": {
+            "title": "Tambah kontak",
+            "body": "Isi nama (1) dan email (2), lalu klik Tambah kontak (3). Klien masuk dengan kode 6 digit yang dikirim ke email itu, tanpa kata sandi."
+          },
+          "aktif-undang": {
+            "title": "Aktifkan, nonaktifkan, atau kirim undangan",
+            "body": "Saklar Aktif (1) mengizinkan atau menutup akses tanpa menghapus kontak. Kirim undangan (2) mengirim email berisi tautan portal.",
+            "tip": "Kontak yang dinonaktifkan tidak bisa meminta kode baru."
+          },
+          "dilihat-klien": {
+            "title": "Ini yang dilihat klien",
+            "body": "Setelah masuk, klien hanya melihat data miliknya sendiri di empat tab (1): Konten, Laporan (yang sudah tayang), Media, dan Deck."
+          }
+        }
+      },
+      "kolaborasi-media": {
+        "title": "Kolaborasi media",
+        "purpose": "Kumpulkan foto dan video hasil produksi, tinjau bersama klien, dan bagikan lewat tautan.",
+        "steps": {
+          "proyek-baru": {
+            "title": "Buat proyek media",
+            "body": "Di Kolaborasi Media klik Proyek Baru, isi nama proyek (1), lalu klik Buat Proyek (2).",
+            "tip": "Hubungkan ke klien dan proyek agar klien melihatnya di portal."
+          },
+          "unggah": {
+            "title": "Unggah aset",
+            "body": "Buka proyek, lalu klik Unggah Aset (1). Pilih banyak foto dan video sekaligus; progres unggah tampil di layar."
+          },
+          "folder": {
+            "title": "Rapikan dengan folder",
+            "body": "Panel Folder di kiri galeri. Klik ikon tambah (1) untuk membuat folder baru; Semua File (2) menampilkan semuanya."
+          },
+          "pilih-unduh": {
+            "title": "Pilih aset lalu unduh",
+            "body": "Klik Pilih pada aset (1), atau Pilih Semua (2). Bilah di bawah (3) menyediakan Pindahkan, Beri nilai, Unduh, dan Hapus. Unduh Semua mengarsipkan seluruh aset proyek."
+          },
+          "pilih-hp": {
+            "title": "Di ponsel: bilah pilihan di bawah layar",
+            "body": "Setelah memilih, bilah tindakan muncul menempel di bawah layar dengan ikon pindah folder, bandingkan, rating, unduh, dan hapus."
+          },
+          "rating": {
+            "title": "Beri rating dan komentar",
+            "body": "Klik aset untuk membukanya. Beri bintang (1) dan tulis komentar (2) di panel kanan; tim dan klien melihat masukan yang sama."
+          },
+          "tautan": {
+            "title": "Atur tautan publik",
+            "body": "Klik Atur Berbagi. Salin tautan (1) untuk dikirim ke klien tanpa login, atur masa berlaku (3), atau Nonaktifkan (2) bila tidak lagi dibutuhkan."
+          }
+        }
+      },
+      "masuk-portal": {
+        "title": "Masuk ke portal",
+        "purpose": "Masuk dengan kode 6 digit yang dikirim ke email Anda, tanpa kata sandi.",
+        "steps": {
+          "email": {
+            "title": "Masukkan email Anda",
+            "body": "Ketik email yang didaftarkan Monomi (1), lalu ketuk Kirim kode (2).",
+            "tip": "Email harus yang sama dengan yang didaftarkan; jika belum, hubungi tim Monomi."
+          },
+          "kode": {
+            "title": "Masukkan kode 6 digit",
+            "body": "Buka email Anda, salin kode 6 digit, dan ketik di kolom (1). Kode berlaku beberapa menit.",
+            "tip": "Tidak ada email? Periksa folder spam atau ketuk Kirim ulang kode."
+          },
+          "pilih-klien": {
+            "title": "Pilih klien",
+            "body": "Bila akun Anda terhubung ke beberapa klien, ketuk salah satunya (1)."
+          },
+          "beranda": {
+            "title": "Kenali tampilan portal",
+            "body": "Empat tab (1) mengatur isi: Konten, Laporan, Media, dan Deck. Ganti klien (2) bila Anda punya akses ke lebih dari satu.",
+            "tip": "Tombol EN/ID mengganti bahasa."
+          }
+        }
+      },
+      "membaca-laporan": {
+        "title": "Membaca laporan bulanan",
+        "purpose": "Lihat ringkasan, grafik, dan tabel data laporan media sosial, lalu unduh sebagai PDF.",
+        "steps": {
+          "daftar": {
+            "title": "Buka tab Laporan",
+            "body": "Laporan terbaru ada di atas. Ketuk Lihat laporan (1) untuk membukanya."
+          },
+          "ringkasan": {
+            "title": "Mulai dari Ringkasan",
+            "body": "Angka-angka utama bulan ini ada di bagian Ringkasan (2). Ketuk Unduh PDF (1) untuk menyimpan laporan; menyiapkannya bisa memakan waktu hingga 30 detik.",
+            "tip": "Chip di bawah judul melompat ke tiap bagian laporan."
+          },
+          "grafik": {
+            "title": "Baca grafik",
+            "body": "Ketuk atau tahan grafik (1) untuk melihat angka pada tanggal tertentu. Kalimat di bawah grafik merangkum perubahannya."
+          },
+          "data": {
+            "title": "Lihat tabel datanya",
+            "body": "Tabel Data (1) memuat angka per hari. Geser ke samping untuk melihat kolom lain."
+          }
+        }
+      },
+      "media-klien": {
+        "title": "Melihat dan mengunduh media",
+        "purpose": "Buka galeri foto dan video, beri rating, tulis komentar, dan unduh file.",
+        "steps": {
+          "daftar": {
+            "title": "Buka tab Media",
+            "body": "Setiap galeri adalah satu proyek. Ketuk salah satunya (1)."
+          },
+          "galeri": {
+            "title": "Telusuri galeri",
+            "body": "Ketuk Unduh Semua (1) untuk mengunduh seluruh isi galeri sebagai satu arsip. Filter Semua/Foto/Video (2), pencarian, dan urutan membantu menemukan file."
+          },
+          "lightbox": {
+            "title": "Buka satu file",
+            "body": "Ketuk foto atau video untuk membukanya. Panah berpindah ke file lain, dan ikon unduh (1) menyimpan file ini."
+          },
+          "rating": {
+            "title": "Beri rating dan komentar",
+            "body": "Ketuk bintang (1) untuk menilai, lalu tulis masukan Anda (2) dan kirim. Tim Monomi langsung melihatnya."
+          }
+        }
+      },
+      "deck-klien": {
+        "title": "Melihat deck dan berkomentar",
+        "purpose": "Buka presentasi dari Monomi, geser slide, dan tulis komentar pada slide.",
+        "steps": {
+          "daftar": {
+            "title": "Buka tab Deck",
+            "body": "Deck yang dibagikan Monomi tampil di sini. Ketuk salah satunya (1)."
+          },
+          "slide": {
+            "title": "Geser antar slide",
+            "body": "Gunakan panah atau ketuk daftar slide untuk berpindah (2). Ekspor PDF (1) menyimpan deck."
+          },
+          "komentar": {
+            "title": "Tulis komentar pada slide",
+            "body": "Ketik komentar (1) untuk slide yang sedang terbuka, lalu ketuk tombol kirim. Setiap slide punya komentar sendiri."
+          }
+        }
+      },
+      "rencana-konten-klien": {
+        "title": "Melihat rencana konten",
+        "purpose": "Lihat konten yang direncanakan Monomi untuk Instagram dan TikTok Anda.",
+        "steps": {
+          "rencana": {
+            "title": "Buka tab Konten",
+            "body": "Pratinjau (1) menampilkan profil dan grid konten seperti di aplikasi Instagram. Ini hanya-baca; Anda tidak mengubah apa pun."
+          },
+          "ponsel": {
+            "title": "Buka pratinjau layar penuh",
+            "body": "Ketuk Buka pratinjau ponsel untuk melihat grid dalam bingkai ponsel; ketuk Tutup untuk kembali."
+          }
+        }
+      },
+      "klien-baru": {
+        "title": "Klien: tambah, ubah, dan lihat riwayat",
+        "purpose": "Catat klien baru lengkap dengan kontak, NPWP, dan rekening, lalu lihat semua proyek, penawaran, dan invoice-nya di satu halaman.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Klien",
+            "body": "Daftar ini memuat semua klien. Klik Klien Baru (1) untuk menambah, atau ketik nama di kolom pencarian (2) untuk mencari klien yang sudah ada.",
+            "tip": "Cari dulu sebelum menambah, supaya klien yang sama tidak tercatat dua kali."
+          },
+          "identitas": {
+            "title": "Isi identitas klien",
+            "body": "Isi Nama Klien (1) dan Perusahaan. Isi NPWP (2) bila klien memilikinya, karena NPWP ikut tercetak di dokumen. Pilih Termin Pembayaran (3), misalnya Net 14 hari, sebagai default untuk invoice baru klien ini.",
+            "tip": "Hanya Nama Klien yang wajib. Data lain bisa dilengkapi nanti lewat tombol Edit. Status Klien Aktif dibiarkan menyala."
+          },
+          "kontak": {
+            "title": "Isi kontak, rekening, dan alamat",
+            "body": "Isi Narahubung (1), Email (2), dan Telepon. Rekening Bank (3) ditulis dengan format bank, nomor rekening, dan nama pemilik. Alamat Lengkap (4) dipakai di dokumen resmi seperti invoice dan kwitansi. Klik Simpan di kanan atas bila sudah selesai.",
+            "tip": "Email kontak juga dipakai saat Anda memberi akses ke portal klien (lihat panduan Portal klien)."
+          },
+          "profil": {
+            "title": "Halaman klien setelah disimpan",
+            "body": "Setelah disimpan, Anda langsung dibawa ke halaman klien. Dari sini klik Edit (1) untuk mengubah data, atau menu tiga titik (2) untuk aksi lain. Kartu Portal Klien di bawahnya dipakai untuk memberi akses portal."
+          },
+          "riwayat": {
+            "title": "Lihat riwayat proyek",
+            "body": "Gulir ke bawah: kartu Riwayat Proyek (1) menampilkan semua proyek klien ini. Klik satu proyek untuk membukanya."
+          },
+          "riwayat-invoice": {
+            "title": "Lihat riwayat penawaran dan invoice",
+            "body": "Riwayat Invoice (1) dan Riwayat Penawaran (2) menunjukkan seluruh dokumen penagihan klien beserta statusnya, jadi Anda tahu mana yang belum dibayar tanpa membuka menu lain."
+          },
+          "ubah": {
+            "title": "Ubah data klien",
+            "body": "Klik Edit di halaman klien, ubah kolom yang perlu (1), lalu klik Simpan (2). Perubahan berlaku untuk dokumen baru; dokumen lama tidak berubah.",
+            "tip": "Klien yang sudah tidak aktif sebaiknya dimatikan lewat Status Klien (Aktif), bukan dihapus, agar riwayatnya tetap ada."
+          }
+        }
+      },
+      "proyek-baru": {
+        "title": "Proyek: buat dan kelola",
+        "purpose": "Buat proyek untuk klien dengan jenis, tanggal, daftar produk dan estimasi biaya, lalu ubah statusnya dan buka Production Hub.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Proyek",
+            "body": "Semua proyek ada di sini. Klik Proyek Baru (1) untuk membuat, atau cari proyek lama lewat kolom pencarian (2).",
+            "tip": "Proyek harus ada sebelum Anda membuat penawaran atau invoice, karena keduanya selalu terkait ke satu proyek."
+          },
+          "identitas": {
+            "title": "Isi deskripsi dan output",
+            "body": "Tulis Deskripsi Proyek (1) secara singkat, lalu Output (2) yaitu hasil akhir yang dijanjikan, misalnya \"Video 30 detik\". Lingkup Pekerjaan (3) boleh diisi untuk merinci tugas dan jumlah revisi.",
+            "tip": "Deskripsi dan lingkup ikut tercetak di penawaran dan invoice, jadi tulis dengan bahasa yang jelas bagi klien."
+          },
+          "klien-jenis": {
+            "title": "Pilih klien dan jenis proyek",
+            "body": "Pilih Klien (1) dari daftar; ketik untuk mencari. Pilih Jenis Proyek (2): jenis ini menentukan awalan nomor proyek. Atur juga tanggal mulai dan tanggal selesai di bagian Tanggal.",
+            "tip": "Klien belum ada? Tambahkan dulu lewat panduan Klien."
+          },
+          "produk": {
+            "title": "Isi produk dan layanan",
+            "body": "Setiap baris adalah satu hal yang ditagihkan: nama item (1), deskripsi singkat, Jml, dan Harga (2). Klik Tambah Baris (3) untuk item berikutnya. Total Estimasi di bawahnya dihitung otomatis.",
+            "tip": "Baris ini dipakai kembali saat Anda membuat penawaran, jadi isi harga dengan benar."
+          },
+          "anggaran": {
+            "title": "Isi estimasi anggaran biaya",
+            "body": "Klik Tambah Baris Biaya untuk memperkirakan biaya produksi: pilih Kategori Biaya (1), Tipe Biaya (2) Langsung atau Tidak Langsung, dan Estimasi Biaya (3). Dari sini aplikasi memperkirakan margin proyek.",
+            "tip": "Bagian ini opsional dan hanya untuk perhitungan internal; klien tidak melihatnya."
+          },
+          "detail": {
+            "title": "Simpan dan lihat halaman proyek",
+            "body": "Setelah disimpan, halaman proyek menampilkan statusnya (1), tombol Pusat Produksi (2), dan tombol Edit (3). Di bawahnya ada total ditagih, diterima, pengeluaran, margin, serta faktur dan penawaran yang terkait proyek ini."
+          },
+          "status": {
+            "title": "Ubah status proyek",
+            "body": "Buka menu Tindakan lainnya dan pilih Mulai Proyek (1) saat pekerjaan dimulai. Menu yang sama berisi Duplikasi, dan pintasan untuk membuat Shot List, Call Sheet, Deck, dan Konten untuk proyek ini."
+          },
+          "production-hub": {
+            "title": "Buka Pusat Produksi",
+            "body": "Pusat Produksi mengumpulkan call sheet, jadwal, shot list, deck, dan ruang media proyek ini. Di bagian atas ada Tautan Akses Tamu (1) untuk berbagi dengan klien, dan tombol Baru (2) untuk membuat dokumen baru. Lihat panduan Pusat Produksi untuk detailnya."
+          }
+        }
+      },
+      "quotation": {
+        "title": "Quotation: dari penawaran ke invoice",
+        "purpose": "Buat penawaran dengan item dan PPN, kirim ke klien, catat persetujuan atau penolakan, buat revisi, dan lihat invoice yang terbentuk otomatis.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Quotation",
+            "body": "Daftar penawaran beserta statusnya: Draf, Terkirim, Disetujui, Ditolak. Klik Penawaran Baru (1) untuk membuat, dan gunakan filter status (2) untuk menyaring.",
+            "tip": "Alur penawaran: Draf, Terkirim, lalu Disetujui atau Ditolak."
+          },
+          "klien-proyek": {
+            "title": "Pilih klien dan proyek",
+            "body": "Pilih Klien (1), lalu Proyek (2) milik klien itu. Atur tanggal Berlaku Sampai (3): setelah tanggal ini penawaran dianggap kedaluwarsa.",
+            "tip": "Proyek yang sudah punya daftar produk akan mengisi item penawaran secara otomatis."
+          },
+          "item": {
+            "title": "Isi item penawaran",
+            "body": "Tulis nama item (1), deskripsi, jumlah, dan harga (2). Klik Tambah item (3) untuk baris berikutnya. Subtotal dihitung otomatis."
+          },
+          "ppn": {
+            "title": "Aktifkan PPN bila perlu",
+            "body": "Centang Sertakan PPN 11% (1) bila klien memerlukannya, biasanya untuk klien ber-NPWP. Ringkasan Nilai (2) menampilkan subtotal, pajak, dan total yang akan tertera di dokumen.",
+            "tip": "Pastikan harga di item belum termasuk PPN; aplikasi menambahkan 11% di atas subtotal."
+          },
+          "ketentuan": {
+            "title": "Atur ketentuan pembayaran",
+            "body": "Pilih Pembayaran Penuh atau Termin (1) bila pembayaran dicicil, lalu periksa Syarat & Ketentuan (2) yang tercetak di dokumen. Klik Simpan; penawaran tersimpan sebagai Draf.",
+            "tip": "Penawaran Draf masih bisa diubah lewat menu Aksi penawaran, pilihan Ubah."
+          },
+          "kirim": {
+            "title": "Kirim penawaran",
+            "body": "Buka penawaran Draf (1) dan klik Kirim (2). Status berubah menjadi Terkirim. Menu tiga titik (3), Aksi penawaran, berisi Ubah dan Pratinjau PDF untuk mengecek tampilan dokumen.",
+            "tip": "Gunakan Pratinjau PDF sebelum mengirim untuk memastikan data klien dan harga sudah benar."
+          },
+          "setujui": {
+            "title": "Catat keputusan klien",
+            "body": "Setelah klien menjawab, buka penawaran berstatus Terkirim (1). Klik Setujui (3) bila klien setuju, atau Tolak (2) bila tidak.",
+            "tip": "Catat keputusan segera setelah klien memberi kabar, supaya invoice bisa dibuat tepat waktu."
+          },
+          "disetujui": {
+            "title": "Penawaran disetujui menjadi invoice",
+            "body": "Penawaran yang disetujui berstatus Disetujui (1) dan invoice dibuat otomatis berstatus Draf (lihat panduan Invoice). Klik Lihat Invoice (2) untuk membukanya. Bila total di atas Rp 5.000.000, muncul penanda Materai diperlukan (3) dan invoice-nya nanti meminta materai.",
+            "tip": "Salah setujui? Menu Aksi penawaran punya Buka Kembali (Batalkan Persetujuan), yang membatalkan invoice yang belum dibayar."
+          },
+          "revisi": {
+            "title": "Buat revisi dari penawaran yang ditolak",
+            "body": "Penawaran berstatus Ditolak (1) bisa direvisi: klik Buat Revisi (2). Aplikasi membuat salinan Draf baru dan menandai yang lama sebagai Direvisi. Ubah harga atau lingkup, lalu kirim ulang."
+          }
+        }
+      },
+      "invoice": {
+        "title": "Invoice: status, PDF, dan materai",
+        "purpose": "Kelola invoice dari draf sampai lunas: kirim, cek status, cetak PDF, dan penuhi pengingat materai untuk tagihan di atas Rp 5.000.000.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Invoice",
+            "body": "Judul halaman ini Invoice. Kartu di atas merangkum Belum Tertagih (2), Jatuh Tempo, dan Lunas Bulan Ini. Invoice dibuat otomatis saat penawaran disetujui; Invoice Baru (1) dipakai bila Anda menagih tanpa penawaran."
+          },
+          "status": {
+            "title": "Pahami status invoice",
+            "body": "Filter status (1) menunjukkan lima status: Draf (belum dikirim), Terkirim (menunggu pembayaran), Lunas (sudah dibayar penuh), Jatuh Tempo (lewat tanggal tempo dan belum lunas), dan Dibatalkan.",
+            "tip": "Status Lunas dan Jatuh Tempo dihitung dari pembayaran dan tanggal jatuh tempo, jadi Anda cukup mencatat pembayaran."
+          },
+          "dari-penawaran": {
+            "title": "Invoice dari penawaran",
+            "body": "Invoice yang lahir dari penawaran yang disetujui berstatus Draf (1) dan mencantumkan nomor penawarannya (2). Periksa isinya, lalu klik Kirim (3) saat siap ditagihkan."
+          },
+          "materai": {
+            "title": "Pengingat materai",
+            "body": "Untuk invoice di atas Rp 5.000.000, halaman invoice menampilkan peringatan Materai diperlukan (1): tempel materai Rp 10.000 pada cetakan sebelum dikirim ke klien. Barisnya di ringkasan (2) bertuliskan Belum diterapkan.",
+            "tip": "Penempelan materai dilakukan manual di kertas. Aplikasi hanya mengingatkan dan mencatat bahwa materai sudah ditempel."
+          },
+          "materai-tempel": {
+            "title": "Catat bahwa materai sudah ditempel",
+            "body": "Setelah materai ditempel, buka Edit pada invoice, centang Materai sudah ditempel (1), lalu klik Simpan (2). Peringatan di halaman invoice akan hilang."
+          },
+          "pdf": {
+            "title": "Cetak atau unduh PDF",
+            "body": "Di menu Tindakan lainnya pilih Pratinjau PDF (1). Dokumen terbuka di jendela pratinjau dengan tombol Unduh. Cetak dari sini bila materai harus ditempel.",
+            "tip": "Cetak dulu, tempel materai, baru kirim ke klien bila nilai invoice di atas Rp 5.000.000."
+          },
+          "kirim": {
+            "title": "Kirim invoice",
+            "body": "Klik Kirim pada invoice Draf. Status menjadi Terkirim (1) dan tombol Catat Pembayaran (2) muncul. Pembayaran dicatat dengan panduan Pembayaran dan piutang.",
+            "tip": "Invoice yang sudah Terkirim tidak bisa kembali ke Draf; bila ada salah, edit atau batalkan lalu buat ulang."
+          }
+        }
+      },
+      "piutang-pembayaran": {
+        "title": "Pembayaran dan piutang",
+        "purpose": "Catat pembayaran klien pada invoice, pantau invoice yang jatuh tempo, dan baca halaman Piutang Usaha untuk melihat siapa yang belum membayar.",
+        "steps": {
+          "tombol": {
+            "title": "Buka invoice yang akan dibayar",
+            "body": "Buka invoice berstatus Terkirim. Tombol Catat Pembayaran (1) ada di kanan atas, dan kartu Pembayaran (2) menunjukkan jumlah Dibayar, Sisa tagihan, dan jumlah transaksi."
+          },
+          "form": {
+            "title": "Isi pembayaran",
+            "body": "Isi Jumlah (1), Tanggal Pembayaran, dan Metode (2) seperti Transfer Bank. Ketik referensi transfer di kolom catatan agar mudah dicocokkan dengan mutasi bank, lalu klik Catat Pembayaran (3).",
+            "tip": "Klik \"Bayar lunas sisa tagihan\" untuk mengisi jumlah sisa secara otomatis. Anda juga bisa mencatat pembayaran sebagian (cicilan)."
+          },
+          "hasil": {
+            "title": "Lihat hasilnya",
+            "body": "Pembayaran muncul di bagian Pembayaran pada invoice, dan sisa tagihan berkurang (1). Bila total pembayaran sudah menutup tagihan, status berubah menjadi Lunas dan jurnal akuntansi dibuat otomatis."
+          },
+          "jatuh-tempo": {
+            "title": "Pantau invoice jatuh tempo",
+            "body": "Di halaman Invoice, kartu Jatuh Tempo (1) menjumlahkan invoice yang lewat batas, dan lencana Jatuh Tempo (2) menandai barisnya. Hubungi klien dan catat pembayaran begitu dana masuk."
+          },
+          "piutang": {
+            "title": "Baca halaman Piutang Usaha",
+            "body": "Menu Akuntansi, Penjualan, Piutang Usaha merangkum total piutang (1) dan setiap invoice dengan umurnya, misalnya 1-30 Hari atau > 90 Hari. Saring lewat Semua Umur (2) atau Semua Klien. Tombol PDF dan Excel (3) mengekspor laporan.",
+            "tip": "Halaman ini khusus admin dan juga memuat invoice yang sudah Lunas sebagai daftar; total piutang hanya menghitung sisa yang belum dibayar."
+          }
+        }
+      },
+      "shot-list": {
+        "title": "Shot List: rencana pengambilan gambar",
+        "purpose": "Susun daftar shot untuk satu proyek produksi: ukuran shot, kamera, gerakan, dan durasi, lalu unduh sebagai PDF untuk kru.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Shot List",
+            "body": "Semua shot list ada di sini. Klik Shot List Baru (1) untuk membuat, atau saring menurut proyek lewat Semua Proyek (2).",
+            "tip": "Menu ini terbuka untuk semua peran, termasuk videografer."
+          },
+          "buat": {
+            "title": "Buat shot list baru",
+            "body": "Isi Nama (1), pilih Proyek (2), dan deskripsi singkat bila perlu. Klik Buat Shot List (3); editor langsung terbuka.",
+            "tip": "Shot list selalu menempel pada satu proyek. Buat proyeknya dulu bila belum ada."
+          },
+          "shot": {
+            "title": "Tambah shot",
+            "body": "Setiap baris adalah satu pengambilan. Isi Deskripsi (1) aksi atau subjeknya, Tipe (2) seperti LS atau CU, kamera dan gerakan, dan durasi dalam detik. Klik Tambah Shot (3) untuk baris berikutnya, lalu klik Simpan.",
+            "tip": "Tekan Enter di sebuah baris untuk langsung menambah shot berikutnya."
+          },
+          "urutan": {
+            "title": "Atur urutan dan duplikat",
+            "body": "Panah naik dan turun mengubah urutan, ikon salin (1) menggandakan shot, dan ikon tempat sampah menghapusnya. Penomoran mengikuti urutan baris."
+          },
+          "pdf": {
+            "title": "Simpan dan unduh PDF",
+            "body": "Klik Simpan (2) untuk menyimpan semua perubahan, lalu Unduh PDF (1) untuk mendapat dokumen yang bisa dibagikan ke kru. Tulisan di bagian bawah menunjukkan ada perubahan yang belum disimpan.",
+            "tip": "Jangan tutup halaman sebelum menyimpan; perubahan baris baru tersimpan setelah Anda klik Simpan."
+          }
+        }
+      },
+      "jadwal-syuting": {
+        "title": "Jadwal Syuting: stripboard per hari",
+        "purpose": "Susun adegan ke dalam hari syuting, impor dari shot list, dan jadwalkan otomatis berdasarkan lokasi atau siang dan malam.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Jadwal Syuting",
+            "body": "Daftar jadwal syuting per proyek. Klik Jadwal Baru (1), atau saring menurut proyek (2)."
+          },
+          "buat": {
+            "title": "Buat jadwal baru",
+            "body": "Isi Nama (1), pilih Proyek, dan pilih Daftar Shot yang akan ditautkan (2) agar adegannya bisa diimpor. Atur Tanggal Mulai (3) dan halaman per hari, lalu klik Buat Jadwal.",
+            "tip": "Pilih proyek dulu; daftar shot yang tersedia mengikuti proyek itu."
+          },
+          "hari": {
+            "title": "Tambah hari syuting",
+            "body": "Klik Tambah Hari Syuting (1) untuk setiap hari pengambilan gambar. Tiap hari tampil sebagai kartu HARI 1, HARI 2, dan seterusnya, lengkap dengan jumlah adegan dan halaman."
+          },
+          "impor-menu": {
+            "title": "Buka menu hari",
+            "body": "Pada kartu hari, klik ikon pensil (Aksi hari syuting) lalu pilih Impor dari shot list (1). Menu yang sama berisi Edit hari untuk tanggal dan lokasi, serta Hapus hari."
+          },
+          "impor-dialog": {
+            "title": "Impor adegan dari shot list",
+            "body": "Pilih shot list (1) lalu klik Impor adegan (2). Setiap adegan dari shot list ditambahkan sebagai strip pada hari itu.",
+            "tip": "Impor mengisi Hari 1. Untuk hari lain, pindahkan strip dengan seret atau gunakan Jadwalkan Otomatis."
+          },
+          "strip": {
+            "title": "Atur strip di setiap hari",
+            "body": "Setiap hari berisi strip adegan (1) dengan nomor, INT/EXT, siang/malam, lokasi, dan halaman. Ubah langsung di barisnya, tambah adegan lewat baris kosong di bawah, dan seret untuk mengubah urutan."
+          },
+          "otomatis": {
+            "title": "Jadwalkan otomatis",
+            "body": "Pilih kriteria Kelompokkan (1) seperti Lokasi, INT / EXT, atau Siang / Malam, lalu klik Jadwalkan Otomatis (2). Adegan disusun ke hari-hari yang sudah Anda buat sampai target halaman per hari. Unduh PDF di kanan atas bila sudah final.",
+            "tip": "Tambahkan dulu cukup banyak hari syuting; adegan hanya mengisi hari yang sudah ada."
+          }
+        }
+      },
+      "call-sheet": {
+        "title": "Call Sheet: jadwal panggilan kru",
+        "purpose": "Buat call sheet untuk satu hari syuting: waktu panggilan, lokasi, kru, dan aktivitas, lalu tandai siap dan unduh PDF.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Call Sheet",
+            "body": "Daftar call sheet beserta statusnya. Klik Call Sheet Baru (1), atau cari menurut nama produksi, lokasi, atau sutradara (2)."
+          },
+          "buat": {
+            "title": "Buat call sheet baru",
+            "body": "Pilih Jenis (1) seperti Foto atau Film, isi Nama Produksi (2), dan pilih Tanggal Shoot. Atur Hari ke dan Total Hari bila syuting beberapa hari. Klik Buat & Buka Editor (3).",
+            "tip": "Nama produksi tampil di judul PDF; pakai nama yang dikenal kru."
+          },
+          "info": {
+            "title": "Isi info produksi dan waktu panggilan",
+            "body": "Isi Sutradara (1) dan Produser (2), lalu atur Waktu Panggilan seperti Call Kru (3), Shot Pertama, dan Makan Siang. Formatnya bebas, misalnya \"06:30\".",
+            "tip": "Waktu ditampilkan apa adanya di PDF."
+          },
+          "lokasi": {
+            "title": "Isi lokasi dan cuaca",
+            "body": "Isi Nama Lokasi (1), alamat, dan catatan parkir. Setelah lokasi disimpan, tombol Isi Otomatis (2) bisa mengisi cuaca, jam matahari terbit dan terbenam, serta rumah sakit terdekat.",
+            "tip": "Pilih alamat dari saran yang muncul supaya fitur isi otomatis dapat menemukan lokasinya."
+          },
+          "kru": {
+            "title": "Tambah aktivitas dan kru",
+            "body": "Tambah Aktivitas (1) untuk jadwal kegiatan hari itu dan Tambah Kru (2) untuk daftar kru lengkap dengan departemen, posisi, dan waktu panggil. Ada juga bagian Talent, Model, Wardrobe, dan HMU.",
+            "tip": "Baris baru berlabel BARU dan tersimpan ke server saat Anda mengisi dan menyimpannya."
+          },
+          "siap": {
+            "title": "Tandai siap dan unduh PDF",
+            "body": "Klik Simpan Call Sheet, lalu Tandai Siap (1) bila dokumen sudah final. Menu tiga titik berisi Unduh PDF (2) untuk dibagikan ke kru, dan Hapus.",
+            "tip": "Status Draft berubah menjadi Siap setelah ditandai."
+          }
+        }
+      },
+      "production-hub": {
+        "title": "Pusat Produksi: bagikan ke klien",
+        "purpose": "Satu halaman per proyek yang mengumpulkan call sheet, jadwal, shot list, deck, dan media, dengan tautan tamu hanya-baca untuk klien.",
+        "steps": {
+          "buka": {
+            "title": "Buka Pusat Produksi dari proyek",
+            "body": "Di halaman proyek, klik Pusat Produksi (1). Halaman ini hanya bisa dibuka admin."
+          },
+          "isi": {
+            "title": "Lihat isi hub",
+            "body": "Pusat Produksi mengelompokkan Call Sheet (1), Jadwal Syuting (2), Shot List, Deck Kreatif, dan Kolaborasi Media milik proyek. Tombol di tiap kartu (Call Sheet Baru, Jadwal Baru, dan seterusnya) membuat dokumen baru untuk proyek ini."
+          },
+          "tautan": {
+            "title": "Buat tautan akses tamu",
+            "body": "Klik Buat Tautan pada kartu Tautan Akses Tamu (1). Tautan hanya-baca muncul dan bisa disalin dengan Salin. Ganti Tautan membuat tautan baru (yang lama mati), dan Cabut Akses menutup akses.",
+            "tip": "Siapa pun yang memegang tautan dapat melihatnya. Jangan kirim ke tempat umum, dan Cabut Akses bila proyek selesai."
+          },
+          "tamu": {
+            "title": "Yang dilihat klien",
+            "body": "Klien membuka tautan tanpa login dan melihat halaman Read-only berisi call sheet, jadwal, shot list, deck, dan ruang media proyek ini, tanpa data keuangan."
+          }
+        }
+      },
+      "deck-presentasi": {
+        "title": "Deck Presentasi: buat, edit, dan bagikan",
+        "purpose": "Buat deck slide untuk pitch atau laporan, isi dengan teks, bagikan lewat tautan atau undangan kolaborator, dan ekspor sebagai PDF.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Deck Presentasi",
+            "body": "Setiap deck tampil sebagai kartu dengan status dan jumlah slide. Klik Deck Baru (1) untuk membuat, atau Impor (2) untuk memasukkan presentasi yang sudah ada.",
+            "tip": "Menu ini terbuka untuk semua peran."
+          },
+          "buat": {
+            "title": "Buat deck baru",
+            "body": "Isi Judul (1), deskripsi singkat, dan pilih Ukuran Kanvas (2) seperti 16:9 HD. Klik Buat Deck (3); editor langsung terbuka dengan satu slide kosong."
+          },
+          "editor": {
+            "title": "Kenali editor",
+            "body": "Bilah alat di atas (1) berisi Text, Shapes, Line, Image, Table, Chart, dan Icon. Daftar slide ada di kiri dengan tombol Slide Baru (2), dan panel Properti (3) di kanan mengatur ukuran, warna, dan posisi elemen yang dipilih.",
+            "tip": "Perubahan disimpan otomatis; indikator Tersimpan di bilah atas menunjukkan statusnya."
+          },
+          "teks-menu": {
+            "title": "Sisipkan teks",
+            "body": "Klik Text di bilah alat, lalu pilih gaya: Title, Subtitle, Body text, atau Caption (1). Elemen teks muncul di slide."
+          },
+          "teks": {
+            "title": "Ubah isi teks",
+            "body": "Klik dua kali pada teks di slide, pilih semua dengan Ctrl+A, lalu ketik isi yang baru. Klik di luar teks untuk menutup mode edit.",
+            "tip": "Elemen yang dipilih bisa digeser dengan seret dan diubah ukurannya lewat panel Properti."
+          },
+          "slide-baru": {
+            "title": "Tambah slide dari template",
+            "body": "Klik Slide Baru (2) untuk slide kosong, atau panah di sebelahnya (1) untuk memilih template seperti Slide Judul, Mood Board, Storyboard, dan Daftar Shot."
+          },
+          "bagikan-tombol": {
+            "title": "Bagikan atau ekspor",
+            "body": "Tombol Bagikan (1) membuka pengaturan akses, dan Ekspor (2) mengunduh deck. Tombol Presentasi memulai tayangan layar penuh."
+          },
+          "bagikan": {
+            "title": "Atur tautan publik dan kolaborator",
+            "body": "Di dialog Bagikan deck (1), nyalakan Tautan publik agar siapa pun yang punya tautan bisa melihat, lalu pilih hak aksesnya. Untuk kolaborator, isi email (2), pilih peran seperti Editor, dan klik Undang (3).",
+            "tip": "Tautan publik bisa dimatikan kapan saja. Deck klien yang dipublikasikan juga tampil di portal klien."
+          },
+          "ekspor": {
+            "title": "Ekspor sebagai PDF",
+            "body": "Klik Ekspor lalu pilih kualitas PDF (1): Draf (cepat), Standar, atau Tinggi (lambat). Pilihan terakhir mengekspor slide yang sedang dibuka sebagai PNG.",
+            "tip": "Pakai kualitas Draf untuk koreksi internal, dan Tinggi hanya untuk versi final."
+          }
+        }
+      },
+      "media-downloader": {
+        "title": "Media Downloader: unduh dari tautan",
+        "purpose": "Unduh video atau gambar dari YouTube, Instagram, TikTok, Twitter, Facebook, atau Vimeo cukup dengan menempel tautannya.",
+        "steps": {
+          "tautan": {
+            "title": "Tempel tautan",
+            "body": "Buka menu Media Downloader. Tempel tautan video atau gambar di kolom (1), atau klik Tempel (2) untuk mengambil dari clipboard. Enam platform didukung.",
+            "tip": "Pakai hanya untuk konten yang Anda berhak mengunduhnya, misalnya materi klien atau referensi yang diizinkan."
+          },
+          "kualitas": {
+            "title": "Pilih kualitas",
+            "body": "Pilih Kualitas (1), misalnya Kualitas Terbaik. Nyalakan Audio saja (2) untuk mengekstrak suara sebagai MP3."
+          },
+          "unduh": {
+            "title": "Unduh dan lihat riwayat",
+            "body": "Klik Unduh Sekarang (1). Hasilnya tampil di Riwayat sesi (2) lengkap dengan statusnya, dan kartu di atasnya menghitung unduhan sesi ini. Riwayat hilang saat halaman ditutup.",
+            "tip": "Unduhan yang gagal bisa dicoba lagi dari riwayat. Bila tetap gagal, tautannya mungkin privat."
+          }
+        }
+      },
+      "pengeluaran": {
+        "title": "Pengeluaran: catat biaya dan pajaknya",
+        "purpose": "Catat pengeluaran bisnis dengan kategori, vendor, PPN dan PPh, serta kaitkan ke proyek; jurnalnya terbentuk otomatis.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Pengeluaran",
+            "body": "Daftar ini menampilkan semua pengeluaran dengan ringkasan di atasnya. Klik Pengeluaran Baru (1) untuk mencatat, atau Kategori (2) untuk mengelola kategori. Gunakan pencarian (3) dan filter untuk menemukan catatan lama.",
+            "tip": "Menu ini khusus admin."
+          },
+          "detail": {
+            "title": "Isi detail pengeluaran",
+            "body": "Pilih Kategori Pengeluaran (1), isi Tanggal dan Jumlah Kotor (2) sebelum pajak. Pilih Bayar dari saldo (3): Kas atau Bank. Tulis Deskripsi yang jelas agar mudah dicari.",
+            "tip": "Kategori menentukan akun beban di jurnal. Pilih yang paling sesuai, misalnya Sewa Properti & Peralatan untuk sewa alat syuting."
+          },
+          "vendor": {
+            "title": "Isi penerima pembayaran",
+            "body": "Isi Nama Vendor (1) yang dibayar. NPWP dan alamat vendor (2) bersifat opsional tetapi berguna untuk dokumen pajak."
+          },
+          "pajak": {
+            "title": "Atur PPN dan PPh bila ada",
+            "body": "Buka bagian PPN & PPh. Nyalakan Termasuk PPN (1) bila vendor menagih PPN 11%, dan pilih PPh (2) bila ada pemotongan pajak. Ringkasan di kanan (3) menampilkan total yang akan dicatat.",
+            "tip": "Biarkan mati bila vendor tidak memungut pajak."
+          },
+          "proyek": {
+            "title": "Kaitkan ke proyek dan klien",
+            "body": "Pilih Proyek Terkait (2) agar biaya masuk ke perhitungan margin proyek; klien terisi otomatis. Nyalakan Dapat Ditagihkan ke Klien (1) bila biaya ini akan diteruskan ke klien.",
+            "tip": "Dapat Ditagihkan memindahkan biaya ke piutang lain-lain, bukan ke beban. Nyalakan hanya bila memang akan ditagih."
+          },
+          "tersimpan": {
+            "title": "Simpan pengeluaran",
+            "body": "Klik Catat Pengeluaran. Pengeluaran langsung dicatat sebagai Lunas dan muncul di daftar (1) dengan nomor EXP, status, dan tanda GL (2) yang berarti jurnalnya sudah masuk buku besar.",
+            "tip": "Tidak ada status draf: begitu dicatat, saldo Kas atau Bank yang Anda pilih langsung berkurang di buku besar. Salah catat? Edit jumlahnya (jurnal diposting ulang) atau hapus dari halaman detail (jurnal dibalik)."
+          },
+          "jurnal": {
+            "title": "Lihat detail dan jurnalnya",
+            "body": "Klik baris pengeluaran untuk membuka detailnya. Lihat jurnal (1) membuka jurnal akuntansi terkait, Rincian Pajak (2) menunjukkan PPN dan total, dan Edit (3) mengubah data."
+          },
+          "kategori": {
+            "title": "Kelola kategori",
+            "body": "Menu Kategori memuat kode akun PSAK, kelas beban, dan aturan pajak tiap kategori. Gunakan Tambah Kategori untuk membuat yang baru.",
+            "tip": "Ubah kategori hanya bila Anda memahami dampaknya ke akun; kategori yang dipakai di jurnal sebaiknya tidak dihapus."
+          }
+        }
+      },
+      "akuntansi-dasar": {
+        "title": "Akuntansi dasar: jurnal dan laporan",
+        "purpose": "Cara melihat jurnal, mencatat jurnal manual, membaca saldo kas dan bank, dan membuka laporan laba rugi, neraca, dan bagan akun.",
+        "steps": {
+          "jurnal": {
+            "title": "Lihat Jurnal",
+            "body": "Menu Akuntansi, Jurnal memuat semua jurnal, otomatis maupun manual. Kartu di atas (1) merangkum jumlah entri dan total debit. Saring menurut Tipe (2), tanggal, atau status, dan klik Jurnal Baru (3) untuk mencatat sendiri.",
+            "tip": "Invoice, pembayaran, pengeluaran, dan gaji membuat jurnalnya sendiri. Anda tidak perlu mengisinya lagi."
+          },
+          "jurnal-baru": {
+            "title": "Mulai jurnal manual",
+            "body": "Pilih Tipe Transaksi (1), isi Deskripsi (2) minimal 10 karakter, dan Nomor Dokumen (3) bila ada bukti. Tanggal entry menentukan periode fiskalnya.",
+            "tip": "Gunakan jurnal manual untuk hal yang tidak punya halaman sendiri, misalnya setoran modal atau penyesuaian."
+          },
+          "jurnal-baris": {
+            "title": "Isi baris jurnal",
+            "body": "Setiap baris memilih akun, lalu debit atau kredit (1). Total debit harus sama dengan total kredit; kartu Saldo Jurnal (2) berubah menjadi Seimbang bila sudah benar. Klik Simpan Draft untuk menyimpan, atau Simpan & Posting (3) untuk memasukkannya ke buku besar.",
+            "tip": "Jurnal yang sudah diposting tidak diubah; koreksi dibuat dengan jurnal pembalik atau penyesuaian."
+          },
+          "kas-bank": {
+            "title": "Baca Saldo Kas & Bank",
+            "body": "Pilih periode (1) untuk melihat saldo awal, masuk, keluar, dan saldo akhir tiap akun kas dan bank. Total Kas & Bank (2) dihitung dari jurnal yang sudah diposting. Klik Hitung Ulang (3) bila angkanya tampak tertinggal."
+          },
+          "laba-rugi": {
+            "title": "Buka Laporan Laba Rugi",
+            "body": "Pilih rentang tanggal (1) untuk melihat pendapatan dikurangi beban sampai laba bersih. Tombol Ekspor (2) mengunduh laporannya.",
+            "tip": "Laporan keuangan lain ada di menu Akuntansi, Laporan: Buku Besar, Arus Kas, Neraca, dan Neraca Saldo."
+          },
+          "neraca": {
+            "title": "Buka Neraca",
+            "body": "Neraca menampilkan aset, liabilitas, dan ekuitas per tanggal tertentu. Baris di atas (1) memberi tahu bila neraca seimbang. Bila tidak seimbang, ada jurnal yang perlu diperiksa."
+          },
+          "bagan-akun": {
+            "title": "Lihat Bagan Akun",
+            "body": "Bagan Akun memuat semua akun standar PSAK Indonesia. Cari akun (1) berdasarkan kode atau nama, dan tambahkan akun baru lewat Akun Baru (2).",
+            "tip": "Akun bertanda Sistem dan Kontrol dipakai otomatis oleh aplikasi. Jangan diubah tanpa alasan."
+          }
+        }
+      },
+      "aset-penyusutan": {
+        "title": "Aset dan penyusutan",
+        "purpose": "Catat peralatan produksi sebagai aset tetap, atur umur ekonomisnya, dan jalankan penyusutan bulanan sesuai PSAK 16.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Aset",
+            "body": "Manajemen Aset memuat semua peralatan: kamera, lensa, lampu, dan lainnya, beserta statusnya. Klik Aset Baru (1) untuk menambah, atau cari berdasarkan kode, nama, model, atau serial (2)."
+          },
+          "identitas": {
+            "title": "Isi identitas aset",
+            "body": "Isi Nama Aset (1) dan pilih Kategori (2). Kode aset dibuat otomatis. Lengkapi merek, model, dan nomor seri untuk klaim garansi."
+          },
+          "akuisisi": {
+            "title": "Isi data pembelian",
+            "body": "Isi Tanggal Pembelian dan Harga Pembelian (1), lalu pilih Sumber Dana (2): Cash, Bank Transfer, atau Credit. Supplier dan nomor invoice bersifat opsional.",
+            "tip": "Pembelian aset membuat jurnal otomatis dari sumber dana yang dipilih."
+          },
+          "penyusutan-form": {
+            "title": "Atur penyusutan",
+            "body": "Pilih Kelompok Penyusutan (1); umur ekonomis (2) terisi menurut kelompoknya dan bisa disesuaikan. Isi Nilai Sisa (3) bila ada. Klik Simpan.",
+            "tip": "Penyusutan memakai metode garis lurus sesuai PSAK 16."
+          },
+          "detail": {
+            "title": "Lihat halaman aset",
+            "body": "Setelah disimpan, halaman aset memuat nilai perolehan, nilai buku, dan Skema Penyusutan (1) dengan penyusutan per bulan. Tombol Proses Penyusutan (2) membuka halaman penyusutan.",
+            "tip": "Aset juga bisa dipinjam, direservasi, dan dicatat perawatannya dari halaman ini."
+          },
+          "proses": {
+            "title": "Jalankan penyusutan bulanan",
+            "body": "Di menu Akuntansi, Penyusutan Aset, atur periode lalu klik Proses Depresiasi (1). Total Akumulasi (2) dan nilai buku diperbarui, dan jurnal penyusutan dibuat otomatis.",
+            "tip": "Proses sekali per bulan, setelah semua aset yang dibeli bulan itu tercatat."
+          }
+        }
+      },
+      "vendor-pembelian": {
+        "title": "Vendor dan pembelian",
+        "purpose": "Catat vendor beserta NPWP dan rekeningnya, lalu catat pembelian dari vendor sebagai hutang usaha atau pembayaran langsung.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Vendor",
+            "body": "Daftar vendor dengan filter kategori dan status PKP. Klik Vendor Baru (1) untuk menambah, atau cari berdasarkan nama, kode, kontak, atau kota (2)."
+          },
+          "identitas": {
+            "title": "Isi identitas dan kontak vendor",
+            "body": "Isi Nama Vendor (1), pilih Kategori Vendor seperti Supplier atau Penyedia Layanan, lalu isi Narahubung (2) dan Email (3)."
+          },
+          "pajak": {
+            "title": "Isi data pajak",
+            "body": "Bagian Pajak & NPWP (1) berisi NPWP, Status PKP (bawaannya Non-PKP), dan Alamat Pajak. Isi bila vendor mengeluarkan faktur pajak, agar PPN masukan bisa dicatat dengan benar.",
+            "tip": "Status PKP berarti vendor adalah Pengusaha Kena Pajak yang memungut PPN."
+          },
+          "bank": {
+            "title": "Isi rekening dan termin",
+            "body": "Bagian Perbankan & Pembayaran (1) memuat Nama Bank, Nomor Rekening, Atas Nama, dan Termin Pembayaran seperti NET 14 atau NET 30. Klik Simpan bila sudah lengkap."
+          },
+          "pembelian": {
+            "title": "Catat pembelian",
+            "body": "Menu Akuntansi, Pembelian, lalu Pembelian Baru. Pilih Kontak (Vendor) (1), pilih cara Pembayaran (2): Hutang Usaha (kredit) bila belum dibayar, atau Kas/Bank bila langsung lunas. Isi Deskripsi (3), akun, dan harga, lalu klik Simpan Pembelian (4).",
+            "tip": "Nomor transaksi (PUR) terisi otomatis."
+          },
+          "hutang": {
+            "title": "Pantau hutang usaha",
+            "body": "Pembelian yang belum dibayar muncul di Hutang Usaha dengan total kewajiban per vendor. PDF (1) dan Excel mengekspor laporannya.",
+            "tip": "Hutang dihitung dari jurnal pembelian sehingga selalu cocok dengan buku besar."
+          }
+        }
+      },
+      "gaji": {
+        "title": "Gaji karyawan",
+        "purpose": "Catat data karyawan dan pembayaran gaji bulanan; pembayaran yang sudah dibayar otomatis masuk ke jurnal.",
+        "steps": {
+          "karyawan": {
+            "title": "Buka menu Gaji",
+            "body": "Tab Karyawan memuat daftar karyawan dan kartu ringkasan penggajian bulan ini. Klik Tambah Karyawan (1) untuk data baru, atau Pembayaran Baru (2) untuk mencatat gaji.",
+            "tip": "Menu Gaji ada di grup Akuntansi dan khusus admin."
+          },
+          "karyawan-baru": {
+            "title": "Tambah karyawan",
+            "body": "Isi Nama Lengkap (1), Posisi, email, dan telepon. Gaji Pokok (2) menjadi gaji default untuk pembayaran. Isi juga nama bank dan nomor rekening, lalu klik Buat Karyawan (3)."
+          },
+          "pembayaran": {
+            "title": "Buat pembayaran gaji",
+            "body": "Pilih Karyawan (1), bulan, dan tahun; Gaji Pokok terisi otomatis. Isi Tunjangan (2) dan Potongan bila ada. Ringkasan (3) menampilkan gaji bersih. Klik Buat Pembayaran.",
+            "tip": "Kosongkan Tanggal Pembayaran untuk menyimpannya sebagai Draft. Mengisi tanggal langsung menandainya Dibayar."
+          },
+          "draft": {
+            "title": "Pantau draft dan pembayaran",
+            "body": "Tab Pembayaran memuat setiap pembayaran dengan statusnya: Draft atau Dibayar. Kartu Draft Belum Dibayar di atas mengingatkan gaji yang masih menunggu.",
+            "tip": "Satu karyawan hanya punya satu pembayaran per bulan."
+          }
+        }
+      },
+      "penjualan": {
+        "title": "Penjualan (jurnal penjualan manual)",
+        "purpose": "Laporan Penjualan memuat semua penjualan sebagai jurnal. Gunakan untuk melihat piutang, menandai lunas, atau mencatat penjualan yang tidak punya invoice.",
+        "steps": {
+          "laporan": {
+            "title": "Buka Laporan Penjualan",
+            "body": "Menu Akuntansi, Penjualan, Laporan Penjualan. Kartu Belum Lunas (1) menunjukkan piutang berjalan. Penjualan dari invoice muncul otomatis; klik + Penjualan (2) untuk menambah penjualan manual.",
+            "tip": "Untuk penjualan ke klien, cukup buat invoice (lihat panduan Invoice). Penjualan manual hanya untuk kasus tanpa invoice."
+          },
+          "lunas": {
+            "title": "Tandai penjualan lunas",
+            "body": "Klik Tandai Lunas pada barisnya. Pilih akun tujuan di Terima ke (1), misalnya Kas atau Bank, lalu klik Tandai Lunas (2). Jurnal pelunasan dibuat dan Buku Besar, Piutang, serta Kas & Bank ikut diperbarui.",
+            "tip": "Untuk invoice, lebih baik catat pembayaran lewat invoice agar riwayat pembayarannya tetap lengkap."
+          },
+          "baru": {
+            "title": "Catat penjualan baru",
+            "body": "Pilih Pelanggan (1) dan cara Pembayaran (2): Piutang Usaha (kredit) bila belum dibayar, atau Kas/Bank bila langsung lunas. Isi Nama Item (3), akun pendapatan, jumlah, dan harga, lalu klik Simpan Penjualan (4).",
+            "tip": "Nomor penjualan (SALE) terisi otomatis."
+          }
+        }
+      },
+      "dashboard-navigasi": {
+        "title": "Dashboard dan navigasi",
+        "purpose": "Kenali Dashboard, menu samping, pencarian cepat Ctrl+K, dan pengganti bahasa Indonesia dan Inggris.",
+        "steps": {
+          "dashboard": {
+            "title": "Baca Dashboard",
+            "body": "Dashboard (khusus admin) merangkum bisnis: Belum Tertagih (1) menunjukkan total invoice yang belum dibayar, grafik Status Invoice (3) membagi invoice menurut status, dan tombol cepat Invoice Baru (2) dan Penawaran Baru.",
+            "tip": "Videografer langsung dibawa ke Kolaborasi Media karena tidak memiliki akses Dashboard."
+          },
+          "menu": {
+            "title": "Gunakan menu samping",
+            "body": "Menu dikelompokkan: Workspace (Klien (1), Proyek, Quotation, Invoice), Marketing, Produksi (Shot List (2)), Akuntansi, dan grup terakhir yang berisi Panduan (3) dan Pengaturan. Menu yang tidak sesuai peran Anda disembunyikan."
+          },
+          "palet": {
+            "title": "Cari cepat dengan Ctrl+K",
+            "body": "Tekan Ctrl+K (atau Cmd+K di Mac) di halaman mana pun, lalu ketik nama halaman, misalnya \"invoice\". Pilih hasilnya dengan panah dan Enter. Esc menutup pencarian.",
+            "tip": "Kolom Search di bilah atas membuka pencarian yang sama."
+          },
+          "bahasa": {
+            "title": "Ganti bahasa",
+            "body": "Tombol EN dan ID di kanan atas (1) mengganti bahasa seluruh aplikasi seketika. Pilihan Anda diingat untuk kunjungan berikutnya.",
+            "tip": "Dokumen untuk klien tetap berbahasa Indonesia."
+          }
+        }
+      },
+      "pengguna-peran": {
+        "title": "Pengguna dan peran",
+        "purpose": "Tambah akun tim, pilih perannya, dan aktifkan atau nonaktifkan akses. Khusus admin.",
+        "steps": {
+          "daftar": {
+            "title": "Buka menu Pengguna",
+            "body": "Daftar akun tim beserta peran dan statusnya. Klik Pengguna Baru (1) untuk menambah, atau saring menurut peran (2).",
+            "tip": "Menu ini hanya muncul untuk Admin dan Super Admin."
+          },
+          "peran": {
+            "title": "Isi identitas dan pilih peran",
+            "body": "Isi Nama Lengkap dan Email (2), yang menjadi nama pengguna saat login. Pilih Peran (1): Super Admin (akses penuh), Admin (invoice, proyek, klien, akuntansi, media), atau Videografer (hanya media dan produksi).",
+            "tip": "Beri peran paling kecil yang dibutuhkan. Videografer tidak bisa membuka data keuangan."
+          },
+          "sandi": {
+            "title": "Atur kata sandi awal",
+            "body": "Isi Kata Sandi (1) awal yang kuat lalu klik Simpan (2). Sampaikan kata sandi ke orangnya lewat jalur aman; ia bisa mengubahnya sendiri di Pengaturan, Keamanan.",
+            "tip": "Status Aktif bisa dimatikan kapan saja untuk menutup akses tanpa menghapus akun."
+          },
+          "hasil": {
+            "title": "Akun baru muncul di daftar",
+            "body": "Akun baru muncul (1) dengan perannya. Saklar Aktif pada barisnya membuka atau menutup akses login, dan kartu di atas menghitung pengguna menurut peran."
+          }
+        }
+      }
+    }
+  },
+  "productionHub": {
+    "title": "Pusat Produksi",
+    "totalItems": "{{count}} item",
+    "shareTitle": "Tautan Akses Tamu",
+    "shareDesc": "Bagikan tautan hanya-lihat ke klien. Klien bisa melihat deck, shot list, jadwal syuting, call sheet, dan ruang media, tidak lebih.",
+    "copied": "Tersalin",
+    "copy": "Salin",
+    "rotate": "Ganti Tautan",
+    "revoke": "Cabut Akses",
+    "generateLink": "Buat Tautan",
+    "callSheets": "Call Sheet",
+    "callSheetsDesc": "Briefing kru di hari syuting: jam panggil, lokasi, dan shot list.",
+    "newCallSheet": "Call Sheet Baru",
+    "noCallSheets": "Belum ada call sheet",
+    "noCallSheetsDesc": "Buat dari jadwal syuting atau buat call sheet tersendiri.",
+    "callSheetN": "Call Sheet #{{n}}",
+    "crew": "{{n}} kru",
+    "cast": "{{n}} pemain",
+    "schedules": "Jadwal Syuting",
+    "schedulesDesc": "Jadwal syuting per hari dan stripboard untuk tim produksi.",
+    "newSchedule": "Jadwal Baru",
+    "noSchedules": "Belum ada jadwal syuting",
+    "noSchedulesDesc": "Susun rencana per hari, lalu buat call sheet dari jadwal itu.",
+    "days": "{{n}} hari",
+    "shotLists": "Shot List",
+    "shotListsDesc": "Rincian shot per adegan untuk tim fotografi dan videografi.",
+    "newShotList": "Shot List Baru",
+    "noShotLists": "Belum ada shot list",
+    "noShotListsDesc": "Rencanakan setiap adegan dan setup sebelum hari syuting.",
+    "shots": "{{n}} shot",
+    "decks": "Deck Kreatif",
+    "decksDesc": "Mood board, konsep, dan brief kreatif untuk persetujuan klien.",
+    "newDeck": "Deck Baru",
+    "noDecks": "Belum ada deck",
+    "noDecksDesc": "Mulai dengan deck mood board atau konsep.",
+    "mediaProjects": "Kolaborasi Media",
+    "mediaProjectsDesc": "Ruang bersama untuk mengunggah hasil pilihan (selects), review klien, dan persetujuan aset.",
+    "newMediaProject": "Ruang Media Baru",
+    "noMediaProjects": "Belum ada ruang media",
+    "noMediaProjectsDesc": "Buat ruang bersama untuk menyerahkan hasil pilihan dan meminta persetujuan klien.",
+    "assets": "{{n}} aset",
+    "shared": "Dibagikan"
+  },
+  "expenseStatus": {
+    "draft": "Draf",
+    "submitted": "Diajukan",
+    "approved": "Disetujui",
+    "rejected": "Ditolak",
+    "paid": "Lunas",
+    "cancelled": "Dibatalkan"
+  },
+  "expensePayment": {
+    "unpaid": "Belum Dibayar",
+    "partiallyPaid": "Dibayar Sebagian",
+    "paid": "Lunas"
   }
 }

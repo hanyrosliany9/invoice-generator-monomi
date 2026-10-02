@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Check, Copy, Loader2, Plus, Send, Trash2, UserPlus } from 'lucide-react';
@@ -142,6 +143,8 @@ export function PortalContactsCard({ clientId }: { clientId: string }) {
               )}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+          <GuideHelpLink slug="portal-klien" anchor="kartu" />
           <div className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-sunken px-3 py-1.5">
             <a
               href={PORTAL_URL}
@@ -161,6 +164,7 @@ export function PortalContactsCard({ clientId }: { clientId: string }) {
             >
               {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
             </Button>
+          </div>
           </div>
         </div>
 

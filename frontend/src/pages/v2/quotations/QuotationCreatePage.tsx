@@ -79,7 +79,8 @@ export default function QuotationCreatePageV2() {
       toast.success(
         t(
           'quotations.form.toast.created',
-          `Penawaran ${q.quotationNumber} berhasil dibuat.`,
+          'Penawaran {{number}} berhasil dibuat.',
+          { number: q.quotationNumber },
         ),
       );
       navigate(`/quotations/${q.id}`);

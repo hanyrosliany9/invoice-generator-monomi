@@ -9,6 +9,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { useQuery } from '@tanstack/react-query';
 import {
   Search, X, CalendarRange, AtSign, FolderOpen,
@@ -133,10 +134,13 @@ export default function ContentCalendarClientsPage() {
           title={t('content.clients.title', 'Kalender Konten')}
           description={t('content.clients.subtitle', 'Pilih klien untuk mengelola dan mempratinjau konten media sosialnya.')}
           actions={
-            <Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>
-              <CalendarRange className="h-4 w-4" />
-              {t('content.openGeneral', 'Kalender Umum')}
-            </Button>
+            <>
+              <GuideHelpLink slug="perencana-konten" anchor="pilih-klien" />
+              <Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>
+                <CalendarRange className="h-4 w-4" />
+                {t('content.openGeneral', 'Kalender Umum')}
+              </Button>
+            </>
           }
         />
 

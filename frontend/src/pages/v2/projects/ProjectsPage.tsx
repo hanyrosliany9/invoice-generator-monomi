@@ -35,6 +35,7 @@ import { useAuthStore } from '@/store/auth';
 import { projectService, type Project } from '@/services/projects';
 import { clientService } from '@/services/clients';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation — mirrors v2 invoices/clients exactly so the active     */
@@ -278,10 +279,13 @@ export default function ProjectsPageV2() {
             'Manage active projects, track budgets, and monitor progress.',
           )}
           actions={
-            <Button onClick={() => navigate('/projects/new')} size="sm">
+            <>
+              <GuideHelpLink slug="proyek-baru" anchor="daftar" />
+              <Button onClick={() => navigate('/projects/new')} size="sm">
               <Plus className="h-4 w-4" />
               {t('projects.new', 'New Project')}
             </Button>
+            </>
           }
         />
 

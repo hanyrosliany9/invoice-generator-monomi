@@ -43,6 +43,8 @@ import type {
   ExpenseQueryParams,
 } from '@/types/expense';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
+import { expenseStatusLabel, expensePaymentLabel } from './expense-status';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation — mirrors v2/invoices exactly so the active item, the   */
@@ -54,26 +56,13 @@ import { cn } from '@/lib/utils';
 /*  variants. Mirrors the vocabulary of v2/invoices: Lunas == default. */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT:     'Draft',
-  SUBMITTED: 'Submitted',
-  APPROVED:  'Approved',
-  REJECTED:  'Rejected',
-  CANCELLED: 'Cancelled',
-};
-
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
   DRAFT:     'outline',
   SUBMITTED: 'secondary',
   APPROVED:  'default',
+  PAID:      'default',
   REJECTED:  'destructive',
   CANCELLED: 'outline',
-};
-
-const PAYMENT_LABEL: Record<string, string> = {
-  UNPAID:         'Unpaid',
-  PARTIALLY_PAID: 'Partially Paid',
-  PAID:           'Paid',
 };
 
 const PAYMENT_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
@@ -82,9 +71,7 @@ const PAYMENT_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['
   PAID:           'default',
 };
 
-const getStatusLabel    = (s?: string) => STATUS_LABEL[s ?? ''] ?? (s ?? '—');
 const getStatusVariant  = (s?: string) => STATUS_BADGE_VARIANT[s ?? ''] ?? 'secondary';
-const getPaymentLabel   = (s?: string) => PAYMENT_LABEL[s ?? ''] ?? (s ?? '—');
 const getPaymentVariant = (s?: string) => PAYMENT_BADGE_VARIANT[s ?? ''] ?? 'secondary';
 
 /* ------------------------------------------------------------------ */
@@ -309,7 +296,9 @@ export default function ExpensesPageV2() {
           'Record business expenses with PSAK compliance and Indonesian tax support.',
         )}
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="pengeluaran" anchor="daftar" />
+            <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -335,6 +324,7 @@ export default function ExpensesPageV2() {
               {t('expensesPage.new', 'New Expense')}
             </Button>
           </div>
+          </>
         }
       />
 
@@ -436,11 +426,11 @@ export default function ExpensesPageV2() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('expensesPage.filter.allStatuses', 'All Statuses')}</SelectItem>
-                  <SelectItem value="DRAFT">{STATUS_LABEL.DRAFT}</SelectItem>
-                  <SelectItem value="SUBMITTED">{STATUS_LABEL.SUBMITTED}</SelectItem>
-                  <SelectItem value="APPROVED">{STATUS_LABEL.APPROVED}</SelectItem>
-                  <SelectItem value="REJECTED">{STATUS_LABEL.REJECTED}</SelectItem>
-                  <SelectItem value="CANCELLED">{STATUS_LABEL.CANCELLED}</SelectItem>
+                  <SelectItem value="DRAFT">{expenseStatusLabel(t, 'DRAFT')}</SelectItem>
+                  <SelectItem value="SUBMITTED">{expenseStatusLabel(t, 'SUBMITTED')}</SelectItem>
+                  <SelectItem value="APPROVED">{expenseStatusLabel(t, 'APPROVED')}</SelectItem>
+                  <SelectItem value="REJECTED">{expenseStatusLabel(t, 'REJECTED')}</SelectItem>
+                  <SelectItem value="CANCELLED">{expenseStatusLabel(t, 'CANCELLED')}</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -453,9 +443,9 @@ export default function ExpensesPageV2() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('expensesPage.filter.allPayments', 'All Payments')}</SelectItem>
-                  <SelectItem value="UNPAID">{PAYMENT_LABEL.UNPAID}</SelectItem>
-                  <SelectItem value="PARTIALLY_PAID">{PAYMENT_LABEL.PARTIALLY_PAID}</SelectItem>
-                  <SelectItem value="PAID">{PAYMENT_LABEL.PAID}</SelectItem>
+                  <SelectItem value="UNPAID">{expensePaymentLabel(t, 'UNPAID')}</SelectItem>
+                  <SelectItem value="PARTIALLY_PAID">{expensePaymentLabel(t, 'PARTIALLY_PAID')}</SelectItem>
+                  <SelectItem value="PAID">{expensePaymentLabel(t, 'PAID')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -684,10 +674,10 @@ function ExpenseTable({ rows, onRowClick, onView, onEdit, onDelete }: ExpenseTab
             return (
               <div className="flex flex-col items-start gap-1">
                 <Badge variant={getStatusVariant(e.status)}>
-                  {getStatusLabel(e.status)}
+                  {expenseStatusLabel(t, e.status)}
                 </Badge>
                 <Badge variant={getPaymentVariant(e.paymentStatus)} className="text-[10px]">
-                  {getPaymentLabel(e.paymentStatus)}
+                  {expensePaymentLabel(t, e.paymentStatus)}
                 </Badge>
                 {/* GL posting indicator — confirms the expense reached the ledger. */}
                 <Badge

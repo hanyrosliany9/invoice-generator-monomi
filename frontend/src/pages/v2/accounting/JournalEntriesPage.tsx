@@ -41,6 +41,7 @@ import {
   type JournalEntry,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — mirrors GeneralLedgerPage so all accounting screens     */
@@ -258,7 +259,9 @@ export default function JournalEntriesPageV2() {
           title={t('accounting.journalEntries.title')}
           description={t('accounting.journalEntries.description')}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="akuntansi-dasar" anchor="jurnal" />
+              <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <Download className="h-4 w-4" />
                 PDF
@@ -285,6 +288,7 @@ export default function JournalEntriesPageV2() {
                   : t('accounting.journalEntries.newJournal', 'New Journal')}
               </Button>
             </div>
+            </>
           }
         />
 

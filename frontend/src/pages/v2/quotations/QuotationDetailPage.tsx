@@ -54,6 +54,7 @@ import { useAuthStore } from '@/store/auth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { quotationService, type Quotation } from '@/services/quotations';
 import { PdfPreviewModal } from '@/components/monomi/PdfPreviewModal';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 // ─────────────────────────────────────────────────────────────────────
 // Sidebar mirrors DashboardPage / QuotationsPage. Active state is
@@ -676,11 +677,14 @@ export default function QuotationDetailPageV2() {
           t('quotationDetail.untitled', 'Quotation detail')
         }
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="quotation" anchor="kirim" />
+            <div className="flex items-center gap-2">
             <StatusBadge status={quotation.status} />
             {renderPrimaryAction()}
             {overflow}
           </div>
+          </>
         }
       />
 

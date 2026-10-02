@@ -35,6 +35,7 @@ import {
   exportAccountsPayableExcel,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation                                                         */
@@ -203,7 +204,9 @@ export default function AccountsPayablePageV2() {
             { label: t('accounting.accountsPayable.title') },
           ]}
           actions={
-            <div className="flex flex-wrap items-center gap-2">
+            <>
+              <GuideHelpLink slug="vendor-pembelian" anchor="hutang" />
+              <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2">
                 <div className="w-[150px]">
                   <MonomiDatePicker
@@ -230,6 +233,7 @@ export default function AccountsPayablePageV2() {
                 Excel
               </Button>
             </div>
+            </>
           }
         />
 

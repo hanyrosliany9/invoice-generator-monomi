@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings, BarChart3,
   Plus, Search, MoreHorizontal, Eye, Trash2, X, Copy, MessageCircle, CalendarCheck,
@@ -197,10 +198,13 @@ export default function SocialMediaReportsPageV2() {
             'Monthly performance reports for your clients: create, review and send.',
           )}
           actions={
-            <Button onClick={() => navigate('/reports/builder')} size="sm">
-              <Plus className="h-4 w-4" />
-              {t('socialMediaReports.new', 'New Report')}
-            </Button>
+            <>
+              <GuideHelpLink slug="laporan-bulanan" anchor="daftar" />
+              <Button onClick={() => navigate('/reports/builder')} size="sm">
+                <Plus className="h-4 w-4" />
+                {t('socialMediaReports.new', 'New Report')}
+              </Button>
+            </>
           }
         />
 

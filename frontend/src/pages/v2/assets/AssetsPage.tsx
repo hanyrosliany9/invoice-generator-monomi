@@ -35,6 +35,7 @@ import { useAuthStore } from '@/store/auth';
 import { assetService, type Asset } from '@/services/assets';
 import { assetCoaForCategory, coaName } from '@/lib/assetCoa';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — mirrors v2 projects/clients/invoices so chrome reads as  */
@@ -255,7 +256,8 @@ export default function AssetsPageV2() {
       confirm(
         t(
           'assets.confirmDelete',
-          `Hapus aset ${a.assetCode || a.name}? Tindakan ini tidak bisa dibatalkan.`,
+          'Hapus aset {{name}}? Tindakan ini tidak bisa dibatalkan.',
+          { name: a.assetCode || a.name },
         ),
       )
     ) {
@@ -281,10 +283,13 @@ export default function AssetsPageV2() {
             'Inventaris peralatan operasional, nilai, dan status perawatan.',
           )}
           actions={
-            <Button onClick={() => navigate('/assets/new')} size="sm">
+            <>
+              <GuideHelpLink slug="aset-penyusutan" anchor="daftar" />
+              <Button onClick={() => navigate('/assets/new')} size="sm">
               <Plus className="h-4 w-4" />
               {t('assets.new', 'Aset Baru')}
             </Button>
+            </>
           }
         />
 

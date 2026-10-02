@@ -36,6 +36,7 @@ import {
 } from '@/services/accounting';
 import { clientService } from '@/services/clients';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation — identical vocabulary to v2/invoices so the active     */
@@ -206,7 +207,9 @@ export default function AccountsReceivablePageV2() {
             { label: t('accounting.accountsReceivable.title') },
           ]}
           actions={
-            <div className="flex flex-wrap items-center gap-2">
+            <>
+              <GuideHelpLink slug="piutang-pembayaran" anchor="piutang" />
+              <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2">
                 <div className="w-[150px]">
                   <MonomiDatePicker value={fromDate} onChange={(d) => d && setFromDate(d)} placeholder={t('common.fromDate', 'Dari')} />
@@ -225,6 +228,7 @@ export default function AccountsReceivablePageV2() {
                 Excel
               </Button>
             </div>
+            </>
           }
         />
 

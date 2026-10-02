@@ -17,6 +17,8 @@ const ReportDetail = lazy(() => import('./pages/ReportDetail'));
 const MediaTab = lazy(() => import('./pages/MediaTab'));
 const MediaProjectPage = lazy(() => import('./pages/MediaTab').then((m) => ({ default: m.MediaProjectPage })));
 const DecksTab = lazy(() => import('./pages/DecksTab'));
+const HelpIndexPage = lazy(() => import('./pages/HelpPages').then((m) => ({ default: m.HelpIndexPage })));
+const HelpGuidePage = lazy(() => import('./pages/HelpPages').then((m) => ({ default: m.HelpGuidePage })));
 const DeckPage = lazy(() => import('./pages/DecksTab').then((m) => ({ default: m.DeckPage })));
 
 function RequireSession({ children }: { children: ReactNode }) {
@@ -97,6 +99,8 @@ export default function PortalApp() {
             <Route path="decks" element={lazyEl(<DecksTab />)} />
             <Route path="decks/:deckId" element={lazyEl(<DeckPage />)} />
           </Route>
+          <Route path="/bantuan" element={lazyEl(<HelpIndexPage />)} />
+          <Route path="/bantuan/:slug" element={lazyEl(<HelpGuidePage />)} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </PortalSessionProvider>

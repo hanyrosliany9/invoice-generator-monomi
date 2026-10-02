@@ -32,6 +32,7 @@ import { useAuthStore } from '@/store/auth';
 import { expenseService } from '@/services/expenses';
 import { cn } from '@/lib/utils';
 import { getInitials } from '@/utils/initials';
+import { expenseStatusLabel, expensePaymentLabel } from './expense-status';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation — identical to v2/expenses list so active state matches */
@@ -41,24 +42,15 @@ import { getInitials } from '@/utils/initials';
 /*  Status maps — kept identical to list page for vocabulary parity    */
 /* ------------------------------------------------------------------ */
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Draft', SUBMITTED: 'Submitted', APPROVED: 'Approved',
-  REJECTED: 'Rejected', CANCELLED: 'Cancelled',
-};
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
-  DRAFT: 'outline', SUBMITTED: 'secondary', APPROVED: 'default',
+  DRAFT: 'outline', SUBMITTED: 'secondary', APPROVED: 'default', PAID: 'default',
   REJECTED: 'destructive', CANCELLED: 'outline',
-};
-const PAYMENT_LABEL: Record<string, string> = {
-  UNPAID: 'Unpaid', PARTIALLY_PAID: 'Partially Paid', PAID: 'Paid',
 };
 const PAYMENT_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
   UNPAID: 'destructive', PARTIALLY_PAID: 'secondary', PAID: 'default',
 };
 
-const getStatusLabel    = (s?: string) => STATUS_LABEL[s ?? ''] ?? (s ?? '—');
 const getStatusVariant  = (s?: string) => STATUS_BADGE_VARIANT[s ?? ''] ?? 'secondary';
-const getPaymentLabel   = (s?: string) => PAYMENT_LABEL[s ?? ''] ?? (s ?? '—');
 const getPaymentVariant = (s?: string) => PAYMENT_BADGE_VARIANT[s ?? ''] ?? 'secondary';
 
 /* ------------------------------------------------------------------ */
@@ -280,10 +272,10 @@ export default function ExpenseDetailPageV2() {
         actions={
           <div className="flex items-center gap-2">
             <Badge variant={getStatusVariant(expense.status)} className="h-7 px-3">
-              {getStatusLabel(expense.status)}
+              {expenseStatusLabel(t, expense.status)}
             </Badge>
             <Badge variant={getPaymentVariant(expense.paymentStatus)} className="h-7 px-3">
-              {getPaymentLabel(expense.paymentStatus)}
+              {expensePaymentLabel(t, expense.paymentStatus)}
             </Badge>
             {expense.isBillable && (
               <Badge
@@ -620,7 +612,7 @@ export default function ExpenseDetailPageV2() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-text-primary">
-                          {getStatusLabel(h.newStatus)}
+                          {expenseStatusLabel(t, h.newStatus)}
                         </span>
                         <DateDisplay date={h.timestamp} className="text-xs text-text-tertiary" />
                       </div>
@@ -717,7 +709,7 @@ export default function ExpenseDetailPageV2() {
                       'h-3.5 w-3.5',
                       expense.paymentStatus === 'PAID' ? 'text-success' : 'text-text-tertiary',
                     )} />
-                    {getPaymentLabel(expense.paymentStatus)}
+                    {expensePaymentLabel(t, expense.paymentStatus)}
                   </span>
                   {expense.paidAmount && (
                     <MoneyDisplay

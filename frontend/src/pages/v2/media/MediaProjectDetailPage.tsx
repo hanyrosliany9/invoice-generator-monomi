@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Folder,
@@ -977,6 +978,7 @@ export default function MediaProjectDetailPageV2() {
         }
         actions={
           <div className="flex items-center gap-2">
+            <GuideHelpLink slug="kolaborasi-media" anchor="unggah" />
             <Button
               variant="outline"
               size="sm"

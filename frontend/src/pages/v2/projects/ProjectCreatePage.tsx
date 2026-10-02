@@ -28,6 +28,7 @@ import {
 } from '@/services/projects';
 
 import { ProjectForm, type ProjectFormValues } from './ProjectForm';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 // Mirrors the other v2 pages so the chrome reads identically — "Projects"
 // stays highlighted while creating.
@@ -148,7 +149,9 @@ export default function ProjectCreatePageV2() {
                 ]
           }
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="proyek-baru" anchor="identitas" />
+              <div className="flex items-center gap-2">
               {/* Save lives in the form's own action bar (sticky on mobile) to
                   avoid a duplicate Save button up here. */}
               <Button
@@ -163,6 +166,7 @@ export default function ProjectCreatePageV2() {
                 {t('projectCreate.cancel', 'Cancel')}
               </Button>
             </div>
+            </>
           }
         />
 

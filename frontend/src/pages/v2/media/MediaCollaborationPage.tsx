@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Users, Folder,
@@ -192,10 +193,13 @@ export default function MediaCollaborationPageV2() {
         title={t('mediaCollaboration.title', 'Kolaborasi Media')}
         description={t('mediaCollaboration.description', 'Ruang berbagi video dan foto untuk tim produksi — komentari, setujui, dan kirim ke klien.')}
         actions={
-          <Button onClick={() => setCreateDialogOpen(true)} size="sm">
-            <Plus className="h-4 w-4" />
-            {t('mediaCollab.newProject', 'Proyek Baru')}
-          </Button>
+          <>
+            <GuideHelpLink slug="kolaborasi-media" anchor="proyek-baru" />
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+              <Plus className="h-4 w-4" />
+              {t('mediaCollab.newProject', 'Proyek Baru')}
+            </Button>
+          </>
         }
       />
 

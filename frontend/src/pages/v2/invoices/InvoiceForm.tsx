@@ -897,6 +897,7 @@ export const InvoiceForm = ({
                           <Checkbox
                             checked={!!field.value}
                             onCheckedChange={(c) => field.onChange(c === true)}
+                            className="border-text-tertiary"
                           />
                           {t('invoices.form.materaiApplied', 'Materai sudah ditempel')}
                         </label>

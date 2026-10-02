@@ -40,6 +40,7 @@ import {
 } from '@/services/cash-bank-balance';
 import { getAccountLedger, exportCashBankBalancesPDF, exportCashBankBalancesExcel } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -294,7 +295,9 @@ export default function CashBankBalancePage() {
         title={t('cashBankBalance.pageTitle', 'Cash & Bank Balance')}
         description={t('cashBankBalance.pageDesc', 'Summary of cash and bank positions per period, automatically calculated from journal entries.')}
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="akuntansi-dasar" anchor="kas-bank" />
+            <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleExportPDF}>
               <Download className="h-4 w-4" />
               PDF
@@ -319,6 +322,7 @@ export default function CashBankBalancePage() {
               <Calculator className="h-4 w-4" /> {t('accounting.cashBankBalance.calcNewPeriod', 'Calculate New Period')}
             </Button>
           </div>
+          </>
         }
       />
 

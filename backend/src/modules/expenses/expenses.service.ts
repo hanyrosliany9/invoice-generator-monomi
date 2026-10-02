@@ -235,7 +235,13 @@ export class ExpensesService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
-   * Create a new expense
+   * Create a new expense.
+   *
+   * Direct paid entry (by design, since c95b061): the expense is recorded as PAID
+   * and its payment journal (DR expense / CR Cash or Bank) is posted immediately.
+   * There is no draft path here. Reimbursable (isBillable) expenses are the only
+   * exception: their GL leg is deferred until the invoice is SENT.
+   * See expenses.service.create.spec.ts.
    */
   async create(userId: string, createExpenseDto: CreateExpenseDto) {
     // Validate category exists

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings,
@@ -356,6 +357,7 @@ export default function ProjectContentCalendarPage() {
           }
           actions={
             <div className="flex items-center gap-2">
+              <GuideHelpLink slug="perencana-konten" anchor="kalender" />
               <Button
                 variant="outline"
                 size="sm"

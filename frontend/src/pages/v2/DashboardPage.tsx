@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/store/auth';
 import { useDashboardData } from '@/hooks/useDashboard';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 
 // Helper to get badge variant based on status
@@ -162,7 +163,9 @@ export default function DashboardPageV2() {
           title={t('dashboard.title', 'Dashboard')}
           description={t('dashboard.subtitle', 'Ringkasan bisnis Anda hari ini')}
           actions={
-            <div className="flex items-center gap-2">
+            <>
+              <GuideHelpLink slug="dashboard-navigasi" anchor="dashboard" />
+              <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate('/quotations/new')}>
                 <Plus className="h-4 w-4" />
                 {t('dashboard.newQuotation', 'Penawaran Baru')}
@@ -172,6 +175,7 @@ export default function DashboardPageV2() {
                 {t('dashboard.newInvoice', 'Invoice Baru')}
               </Button>
             </div>
+            </>
           }
         />
 

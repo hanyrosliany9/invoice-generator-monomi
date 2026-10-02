@@ -1,0 +1,15 @@
+{
+  "name": "monomi-guides-capture",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Screenshot capture for the in-app Panduan/Bantuan guides (kept separate so the app lockfile is untouched)",
+  "scripts": {
+    "capture": "node capture.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.23.1",
+    "playwright-core": "^1.55.0",
+    "sharp": "^0.34.0"
+  }
+}

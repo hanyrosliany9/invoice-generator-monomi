@@ -44,6 +44,7 @@ import type { Expense } from '@/types/expense';
 import { QuickExpenseSheet } from '@/pages/v2/expenses/QuickExpenseSheet';
 import { RealizeExpenseDialog, type PlannedLine } from './RealizeExpenseDialog';
 import { getInitials } from '@/utils/initials';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical shape to the list page so navigation rhythm    */
@@ -616,7 +617,9 @@ export default function ProjectDetailPageV2() {
           t('projectDetail.subtitle', 'Project details, budget, and related history.')
         }
         actions={
-          <div className="flex items-center gap-2">
+          <>
+            <GuideHelpLink slug="proyek-baru" anchor="detail" />
+            <div className="flex items-center gap-2">
             <Badge
               variant="outline"
               className={cn(
@@ -700,6 +703,7 @@ export default function ProjectDetailPageV2() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          </>
         }
       />
 

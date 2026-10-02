@@ -23,6 +23,7 @@ import {
 import { Combobox } from '@/components/ui/combobox';
 import { useAuthStore } from '@/store/auth';
 import { salaryService, type CreateSalaryPaymentData } from '@/services/salaries';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const MONTHS = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -177,10 +178,13 @@ export default function SalaryPaymentFormPage() {
           title={isEdit ? t('salaries.payment.editTitle', 'Edit Salary Payment') : t('salaries.payment.createTitle', 'New Salary Payment')}
           description={t('salaries.payment.formDesc', 'Record a monthly salary payment for a staff member.')}
           actions={
-            <Button variant="outline" size="sm" onClick={() => navigate('/salaries')}>
+            <>
+              <GuideHelpLink slug="gaji" anchor="pembayaran" />
+              <Button variant="outline" size="sm" onClick={() => navigate('/salaries')}>
               <ArrowLeft className="h-4 w-4" />
               {t('salaries.back', 'Back')}
             </Button>
+            </>
           }
         />
 

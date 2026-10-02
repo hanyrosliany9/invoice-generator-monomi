@@ -53,6 +53,7 @@ import {
 } from '@/services/schedules';
 import { shotListsApi } from '@/services/shotLists';
 import type { ShotList } from '@/types/shotList';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Meta form                                                          */
@@ -255,7 +256,9 @@ export default function ScheduleEditorPageV2() {
           title={schedule.name}
           description={t('scheduleEditor.description', 'Organize scenes into shoot days. Type a scene and press Enter to add the next, drag strips to reorder, or import scenes from a shot list.')}
           actions={
-            <Button
+            <>
+              <GuideHelpLink slug="jadwal-syuting" anchor="hari" />
+              <Button
               type="button"
               variant="outline"
               size="sm"
@@ -266,6 +269,7 @@ export default function ScheduleEditorPageV2() {
               {isDownloadingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               {t('scheduleEditor.downloadPdf', 'Download PDF')}
             </Button>
+            </>
           }
         />
 

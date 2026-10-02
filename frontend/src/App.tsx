@@ -122,6 +122,8 @@ const V2StaffDetailPage = lazy(() => import('./pages/v2/salaries/StaffDetailPage
 const V2SalaryPaymentFormPage = lazy(() => import('./pages/v2/salaries/SalaryPaymentFormPage'))
 const V2PublicDeckViewPage = lazy(() => import('./pages/v2/guest/PublicDeckViewPage'))
 const V2DeckAcceptInvitePage = lazy(() => import('./pages/v2/guest/DeckAcceptInvitePage'))
+const V2GuidesIndexPage = lazy(() => import('./pages/v2/guides/GuidesPage').then((m) => ({ default: m.GuidesIndexPage })))
+const V2GuidePage = lazy(() => import('./pages/v2/guides/GuidesPage').then((m) => ({ default: m.GuidePage })))
 const V2ProjectTypesPage = lazy(() => import('./pages/v2/settings/ProjectTypesPage'))
 
 import './styles/relationships.css'
@@ -373,6 +375,9 @@ function App() {
                       <Route path='/media-collab/projects/:projectId' element={<V2MediaProjectDetailPage />} />
                       <Route path='/collections/:id' element={<V2CollectionDetailPage />} />
                       <Route path='/milestones' element={<V2MilestoneAnalyticsPage />} />
+                      {/* In-app guides for staff (Panduan) — all roles; admin-only guides are filtered inside. */}
+                      <Route path='/panduan' element={<V2GuidesIndexPage />} />
+                      <Route path='/panduan/:slug' element={<V2GuidePage />} />
                       <Route path='/media-downloader' element={<V2MediaDownloaderPage />} />
                       <Route path='/pinterest-downloader' element={<V2PinterestDownloaderPage />} />
 

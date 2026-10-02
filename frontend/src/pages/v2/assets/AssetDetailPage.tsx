@@ -46,6 +46,7 @@ import { assetService, type Asset, type DepreciationPeriodRow, type CreateMainte
 import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import { usersService } from '@/services/users';
 import { projectService } from '@/services/projects';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical to the list page so the chrome doesn't shift  */
@@ -286,11 +287,11 @@ function CheckInDialog({ assetId, open, onOpenChange, onSuccess }: CheckInDialog
   });
 
   const conditionLabels: Record<string, string> = {
-    EXCELLENT: t('assets.condition.excellent', 'Sangat Baik'),
-    GOOD: t('assets.condition.good', 'Baik'),
-    FAIR: t('assets.condition.fair', 'Cukup'),
-    POOR: t('assets.condition.poor', 'Buruk'),
-    BROKEN: t('assets.condition.broken', 'Rusak'),
+    EXCELLENT: t('assets.conditionValue.excellent', 'Sangat Baik'),
+    GOOD: t('assets.conditionValue.good', 'Baik'),
+    FAIR: t('assets.conditionValue.fair', 'Cukup'),
+    POOR: t('assets.conditionValue.poor', 'Buruk'),
+    BROKEN: t('assets.conditionValue.broken', 'Rusak'),
   };
 
   return (
@@ -522,11 +523,11 @@ function ChangeStatusDialog({
   };
 
   const conditionLabels: Record<Asset['condition'], string> = {
-    EXCELLENT: t('assets.condition.excellent', 'Sangat Baik'),
-    GOOD: t('assets.condition.good', 'Baik'),
-    FAIR: t('assets.condition.fair', 'Cukup'),
-    POOR: t('assets.condition.poor', 'Buruk'),
-    BROKEN: t('assets.condition.broken', 'Rusak'),
+    EXCELLENT: t('assets.conditionValue.excellent', 'Sangat Baik'),
+    GOOD: t('assets.conditionValue.good', 'Baik'),
+    FAIR: t('assets.conditionValue.fair', 'Cukup'),
+    POOR: t('assets.conditionValue.poor', 'Buruk'),
+    BROKEN: t('assets.conditionValue.broken', 'Rusak'),
   };
 
   return (
@@ -695,14 +696,14 @@ function LogMaintenanceDialog({
   const isValid = maintenanceType.trim() !== '' && description.trim() !== '';
 
   const typeLabels: Record<string, string> = {
-    Preventive: t('assets.maintenance.type.preventive', 'Preventive'),
-    Corrective: t('assets.maintenance.type.corrective', 'Corrective'),
-    Inspection: t('assets.maintenance.type.inspection', 'Inspection'),
-    Calibration: t('assets.maintenance.type.calibration', 'Calibration'),
-    Cleaning: t('assets.maintenance.type.cleaning', 'Cleaning'),
-    Repair: t('assets.maintenance.type.repair', 'Repair'),
-    Replacement: t('assets.maintenance.type.replacement', 'Replacement'),
-    Other: t('assets.maintenance.type.other', 'Other'),
+    Preventive: t('assets.maintenance.types.preventive', 'Preventive'),
+    Corrective: t('assets.maintenance.types.corrective', 'Corrective'),
+    Inspection: t('assets.maintenance.types.inspection', 'Inspection'),
+    Calibration: t('assets.maintenance.types.calibration', 'Calibration'),
+    Cleaning: t('assets.maintenance.types.cleaning', 'Cleaning'),
+    Repair: t('assets.maintenance.types.repair', 'Repair'),
+    Replacement: t('assets.maintenance.types.replacement', 'Replacement'),
+    Other: t('assets.maintenance.types.other', 'Other'),
   };
 
   return (
@@ -1202,7 +1203,9 @@ export default function AssetDetailPageV2() {
             : t('assets.detail.subtitle', 'Detail aset, nilai, dan riwayat operasional.')
         }
         actions={
-          <div className="flex items-center gap-2 flex-wrap">
+          <>
+            <GuideHelpLink slug="aset-penyusutan" anchor="detail" />
+            <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant="outline"
               className={cn(
@@ -1273,6 +1276,7 @@ export default function AssetDetailPageV2() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          </>
         }
       />
 
