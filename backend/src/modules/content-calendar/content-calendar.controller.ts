@@ -31,6 +31,7 @@ import { ContentCalendarService } from "./content-calendar.service";
 import { CreateContentDto } from "./dto/create-content.dto";
 import { UpdateContentDto } from "./dto/update-content.dto";
 import { CreateHighlightDto } from "./dto/create-highlight.dto";
+import { BulkContentDto } from "./dto/bulk-content.dto";
 
 /**
  * ContentCalendarController - REST API for Content Planning
@@ -77,15 +78,31 @@ export class ContentCalendarController {
 
   /**
    * Persist the Instagram grid drag-to-rearrange order.
-   * Available to all authenticated users.
+   * Per-item permission (same rule as update) is enforced by the service.
    */
   @Put("reorder")
   @ApiOperation({ summary: "Reorder content items in the Instagram grid" })
   @ApiResponse({ status: 200, description: "Grid order updated" })
   async reorder(
     @Body() body: { items: { id: string; gridOrder: number }[] },
+    @Request() req: any,
   ) {
-    return this.contentCalendarService.reorder(body?.items ?? []);
+    return this.contentCalendarService.reorder(
+      body?.items ?? [],
+      req.user.id,
+      req.user.role,
+    );
+  }
+
+  /**
+   * Bulk status change / reschedule by N days / delete over several items.
+   * Registered before the ":id" routes. Per-item permission is enforced by the
+   * service; the response lists succeeded ids and per-item failure reasons.
+   */
+  @Post("bulk")
+  @ApiOperation({ summary: "Bulk action on content items" })
+  async bulk(@Body() dto: BulkContentDto, @Request() req: any) {
+    return this.contentCalendarService.bulk(dto, req.user.id, req.user.role);
   }
 
   /**
@@ -268,7 +285,11 @@ export class ContentCalendarController {
    */
   @Post(":id/publish")
   @ApiOperation({ summary: "Publish a content calendar item" })
-  async publish(@Param("id") id: string, @Request() req: any) {
+  async publish(
+    @Param("id") id: string,
+    @Request() req: any,
+    @Body() body?: { publishedAt?: string },
+  ) {
     const userId = req.user.id;
     const userRole = req.user.role;
 
@@ -276,9 +297,19 @@ export class ContentCalendarController {
       id,
       userId,
       userRole,
+      body?.publishedAt,
     );
 
     return content;
+  }
+
+  /**
+   * Duplicate a content item as a new unscheduled DRAFT (shares media files).
+   */
+  @Post(":id/duplicate")
+  @ApiOperation({ summary: "Duplicate a content calendar item as a draft" })
+  async duplicate(@Param("id") id: string, @Request() req: any) {
+    return this.contentCalendarService.duplicate(id, req.user.id, req.user.role);
   }
 
   /**

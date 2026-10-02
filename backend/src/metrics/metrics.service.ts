@@ -1,3 +1,4 @@
+import { EXCLUDE_INTERNAL_CLIENTS } from "../modules/clients/client-scope";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../modules/prisma/prisma.service";
 import { getErrorMessage } from "../common/utils/error-handling.util";
@@ -24,7 +25,7 @@ export class MetricsService {
         recentActivity,
       ] = await Promise.all([
         this.prisma.user.count(),
-        this.prisma.client.count(),
+        this.prisma.client.count({ where: EXCLUDE_INTERNAL_CLIENTS }),
         this.prisma.project.count(),
         this.prisma.quotation.count(),
         this.prisma.invoice.count(),

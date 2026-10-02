@@ -42,7 +42,12 @@ export interface ContentCalendarItem {
 
 export interface CreateContentDto {
   caption: string; // Social media caption
-  scheduledAt?: string;
+  /** ISO instant; `null` clears the schedule (update only). */
+  scheduledAt?: string | null;
+  /** When it actually went live (PUBLISHED only). */
+  publishedAt?: string | null;
+  /** Let a SCHEDULED item be set to a past time (undo of a reschedule). */
+  allowPastSchedule?: boolean;
   status?: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'FAILED' | 'ARCHIVED';
   format?: ContentFormat;
   gridOrder?: number | null;
@@ -67,8 +72,39 @@ export interface CreateContentDto {
 
 export interface UpdateContentDto extends Partial<CreateContentDto> {}
 
+export type BulkContentAction =
+  | { action: 'STATUS'; status: ContentCalendarItem['status'] }
+  | { action: 'SHIFT'; days: number }
+  | { action: 'DELETE' };
+
+export interface BulkContentResult {
+  succeeded: string[];
+  failed: { id: string; reason: string }[];
+}
+
+/**
+ * The reason a request failed, as the server worded it (Indonesian/English as
+ * returned), falling back to a generic message only when the server gave none.
+ */
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  const data = (err as any)?.response?.data;
+  const raw = data?.message ?? data?.error?.message ?? data?.error;
+  if (Array.isArray(raw) && raw.length > 0) return raw.map(String).join('; ');
+  if (typeof raw === 'string' && raw.trim()) return raw;
+  return fallback;
+}
+
+/** Files of earlier batches that did upload before a later batch failed. */
+export function uploadedBeforeFailure(err: unknown): MediaUploadResponse['data'][] {
+  const u = (err as { uploaded?: unknown } | null)?.uploaded;
+  return Array.isArray(u) ? (u as MediaUploadResponse['data'][]) : [];
+}
+
+/** Max files the upload endpoint accepts per request. */
+export const UPLOAD_BATCH_SIZE = 10;
+
 export interface IgProfile {
-  handle: string;
+  handle: string | null;
   avatarUrl: string | null;
   bio: string | null;
   companyName: string;
@@ -246,8 +282,22 @@ class ContentCalendarService {
     return response.data.data;
   }
 
-  async publishContent(id: string): Promise<ContentCalendarItem> {
-    const response = await apiClient.post(`/content-calendar/${id}/publish`, {});
+  async publishContent(id: string, publishedAt?: string): Promise<ContentCalendarItem> {
+    const response = await apiClient.post(
+      `/content-calendar/${id}/publish`,
+      publishedAt ? { publishedAt } : {},
+    );
+    return response.data.data;
+  }
+
+  /** Copy as an unscheduled draft (media files are shared, not re-uploaded). */
+  async duplicateContent(id: string): Promise<ContentCalendarItem> {
+    const response = await apiClient.post(`/content-calendar/${id}/duplicate`, {});
+    return response.data.data;
+  }
+
+  async bulk(ids: string[], op: BulkContentAction): Promise<BulkContentResult> {
+    const response = await apiClient.post(`/content-calendar/bulk`, { ids, ...op });
     return response.data.data;
   }
 
@@ -277,20 +327,33 @@ class ContentCalendarService {
     return response.data?.data?.data;
   }
 
+  /**
+   * Upload many files. The endpoint takes at most UPLOAD_BATCH_SIZE per
+   * request, so larger selections (carousels go up to 20) are sent in
+   * sequential batches. On a failed batch the error carries the files that
+   * did upload (`uploaded`) so the caller can keep them.
+   */
   async uploadMultipleMedia(files: File[]): Promise<MediaUploadResponse['data'][]> {
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
-
-    const response = await apiClient.post(`/media/upload-multiple`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      timeout: 120000, // 2 minutes for large video uploads
-    });
-
-    return response.data?.data?.data ?? [];
+    const results: MediaUploadResponse['data'][] = [];
+    for (let i = 0; i < files.length; i += UPLOAD_BATCH_SIZE) {
+      const formData = new FormData();
+      files.slice(i, i + UPLOAD_BATCH_SIZE).forEach((file) => {
+        formData.append('files', file);
+      });
+      try {
+        const response = await apiClient.post(`/media/upload-multiple`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 120000, // 2 minutes for large video uploads
+        });
+        results.push(...(response.data?.data?.data ?? []));
+      } catch (e) {
+        (e as { uploaded?: unknown }).uploaded = results;
+        throw e;
+      }
+    }
+    return results;
   }
 
   async deleteMedia(key: string): Promise<{ success: boolean; message: string }> {

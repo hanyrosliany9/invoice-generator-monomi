@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { authService } from '@/services/auth';
+import { getInitials } from '@/utils/initials';
 
 export interface UserChipProps {
   name: string;
@@ -36,7 +37,7 @@ const ChipInner = ({
   size = 'md',
   className,
 }: Omit<UserChipProps, 'interactive'>) => {
-  const initials = name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const initials = getInitials(name);
   const avatarSize = size === 'sm' ? 'h-7 w-7' : 'h-9 w-9';
   return (
     <div className={cn('flex items-center gap-3 min-w-0', className)}>

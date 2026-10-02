@@ -103,6 +103,8 @@ export interface MediaProject {
   publicSharedAt?: string;
   publicShareExpiresAt?: string | null;
   publicAccessLevel?: 'VIEW_ONLY' | 'DOWNLOAD' | 'COMMENT';
+  /** Set by the client-portal API only. */
+  portalAccess?: { canComment: boolean; canChangeStatus: boolean; canRate: boolean; canDownload: boolean };
   // Relations
   client?: Client;
   project?: Project;

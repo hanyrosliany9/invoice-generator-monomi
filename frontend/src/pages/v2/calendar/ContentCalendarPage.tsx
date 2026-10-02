@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,15 +7,14 @@ import {
   CalendarDays, Image as ImageIcon, ChevronLeft, ChevronRight,
   Plus, X, Search, MoreHorizontal, Eye, Trash2,
   Rocket, Archive,
-  Layers, ListChecks, FileImage, Video, CheckCircle2, AlertTriangle, Clock,
+  Layers, ListChecks, Video, CheckCircle2, AlertTriangle, Clock,
   Calendar as CalendarIcon, Camera, Film, Globe, Hash, Briefcase, Play,
   Grid3x3, ArrowLeft, Loader2, ImagePlus, Square, SquareStack, CircleDashed, Info,
   Share2, Copy, Check, Link2, Pencil,
 } from 'lucide-react';
 import {
   addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format,
-  isSameMonth, isToday, startOfMonth, startOfWeek,
-  isWithinInterval, parseISO,
+  isSameMonth, startOfMonth, startOfWeek,
 } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -39,6 +38,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
@@ -63,6 +63,16 @@ import contentCalendarService, {
 import InstagramPreview from '@/pages/v2/calendar/instagram/InstagramPreview';
 import TikTokPreview from '@/pages/v2/calendar/tiktok/TikTokPreview';
 import { projectService } from '@/services/projects';
+import { apiErrorMessage, uploadedBeforeFailure } from '@/services/content-calendar';
+import {
+  WIB_LABEL, combineWib, formatWib, isPastWib, moveToWibDay, nextWibHourSlot,
+  wibCalendarDate, wibDayKey, wibTime,
+} from '@/utils/wib';
+import {
+  BulkBar, BulkDeleteDialog, ContentThumb, KindBadge, OverdueBadge, PublishDialog, ShiftDialog,
+  type BulkStatus,
+} from '@/pages/v2/calendar/ContentPlannerParts';
+import { isOverdue, isReschedulable } from '@/pages/v2/calendar/contentPlannerUtils';
 import { clientService } from '@/services/clients';
 import { useMediaToken } from '@/hooks/useMediaToken';
 import { cn } from '@/lib/utils';
@@ -147,7 +157,7 @@ const Textarea = ({
     className={cn(
       'w-full min-h-[140px] rounded-md border border-border-subtle bg-bg-sunken px-3 py-2 text-sm text-text-primary',
       'placeholder:text-text-tertiary outline-none transition-colors resize-y',
-      'focus-visible:border-accent/60 focus-visible:ring-1 focus-visible:ring-accent/40',
+      'focus-visible:border-border-strong focus-visible:ring-1 focus-visible:ring-ring',
       className,
     )}
   />
@@ -184,6 +194,14 @@ export default function ContentCalendarPageV2() {
   const [editItem, setEditItem] = useState<ContentCalendarItem | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [highlightsOpen, setHighlightsOpen] = useState(false);
+  const [publishTarget, setPublishTarget] = useState<ContentCalendarItem | null>(null);
+  /* bulk selection (list view) */
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [shiftOpen, setShiftOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  /* day picked in the compact (mobile) month view */
+  const [agendaDay, setAgendaDay] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   // Auto-open create dialog when ?projectId is present.
   useEffect(() => {
@@ -209,13 +227,9 @@ export default function ContentCalendarPageV2() {
     return [];
   }, [contentsResp]);
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: projectService.getProjects,
-  });
   const { data: clients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: clientService.getClients,
+    queryKey: ['clients', 'with-internal'],
+    queryFn: clientService.getClientsWithInternal,
   });
   const currentClient = useMemo(() => clients.find((c) => c.id === clientId), [clients, clientId]);
   // If the :clientId param is invalid once clients load, bounce back to the picker.
@@ -256,7 +270,8 @@ export default function ContentCalendarPageV2() {
       if (!it.scheduledAt) return;
       const d = safeDate(it.scheduledAt);
       if (!d) return;
-      const key = format(d, 'yyyy-MM-dd');
+      // bucket by the WIB calendar day, not the day of the browser zone
+      const key = wibDayKey(d);
       const bucket = map.get(key) ?? [];
       bucket.push(it);
       map.set(key, bucket);
@@ -275,12 +290,11 @@ export default function ContentCalendarPageV2() {
 
   /* ----- KPI band: scoped to the visible month ----- */
   const stats = useMemo(() => {
-    const start = startOfMonth(cursor);
-    const end = endOfMonth(cursor);
+    const monthKey = format(cursor, 'yyyy-MM');
     const inMonth = (d?: string | null) => {
       if (!d) return false;
       const x = safeDate(d);
-      return !!x && isWithinInterval(x, { start, end });
+      return !!x && wibDayKey(x).slice(0, 7) === monthKey;
     };
 
     const monthItems = filtered.filter((it) => inMonth(it.scheduledAt) || inMonth(it.publishedAt));
@@ -304,49 +318,123 @@ export default function ContentCalendarPageV2() {
       toast.success(t('content.deleted', 'Konten dihapus.'));
       setSelectedItem(null);
     },
-    onError: () => toast.error(t('content.deleteFailed', 'Gagal menghapus konten.')),
+    onError: (e) => toast.error(apiErrorMessage(e, t('content.deleteFailed', 'Gagal menghapus konten.'))),
   });
 
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
+
   const publishMutation = useMutation({
-    mutationFn: (id: string) => contentCalendarService.publishContent(id),
+    mutationFn: ({ id, publishedAt }: { id: string; publishedAt?: string }) =>
+      contentCalendarService.publishContent(id, publishedAt),
     onSuccess: (updated) => {
-      qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
+      invalidate();
       toast.success(t('content.published', 'Konten ditandai terbit.'));
+      setPublishTarget(null);
       if (updated?.id) setSelectedItem(updated);
     },
-    onError: () => toast.error(t('content.publishFailed', 'Gagal menerbitkan konten.')),
+    onError: (e) => toast.error(apiErrorMessage(e, t('content.publishFailed', 'Gagal menerbitkan konten.'))),
   });
 
   const archiveMutation = useMutation({
     mutationFn: (id: string) => contentCalendarService.archiveContent(id),
     onSuccess: (updated) => {
-      qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
+      invalidate();
       toast.success(t('content.archived', 'Konten diarsipkan.'));
       if (updated?.id) setSelectedItem(updated);
     },
-    onError: () => toast.error(t('content.archiveFailed', 'Gagal mengarsipkan konten.')),
+    onError: (e) => toast.error(apiErrorMessage(e, t('content.archiveFailed', 'Gagal mengarsipkan konten.'))),
   });
 
   const createMutation = useMutation({
     mutationFn: (data: CreateContentDto) => contentCalendarService.createContent(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
+      invalidate();
       toast.success(t('content.created', 'Konten dibuat.'));
       setCreateOpen(false);
     },
-    onError: () => toast.error(t('content.createFailed', 'Gagal membuat konten.')),
+    // Show the reason from the server (validation, wrong project, past schedule ...).
+    onError: (e) => toast.error(apiErrorMessage(e, t('content.createFailed', 'Gagal membuat konten.'))),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateContentDto> }) =>
       contentCalendarService.updateContent(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['content-calendar-v2'] });
+      invalidate();
       toast.success(t('content.updated', 'Konten diperbarui.'));
       setCreateOpen(false);
       setEditItem(null);
     },
-    onError: () => toast.error(t('content.updateFailed', 'Gagal memperbarui konten.')),
+    onError: (e) => toast.error(apiErrorMessage(e, t('content.updateFailed', 'Gagal memperbarui konten.'))),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: (id: string) => contentCalendarService.duplicateContent(id),
+    onSuccess: (copy) => {
+      invalidate();
+      toast.success(t('content.planner.duplicated', 'Draf duplikat dibuat. Atur jadwalnya.'));
+      setSelectedItem(null);
+      // open the copy straight away so the planner can set a date
+      setEditItem(copy);
+      setCreateOpen(true);
+    },
+    onError: (e) => toast.error(apiErrorMessage(e, t('content.planner.duplicateFailed', 'Gagal menduplikasi konten.'))),
+  });
+
+  /* drag-to-reschedule on the month grid, with undo */
+  const rescheduleMutation = useMutation({
+    mutationFn: ({ id, scheduledAt, allowPast }: { id: string; scheduledAt: string; previous?: string | null; label?: string; allowPast?: boolean }) =>
+      contentCalendarService.updateContent(id, { scheduledAt, ...(allowPast ? { allowPastSchedule: true } : {}) }),
+    onSuccess: (_d, v) => {
+      invalidate();
+      const prev = v.previous;
+      if (prev && v.label) {
+        toast.success(t('content.planner.moved', 'Dipindah ke {{date}}', { date: v.label }), {
+          action: {
+            label: t('content.planner.undo', 'Urungkan'),
+            onClick: () => rescheduleMutation.mutate({ id: v.id, scheduledAt: prev, allowPast: true }),
+          },
+          duration: 8000,
+        });
+      } else {
+        toast.success(t('content.planner.moveUndone', 'Jadwal dikembalikan.'));
+      }
+    },
+    onError: (e) => toast.error(apiErrorMessage(e, t('content.updateFailed', 'Gagal memperbarui konten.'))),
+  });
+
+  const moveItemToDay = (item: ContentCalendarItem, day: Date) => {
+    if (!item.scheduledAt || !isReschedulable(item)) return;
+    if (wibDayKey(item.scheduledAt) === format(day, 'yyyy-MM-dd')) return;
+    const next = moveToWibDay(item.scheduledAt, day);
+    rescheduleMutation.mutate({
+      id: item.id,
+      scheduledAt: next,
+      previous: item.scheduledAt,
+      label: formatWib(next, { lang: idLocale.code, withYear: false }),
+    });
+  };
+
+  const bulkMutation = useMutation({
+    mutationFn: (op: Parameters<typeof contentCalendarService.bulk>[1]) =>
+      contentCalendarService.bulk([...selectedIds], op),
+    onSuccess: (res) => {
+      invalidate();
+      const ok = res.succeeded.length;
+      const bad = res.failed.length;
+      if (bad === 0) {
+        toast.success(t('content.planner.bulk.done', '{{n}} konten diperbarui.', { n: ok }));
+      } else {
+        toast.warning(t('content.planner.bulk.partial', '{{ok}} berhasil, {{bad}} gagal: {{reason}}', {
+          ok, bad, reason: res.failed[0].reason,
+        }), { duration: 9000 });
+      }
+      // keep only the failed ones selected, so they can be inspected or retried
+      setSelectedIds(new Set(res.failed.map((f) => f.id)));
+      setShiftOpen(false);
+      setBulkDeleteOpen(false);
+    },
+    onError: (e) => toast.error(apiErrorMessage(e, t('content.planner.bulk.failed', 'Aksi massal gagal.'))),
   });
 
   const hasActiveFilters = !!search || statusFilter !== 'all' || platformFilter !== 'all' || clientFilter !== 'all';
@@ -371,6 +459,24 @@ export default function ContentCalendarPageV2() {
       deleteMutation.mutate(item.id);
     }
   };
+
+  const toggleSelected = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  // Drop selections that disappeared (deleted, or filtered out) and leave the
+  // selection behind when the view changes.
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(filtered.map((i) => i.id));
+      const next = new Set([...prev].filter((id) => visible.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filtered]);
+  useEffect(() => { if (view !== 'list') setSelectedIds(new Set()); }, [view]);
 
   /* ----- render ----- */
   return (
@@ -421,8 +527,8 @@ export default function ContentCalendarPageV2() {
         />
 
         {/* ─────────────── KPI band (scoped to visible month) ─────────────── */}
-        <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <section className="mb-6 sm:mb-12">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {isLoading ? (
               <>
                 <Skeleton className="h-[108px] rounded-lg" />
@@ -493,22 +599,22 @@ export default function ContentCalendarPageV2() {
               </h2>
             </div>
 
-            <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
-              <TabsList>
-                <TabsTrigger value="month">
-                  <Layers className="h-3.5 w-3.5" />
+            <Tabs className="w-full sm:w-auto" value={view} onValueChange={(v) => setView(v as ViewMode)}>
+              <TabsList className="grid h-11! w-full grid-cols-4 sm:inline-flex sm:h-9! sm:w-fit">
+                <TabsTrigger className="px-2 text-xs sm:px-3 sm:text-sm" value="month">
+                  <Layers className="hidden h-3.5 w-3.5 sm:block" />
                   {t('content.view.month', 'Bulan')}
                 </TabsTrigger>
-                <TabsTrigger value="list">
-                  <ListChecks className="h-3.5 w-3.5" />
+                <TabsTrigger className="px-2 text-xs sm:px-3 sm:text-sm" value="list">
+                  <ListChecks className="hidden h-3.5 w-3.5 sm:block" />
                   {t('content.view.list', 'Daftar')}
                 </TabsTrigger>
-                <TabsTrigger value="instagram">
-                  <Grid3x3 className="h-3.5 w-3.5" />
+                <TabsTrigger className="px-2 text-xs sm:px-3 sm:text-sm" value="instagram">
+                  <Grid3x3 className="hidden h-3.5 w-3.5 sm:block" />
                   {t('content.view.instagram', 'Instagram')}
                 </TabsTrigger>
-                <TabsTrigger value="tiktok">
-                  <Video className="h-3.5 w-3.5" />
+                <TabsTrigger className="px-2 text-xs sm:px-3 sm:text-sm" value="tiktok">
+                  <Video className="hidden h-3.5 w-3.5 sm:block" />
                   {t('content.view.tiktok', 'TikTok')}
                 </TabsTrigger>
               </TabsList>
@@ -583,7 +689,7 @@ export default function ContentCalendarPageV2() {
               <Skeleton className="h-64 rounded" />
             </div>
           ) : view === 'instagram' ? (
-            <InstagramPreview items={filtered} onEdit={openEdit} onDelete={confirmDelete} clientId={clientId} />
+            <InstagramPreview items={filtered} onEdit={openEdit} onDelete={confirmDelete} clientId={clientId} onManageHighlights={() => setHighlightsOpen(true)} />
           ) : view === 'tiktok' ? (
             <TikTokPreview items={filtered} onEdit={openEdit} onDelete={confirmDelete} clientId={clientId} />
           ) : view === 'month' ? (
@@ -593,7 +699,10 @@ export default function ContentCalendarPageV2() {
               postsByDay={postsByDay}
               onSelect={setSelectedItem}
               onCreate={openCreate}
-              idLocale={idLocale}
+              onMove={moveItemToDay}
+              compact={isMobile}
+              activeDay={agendaDay}
+              onActiveDay={setAgendaDay}
             />
           ) : filtered.length === 0 ? (
             <EmptyState
@@ -622,18 +731,34 @@ export default function ContentCalendarPageV2() {
               }
             />
           ) : (
-            <ListView
-              items={filtered}
-              onSelect={setSelectedItem}
-              onPublish={(id) => publishMutation.mutate(id)}
-              onArchive={(id) => archiveMutation.mutate(id)}
-              onDelete={(id) => {
-                if (confirm(t('content.confirmDelete', 'Hapus konten ini?'))) {
-                  deleteMutation.mutate(id);
-                }
-              }}
-              idLocale={idLocale}
-            />
+            <>
+              <BulkBar
+                count={selectedIds.size}
+                total={filtered.length}
+                busy={bulkMutation.isPending}
+                onClear={() => setSelectedIds(new Set())}
+                onSelectAll={() => setSelectedIds(new Set(filtered.map((i) => i.id)))}
+                onStatus={(s: BulkStatus) => bulkMutation.mutate({ action: 'STATUS', status: s })}
+                onShift={() => setShiftOpen(true)}
+                onDelete={() => setBulkDeleteOpen(true)}
+              />
+              <ListView
+                items={filtered}
+                selectedIds={selectedIds}
+                onToggle={toggleSelected}
+                onToggleAll={(all) => setSelectedIds(all ? new Set(filtered.map((i) => i.id)) : new Set())}
+                onSelect={setSelectedItem}
+                onPublish={(it) => setPublishTarget(it)}
+                onArchive={(id) => archiveMutation.mutate(id)}
+                onDuplicate={(id) => duplicateMutation.mutate(id)}
+                onDelete={(id) => {
+                  if (confirm(t('content.confirmDelete', 'Hapus konten ini?'))) {
+                    deleteMutation.mutate(id);
+                  }
+                }}
+                idLocale={idLocale}
+              />
+            </>
           )}
         </GlassPanel>
 
@@ -662,8 +787,9 @@ export default function ContentCalendarPageV2() {
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
         onEdit={(it) => { setSelectedItem(null); openEdit(it); }}
-        onPublish={(id) => publishMutation.mutate(id)}
+        onPublish={(it) => setPublishTarget(it)}
         onArchive={(id) => archiveMutation.mutate(id)}
+        onDuplicate={(id) => duplicateMutation.mutate(id)}
         idLocale={idLocale}
         onDelete={(id) => {
           if (confirm(t('content.confirmDelete', 'Hapus konten ini?'))) {
@@ -678,8 +804,7 @@ export default function ContentCalendarPageV2() {
         onOpenChange={(v) => { setCreateOpen(v); if (!v) setEditItem(null); }}
         initialDate={createDate}
         editItem={editItem}
-        clients={clients.map((c) => ({ id: c.id, name: c.name }))}
-        projects={projects.map((p) => ({ id: p.id, number: p.number, description: p.description }))}
+        clients={clients.map((c) => ({ id: c.id, name: c.name, isInternal: c.isInternal }))}
         onSubmit={(data, mediaChanged) =>
           editItem
             ? updateMutation.mutate({
@@ -695,6 +820,30 @@ export default function ContentCalendarPageV2() {
         lockedClientId={clientId}
         lockedClientName={currentClient?.name}
         defaultPlatform={view === 'tiktok' ? 'TIKTOK' : 'INSTAGRAM'}
+      />
+
+      {/* ─────────────── Mark as published (real post date) ─────────────── */}
+      <PublishDialog
+        item={publishTarget}
+        busy={publishMutation.isPending}
+        onOpenChange={(v) => { if (!v) setPublishTarget(null); }}
+        onConfirm={(iso) => publishTarget && publishMutation.mutate({ id: publishTarget.id, publishedAt: iso })}
+      />
+
+      {/* ─────────────── Bulk dialogs ─────────────── */}
+      <ShiftDialog
+        open={shiftOpen}
+        count={selectedIds.size}
+        busy={bulkMutation.isPending}
+        onOpenChange={setShiftOpen}
+        onConfirm={(days) => bulkMutation.mutate({ action: 'SHIFT', days })}
+      />
+      <BulkDeleteDialog
+        open={bulkDeleteOpen}
+        count={selectedIds.size}
+        busy={bulkMutation.isPending}
+        onOpenChange={setBulkDeleteOpen}
+        onConfirm={() => bulkMutation.mutate({ action: 'DELETE' })}
       />
 
       {/* ─────────────── Share dialog ─────────────── */}
@@ -729,47 +878,173 @@ export default function ContentCalendarPageV2() {
 /* ------------------------------------------------------------------ */
 
 function MonthGrid({
-  monthMatrix, cursor, postsByDay, onSelect, onCreate, idLocale,
+  monthMatrix, cursor, postsByDay, onSelect, onCreate, onMove, compact, activeDay, onActiveDay,
 }: {
   monthMatrix: Date[];
   cursor: Date;
   postsByDay: Map<string, ContentCalendarItem[]>;
   onSelect: (it: ContentCalendarItem) => void;
   onCreate: (date: Date) => void;
-  idLocale: Locale;
+  onMove: (item: ContentCalendarItem, day: Date) => void;
+  /** Phone layout: day cells show dots, the picked day lists its posts below. */
+  compact: boolean;
+  activeDay: string | null;
+  onActiveDay: (key: string | null) => void;
 }) {
-  const { t } = useTranslation();
-  // Horizontally scrollable on small viewports — keeps the 7-col grid
-  // intact without clipping cell content or requiring a layout rewrite.
+  const { t, i18n } = useTranslation();
+  const dragItem = useRef<ContentCalendarItem | null>(null);
+  const [dropKey, setDropKey] = useState<string | null>(null);
+  const todayKey = wibDayKey(new Date());
+  const weekdays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+  const header = (
+    <div className="grid grid-cols-7 border-b border-border-subtle bg-bg-sunken/40">
+      {weekdays.map((d) => (
+        <div
+          key={d}
+          className={cn(
+            'py-2 text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium',
+            compact ? 'text-center' : 'px-3',
+          )}
+        >
+          {d}
+        </div>
+      ))}
+    </div>
+  );
+
+  /* ----- phone: compact month + agenda for the picked day ----- */
+  if (compact) {
+    const monthPrefix = format(cursor, 'yyyy-MM');
+    const picked = activeDay ?? (todayKey.startsWith(monthPrefix) ? todayKey : null);
+    const pickedPosts = picked ? (postsByDay.get(picked) ?? []) : [];
+    const pickedDate = picked ? new Date(`${picked}T00:00:00`) : null;
+    return (
+      <div data-testid="month-compact">
+        {header}
+        <div className="grid grid-cols-7">
+          {monthMatrix.map((day) => {
+            const key = format(day, 'yyyy-MM-dd');
+            const inMonth = isSameMonth(day, cursor);
+            const posts = postsByDay.get(key) ?? [];
+            const isPicked = key === picked;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onActiveDay(key)}
+                className={cn(
+                  'flex h-14 flex-col items-center gap-1 border-b border-r border-border-subtle pt-1.5',
+                  inMonth ? 'bg-bg-raised' : 'bg-bg-sunken/40',
+                  isPicked && 'bg-accent-navy-wash ring-1 ring-inset ring-accent-navy-ring',
+                )}
+                aria-label={`${format(day, 'd MMMM')} (${posts.length})`}
+              >
+                <span
+                  className={cn(
+                    'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs tabular-nums',
+                    key === todayKey
+                      ? 'bg-brand-cream text-bg-base font-medium'
+                      : inMonth ? 'text-text-secondary' : 'text-text-tertiary',
+                  )}
+                >
+                  {format(day, 'd')}
+                </span>
+                <span className="flex items-center gap-0.5">
+                  {posts.slice(0, 4).map((p) => (
+                    <span
+                      key={p.id}
+                      className={cn('h-1.5 w-1.5 rounded-full', isOverdue(p) ? 'bg-danger' : statusDotClass(p.status))}
+                    />
+                  ))}
+                  {posts.length > 4 && <span className="text-[8px] leading-none text-text-tertiary">+</span>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="space-y-2 p-4" data-testid="month-agenda">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-medium uppercase tracking-[0.14em] text-text-tertiary">
+              {pickedDate
+                ? formatWib(pickedDate, { lang: i18n.language, withTime: false })
+                : t('content.planner.pickDay', 'Pilih tanggal')}
+            </h3>
+            {pickedDate && (
+              <Button size="sm" variant="outline" onClick={() => onCreate(pickedDate)}>
+                <Plus className="h-3.5 w-3.5" />
+                {t('content.planner.addOnDay', 'Tambah')}
+              </Button>
+            )}
+          </div>
+          {pickedDate && pickedPosts.length === 0 && (
+            <p className="py-3 text-sm text-text-tertiary">
+              {t('content.planner.noPostsDay', 'Belum ada konten di tanggal ini.')}
+            </p>
+          )}
+          {pickedPosts.map((it) => (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => onSelect(it)}
+              className="flex w-full items-center gap-3 rounded-lg border border-border-subtle bg-bg-sunken/40 p-2 text-left"
+            >
+              <ContentThumb item={it} showCount className="h-12 w-12 rounded-md" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-[11px] text-text-tertiary">
+                  <span className={cn('h-1.5 w-1.5 rounded-full', statusDotClass(it.status))} />
+                  <span className="tabular-nums">{it.scheduledAt ? `${wibTime(it.scheduledAt)} ${WIB_LABEL}` : ''}</span>
+                  <KindBadge item={it} compact />
+                  <OverdueBadge item={it} />
+                </div>
+                <p className="mt-0.5 truncate text-sm text-text-primary">{truncate(it.caption, 80) || '—'}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  /* ----- desktop: full month grid with drag-to-reschedule ----- */
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[560px]">
-      {/* Weekday header */}
-      <div className="grid grid-cols-7 border-b border-border-subtle bg-bg-sunken/40">
-        {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d) => (
-          <div
-            key={d}
-            className="px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium"
-          >
-            {d}
-          </div>
-        ))}
-      </div>
+      <div className="min-w-[760px]">
+      {header}
 
       {/* Cells */}
       <div className="grid grid-cols-7">
         {monthMatrix.map((day) => {
+          const key = format(day, 'yyyy-MM-dd');
           const inMonth = isSameMonth(day, cursor);
-          const today = isToday(day);
-          const posts = postsByDay.get(format(day, 'yyyy-MM-dd')) ?? [];
+          const today = key === todayKey;
+          const posts = postsByDay.get(key) ?? [];
           const overflow = Math.max(0, posts.length - 3);
+          const isDrop = dropKey === key;
 
           return (
             <div
               key={day.toISOString()}
+              onDragOver={(e) => {
+                if (!dragItem.current) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dropKey !== key) setDropKey(key);
+              }}
+              onDragLeave={() => { if (dropKey === key) setDropKey(null); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const it = dragItem.current;
+                dragItem.current = null;
+                setDropKey(null);
+                if (it) onMove(it, day);
+              }}
+              data-day={key}
               className={cn(
                 'group relative min-h-[128px] px-2 pt-2 pb-1 border-r border-b border-border-subtle',
                 inMonth ? 'bg-bg-raised' : 'bg-bg-sunken/40',
+                isDrop && 'bg-accent-navy-wash ring-2 ring-inset ring-accent-navy-ring',
               )}
             >
               <div className="flex items-center justify-between mb-1.5">
@@ -777,7 +1052,7 @@ function MonthGrid({
                   className={cn(
                     'inline-flex items-center justify-center text-xs tabular-nums',
                     today
-                      ? 'h-5 min-w-5 px-1 rounded-full bg-accent text-accent-foreground font-medium'
+                      ? 'h-5 min-w-5 px-1 rounded-full bg-brand-cream text-bg-base font-medium'
                       : inMonth
                       ? 'text-text-secondary'
                       : 'text-text-tertiary',
@@ -800,27 +1075,51 @@ function MonthGrid({
               </div>
 
               <div className="space-y-1">
-                {posts.slice(0, 3).map((it) => (
-                  <button
-                    key={it.id}
-                    type="button"
-                    onClick={() => onSelect(it)}
-                    className={cn(
-                      'w-full text-left rounded px-1.5 py-1 text-[11px] flex items-center gap-1.5 truncate',
-                      'border border-transparent hover:border-border-subtle transition-colors',
-                      statusChipClass(it.status),
-                    )}
-                    title={it.caption}
-                  >
-                    <span className={cn('h-1 w-1 rounded-full shrink-0', statusDotClass(it.status))} />
-                    {it.scheduledAt && (
-                      <span className="tabular-nums text-text-tertiary shrink-0">
-                        {format(parseISO(it.scheduledAt), 'HH:mm')}
+                {posts.slice(0, 3).map((it) => {
+                  const draggable = isReschedulable(it) && !!it.scheduledAt;
+                  const overdue = isOverdue(it);
+                  return (
+                    <button
+                      key={it.id}
+                      type="button"
+                      draggable={draggable}
+                      onDragStart={(e) => {
+                        dragItem.current = it;
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', it.id);
+                      }}
+                      onDragEnd={() => { dragItem.current = null; setDropKey(null); }}
+                      onClick={() => onSelect(it)}
+                      className={cn(
+                        'w-full text-left rounded px-1 py-1 text-[11px] flex items-center gap-1.5',
+                        'border border-transparent hover:border-border-subtle transition-colors',
+                        draggable && 'cursor-grab active:cursor-grabbing',
+                        statusChipClass(it.status),
+                        overdue && 'border-danger/40',
+                      )}
+                      title={`${it.caption}${draggable ? ` — ${t('content.planner.dragHint', 'seret untuk memindah jadwal')}` : ''}`}
+                      data-testid="month-chip"
+                    >
+                      {(it.media?.length ?? 0) > 0 ? (
+                        <ContentThumb item={it} className="h-6 w-6 rounded-sm" />
+                      ) : (
+                        <span className={cn('h-1 w-1 rounded-full shrink-0 mx-1', statusDotClass(it.status))} />
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1 leading-tight">
+                          {it.scheduledAt && (
+                            <span className="tabular-nums text-text-tertiary shrink-0">
+                              {wibTime(it.scheduledAt)}
+                            </span>
+                          )}
+                          <KindBadge item={it} compact className="shrink-0 border-0 bg-transparent px-0" />
+                          {overdue && <AlertTriangle className="h-3 w-3 shrink-0 text-danger" aria-label={t('content.planner.overdue', 'Terlambat')} />}
+                        </span>
+                        <span className="block truncate leading-tight">{truncate(it.caption, 38)}</span>
                       </span>
-                    )}
-                    <span className="truncate">{truncate(it.caption, 38)}</span>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
                 {overflow > 0 && (
                   <button
                     type="button"
@@ -835,6 +1134,9 @@ function MonthGrid({
           );
         })}
       </div>
+      <p className="px-3 py-2 text-[10px] text-text-tertiary">
+        {t('content.planner.wibNote', 'Jam ditampilkan dalam WIB (Asia/Jakarta). Seret konten ke tanggal lain untuk menjadwalkan ulang.')}
+      </p>
       </div>
     </div>
   );
@@ -847,12 +1149,16 @@ function MonthGrid({
 /* ------------------------------------------------------------------ */
 
 function ListView({
-  items, onSelect, onPublish, onArchive, onDelete, idLocale,
+  items, selectedIds, onToggle, onToggleAll, onSelect, onPublish, onArchive, onDuplicate, onDelete, idLocale,
 }: {
   items: ContentCalendarItem[];
+  selectedIds: Set<string>;
+  onToggle: (id: string) => void;
+  onToggleAll: (all: boolean) => void;
   onSelect: (it: ContentCalendarItem) => void;
-  onPublish: (id: string) => void;
+  onPublish: (it: ContentCalendarItem) => void;
   onArchive: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   idLocale: Locale;
 }) {
@@ -863,44 +1169,68 @@ function ListView({
     const db = b.scheduledAt ? +new Date(b.scheduledAt) : -Infinity;
     return db - da;
   }), [items]);
+  const allSelected = sorted.length > 0 && sorted.every((it) => selectedIds.has(it.id));
+  const someSelected = sorted.some((it) => selectedIds.has(it.id));
 
   return (
+    <div>
+      <div className="flex items-center gap-3 border-b border-border-subtle bg-bg-sunken/30 px-5 py-2">
+        <Checkbox
+          checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+          onCheckedChange={(v) => onToggleAll(v === true)}
+          aria-label={t('content.planner.bulk.selectAllRows', 'Pilih semua baris')}
+        />
+        <span className="text-[11px] uppercase tracking-[0.14em] text-text-tertiary">
+          {t('content.planner.bulk.selectAllRows', 'Pilih semua baris')}
+        </span>
+      </div>
     <ul className="divide-y divide-border-subtle">
       {sorted.map((it) => (
         <li key={it.id}>
-          <div className="flex items-center gap-4 px-5 py-3 hover:bg-bg-sunken/40 transition-colors">
+          <div
+            className={cn(
+              'flex items-center gap-3 px-5 py-3 hover:bg-bg-sunken/40 transition-colors',
+              selectedIds.has(it.id) && 'bg-accent-navy-wash/60',
+            )}
+            data-testid="list-row"
+          >
+            <Checkbox
+              checked={selectedIds.has(it.id)}
+              onCheckedChange={() => onToggle(it.id)}
+              aria-label={t('content.planner.bulk.selectRow', 'Pilih konten')}
+            />
             <button
               type="button"
               onClick={() => onSelect(it)}
-              className="flex-1 min-w-0 flex items-center gap-4 text-left"
+              className="flex-1 min-w-0 flex items-center gap-3 text-left"
             >
-              {/* Status dot */}
-              <div className="shrink-0">
-                <span className={cn('block h-2 w-2 rounded-full', statusDotClass(it.status))} />
-              </div>
+              {/* Thumbnail (or status dot when there is no media) */}
+              {(it.media?.length ?? 0) > 0 ? (
+                <ContentThumb item={it} showCount className="h-11 w-11 rounded-md" />
+              ) : (
+                <div className="shrink-0 w-11 flex justify-center">
+                  <span className={cn('block h-2 w-2 rounded-full', statusDotClass(it.status))} />
+                </div>
+              )}
 
               {/* Caption + client/project */}
               <div className="min-w-0 flex-1">
                 <div className="text-sm text-text-primary truncate">
                   {truncate(it.caption, 90) || '—'}
                 </div>
-                <div className="text-xs text-text-tertiary truncate mt-0.5 flex items-center gap-2">
-                  <span>{it.client?.name ?? '—'}</span>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-tertiary">
+                  <span className="tabular-nums md:hidden">
+                    {it.scheduledAt ? formatWib(it.scheduledAt, { lang: idLocale.code, withYear: false }) : ''}
+                  </span>
+                  <span className="hidden sm:inline">{it.client?.name ?? '—'}</span>
                   {it.project?.number && (
                     <>
                       <span>·</span>
-                      <span className="font-mono">{it.project.number}</span>
+                      <span className="max-w-[9rem] truncate font-mono">{it.project.number}</span>
                     </>
                   )}
-                  {(it.media?.length ?? 0) > 0 && (
-                    <>
-                      <span>·</span>
-                      <span className="inline-flex items-center gap-1">
-                        {it.media[0].type === 'VIDEO' ? <Video className="h-3 w-3" /> : <FileImage className="h-3 w-3" />}
-                        {it.media.length}
-                      </span>
-                    </>
-                  )}
+                  <KindBadge item={it} />
+                  <OverdueBadge item={it} />
                 </div>
               </div>
 
@@ -934,10 +1264,10 @@ function ListView({
                 </Badge>
               </div>
 
-              {/* Scheduled */}
-              <div className="shrink-0 text-xs text-text-tertiary tabular-nums w-[88px] text-right hidden md:block">
+              {/* Scheduled (WIB) */}
+              <div className="shrink-0 text-xs text-text-tertiary tabular-nums w-[132px] text-right hidden md:block">
                 {it.scheduledAt
-                  ? format(parseISO(it.scheduledAt), 'd MMM HH:mm', { locale: idLocale })
+                  ? formatWib(it.scheduledAt, { lang: idLocale.code, withYear: false })
                   : '—'}
               </div>
             </button>
@@ -959,8 +1289,11 @@ function ListView({
                   <DropdownMenuItem onClick={() => onSelect(it)}>
                     <Eye className="h-3.5 w-3.5" /> {t('contentCalendar.viewDetail', 'View Detail')}
                   </DropdownMenuItem>
-                  {it.status !== 'PUBLISHED' && (
-                    <DropdownMenuItem onClick={() => onPublish(it.id)}>
+                  <DropdownMenuItem onClick={() => onDuplicate(it.id)}>
+                    <Copy className="h-3.5 w-3.5" /> {t('content.planner.duplicate', 'Duplikat')}
+                  </DropdownMenuItem>
+                  {it.status !== 'PUBLISHED' && it.status !== 'ARCHIVED' && (
+                    <DropdownMenuItem onClick={() => onPublish(it)}>
                       <Rocket className="h-3.5 w-3.5" /> {t('contentCalendar.publish', 'Publish')}
                     </DropdownMenuItem>
                   )}
@@ -983,6 +1316,7 @@ function ListView({
         </li>
       ))}
     </ul>
+    </div>
   );
 }
 
@@ -1034,13 +1368,14 @@ function DraftCard({ item, onSelect }: { item: ContentCalendarItem; onSelect: ()
 /* ------------------------------------------------------------------ */
 
 function DetailSheet({
-  item, onClose, onEdit, onPublish, onArchive, onDelete, idLocale,
+  item, onClose, onEdit, onPublish, onArchive, onDuplicate, onDelete, idLocale,
 }: {
   item: ContentCalendarItem | null;
   onClose: () => void;
   onEdit: (item: ContentCalendarItem) => void;
-  onPublish: (id: string) => void;
+  onPublish: (item: ContentCalendarItem) => void;
   onArchive: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   idLocale: Locale;
 }) {
@@ -1055,7 +1390,7 @@ function DetailSheet({
         {item && (
           <>
             <SheetHeader className="border-b border-border-subtle">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <Badge
                   variant="outline"
                   className={cn(
@@ -1065,10 +1400,11 @@ function DetailSheet({
                 >
                   {t(STATUS_LABEL_KEY[item.status], STATUS_LABEL_DEFAULT[item.status])}
                 </Badge>
+                <OverdueBadge item={item} />
                 {item.scheduledAt && (
                   <span className="text-xs text-text-tertiary inline-flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {format(parseISO(item.scheduledAt), 'EEE, d MMM yyyy · HH:mm', { locale: idLocale })}
+                    {formatWib(item.scheduledAt, { lang: idLocale.code })}
                   </span>
                 )}
               </div>
@@ -1084,26 +1420,48 @@ function DetailSheet({
             </SheetHeader>
 
             <div className="flex-1 overflow-y-auto px-4 py-2 space-y-5">
-              {/* Caption */}
-              <section>
-                <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                  {t('contentCalendar.createDialog.caption', 'Caption')}
-                </h4>
-                <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
-                  {item.caption || '—'}
+              {isOverdue(item) && (
+                <p className="flex items-start gap-2 rounded-md bg-danger/10 px-3 py-2 text-xs text-danger">
+                  <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                  {t('content.planner.overdueHint', 'Jadwal sudah lewat. Tandai terbit atau jadwalkan ulang.')}
                 </p>
-              </section>
+              )}
 
-              {/* Platforms */}
+              {/* Media preview */}
+              {(item.media?.length ?? 0) > 0 && (
+                <section>
+                  <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
+                    {t('contentCalendar.createDialog.media', 'Media')}
+                    <span className="ml-2 normal-case tracking-normal">
+                      {t('contentCalendar.detailSheet.fileCount', '{{count}} file', { count: item.media.length })}
+                    </span>
+                  </h4>
+                  <div className="flex flex-wrap gap-2" data-testid="detail-media">
+                    {[...item.media]
+                      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                      .slice(0, 10)
+                      .map((m) => (
+                        <ContentThumb
+                          key={m.id ?? m.key}
+                          item={{ ...item, media: [m] }}
+                          className="h-20 w-16 rounded-md"
+                        />
+                      ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Format + platforms */}
               <section>
                 <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                  {t('contentCalendar.platform', 'Platform')}
+                  {t('content.planner.formatPlatform', 'Format & Platform')}
                 </h4>
-                {item.platforms.length === 0 ? (
-                  <span className="text-sm text-text-tertiary">—</span>
-                ) : (
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {item.platforms.map((p) => {
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <KindBadge item={item} className="text-xs px-2 py-0.5" />
+                  {item.platforms.length === 0 ? (
+                    <span className="text-sm text-text-tertiary">—</span>
+                  ) : (
+                    item.platforms.map((p) => {
                       const meta = platformMeta(p);
                       return (
                         <Badge
@@ -1114,25 +1472,20 @@ function DetailSheet({
                           {meta?.icon}{meta?.label}
                         </Badge>
                       );
-                    })}
-                  </div>
-                )}
+                    })
+                  )}
+                </div>
               </section>
 
-              {/* Media count */}
-              {(item.media?.length ?? 0) > 0 && (
-                <section>
-                  <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
-                    {t('contentCalendar.createDialog.media', 'Media')}
-                  </h4>
-                  <div className="inline-flex items-center gap-2 text-sm text-text-secondary">
-                    {item.media[0].type === 'VIDEO'
-                      ? <Video className="h-4 w-4" />
-                      : <FileImage className="h-4 w-4" />}
-                    {t('contentCalendar.detailSheet.fileCount', '{{count}} file', { count: item.media.length })}
-                  </div>
-                </section>
-              )}
+              {/* Caption */}
+              <section>
+                <h4 className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-2">
+                  {t('contentCalendar.createDialog.caption', 'Caption')}
+                </h4>
+                <p className="text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
+                  {item.caption || '—'}
+                </p>
+              </section>
 
               {/* Timeline */}
               <section className="text-xs text-text-tertiary space-y-1.5">
@@ -1145,7 +1498,7 @@ function DetailSheet({
                     <span className="inline-flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3" /> {t('contentCalendar.detailSheet.published', 'Published')}
                     </span>
-                    <DateDisplay date={item.publishedAt} format="long" />
+                    <span className="tabular-nums">{formatWib(item.publishedAt, { lang: idLocale.code })}</span>
                   </div>
                 )}
                 {item.status === 'FAILED' && (
@@ -1158,12 +1511,18 @@ function DetailSheet({
             </div>
 
             <div className="border-t border-border-subtle p-4 flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => onEdit(item)}>
-                <Pencil className="h-3.5 w-3.5" />
-                {t('common.edit', 'Edit')}
+              {item.status !== 'ARCHIVED' && (
+                <Button size="sm" onClick={() => onEdit(item)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                  {t('common.edit', 'Edit')}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => onDuplicate(item.id)}>
+                <Copy className="h-3.5 w-3.5" />
+                {t('content.planner.duplicate', 'Duplikat')}
               </Button>
-              {item.status !== 'PUBLISHED' && (
-                <Button variant="outline" size="sm" onClick={() => onPublish(item.id)}>
+              {item.status !== 'PUBLISHED' && item.status !== 'ARCHIVED' && (
+                <Button variant="outline" size="sm" onClick={() => onPublish(item)}>
                   <Rocket className="h-3.5 w-3.5" />
                   {t('contentCalendar.publish', 'Publish')}
                 </Button>
@@ -1227,15 +1586,14 @@ function kindFromItem(it: ContentCalendarItem): PostKind {
 }
 
 function CreateDialog({
-  open, onOpenChange, initialDate, editItem, clients, projects, onSubmit, submitting, prefillProjectId = '',
+  open, onOpenChange, initialDate, editItem, clients, onSubmit, submitting, prefillProjectId = '',
   lockedClientId = '', lockedClientName, defaultPlatform = 'INSTAGRAM',
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initialDate?: Date;
   editItem?: ContentCalendarItem | null;
-  clients: Array<{ id: string; name: string }>;
-  projects: Array<{ id: string; number: string; description: string }>;
+  clients: Array<{ id: string; name: string; isInternal?: boolean }>;
   onSubmit: (data: CreateContentDto, mediaChanged?: boolean) => void;
   submitting: boolean;
   prefillProjectId?: string;
@@ -1243,12 +1601,18 @@ function CreateDialog({
   lockedClientName?: string;
   defaultPlatform?: Platform;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { mediaToken } = useMediaToken();
   const isEdit = !!editItem;
   const [caption, setCaption] = useState('');
   const [scheduledAt, setScheduledAt] = useState<Date | undefined>(initialDate);
+  // Schedule times are always WIB (Asia/Jakarta), whatever the browser zone.
   const [time, setTime] = useState('09:00');
+  // Once the user edits the time by hand we stop suggesting one.
+  const [timeTouched, setTimeTouched] = useState(false);
+  // Real post date/time (WIB) of an already published item (editable).
+  const [pubDate, setPubDate] = useState<Date | undefined>(undefined);
+  const [pubTime, setPubTime] = useState('09:00');
   // The active preview's platform is pre-selected so new content appears in
   // that feed by default (Instagram view → IG, TikTok view → TikTok).
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([defaultPlatform]);
@@ -1258,6 +1622,15 @@ function CreateDialog({
   const [kind, setKind] = useState<PostKind>('POST');
   const cfg = KIND_CFG[kind];
   const [clientId, setClientId] = useState<string>(lockedClientId);
+  // No client chosen yet -> default to the internal client (Monomi) so a post
+  // can be created immediately, even with zero real clients.
+  const internalClientId = clients.find((c) => c.isInternal)?.id;
+  useEffect(() => {
+    if (open && !editItem && !lockedClientId && !clientId && internalClientId) {
+      setClientId(internalClientId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editItem, lockedClientId, internalClientId]);
   const [projectId, setProjectId] = useState<string>(prefillProjectId);
 
   // Uploaded media (carousel order = array order). `preview` is a local blob
@@ -1281,9 +1654,11 @@ function CreateDialog({
     if (!open) return;
     if (editItem) {
       setCaption(editItem.caption ?? '');
-      const d = editItem.scheduledAt ? new Date(editItem.scheduledAt) : undefined;
-      setScheduledAt(d);
-      if (d) setTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+      setScheduledAt(editItem.scheduledAt ? wibCalendarDate(editItem.scheduledAt) : undefined);
+      if (editItem.scheduledAt) setTime(wibTime(editItem.scheduledAt));
+      setTimeTouched(true);
+      setPubDate(editItem.publishedAt ? wibCalendarDate(editItem.publishedAt) : undefined);
+      if (editItem.publishedAt) setPubTime(wibTime(editItem.publishedAt));
       setSelectedPlatforms((editItem.platforms?.length ? editItem.platforms : [defaultPlatform]) as Platform[]);
       setKind(kindFromItem(editItem));
       setProjectId(editItem.projectId ?? '');
@@ -1297,9 +1672,14 @@ function CreateDialog({
     } else {
       setCaption('');
       setTime('09:00');
+      setTimeTouched(false);
+      setPubDate(undefined);
       setSelectedPlatforms([defaultPlatform] as Platform[]);
       setKind('POST');
       setProjectId(prefillProjectId);
+      // New post defaults to the viewed client, else the internal client
+      // (Monomi) -- never the client left over from a previously edited post.
+      setClientId(lockedClientId || internalClientId || '');
       setMedia([]);
       setMediaDirty(false);
     }
@@ -1338,6 +1718,9 @@ function CreateDialog({
       return;
     }
     const arr = Array.from(files).slice(0, room);
+    if (files.length > room) {
+      toast.message(t('content.planner.uploadTrimmed', 'Hanya {{n}} file pertama yang dipakai (batas {{max}} media).', { n: room, max: MEDIA_MAX }));
+    }
     const previews = arr.map((f) => URL.createObjectURL(f));
     setUploading(true);
     try {
@@ -1345,9 +1728,18 @@ function CreateDialog({
       const merged: UploadedMedia[] = uploaded.map((d, i) => ({ ...d, preview: previews[i] }));
       setMedia((prev) => [...prev, ...merged]);
       setMediaDirty(true);
-    } catch {
-      previews.forEach((u) => URL.revokeObjectURL(u));
-      toast.error(t('contentCalendar.createDialog.uploadFailed', 'Gagal mengunggah media.'));
+    } catch (e) {
+      // Files of earlier batches that did upload are kept; only the rest failed.
+      const done = uploadedBeforeFailure(e);
+      if (done.length > 0) {
+        setMedia((prev) => [...prev, ...done.map((d, i) => ({ ...d, preview: previews[i] }))]);
+        setMediaDirty(true);
+      }
+      previews.slice(done.length).forEach((u) => URL.revokeObjectURL(u));
+      const reason = apiErrorMessage(e, t('contentCalendar.createDialog.uploadFailed', 'Gagal mengunggah media.'));
+      toast.error(done.length > 0
+        ? t('content.planner.uploadPartial', '{{ok}} dari {{total}} file terunggah. {{reason}}', { ok: done.length, total: arr.length, reason })
+        : reason);
     } finally {
       setUploading(false);
     }
@@ -1378,6 +1770,26 @@ function CreateDialog({
     );
   };
 
+  /* ----- projects: only the selected client's, re-filtered when it changes ----- */
+  const effectiveClientId = lockedClientId || clientId;
+  const { data: clientProjects = [], isFetching: projectsLoading } = useQuery({
+    queryKey: ['projects', 'by-client', effectiveClientId],
+    queryFn: () => projectService.getProjectsByClient(effectiveClientId),
+    enabled: open && !!effectiveClientId,
+  });
+  const projects = useMemo(
+    () => (effectiveClientId ? clientProjects : []).map((p) => ({
+      id: p.id, number: p.number, description: p.description,
+    })),
+    [clientProjects, effectiveClientId],
+  );
+  // A project that does not belong to the (newly) selected client is dropped
+  // instead of being sent and rejected by the server.
+  useEffect(() => {
+    if (!projectId || projectsLoading || !effectiveClientId) return;
+    if (!projects.some((p) => p.id === projectId)) setProjectId('');
+  }, [projects, projectsLoading, effectiveClientId, projectId]);
+
   const projectOptions = useMemo(() => [
     {
       value: 'none',
@@ -1398,12 +1810,27 @@ function CreateDialog({
     })),
   ], [projects, t]);
 
-  const handleSubmit = () => {
+  /* ----- schedule (WIB) ----- */
+  // Suggest a sensible time when a date is picked: 09:00, or the next whole
+  // hour when the chosen day is today and 09:00 has already passed.
+  useEffect(() => {
+    if (!open || isEdit || timeTouched || !scheduledAt) return;
+    setTime(defaultTimeFor(scheduledAt));
+  }, [open, isEdit, timeTouched, scheduledAt]);
+
+  const scheduleIso = scheduledAt ? combineWib(scheduledAt, time || '00:00') : undefined;
+  const schedulePast = !!scheduledAt && isPastWib(scheduledAt, time || '00:00');
+  const scheduleChanged = !isEdit
+    || (scheduleIso ?? null) !== (editItem?.scheduledAt ? new Date(editItem.scheduledAt).toISOString() : null);
+  // Past is only a problem when the item is (going to be) SCHEDULED.
+  const blockPastEdit = isEdit && schedulePast && scheduleChanged && editItem?.status === 'SCHEDULED';
+  const pastLabel = scheduleIso ? formatWib(scheduleIso, { lang: i18n.language }) : '';
+
+  const handleSubmit = (mode: 'auto' | 'draft' | 'published' = 'auto') => {
     if (!caption.trim()) {
       toast.error(t('contentCalendar.createDialog.captionRequired', 'Caption is required.'));
       return;
     }
-    const effectiveClientId = lockedClientId || clientId;
     if (!effectiveClientId) {
       toast.error(t('contentCalendar.createDialog.clientRequired', 'Pilih klien terlebih dahulu.'));
       return;
@@ -1412,18 +1839,32 @@ function CreateDialog({
       toast.error(t('contentCalendar.createDialog.carouselMin', 'Carousel butuh minimal 2 media.'));
       return;
     }
-    let iso: string | undefined;
-    if (scheduledAt) {
-      const [h, m] = time.split(':').map(Number);
-      const d = new Date(scheduledAt);
-      d.setHours(h || 0, m || 0, 0, 0);
-      iso = d.toISOString();
+    if (mode === 'auto' && schedulePast && (!isEdit || blockPastEdit)) {
+      toast.error(t('content.planner.pastSchedule', 'Waktu {{when}} sudah lewat. Pilih waktu berikutnya atau simpan sebagai draf.', { when: pastLabel }));
+      return;
     }
+    // Edit: only send the schedule when it changed (or was cleared), so an
+    // unrelated edit never alters a draft/scheduled item's status.
+    let schedule: string | null | undefined;
+    if (isEdit) {
+      if (!scheduledAt) schedule = editItem?.scheduledAt ? null : undefined;
+      else if (scheduleChanged) schedule = scheduleIso;
+    } else {
+      schedule = scheduleIso;
+    }
+    const publishedAtIso = isEdit && editItem?.status === 'PUBLISHED' && pubDate
+      ? combineWib(pubDate, pubTime || '00:00')
+      : undefined;
     onSubmit({
       caption: caption.trim(),
-      scheduledAt: iso,
-      // Don't reset an existing item's status on edit — only set it on create.
-      ...(isEdit ? {} : { status: iso ? 'SCHEDULED' : 'DRAFT' }),
+      ...(schedule !== undefined ? { scheduledAt: schedule } : {}),
+      ...(publishedAtIso ? { publishedAt: publishedAtIso } : {}),
+      // Don't reset an existing item's status on edit; only set it on create.
+      ...(isEdit ? {} : {
+        status: mode === 'published' ? 'PUBLISHED'
+          : mode === 'draft' ? 'DRAFT'
+          : scheduleIso ? 'SCHEDULED' : 'DRAFT',
+      }),
       format: cfg.format,
       platforms: selectedPlatforms,
       clientId: effectiveClientId,
@@ -1435,14 +1876,16 @@ function CreateDialog({
         order: i,
       })),
     }, mediaDirty);
-    // NOTE: don't reset fields here — that would clear the form even on a failed
+    // NOTE: don't reset fields here, that would clear the form even on a failed
     // submit. The open-effect re-initializes (create) or prefills (edit) next time.
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-xl">
-        <DialogHeader>
+      {/* Header + scrolling body + sticky footer, so Save is always reachable
+          (on a phone the sheet is taller than the screen). */}
+      <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-xl flex flex-col gap-0 overflow-hidden p-0 max-h-[92dvh] sm:max-h-[90vh]">
+        <DialogHeader className="px-6 pt-6 pb-3 pr-12 pl-12 sm:pl-6 sm:pr-12">
           <DialogTitle className="text-text-primary font-display tracking-tight">
             {isEdit ? t('contentCalendar.editDialog.title', 'Edit Content') : t('contentCalendar.createDialog.title', 'Add Content')}
           </DialogTitle>
@@ -1453,7 +1896,7 @@ function CreateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 min-h-0 space-y-4 overflow-y-auto px-6 pb-4">
           {/* Caption */}
           <div>
             <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
@@ -1471,29 +1914,83 @@ function CreateDialog({
           </div>
 
           {/* Schedule */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                {t('contentCalendar.createDialog.scheduleDate', 'Schedule Date')}
-              </label>
-              <MonomiDatePicker value={scheduledAt} onChange={setScheduledAt} />
+          <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
+                  {t('contentCalendar.createDialog.scheduleDate', 'Schedule Date')}
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <div className="min-w-0 flex-1">
+                    <MonomiDatePicker value={scheduledAt} onChange={setScheduledAt} />
+                  </div>
+                  {scheduledAt && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => { setScheduledAt(undefined); setTimeTouched(false); }}
+                      aria-label={t('content.planner.clearDate', 'Hapus jadwal')}
+                      title={t('content.planner.clearDate', 'Hapus jadwal')}
+                      className="text-text-tertiary hover:text-text-primary"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
+                  {t('contentCalendar.createDialog.time', 'Time')} ({WIB_LABEL})
+                </label>
+                <div className="relative">
+                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
+                  <Input
+                    type="time"
+                    value={time}
+                    onChange={(e) => { setTime(e.target.value); setTimeTouched(true); }}
+                    disabled={!scheduledAt}
+                    className="pl-9 pr-12 bg-bg-sunken border-border-subtle text-text-primary"
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-text-tertiary">
+                    {WIB_LABEL}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
-                {t('contentCalendar.createDialog.time', 'Time')}
-              </label>
-              <div className="relative">
-                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary pointer-events-none" />
+            {scheduledAt && schedulePast && (!isEdit || blockPastEdit) ? (
+              <p className="mt-1.5 text-xs text-danger" role="alert" data-testid="schedule-past">
+                {t('content.planner.pastSchedule', 'Waktu {{when}} sudah lewat. Pilih waktu berikutnya atau simpan sebagai draf.', { when: pastLabel })}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[10px] text-text-tertiary">
+                {t('content.planner.wibHint', 'Jam diatur dalam WIB (Asia/Jakarta), tidak mengikuti zona waktu browser.')}
+              </p>
+            )}
+          </div>
+
+          {/* Real post time of an already published item */}
+          {isEdit && editItem?.status === 'PUBLISHED' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
+                  {t('content.planner.publishedAtDate', 'Tanggal Terbit')}
+                </label>
+                <MonomiDatePicker value={pubDate} onChange={setPubDate} />
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.14em] text-text-tertiary font-medium mb-1.5">
+                  {t('content.planner.publishedAtTime', 'Jam Terbit')} ({WIB_LABEL})
+                </label>
                 <Input
                   type="time"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  disabled={!scheduledAt}
-                  className="pl-9 bg-bg-sunken border-border-subtle text-text-primary"
+                  value={pubTime}
+                  onChange={(e) => setPubTime(e.target.value)}
+                  className="bg-bg-sunken border-border-subtle text-text-primary"
                 />
               </div>
             </div>
-          </div>
+          )}
 
           {/* Platforms */}
           <div>
@@ -1509,7 +2006,7 @@ function CreateDialog({
                     type="button"
                     onClick={() => togglePlatform(p.value)}
                     className={cn(
-                      'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors',
+                      'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-2 text-xs sm:py-1 transition-colors',
                       selected
                         ? 'border-accent-navy-ring bg-accent-navy-wash text-text-primary'
                         : 'border-border-subtle bg-bg-sunken text-text-tertiary hover:text-text-primary hover:border-border-default',
@@ -1639,7 +2136,9 @@ function CreateDialog({
                   <SelectContent>
                     <SelectItem value="none">{t('contentCalendar.createDialog.none', 'None')}</SelectItem>
                     {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}{c.isInternal ? ` (${t('clients.internalBadge', 'Internal')})` : ''}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1662,17 +2161,28 @@ function CreateDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-row flex-wrap items-center justify-end gap-2 border-t border-border-subtle bg-bg-raised px-6 py-3">
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             {t('common.cancel', 'Cancel')}
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={submitting}>
-            {submitting
-              ? t('common.saving', 'Saving...')
-              : isEdit ? t('contentCalendar.editDialog.save', 'Simpan Perubahan')
-              : scheduledAt ? t('contentCalendar.createDialog.schedule', 'Schedule')
-              : t('contentCalendar.createDialog.saveDraft', 'Save Draft')}
-          </Button>
+          {!isEdit && scheduledAt && schedulePast ? (
+            <>
+              <Button variant="outline" size="sm" onClick={() => handleSubmit('draft')} disabled={submitting}>
+                {t('contentCalendar.createDialog.saveDraft', 'Save Draft')}
+              </Button>
+              <Button size="sm" onClick={() => handleSubmit('published')} disabled={submitting}>
+                {t('content.planner.saveAsPublished', 'Simpan sebagai Terbit')}
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={() => handleSubmit('auto')} disabled={submitting || blockPastEdit}>
+              {submitting
+                ? t('common.saving', 'Saving...')
+                : isEdit ? t('contentCalendar.editDialog.save', 'Simpan Perubahan')
+                : scheduledAt ? t('contentCalendar.createDialog.schedule', 'Schedule')
+                : t('contentCalendar.createDialog.saveDraft', 'Save Draft')}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1863,9 +2373,9 @@ function HighlightsDialog({
       const uploaded = await contentCalendarService.uploadMultipleMedia(arr);
       setMedia((prev) => [...prev, ...uploaded.map((d, i) => ({ ...d, preview: previews[i] }))]);
       setMediaDirty(true);
-    } catch {
+    } catch (e) {
       previews.forEach((u) => URL.revokeObjectURL(u));
-      toast.error(t('contentCalendar.createDialog.uploadFailed', 'Gagal mengunggah media.'));
+      toast.error(apiErrorMessage(e, t('contentCalendar.createDialog.uploadFailed', 'Gagal mengunggah media.')));
     } finally {
       setUploading(false);
     }
@@ -1910,7 +2420,7 @@ function HighlightsDialog({
                     title={t('content.highlightEdit', 'Edit highlight')}
                     className={cn(
                       'rounded-full border p-[2px] transition',
-                      editingId === h.id ? 'border-accent ring-2 ring-accent/40' : 'border-border-default hover:border-accent',
+                      editingId === h.id ? 'border-brand-cream ring-2 ring-brand-cream/50' : 'border-border-default hover:border-brand-cream',
                     )}
                   >
                     {h.coverKey || h.coverUrl
@@ -1939,7 +2449,7 @@ function HighlightsDialog({
           {editingId && (
             <div className="flex items-center justify-between rounded-md bg-bg-sunken px-2.5 py-1.5">
               <span className="text-[11px] text-text-secondary">{t('content.highlightEditing', 'Mengedit highlight')}</span>
-              <button type="button" onClick={reset} className="text-[11px] text-accent hover:underline">{t('content.highlightNewInstead', '+ Highlight baru')}</button>
+              <button type="button" onClick={reset} className="text-[11px] text-text-primary hover:underline">{t('content.highlightNewInstead', '+ Highlight baru')}</button>
             </div>
           )}
           <div>
@@ -1987,6 +2497,33 @@ function HighlightsDialog({
 /* ------------------------------------------------------------------ */
 /*  utilities                                                          */
 /* ------------------------------------------------------------------ */
+
+/** True below the `sm` breakpoint (phones). */
+function useIsMobile(query = '(max-width: 639px)'): boolean {
+  const [matches, setMatches] = useState(
+    () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(query).matches,
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia(query);
+    const onChange = () => setMatches(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [query]);
+  return matches;
+}
+
+/**
+ * Default WIB time for a newly picked schedule date: 09:00, or the next whole
+ * hour when the day is today and 09:00 has already passed.
+ */
+function defaultTimeFor(date: Date): string {
+  const isTodayWib = format(date, 'yyyy-MM-dd') === wibDayKey(new Date());
+  if (!isTodayWib || !isPastWib(date, '09:00')) return '09:00';
+  const slot = nextWibHourSlot();
+  return format(slot.date, 'yyyy-MM-dd') === wibDayKey(new Date()) ? slot.time : '23:59';
+}
 
 function safeDate(s?: string | null): Date | null {
   if (!s) return null;

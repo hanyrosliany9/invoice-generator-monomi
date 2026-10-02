@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from "class-validator";
+import { IsString, IsOptional, MaxLength } from "class-validator";
 
 export class AddSectionDto {
   @IsString()
@@ -11,4 +11,16 @@ export class AddSectionDto {
   // NO MORE sectionType enum!
   // NO MORE useTemplate flag!
   // System auto-detects column types and suggests visualizations
+}
+
+export class UpdateSectionDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string;
 }

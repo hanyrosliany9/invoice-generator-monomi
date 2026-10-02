@@ -31,6 +31,7 @@ import { MediaCollabGateway } from "./gateways/media-collab.gateway";
 import { GuestAuthGuard } from "./guards/guest-auth.guard";
 import { PublicViewGuard } from "./guards/public-view.guard";
 import { BulkDownloadService } from "./services/bulk-download.service";
+import { MediaShareService } from "./services/media-share.service";
 import { BulkDownloadWorker } from "./workers/bulk-download.worker";
 
 /**
@@ -117,6 +118,7 @@ import { BulkDownloadWorker } from "./workers/bulk-download.worker";
     PublicViewGuard,
     BulkDownloadService,
     BulkDownloadWorker,
+    MediaShareService,
   ],
   exports: [
     MediaProjectsService,
@@ -128,6 +130,7 @@ import { BulkDownloadWorker } from "./workers/bulk-download.worker";
     MediaProcessingService,
     CollectionsService,
     ComparisonService,
+    MediaShareService,
   ],
 })
 export class MediaCollabModule {}

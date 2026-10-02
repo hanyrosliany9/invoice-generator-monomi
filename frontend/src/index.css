@@ -7,6 +7,12 @@
  */
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
 
+/* Layer order: antd's CSS-in-JS (StyleProvider layer in main.tsx) sits below
+ * Tailwind's components/utilities so utilities always win over antd resets
+ * (e.g. antd's global `a { color; background }`). Must come before the
+ * tailwindcss import so it establishes the order. */
+@layer theme, base, antd, components, utilities;
+
 @import 'tailwindcss';
 
 @theme {
@@ -158,6 +164,11 @@ body {
   }
 }
 
+html {
+  /* Sticky headers must not cover focus/scroll targets (anchors, scrollIntoView) */
+  scroll-padding-top: 5rem;
+}
+
 /* Responsive Typography */
 :root {
   --font-size-h1-mobile: 1.75rem;
@@ -172,6 +183,10 @@ body {
   --font-size-body-desktop: 1rem;
 }
 
+/* Heading defaults live in the base layer so Tailwind size utilities
+   (text-sm, text-4xl, ...) on an h1-h4 win. Unlayered rules here used to
+   override every utility and blew up headings that were sized on purpose. */
+@layer base {
 h1 {
   font-size: var(--font-size-h1-mobile);
   line-height: 1.2;
@@ -213,6 +228,7 @@ h4 {
   body {
     font-size: var(--font-size-body-desktop);
   }
+}
 }
 
 /* Universal Safe Area Support for iOS notched devices */

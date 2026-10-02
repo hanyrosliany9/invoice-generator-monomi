@@ -12,6 +12,7 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { ProjectStatus } from "@prisma/client";
 import { Transform, Type } from "class-transformer";
+import { WibDateInput } from "../../../common/transformers/wib-date.transform";
 
 export class ProjectItemDto {
   @ApiProperty({
@@ -160,7 +161,8 @@ export class CreateProjectDto {
     required: false,
   })
   @IsOptional()
-  @IsDateString({}, { message: "Format tanggal mulai tidak valid" })
+  @WibDateInput()
+  @IsDateString({ strict: true }, { message: "Format tanggal mulai tidak valid" })
   startDate?: string;
 
   @ApiProperty({
@@ -169,7 +171,8 @@ export class CreateProjectDto {
     required: false,
   })
   @IsOptional()
-  @IsDateString({}, { message: "Format tanggal selesai tidak valid" })
+  @WibDateInput()
+  @IsDateString({ strict: true }, { message: "Format tanggal selesai tidak valid" })
   endDate?: string;
 
   @ApiProperty({

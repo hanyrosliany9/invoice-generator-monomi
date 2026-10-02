@@ -9,10 +9,9 @@
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Grid3x3 as IgIcon, Video, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import contentCalendarService from '@/services/content-calendar';
-import InstagramPreview from '@/pages/v2/calendar/instagram/InstagramPreview';
-import TikTokPreview from '@/pages/v2/calendar/tiktok/TikTokPreview';
+import { ContentPlannerView } from './ContentPlannerView';
 import { MonomiBrand } from '@/components/monomi/MonomiBrand';
 
 export default function PublicContentViewPage() {
@@ -62,44 +61,7 @@ export default function PublicContentViewPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-              {/* Instagram */}
-              <section className="rounded-2xl border border-border-subtle bg-bg-raised">
-                <div className="flex items-center gap-2 border-b border-border-subtle px-5 py-3">
-                  <IgIcon className="h-4 w-4" />
-                  <h2 className="text-sm font-semibold">Instagram</h2>
-                  <span className="ml-auto text-[11px] text-text-tertiary">
-                    {data.instagram.postCount} {t('publicContent.posts', 'konten')}
-                  </span>
-                </div>
-                <InstagramPreview
-                  items={data.items}
-                  onEdit={() => {}}
-                  clientId=""
-                  profile={data.instagram}
-                  shareToken={token}
-                  highlights={data.highlights}
-                />
-              </section>
-
-              {/* TikTok */}
-              <section className="rounded-2xl border border-border-subtle bg-bg-raised">
-                <div className="flex items-center gap-2 border-b border-border-subtle px-5 py-3">
-                  <Video className="h-4 w-4" />
-                  <h2 className="text-sm font-semibold">TikTok</h2>
-                  <span className="ml-auto text-[11px] text-text-tertiary">
-                    {data.tiktok.postCount} {t('publicContent.posts', 'konten')}
-                  </span>
-                </div>
-                <TikTokPreview
-                  items={data.items}
-                  onEdit={() => {}}
-                  clientId=""
-                  profile={data.tiktok}
-                  shareToken={token}
-                />
-              </section>
-            </div>
+            <ContentPlannerView data={data} shareRef={token} />
           </>
         )}
       </main>

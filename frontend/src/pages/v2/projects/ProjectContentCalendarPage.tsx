@@ -127,7 +127,7 @@ const Textarea = ({
     className={cn(
       'w-full min-h-[140px] rounded-md border border-border-subtle bg-bg-sunken px-3 py-2 text-sm text-text-primary',
       'placeholder:text-text-tertiary outline-none transition-colors resize-y',
-      'focus-visible:border-accent/60 focus-visible:ring-1 focus-visible:ring-accent/40',
+      'focus-visible:border-border-strong focus-visible:ring-1 focus-visible:ring-ring',
       className,
     )}
   />
@@ -661,7 +661,7 @@ function MonthGrid({
                   className={cn(
                     'inline-flex items-center justify-center text-xs tabular-nums',
                     today
-                      ? 'h-5 min-w-5 px-1 rounded-full bg-accent text-accent-foreground font-medium'
+                      ? 'h-5 min-w-5 px-1 rounded-full bg-brand-cream text-bg-base font-medium'
                       : inMonth
                       ? 'text-text-secondary'
                       : 'text-text-tertiary',

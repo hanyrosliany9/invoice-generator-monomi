@@ -46,7 +46,7 @@ function ModeTab({
       className={cn(
         'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
         active
-          ? 'bg-accent text-white'
+          ? 'bg-brand-cream text-bg-base'
           : 'bg-bg-sunken text-text-secondary hover:bg-bg-raised hover:text-text-primary border border-border-subtle',
       )}
     >

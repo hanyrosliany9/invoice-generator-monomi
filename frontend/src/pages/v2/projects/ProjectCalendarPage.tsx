@@ -66,7 +66,7 @@ const CATEGORY_META: Record<EventCategory, {
   dotClass: string;
   icon: React.ReactNode;
 }> = {
-  MILESTONE:    { label: 'Milestone',   chipClass: 'bg-accent/10 text-accent',    dotClass: 'bg-accent',    icon: <Target     className="h-3 w-3" /> },
+  MILESTONE:    { label: 'Milestone',   chipClass: 'bg-bg-glass-strong text-text-primary',    dotClass: 'bg-brand-cream',    icon: <Target     className="h-3 w-3" /> },
   TASK:         { label: 'Tenggat',     chipClass: 'bg-danger/10 text-danger',    dotClass: 'bg-danger',    icon: <AlarmClock className="h-3 w-3" /> },
   MEETING:      { label: 'Meeting',     chipClass: 'bg-info/10 text-info',         dotClass: 'bg-info',      icon: <Users2     className="h-3 w-3" /> },
   PHOTOSHOOT:   { label: 'Pemotretan', chipClass: 'bg-warning/10 text-warning',  dotClass: 'bg-warning',   icon: <Camera     className="h-3 w-3" /> },
@@ -109,7 +109,7 @@ const Textarea = ({
     className={cn(
       'w-full min-h-[100px] rounded-md border border-border-subtle bg-bg-sunken px-3 py-2 text-sm text-text-primary',
       'placeholder:text-text-tertiary outline-none transition-colors resize-y',
-      'focus-visible:border-accent/60 focus-visible:ring-1 focus-visible:ring-accent/40',
+      'focus-visible:border-border-strong focus-visible:ring-1 focus-visible:ring-ring',
       className,
     )}
   />
@@ -463,9 +463,9 @@ export default function ProjectCalendarPage() {
                     onClick={() => setSelectedDay(day)}
                     className={cn(
                       'group relative min-h-[112px] text-left px-2 pt-2 pb-1 border-r border-b border-border-subtle',
-                      'transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60 focus-visible:z-10',
+                      'transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:z-10',
                       inMonth ? 'bg-bg-raised' : 'bg-bg-sunken/40',
-                      isSelected && 'ring-1 ring-accent/60 z-10',
+                      isSelected && 'ring-1 ring-brand-cream/50 z-10',
                     )}
                   >
                     <div className="flex items-center justify-between mb-1.5">
@@ -473,7 +473,7 @@ export default function ProjectCalendarPage() {
                         className={cn(
                           'inline-flex items-center justify-center text-xs tabular-nums',
                           today
-                            ? 'h-5 min-w-5 px-1 rounded-full bg-accent text-accent-foreground font-medium'
+                            ? 'h-5 min-w-5 px-1 rounded-full bg-brand-cream text-bg-base font-medium'
                             : inMonth
                             ? 'text-text-secondary'
                             : 'text-text-tertiary',

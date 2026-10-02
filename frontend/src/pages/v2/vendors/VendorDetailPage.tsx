@@ -54,19 +54,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { vendorService } from '@/services/vendors';
 import type { Vendor, VendorType } from '@/types/vendor';
-
-// Avatar token — same logic as the list page so identity reads
-// consistently across surfaces.
-const getInitials = (vendor: Pick<Vendor, 'name' | 'nameId'>): string => {
-  const source = (vendor.nameId || vendor.name || '?').trim();
-  const parts = source.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  if (parts.length >= 3 && /^(PT|CV)\.?$/i.test(parts[0])) {
-    return (parts[1][0] + parts[2][0]).toUpperCase();
-  }
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-};
+import { getInitials } from '@/utils/initials';
 
 // Vendor type styling — same vocabulary as the list page chip.
 const vendorTypeStyle = (type: VendorType) => {
@@ -359,7 +347,7 @@ export default function VendorDetailPageV2() {
               <div className="flex items-start gap-5">
                 <Avatar className="h-16 w-16 shrink-0">
                   <AvatarFallback className="bg-accent-navy-wash text-text-primary text-lg font-display font-medium tracking-wide">
-                    {getInitials(vendor)}
+                    {getInitials(vendor.nameId || vendor.name, { skipLegalPrefix: true })}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">

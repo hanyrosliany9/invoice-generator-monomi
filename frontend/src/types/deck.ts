@@ -50,6 +50,8 @@ export interface Deck {
   publicShareUrl?: string;
   publicViewCount: number;
   publicAccessLevel?: PublicAccessLevel;
+  /** Set by the client-portal API only. */
+  portalAccess?: { canComment: boolean; canDownload: boolean };
   slides: DeckSlide[];
   collaborators: DeckCollaborator[];
   _count?: { slides: number; collaborators: number };

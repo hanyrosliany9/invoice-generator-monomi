@@ -92,7 +92,7 @@ export function MoveToFolderDialog({
             className={cn(
               'w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs transition-colors',
               selectedId === null
-                ? 'bg-accent/10 text-text-primary'
+                ? 'bg-bg-glass-strong text-text-primary'
                 : 'text-text-secondary hover:bg-bg-raised hover:text-text-primary',
             )}
           >
@@ -109,7 +109,7 @@ export function MoveToFolderDialog({
               className={cn(
                 'w-full flex items-center gap-2 pr-3 py-2.5 text-left text-xs transition-colors',
                 selectedId === folder.id
-                  ? 'bg-accent/10 text-text-primary'
+                  ? 'bg-bg-glass-strong text-text-primary'
                   : 'text-text-secondary hover:bg-bg-raised hover:text-text-primary',
               )}
             >

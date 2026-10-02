@@ -42,7 +42,8 @@ export class ReportUtils {
    * Check if report can be edited
    */
   static canEdit(status: ReportStatus): boolean {
-    return status === 'DRAFT' || status === 'COMPLETED';
+    // SENT reports are live in the client portal too; the editor warns about that.
+    return status === 'DRAFT' || status === 'COMPLETED' || status === 'SENT';
   }
 
   /**

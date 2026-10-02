@@ -349,11 +349,11 @@ export default function ProjectsPageV2() {
               />
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger
                   size="sm"
-                  className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[150px]"
+                  className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px] flex-1 sm:flex-none"
                 >
                   <SelectValue placeholder={t('projects.filter.status', 'Status')} />
                 </SelectTrigger>
@@ -372,7 +372,7 @@ export default function ProjectsPageV2() {
               <Select value={clientFilter} onValueChange={setClientFilter}>
                 <SelectTrigger
                   size="sm"
-                  className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[160px] max-w-[220px]"
+                  className="bg-bg-sunken border-border-subtle text-text-secondary min-w-[140px] max-w-full flex-1 sm:max-w-[220px] sm:flex-none"
                 >
                   <SelectValue placeholder={t('projects.filter.client', 'Client')} />
                 </SelectTrigger>

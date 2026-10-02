@@ -13,6 +13,7 @@ import { DeckCommentsService } from "./services/deck-comments.service";
 import { DeckCollaboratorsService } from "./services/deck-collaborators.service";
 import { DeckExportService } from "./services/deck-export.service";
 import { DeckImportService } from "./services/deck-import.service";
+import { DeckShareService } from "./services/deck-share.service";
 
 // Controllers
 import { DecksController } from "./controllers/decks.controller";
@@ -84,6 +85,7 @@ import { DeckCollaborationGateway } from "./deck-collaboration.gateway";
     DeckCollaboratorsService,
     DeckExportService,
     DeckImportService,
+    DeckShareService,
     DeckCollaborationGateway,
   ],
   exports: [
@@ -93,6 +95,7 @@ import { DeckCollaborationGateway } from "./deck-collaboration.gateway";
     DeckCommentsService,
     DeckCollaboratorsService,
     DeckExportService,
+    DeckShareService,
   ],
 })
 export class DecksModule {}

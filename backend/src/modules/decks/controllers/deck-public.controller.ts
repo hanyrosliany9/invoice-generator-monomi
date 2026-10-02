@@ -4,8 +4,6 @@ import {
   Post,
   Body,
   Param,
-  ForbiddenException,
-  NotFoundException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
 // @Public() marks these routes as intentionally unauthenticated so a future
@@ -13,9 +11,7 @@ import { ApiTags, ApiOperation, ApiBody } from "@nestjs/swagger";
 import { Public } from "../../../common/decorators/public.decorator";
 import { DecksService } from "../services/decks.service";
 import { DeckCollaboratorsService } from "../services/deck-collaborators.service";
-import { DeckCommentsService } from "../services/deck-comments.service";
-import { DeckExportService } from "../services/deck-export.service";
-import { PrismaService } from "../../prisma/prisma.service";
+import { DeckShareService } from "../services/deck-share.service";
 
 @ApiTags("Deck Public")
 @Controller("deck-public")
@@ -23,9 +19,8 @@ export class DeckPublicController {
   constructor(
     private readonly decksService: DecksService,
     private readonly collaboratorsService: DeckCollaboratorsService,
-    private readonly commentsService: DeckCommentsService,
-    private readonly exportService: DeckExportService,
-    private readonly prisma: PrismaService,
+    // Comment / export scoping rules are shared with the client portal.
+    private readonly shareService: DeckShareService,
   ) {}
 
   @Public()
@@ -85,47 +80,20 @@ export class DeckPublicController {
       positionY?: number;
     },
   ) {
-    const deck = await this.prisma.deck.findUnique({
-      where: { publicShareToken: token },
-      select: { id: true, isPublic: true, publicAccessLevel: true },
-    });
-
-    if (!deck || !deck.isPublic) {
-      throw new NotFoundException("Deck not found or not publicly shared");
-    }
-
-    if (deck.publicAccessLevel !== "COMMENT") {
-      throw new ForbiddenException(
-        "This deck does not allow public comments",
-      );
-    }
-
-    // Verify the slide belongs to this deck
-    const slide = await this.prisma.deckSlide.findFirst({
-      where: { id: body.slideId, deckId: deck.id },
-      select: { id: true },
-    });
-    if (!slide) {
-      throw new NotFoundException("Slide not found in this deck");
-    }
-
-    return this.prisma.deckSlideComment.create({
-      data: {
+    // COMMENT access level required; slide (and reply parent) must belong to
+    // the shared deck.
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.createComment(
+      share,
+      {
         slideId: body.slideId,
-        guestName: body.guestName || "Guest",
-        guestEmail: body.guestEmail,
         content: body.content,
         parentId: body.parentId,
         positionX: body.positionX,
         positionY: body.positionY,
       },
-      include: {
-        replies: {
-          include: { user: { select: { id: true, name: true } } },
-          orderBy: { createdAt: "asc" },
-        },
-      },
-    });
+      { name: body.guestName, email: body.guestEmail },
+    );
   }
 
   /**
@@ -143,40 +111,8 @@ export class DeckPublicController {
     @Param("token") token: string,
     @Param("slideId") slideId: string,
   ) {
-    const deck = await this.prisma.deck.findUnique({
-      where: { publicShareToken: token },
-      select: { id: true, isPublic: true, publicAccessLevel: true },
-    });
-
-    if (!deck || !deck.isPublic) {
-      throw new NotFoundException("Deck not found or not publicly shared");
-    }
-
-    if (deck.publicAccessLevel !== "COMMENT") {
-      throw new ForbiddenException(
-        "This deck does not allow public comments",
-      );
-    }
-
-    const slide = await this.prisma.deckSlide.findFirst({
-      where: { id: slideId, deckId: deck.id },
-      select: { id: true },
-    });
-    if (!slide) {
-      throw new NotFoundException("Slide not found in this deck");
-    }
-
-    return this.prisma.deckSlideComment.findMany({
-      where: { slideId, parentId: null },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        replies: {
-          include: { user: { select: { id: true, name: true } } },
-          orderBy: { createdAt: "asc" },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.listComments(share, slideId);
   }
 
   /**
@@ -194,28 +130,9 @@ export class DeckPublicController {
     summary: "Start PDF export for a public deck (requires DOWNLOAD access level)",
   })
   async startPublicPdfExport(@Param("token") token: string) {
-    const deck = await this.prisma.deck.findUnique({
-      where: { publicShareToken: token },
-      select: { id: true, isPublic: true, publicAccessLevel: true, createdById: true },
-    });
-
-    if (!deck || !deck.isPublic) {
-      throw new NotFoundException("Deck not found or not publicly shared");
-    }
-
-    if (deck.publicAccessLevel !== "DOWNLOAD") {
-      throw new ForbiddenException(
-        "This deck does not allow public downloads",
-      );
-    }
-
-    const jobId = await this.exportService.startPdfGeneration(
-      deck.id,
-      "standard",
-      deck.createdById,
-    );
-
-    return { jobId };
+    // DOWNLOAD access level required; runs as the deck creator.
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.startExport(share);
   }
 
   /**
@@ -231,24 +148,7 @@ export class DeckPublicController {
     @Param("token") token: string,
     @Param("jobId") jobId: string,
   ) {
-    const deck = await this.prisma.deck.findUnique({
-      where: { publicShareToken: token },
-      select: { id: true, isPublic: true, publicAccessLevel: true },
-    });
-
-    if (!deck || !deck.isPublic) {
-      throw new NotFoundException("Deck not found or not publicly shared");
-    }
-
-    if (deck.publicAccessLevel !== "DOWNLOAD") {
-      throw new ForbiddenException("This deck does not allow public downloads");
-    }
-
-    const job = this.exportService.getJobStatus(jobId);
-    if (!job || job.deckId !== deck.id) {
-      throw new NotFoundException("Job not found");
-    }
-
-    return job;
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.getExportStatus(share, jobId);
   }
 }

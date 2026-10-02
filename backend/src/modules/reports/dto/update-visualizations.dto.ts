@@ -23,7 +23,7 @@ export class VisualizationConfig {
   metric?: string;
 
   @IsOptional()
-  @IsEnum(["sum", "avg", "count", "min", "max"])
+  @IsEnum(["sum", "avg", "average", "count", "min", "max", "latest"])
   aggregation?: string;
 
   @IsOptional()

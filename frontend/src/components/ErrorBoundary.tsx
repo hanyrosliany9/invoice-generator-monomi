@@ -68,7 +68,9 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleGoHome = () => {
-    window.location.href = '/'
+    // Inside the client portal (path-mounted fallback) "home" is the portal root.
+    const p = window.location.pathname
+    window.location.href = p === '/portal' || p.startsWith('/portal/') ? '/portal/' : '/'
   }
 
   private handleReset = () => {
@@ -139,7 +141,7 @@ class ErrorBoundary extends Component<Props, State> {
 
                 <Paragraph
                   id='error-description'
-                  style={{ color: '#666', fontSize: '16px' }}
+                  style={{ color: 'rgba(246,243,232,0.65)', fontSize: '16px' }}
                 >
                   We encountered an unexpected error. Don't worry, our team has
                   been notified.
@@ -184,9 +186,9 @@ class ErrorBoundary extends Component<Props, State> {
                           cursor: 'pointer',
                           fontSize: '14px',
                           padding: '8px',
-                          backgroundColor: '#f5f5f5',
+                          backgroundColor: 'rgba(255,255,255,0.06)',
                           borderRadius: '4px',
-                          border: '1px solid #d9d9d9',
+                          border: '1px solid rgba(255,255,255,0.18)',
                         }}
                       >
                         <BugOutlined style={{ marginRight: '8px' }} />
@@ -196,11 +198,11 @@ class ErrorBoundary extends Component<Props, State> {
                         style={{
                           marginTop: '8px',
                           padding: '12px',
-                          background: '#f5f5f5',
+                          background: 'rgba(255,255,255,0.06)', color: 'inherit',
                           borderRadius: '4px',
                           fontSize: '12px',
                           overflowX: 'auto',
-                          border: '1px solid #d9d9d9',
+                          border: '1px solid rgba(255,255,255,0.18)',
                         }}
                       >
                         {this.state.error.toString()}

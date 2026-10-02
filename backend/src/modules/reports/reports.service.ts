@@ -1,3 +1,4 @@
+import { EXCLUDE_INTERNAL_CLIENTS } from "../clients/client-scope";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { wibYear, wibMonth, wibParts } from "../../common/utils/wib-date.util";
@@ -126,7 +127,9 @@ export class ReportsService {
 
     return {
       topClients,
-      totalClients: await this.prisma.client.count(),
+      totalClients: await this.prisma.client.count({
+        where: EXCLUDE_INTERNAL_CLIENTS,
+      }),
     };
   }
 
@@ -206,6 +209,7 @@ export class ReportsService {
     // Get project type distribution
     const projectTypes = await this.prisma.project.groupBy({
       by: ["projectTypeId"],
+      where: { client: EXCLUDE_INTERNAL_CLIENTS },
       _count: {
         id: true,
       },
@@ -214,7 +218,9 @@ export class ReportsService {
     return {
       topProjects,
       projectTypes,
-      totalProjects: await this.prisma.project.count(),
+      totalProjects: await this.prisma.project.count({
+        where: { client: EXCLUDE_INTERNAL_CLIENTS },
+      }),
     };
   }
 
@@ -357,11 +363,13 @@ export class ReportsService {
       }),
       this.prisma.client.count({
         where: {
+          ...EXCLUDE_INTERNAL_CLIENTS,
           createdAt: dateFilter.createdAt,
         },
       }),
       this.prisma.project.count({
         where: {
+          client: EXCLUDE_INTERNAL_CLIENTS,
           createdAt: dateFilter.createdAt,
         },
       }),

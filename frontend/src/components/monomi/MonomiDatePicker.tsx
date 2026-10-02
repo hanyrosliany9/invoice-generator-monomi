@@ -40,8 +40,10 @@ export const MonomiDatePicker = ({
             className,
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, 'd MMMM yyyy', { locale: idLocale }) : placeholderText}
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+          <span className="min-w-0 truncate">
+            {value ? format(value, 'd MMMM yyyy', { locale: idLocale }) : placeholderText}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

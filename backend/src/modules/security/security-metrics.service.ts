@@ -1,3 +1,4 @@
+import { EXCLUDE_INTERNAL_CLIENTS } from "../clients/client-scope";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -169,7 +170,9 @@ export class SecurityMetricsService {
   private async calculatePrivacyMetrics() {
     // Check for users with sensitive data
     const userCount = await this.prisma.user.count();
-    const clientCount = await this.prisma.client.count();
+    const clientCount = await this.prisma.client.count({
+      where: EXCLUDE_INTERNAL_CLIENTS,
+    });
 
     // Base score on data encryption and access controls
     // In production, this would check actual encryption status
@@ -289,6 +292,7 @@ export class SecurityMetricsService {
     // Check for clients without email (basic data completeness)
     const clientsWithoutEmail = await this.prisma.client.count({
       where: {
+        ...EXCLUDE_INTERNAL_CLIENTS,
         email: null,
       },
     });

@@ -100,7 +100,7 @@ export const GuestAcceptInvitePage = () => {
           {token && isLoading && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-text-secondary">
-                <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                <Loader2 className="h-4 w-4 animate-spin text-text-primary" />
                 <span className="text-sm">Memverifikasi undangan…</span>
               </div>
               <Skeleton className="h-16 w-full rounded-md" />

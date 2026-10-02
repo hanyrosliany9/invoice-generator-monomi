@@ -23,7 +23,7 @@ export const PageHeader = ({
     className,
   )}>
     {breadcrumbs && breadcrumbs.length > 0 && (
-      <nav className="flex items-center gap-1 text-xs text-text-tertiary mb-3" aria-label="Breadcrumb">
+      <nav className="flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-text-tertiary mb-3" aria-label="Breadcrumb">
         {breadcrumbs.map((b, i) => (
           <span key={i} className="flex items-center gap-1">
             {b.href
@@ -40,7 +40,7 @@ export const PageHeader = ({
         {/* Editorial serif headline. Instrument Serif Regular is the thinner
          * weight; tight leading + slight negative tracking gives the
          * magazine-headline feel (ozgur.design / Loewe vibe). */}
-        <h1 className="text-4xl sm:text-[44px] font-display font-normal text-text-primary tracking-[-0.012em] leading-[1.05]">
+        <h1 className="break-words text-4xl sm:text-[44px] font-display font-normal text-text-primary tracking-[-0.012em] leading-[1.05]">
           {title}
         </h1>
         {description && (
@@ -50,7 +50,7 @@ export const PageHeader = ({
         )}
       </div>
       {actions && (
-        <div className="flex items-center gap-2 md:shrink-0">
+        <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:justify-end">
           {actions}
         </div>
       )}

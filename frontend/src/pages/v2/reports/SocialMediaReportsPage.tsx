@@ -1,33 +1,18 @@
 /**
- * SocialMediaReportsPage (v2) — Social-media analytics surface.
+ * SocialMediaReportsPage (v2) — landing page for client social media reports.
  *
- * Editorial decision:
- *   The classic page is "list of saved social-media reports". For v2 we
- *   reframe the *page* itself as an analytics surface: a KPI band of
- *   reach/engagement/posting cadence, per-platform breakdown, and a
- *   time-series of engagement. Beneath the analytics, the saved-reports
- *   list lives as a quiet table — the "primary content" is the analytics,
- *   not the table.
- *
- *   Real per-platform reach/engagement data is not exposed by the current
- *   backend (the existing reports model is project-scoped CSV imports).
- *   Until the analytics endpoints exist we derive the KPI band from
- *   what *is* available — saved-report counts, sections, last-updated —
- *   and keep the per-platform breakdown wired off a clearly labelled
- *   placeholder dataset. Flagged with PLACEHOLDER comments for follow-up.
+ * Everything shown here is derived from the saved reports themselves (counts
+ * by status, which projects still need this month's report, recent reports);
+ * there is no made-up analytics. The report list below is the main tool.
  */
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import i18n from 'i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings, BarChart3,
-  Plus, Search, MoreHorizontal, Eye, Trash2, X,
-  Camera, Video, Globe, AtSign, MessageCircle, Heart, Share2,
+  Plus, Search, MoreHorizontal, Eye, Trash2, X, Copy, MessageCircle, CalendarCheck,
 } from 'lucide-react';
-import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-} from 'recharts';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
 import { v2SidebarSections } from '@/pages/v2/sidebar-items';
@@ -40,7 +25,6 @@ import { EmptyState } from '@/components/monomi/EmptyState';
 import { UserChip } from '@/components/monomi/UserChip';
 import { DateDisplay } from '@/components/monomi/DateDisplay';
 import { DataTable } from '@/components/monomi/DataTable';
-import { MonomiChart, chartColors, chartAxisProps, chartGridProps } from '@/components/monomi/MonomiChart';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -57,7 +41,9 @@ import { useReports, useReportMutations } from '@/features/reports/hooks';
 import { ReportUtils } from '@/features/reports/services/reportUtils';
 import type { SocialMediaReport } from '@/features/reports/types/report.types';
 import { cn } from '@/lib/utils';
-import { tokens } from '@/styles/tokens';
+import { socialMediaReportsService } from '@/services/social-media-reports';
+import { reportErrorText } from './ReportActionDialogs';
+import { CopyReportDialog } from './CopyReportDialog';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
@@ -76,57 +62,6 @@ const statusChipClass = (status?: string) => {
     case 'DRAFT':
     default:          return 'bg-bg-sunken text-text-tertiary';
   }
-};
-
-/* ------------------------------------------------------------------ */
-/*  PLACEHOLDER datasets — replace when /reports/social-media/* lands. */
-/*  Numbers are chosen to read as plausible mid-size brand performance */
-/*  in Indonesia (10k–80k followers per platform, single-digit reach % */
-/*  growth). Keep this isolated so a future swap is trivial.           */
-/* ------------------------------------------------------------------ */
-
-interface PlatformBreakdown {
-  platform: string;
-  icon: React.ComponentType<{ className?: string }>;
-  followers: number;
-  engagement: number; // percent
-  reach: number;
-  accent: string;
-}
-
-const PLATFORM_BREAKDOWN: PlatformBreakdown[] = [
-  { platform: 'Instagram', icon: Camera, followers: 48200, engagement: 4.2, reach: 312_400, accent: 'text-warning' },
-  { platform: 'TikTok',    icon: AtSign, followers: 62500, engagement: 6.8, reach: 540_900, accent: 'text-info' },
-  { platform: 'Facebook',  icon: Globe,  followers: 18900, engagement: 1.9, reach: 124_700, accent: 'text-info' },
-  { platform: 'YouTube',   icon: Video,  followers: 12300, engagement: 3.4, reach:  98_200, accent: 'text-danger' },
-];
-
-const ENGAGEMENT_TREND = [
-  { month: 'Jan', engagement: 3.2, reach: 240_000 },
-  { month: 'Feb', engagement: 3.6, reach: 268_000 },
-  { month: 'Mar', engagement: 4.1, reach: 295_000 },
-  { month: 'Apr', engagement: 4.4, reach: 318_000 },
-  { month: 'May', engagement: 4.9, reach: 352_000 },
-  { month: 'Jun', engagement: 5.3, reach: 401_000 },
-];
-
-const formatCompact = (n: number) => {
-  // Suffixes follow the active UI language: Indonesian uses "rb" (ribu) and
-  // "jt" (juta); English uses "K" and "M". Reading i18n.language at call time
-  // is fine — the page re-renders on language change via useTranslation().
-  const id = (i18n.language || '').startsWith('id');
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}${id ? 'jt' : 'M'}`;
-  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}${id ? 'rb' : 'K'}`;
-  return String(n);
-};
-
-const tooltipStyle = {
-  backgroundColor: '#131316',
-  border: `1px solid ${tokens.border.default}`,
-  borderRadius: '8px',
-  color: tokens.text.primary,
-  fontSize: '12px',
-  padding: '8px 12px',
 };
 
 /* ------------------------------------------------------------------ */
@@ -156,25 +91,63 @@ export default function SocialMediaReportsPageV2() {
     });
   }, [reports, searchText, statusFilter]);
 
-  /* Aggregate placeholder data into a four-card KPI band. */
-  const aggregates = useMemo(() => {
-    const followers = PLATFORM_BREAKDOWN.reduce((acc, p) => acc + p.followers, 0);
-    const reach = PLATFORM_BREAKDOWN.reduce((acc, p) => acc + p.reach, 0);
-    const avgEng = PLATFORM_BREAKDOWN.reduce((acc, p) => acc + p.engagement, 0)
-      / PLATFORM_BREAKDOWN.length;
+  const queryClient = useQueryClient();
+  const now = new Date();
+  const curMonth = now.getMonth() + 1;
+  const curYear = now.getFullYear();
+
+  /* Real counts derived from the saved reports. */
+  const stats = useMemo(() => {
+    const byStatus = { DRAFT: 0, COMPLETED: 0, SENT: 0 } as Record<string, number>;
+    reports.forEach((r) => { byStatus[r.status] = (byStatus[r.status] ?? 0) + 1; });
+    const thisMonth = reports.filter((r) => r.month === curMonth && r.year === curYear);
+
+    // Projects that have reported before: who still needs this month's report?
+    const byProject = new Map<string, SocialMediaReport[]>();
+    reports.forEach((r) => {
+      const list = byProject.get(r.projectId) ?? [];
+      list.push(r);
+      byProject.set(r.projectId, list);
+    });
+    const missing: { project: SocialMediaReport['project']; projectId: string; latest: SocialMediaReport }[] = [];
+    byProject.forEach((list, projectId) => {
+      if (list.some((r) => r.month === curMonth && r.year === curYear)) return;
+      const latest = [...list].sort((a, b) => (b.year - a.year) || (b.month - a.month))[0];
+      missing.push({ project: latest.project, projectId, latest });
+    });
+    missing.sort((a, b) => (a.project?.client?.name ?? '').localeCompare(b.project?.client?.name ?? ''));
     return {
-      followers,
-      reach,
-      engagement: avgEng,
-      reportsCount: reports.length,
+      total: reports.length,
+      drafts: byStatus.DRAFT,
+      live: byStatus.COMPLETED + byStatus.SENT,
+      sent: byStatus.SENT,
+      thisMonth,
+      missing,
     };
-  }, [reports.length]);
+  }, [reports, curMonth, curYear]);
+
+  const copyMutation = useMutation({
+    mutationFn: (sourceId: string) =>
+      socialMediaReportsService.duplicateReport(sourceId, { month: curMonth, year: curYear }),
+    onSuccess: (copy) => {
+      void queryClient.invalidateQueries({ queryKey: ['reports'] });
+      toast.success(
+        t('reportActions.duplicate.done', 'Copied to {{period}} as a draft. Upload new data to each section.', {
+          period: ReportUtils.formatPeriod(copy.month, copy.year),
+        }),
+      );
+      navigate(`/reports/${copy.id}/edit`);
+    },
+    onError: (e) => toast.error(reportErrorText(e, t('reportActions.duplicate.failed', 'Failed to copy the report.'))),
+  });
 
   const hasActiveFilters = !!searchText || statusFilter !== 'all';
   const resetFilters = () => {
     setSearchText('');
     setStatusFilter('all');
   };
+
+  const [copySource, setCopySource] = useState<SocialMediaReport | null>(null);
 
   const handleDelete = (r: SocialMediaReport) => {
     if (confirm(t('socialMediaReports.confirmDelete', `Delete report "${r.title}"?`))) {
@@ -220,8 +193,8 @@ export default function SocialMediaReportsPageV2() {
         <PageHeader
           title={t('socialMediaReports.title', 'Social Media Reports')}
           description={t(
-            'socialMediaReports.subtitle',
-            'Cross-platform analytics, content performance, and saved client reports.',
+            'socialMediaReports.subtitle2',
+            'Monthly performance reports for your clients: create, review and send.',
           )}
           actions={
             <Button onClick={() => navigate('/reports/builder')} size="sm">
@@ -231,193 +204,94 @@ export default function SocialMediaReportsPageV2() {
           }
         />
 
-        {/* Sample-data notice — sits above analytics panels; removed when real API wired. */}
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3">
-          <span className="mt-0.5 shrink-0 text-warning" aria-hidden="true">⚠</span>
-          <p className="text-xs text-warning/90 leading-relaxed">
-            {t(
-              'socialMediaReports.sampleDataNotice',
-              'Sample data — real analytics coming soon. The numbers below are placeholders and do not reflect actual account performance.',
-            )}
-          </p>
-        </div>
-
-        {/* KPI band — followers / reach / engagement / report count. */}
-        <section className="mb-12">
+        {/* KPI band — real counts from the saved reports. */}
+        <section className="mb-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatCard
-              label={t('socialMediaReports.kpi.followers', 'Total Followers')}
-              value={formatCompact(aggregates.followers)}
-              sublabel={t('socialMediaReports.kpi.followersSub', 'across all platforms')}
-            />
-            <StatCard
-              label={t('socialMediaReports.kpi.reach', 'Reach')}
-              value={formatCompact(aggregates.reach)}
-              sublabel={t('socialMediaReports.kpi.reachSub', 'last 30 days')}
-            />
-            <StatCard
-              label={t('socialMediaReports.kpi.engagement', 'Engagement Rate')}
-              value={`${aggregates.engagement.toFixed(1)}%`}
-              sublabel={t('socialMediaReports.kpi.engagementSub', 'average across platforms')}
-            />
             <StatCard
               label={t('socialMediaReports.kpi.reports', 'Saved Reports')}
-              value={aggregates.reportsCount}
-              sublabel={t('socialMediaReports.kpi.reportsSub', 'ready to share')}
+              value={stats.total}
+              sublabel={t('socialMediaReports.kpi.reportsAll', 'across all clients')}
+            />
+            <StatCard
+              label={t('socialMediaReports.kpi.drafts', 'Drafts')}
+              value={stats.drafts}
+              sublabel={t('socialMediaReports.kpi.draftsSub', 'not visible to clients')}
+            />
+            <StatCard
+              label={t('socialMediaReports.kpi.live', 'Live in client portal')}
+              value={stats.live}
+              sublabel={t('socialMediaReports.kpi.liveSub', '{{count}} emailed to the client', { count: stats.sent })}
+            />
+            <StatCard
+              label={t('socialMediaReports.kpi.thisMonth', 'Reports this month')}
+              value={stats.thisMonth.length}
+              sublabel={ReportUtils.formatPeriod(curMonth, curYear)}
             />
           </div>
         </section>
 
-        {/* Per-platform breakdown — small cards with platform identity. */}
-        <section className="mb-12">
-          <div className="mb-5 flex items-baseline justify-between gap-4">
-            <div>
-              <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                {t('socialMediaReports.platform.title', 'Per-Platform Breakdown')}
-              </h2>
-              <p className="mt-0.5 text-xs text-text-tertiary">
-                {t(
-                  'socialMediaReports.platform.subtitle',
-                  'Performance by channel — followers, engagement, and reach.',
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {PLATFORM_BREAKDOWN.map((p) => {
-              const Icon = p.icon;
-              return (
-                <GlassPanel
-                  key={p.platform}
-                  surface="glass"
-                  padding="none"
-                  className="p-5"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={cn('flex items-center gap-2', p.accent)}>
-                      <Icon className="h-4 w-4" />
-                      <span className="text-sm font-medium text-text-primary">
-                        {p.platform}
+        {/* This month — who still needs a report. */}
+        {!isLoading && stats.total > 0 && (
+          <section className="mb-8">
+            <GlassPanel surface="glass" padding="lg">
+              <div className="mb-4 flex items-start gap-3">
+                <CalendarCheck className="mt-0.5 h-4 w-4 shrink-0 text-text-tertiary" />
+                <div className="min-w-0">
+                  <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
+                    {t('socialMediaReports.month.title', 'Reports for {{period}}', { period: ReportUtils.formatPeriod(curMonth, curYear) })}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-text-tertiary">
+                    {stats.missing.length === 0
+                      ? t('socialMediaReports.month.allDone', 'Every project that has reported before already has a report this month.')
+                      : t('socialMediaReports.month.missing', '{{count}} project(s) still need a report this month. Copy last month\'s structure to start.', { count: stats.missing.length })}
+                  </p>
+                </div>
+              </div>
+              {stats.missing.length > 0 && (
+                <ul className="divide-y divide-border-subtle rounded-md border border-border-subtle">
+                  {stats.missing.map((m) => (
+                    <li key={m.projectId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm text-text-primary">{m.project?.client?.name ?? '—'}</div>
+                        <div className="truncate text-xs text-text-tertiary">
+                          {m.project?.description} · {t('socialMediaReports.month.lastReport', 'last report: {{period}}', { period: ReportUtils.formatPeriod(m.latest.month, m.latest.year) })}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={copyMutation.isPending}
+                        onClick={() => copyMutation.mutate(m.latest.id)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        {t('socialMediaReports.month.copy', 'Copy last report')}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {stats.thisMonth.length > 0 && (
+                <div className={cn('flex flex-wrap gap-2', stats.missing.length > 0 && 'mt-4')}>
+                  {stats.thisMonth.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => navigate(`/reports/${r.id}`)}
+                      className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-sunken px-3 py-1 text-xs text-text-secondary hover:text-text-primary max-sm:min-h-8"
+                    >
+                      <span className="max-w-[220px] truncate">{r.project?.client?.name ?? r.title}</span>
+                      <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider', statusChipClass(r.status))}>
+                        {STATUS_LABEL[r.status] ?? r.status}
                       </span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary mb-0.5">
-                        {t('socialMediaReports.platform.followers', 'Followers')}
-                      </div>
-                      <div className="text-lg font-display font-semibold text-text-primary tabular-nums">
-                        {formatCompact(p.followers)}
-                      </div>
-                    </div>
-                    <div className="flex items-baseline justify-between text-xs">
-                      <div>
-                        <div className="text-text-tertiary">{t('socialMediaReports.platform.engagement', 'Engagement')}</div>
-                        <div className="text-text-secondary tabular-nums">
-                          {p.engagement.toFixed(1)}%
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-text-tertiary">{t('socialMediaReports.platform.reach', 'Reach')}</div>
-                        <div className="text-text-secondary tabular-nums">
-                          {formatCompact(p.reach)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </GlassPanel>
-              );
-            })}
-          </div>
-          {/* PLACEHOLDER: wire to /reports/social-media/platforms once endpoint exists. */}
-        </section>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </GlassPanel>
+          </section>
+        )}
 
-        {/* Time-series — engagement trend + reach volume side-by-side. */}
-        <section className="mb-12 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-5">
-          <GlassPanel surface="glass" padding="lg">
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                  {t('socialMediaReports.engagementTrend', 'Engagement Trend')}
-                </h2>
-                <p className="mt-0.5 text-xs text-text-tertiary">
-                  {t('socialMediaReports.last6Months', 'Last six months')}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
-                <span className="inline-flex items-center gap-1.5">
-                  <Heart className="h-3 w-3" /> {t('socialMediaReports.platform.engagement', 'Engagement')}
-                </span>
-              </div>
-            </div>
-            <MonomiChart height={260}>
-              <LineChart data={ENGAGEMENT_TREND} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
-                <CartesianGrid {...chartGridProps} vertical={false} />
-                <XAxis dataKey="month" {...chartAxisProps} axisLine={false} tickLine={false} />
-                <YAxis
-                  {...chartAxisProps}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `${v}%`}
-                  width={48}
-                />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  cursor={{ stroke: tokens.border.default }}
-                  formatter={(v) => [`${v}%`, t('socialMediaReports.platform.engagement', 'Engagement')]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="engagement"
-                  stroke={chartColors[0]}
-                  strokeWidth={1.75}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </LineChart>
-            </MonomiChart>
-          </GlassPanel>
-
-          <GlassPanel surface="glass" padding="lg">
-            <div className="mb-6 flex items-baseline justify-between gap-4">
-              <div>
-                <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-                  {t('socialMediaReports.reachVolume', 'Reach Volume')}
-                </h2>
-                <p className="mt-0.5 text-xs text-text-tertiary">
-                  {t('socialMediaReports.reachSubtitle', 'Unique users per month')}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.14em] text-text-tertiary">
-                <span className="inline-flex items-center gap-1.5">
-                  <Share2 className="h-3 w-3" /> {t('socialMediaReports.platform.reach', 'Reach')}
-                </span>
-              </div>
-            </div>
-            <MonomiChart height={260}>
-              <BarChart data={ENGAGEMENT_TREND} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
-                <CartesianGrid {...chartGridProps} vertical={false} />
-                <XAxis dataKey="month" {...chartAxisProps} axisLine={false} tickLine={false} />
-                <YAxis
-                  {...chartAxisProps}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => formatCompact(Number(v))}
-                  width={48}
-                />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  cursor={{ fill: 'rgba(246,243,232,0.04)' }}
-                  formatter={(v) => [formatCompact(Number(v)), t('socialMediaReports.platform.reach', 'Reach')]}
-                />
-                <Bar dataKey="reach" fill={chartColors[1]} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </MonomiChart>
-          </GlassPanel>
-        </section>
-        {/* PLACEHOLDER: trends are dummy — wire to /reports/social-media/trends. */}
-
-        {/* Saved reports — quieter list table; analytics is the lead. */}
+        {/* Saved reports */}
         <GlassPanel surface="glass" padding="none" className="overflow-hidden">
           <div className="px-5 py-4 border-b border-border-subtle">
             <div className="mb-3 flex items-baseline justify-between gap-4">
@@ -616,6 +490,9 @@ export default function SocialMediaReportsPageV2() {
                               <DropdownMenuItem onClick={() => navigate(`/reports/${r.id}`)}>
                                 <Eye className="h-3.5 w-3.5" /> {t('common.view', 'View')}
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setCopySource(r)}>
+                                <Copy className="h-3.5 w-3.5" /> {t('reportActions.duplicate.menu', 'Copy to next month')}
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleDelete(r)}
@@ -635,6 +512,13 @@ export default function SocialMediaReportsPageV2() {
           )}
         </GlassPanel>
       </PageContainer>
+      {copySource !== null && (
+        <CopyReportDialog
+          source={{ id: copySource.id, projectId: copySource.projectId, month: copySource.month, year: copySource.year, title: copySource.title }}
+          open
+          onOpenChange={(o) => { if (!o) setCopySource(null); }}
+        />
+      )}
     </AppShell>
   );
 }

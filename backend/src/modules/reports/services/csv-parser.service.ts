@@ -1,18 +1,35 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
+import { isPercentLikeName, isStockLikeName } from "../utils/report-insights";
+import {
+  ColumnKind,
+  DataType,
+  ImportError,
+  MAX_IMPORT_COLUMNS,
+  MAX_MANUAL_CELL_CHARS,
+  MAX_SOURCE_ROWS,
+  NormalizedData,
+  ROW_LIMIT_MESSAGE,
+  RawCell,
+  normalizeMatrix,
+} from "../utils/report-data-import";
 import * as Papa from "papaparse";
 import * as XLSX from "xlsx";
 
-export type DataType = "DATE" | "NUMBER" | "STRING";
+export type { DataType } from "../utils/report-data-import";
 
 export interface ColumnTypes {
   [columnName: string]: DataType;
 }
 
 export interface ParsedCSVData {
+  /** Column names in the order of the source file. */
   headers: string[];
   rows: any[];
   rowCount: number;
   columnTypes: ColumnTypes;
+  columnKinds: Record<string, ColumnKind>;
+  /** Plain-language notes for the person importing (never fatal). */
+  warnings: string[];
 }
 
 export interface VisualizationSuggestion {
@@ -22,424 +39,485 @@ export interface VisualizationSuggestion {
   yAxis?: string | string[];
   nameKey?: string; // For pie charts
   valueKey?: string; // For pie charts and metric cards
-  aggregation?: "sum" | "average" | "count" | "min" | "max";
+  aggregation?: "sum" | "average" | "count" | "min" | "max" | "latest";
   precision?: number; // For metric cards
   color?: string;
+}
+
+export interface GridColumn {
+  name: string;
+  type: ColumnKind;
+}
+
+const PALETTE = [
+  "#1890ff",
+  "#52c41a",
+  "#faad14",
+  "#eb2f96",
+  "#722ed1",
+  "#13c2c2",
+  "#fa8c16",
+  "#a0d911",
+];
+
+const DELIMITERS = [",", ";", "\t", "|"] as const;
+
+/** Decode bytes: BOMs, then UTF-8, then Windows-1252 (Excel "CSV (comma delimited)"). */
+export function decodeText(buf: Buffer): string {
+  if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
+    return buf.subarray(3).toString("utf8");
+  }
+  if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) {
+    return buf.subarray(2).toString("utf16le");
+  }
+  if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) {
+    const swapped = Buffer.from(buf.subarray(2));
+    swapped.swap16();
+    return swapped.toString("utf16le");
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(buf);
+  } catch {
+    return new TextDecoder("windows-1252").decode(buf);
+  }
+}
+
+/** Pick the delimiter whose first lines split into the most consistent multi-column rows. */
+export function detectDelimiter(text: string): string {
+  const lines = text
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== "")
+    .slice(0, 40);
+  let best = ",";
+  let bestScore = 0;
+  for (const d of DELIMITERS) {
+    const counts = lines.map((l) => {
+      // Ignore delimiters inside quotes.
+      let n = 0;
+      let q = false;
+      for (const ch of l) {
+        if (ch === '"') q = !q;
+        else if (!q && ch === d) n++;
+      }
+      return n;
+    });
+    const freq = new Map<number, number>();
+    for (const c of counts) if (c > 0) freq.set(c, (freq.get(c) ?? 0) + 1);
+    for (const [c, f] of freq) {
+      const score = f * 10 + c;
+      if (score > bestScore) {
+        bestScore = score;
+        best = d;
+      }
+    }
+  }
+  return best;
 }
 
 @Injectable()
 export class UniversalCSVParserService {
   /**
-   * Parse uploaded file into structured data
+   * Parse an uploaded CSV / Excel file into the normalised section data.
+   * Throws BadRequestException with an Indonesian, actionable message.
    */
   async parseFile(file: Buffer, filename: string): Promise<ParsedCSVData> {
     const extension = filename.split(".").pop()?.toLowerCase();
-
-    let data: any[];
-
-    if (extension === "csv") {
-      data = await this.parseCSV(file);
-    } else if (extension === "xlsx" || extension === "xls") {
-      data = await this.parseExcel(file);
-    } else {
+    if (!file || file.length === 0) {
       throw new BadRequestException(
-        "Unsupported file format. Please upload CSV or Excel files.",
+        "File kosong. Pilih file CSV atau Excel yang berisi data.",
       );
     }
 
-    if (!data || data.length === 0) {
-      throw new BadRequestException("File is empty or invalid.");
+    let matrix: RawCell[][];
+    let sourceWarnings: string[] = [];
+    if (extension === "csv" || extension === "txt" || extension === "tsv") {
+      matrix = this.csvToMatrix(file);
+    } else if (extension === "xlsx" || extension === "xls") {
+      ({ matrix, warnings: sourceWarnings } = this.excelToMatrix(file));
+    } else {
+      throw new BadRequestException(
+        "Format file tidak didukung. Unggah file CSV (.csv) atau Excel (.xlsx / .xls).",
+      );
     }
+    const parsed = this.normalize(matrix, {});
+    parsed.warnings.push(...sourceWarnings);
+    return parsed;
+  }
 
-    // CRITICAL FIX: Filter out completely empty rows
-    // Empty rows cause chart rendering failures in frontend
-    const filteredData = this.filterEmptyRows(data);
-
-    if (filteredData.length === 0) {
-      throw new BadRequestException("File contains no valid data rows.");
+  /**
+   * Manual entry: a grid of typed columns. Unreadable cells are rejected so
+   * the person can fix them (instead of silently dropping them).
+   */
+  parseGrid(columns: GridColumn[], rows: RawCell[][]): ParsedCSVData {
+    const names = columns.map((c) => c.name.trim());
+    const forced: Record<string, ColumnKind> = {};
+    const seen = new Set<string>();
+    for (let i = 0; i < names.length; i++) {
+      if (names[i] === "") {
+        throw new BadRequestException(`Kolom ke-${i + 1} belum diberi nama.`);
+      }
+      const key = names[i].toLowerCase();
+      if (seen.has(key)) {
+        throw new BadRequestException(
+          `Nama kolom "${names[i]}" dipakai dua kali. Beri nama yang berbeda.`,
+        );
+      }
+      seen.add(key);
+      forced[names[i]] = columns[i].type;
     }
+    // Manual cells arrive as JSON: accept only plain values (the DTO checks
+    // this too; repeated here so every caller of parseGrid is covered).
+    for (const r of rows) {
+      if (!Array.isArray(r)) throw new BadRequestException("Format baris tidak valid.");
+      for (let i = 0; i < names.length; i++) {
+        const v: unknown = r[i];
+        const ok =
+          v === null ||
+          v === undefined ||
+          typeof v === "boolean" ||
+          (typeof v === "number" && Number.isFinite(v)) ||
+          (typeof v === "string" && v.length <= MAX_MANUAL_CELL_CHARS);
+        if (!ok) {
+          throw new BadRequestException(
+            typeof v === "string"
+              ? `Isi sel pada kolom "${names[i]}" terlalu panjang (maksimum ${MAX_MANUAL_CELL_CHARS} karakter).`
+              : `Isi sel pada kolom "${names[i]}" tidak valid.`,
+          );
+        }
+      }
+    }
+    const matrix: RawCell[][] = [names, ...rows.map((r) => names.map((_, i) => r[i] ?? null))];
+    return this.normalize(matrix, { forcedKinds: forced, strict: true, headerRow: "first" });
+  }
 
-    const headers = Object.keys(filteredData[0]);
-    const columnTypes = this.detectColumnTypes(filteredData);
-
+  private normalize(
+    matrix: RawCell[][],
+    opts: Parameters<typeof normalizeMatrix>[1],
+  ): ParsedCSVData {
+    let n: NormalizedData;
+    try {
+      n = normalizeMatrix(matrix, opts);
+    } catch (e) {
+      if (e instanceof ImportError) throw new BadRequestException(e.message);
+      throw e;
+    }
     return {
-      headers,
-      rows: filteredData,
-      rowCount: filteredData.length,
-      columnTypes,
+      headers: n.headers,
+      rows: n.rows,
+      rowCount: n.rowCount,
+      columnTypes: n.columnTypes,
+      columnKinds: n.columnKinds,
+      warnings: n.warnings,
     };
   }
 
-  /**
-   * Filter out rows that are completely empty or have all empty values
-   * Critical for chart rendering - empty rows break Recharts
-   */
-  private filterEmptyRows(data: any[]): any[] {
-    return data.filter((row) => {
-      // Get all values from the row
-      const values = Object.values(row);
-
-      // Check if at least ONE value is non-empty
-      const hasValidData = values.some((value) => {
-        if (value === null || value === undefined) return false;
-        const str = String(value).trim();
-        return str !== "";
-      });
-
-      return hasValidData;
-    });
-  }
-
-  /**
-   * Parse CSV file using PapaParse
-   */
-  private async parseCSV(buffer: Buffer): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      const content = buffer.toString("utf-8");
-
-      Papa.parse(content, {
-        header: true,
-        dynamicTyping: false, // We'll handle type detection ourselves
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (results.errors.length > 0) {
-            reject(
-              new BadRequestException(
-                `CSV parsing error: ${results.errors[0].message}`,
-              ),
-            );
-          } else {
-            resolve(results.data as any[]);
-          }
-        },
-        error: (error: Error) => {
-          reject(
-            new BadRequestException(`CSV parsing failed: ${error.message}`),
-          );
-        },
-      });
-    });
-  }
-
-  /**
-   * Parse Excel file using XLSX
-   */
-  private async parseExcel(buffer: Buffer): Promise<any[]> {
-    try {
-      const workbook = XLSX.read(buffer, { type: "buffer" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json(worksheet);
-
-      if (!data || data.length === 0) {
-        throw new BadRequestException("Excel file is empty.");
-      }
-
-      return data as any[];
-    } catch (error) {
+  private csvToMatrix(buffer: Buffer): RawCell[][] {
+    let text = decodeText(buffer);
+    // Excel's "sep=;" hint line is not data.
+    let delimiter: string | undefined;
+    const sep = /^\s*sep=(.)\s*(\r?\n|$)/i.exec(text);
+    if (sep !== null) {
+      delimiter = sep[1];
+      text = text.slice(sep[0].length);
+    }
+    if (text.trim() === "") {
       throw new BadRequestException(
-        `Excel parsing failed: ${(error as Error).message}`,
+        "File kosong. Pilih file CSV atau Excel yang berisi data.",
       );
     }
+    delimiter ??= detectDelimiter(text);
+    const result = Papa.parse<string[]>(text, {
+      delimiter,
+      skipEmptyLines: "greedy",
+      header: false,
+      dynamicTyping: false,
+      // Stop reading past the row cap instead of materialising the whole file.
+      preview: MAX_SOURCE_ROWS + 1,
+    });
+    if (result.meta.truncated || result.data.length > MAX_SOURCE_ROWS) {
+      throw new BadRequestException(ROW_LIMIT_MESSAGE);
+    }
+    // Field-count mismatches and delimiter hints are tolerated (ragged exports);
+    // only a structurally broken file (e.g. unbalanced quotes) is refused.
+    const fatal = result.errors.find((e) => e.type === "Quotes");
+    if (fatal !== undefined && result.data.length === 0) {
+      throw new BadRequestException(
+        "File CSV rusak: tanda kutip tidak berpasangan. Buka di Excel lalu simpan ulang sebagai CSV.",
+      );
+    }
+    return result.data;
   }
 
   /**
-   * Detect data type for each column
-   * Returns: { columnName: "DATE" | "NUMBER" | "STRING" }
-   */
-  detectColumnTypes(data: any[]): ColumnTypes {
-    const columns = Object.keys(data[0] || {});
-    const types: ColumnTypes = {};
-
-    for (const column of columns) {
-      types[column] = this.inferDataType(data, column);
-    }
-
-    return types;
-  }
-
-  /**
-   * Infer data type for a single column using DuckDB-inspired algorithm
-   * References:
-   * - DuckDB CSV Sniffer (2023): Chunk-based type detection with casting trials
-   * - Pandas type inference: Hierarchical type testing with confidence thresholds
-   * - Best practice: Sample-based detection for performance (2025)
-   */
-  private inferDataType(data: any[], columnName: string): DataType {
-    // Adaptive sampling: use more samples for larger datasets
-    const sampleSize = Math.min(
-      Math.max(100, Math.floor(data.length * 0.1)),
-      2048,
-    );
-    const samples = data.slice(0, sampleSize).map((row) => row[columnName]);
-
-    // Remove nulls/undefined/empty strings
-    const validSamples = samples.filter(
-      (v) => v != null && String(v).trim() !== "",
-    );
-
-    if (validSamples.length === 0) return "STRING";
-
-    // Calculate confidence threshold (85% for strict typing, allows 15% nulls/errors)
-    const confidenceThreshold = 0.85;
-
-    // TYPE HIERARCHY: Test in order from most specific to least specific
-    // This prevents false positives (e.g., "1" being detected as date)
-
-    // 1. NUMBER detection (BEFORE date to prevent "1" being detected as date)
-    const numberCount = validSamples.filter((v) =>
-      this.isValidNumber(v),
-    ).length;
-    const numberConfidence = numberCount / validSamples.length;
-
-    if (numberConfidence >= confidenceThreshold) {
-      return "NUMBER";
-    }
-
-    // 2. DATE detection (AFTER number, with strict pattern matching)
-    const dateCount = validSamples.filter((v) => this.isValidDate(v)).length;
-    const dateConfidence = dateCount / validSamples.length;
-
-    if (dateConfidence >= confidenceThreshold) {
-      return "DATE";
-    }
-
-    // 3. STRING (default fallback)
-    // If mixed types or low confidence, treat as STRING for safety
-    return "STRING";
-  }
-
-  /**
-   * Check if value is a valid date using strict pattern matching
-   * Based on 2025 best practices for date detection heuristics
+   * First sheet with data; dates, percents and numbers keep their real values.
    *
-   * Strategy: Pattern-first approach to avoid false positives
-   * - Rejects pure integers ("1", "42", "2025")
-   * - Requires date-like structure (separators: -, /, space)
-   * - Validates against common date formats
+   * The sheet's declared range (`!ref`, from the file's <dimension> record) is
+   * attacker controlled: a few-KB file can claim A1:XFD1048576 (17 billion
+   * cells). So the declared range is ignored (`nodim`), SheetJS stops after
+   * MAX_SOURCE_ROWS + 1 rows (`sheetRows`), and the matrix is built only from
+   * the bounds of the cells that actually hold a value, clamped to the column
+   * cap, before anything is iterated.
    */
-  private isValidDate(value: any): boolean {
-    if (value instanceof Date) return !isNaN(value.getTime());
+  private excelToMatrix(buffer: Buffer): { matrix: RawCell[][]; warnings: string[] } {
+    let workbook: XLSX.WorkBook;
+    try {
+      workbook = XLSX.read(buffer, {
+        type: "buffer",
+        cellNF: true, // number formats tell dates and percents apart
+        cellText: false, // formatted text (.w) is not used
+        cellFormula: false,
+        cellHTML: false,
+        cellStyles: false,
+        bookVBA: false,
+        dense: true, // rows as arrays: only stored cells are visited
+        nodim: true, // never trust the declared <dimension>
+        sheetRows: MAX_SOURCE_ROWS + 1,
+      });
+    } catch (error) {
+      throw new BadRequestException(
+        `File Excel tidak bisa dibuka (${String((error as Error)?.message ?? error).slice(0, 200)}). Pastikan file tidak diberi kata sandi atau rusak.`,
+      );
+    }
+    for (const name of workbook.SheetNames) {
+      const ws = workbook.Sheets[name];
+      if (!ws) continue;
+      const cells = this.storedCells(ws);
+      if (cells.length === 0) continue;
 
-    const str = String(value).trim();
-    if (!str || str.length < 6) return false; // Minimum date length: "1/1/24"
+      let minR = Infinity;
+      let maxR = -1;
+      let minC = Infinity;
+      let maxC = -1;
+      for (const { r, c } of cells) {
+        if (r < minR) minR = r;
+        if (r > maxR) maxR = r;
+        if (c < minC) minC = c;
+        if (c > maxC) maxC = c;
+      }
+      // A value on the extra row SheetJS was allowed to read means the sheet
+      // is longer than the cap (the rest was never parsed). Values that sit
+      // only beyond that row, after 5,000+ blank rows, are not read at all.
+      if (maxR >= MAX_SOURCE_ROWS) throw new BadRequestException(ROW_LIMIT_MESSAGE);
 
-    // REJECT: Pure integers without separators (e.g., "1", "42", "2025")
-    // These are numbers, not dates, even if Date() can parse them
-    if (/^\d+$/.test(str)) return false;
-
-    // REJECT: Decimal numbers (e.g., "1.5", "42.99")
-    if (/^\d+\.\d+$/.test(str)) return false;
-
-    // ACCEPT: Date patterns with separators
-    // Comprehensive list of common date formats worldwide (2025)
-    const datePatterns = [
-      // ISO 8601 formats (most reliable)
-      /^\d{4}-\d{1,2}-\d{1,2}(T|\s)/i, // YYYY-MM-DD T HH:MM:SS or YYYY-MM-DD HH:MM:SS
-      /^\d{4}-\d{1,2}-\d{1,2}$/, // YYYY-MM-DD
-
-      // Slash-separated formats
-      /^\d{1,2}\/\d{1,2}\/\d{2,4}$/, // MM/DD/YYYY, DD/MM/YYYY, M/D/YY
-      /^\d{4}\/\d{1,2}\/\d{1,2}$/, // YYYY/MM/DD
-
-      // Dash-separated formats
-      /^\d{1,2}-\d{1,2}-\d{2,4}$/, // MM-DD-YYYY, DD-MM-YYYY
-
-      // Dot-separated formats (European)
-      /^\d{1,2}\.\d{1,2}\.\d{2,4}$/, // DD.MM.YYYY
-
-      // Month name formats
-      /^[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}$/, // Month DD, YYYY or Month DD YYYY
-      /^\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}$/, // DD Month YYYY
-
-      // Short month formats
-      /^\d{1,2}-[A-Za-z]{3}-\d{2,4}$/, // DD-MMM-YYYY (e.g., "15-Jan-2025")
-    ];
-
-    // Must match at least one pattern
-    const matchesPattern = datePatterns.some((pattern) => pattern.test(str));
-    if (!matchesPattern) return false;
-
-    // Secondary validation: Can it be parsed as a date?
-    const parsed = new Date(str);
-    if (isNaN(parsed.getTime())) return false;
-
-    // Sanity check: Reject unrealistic years (1800-2100)
-    const year = parsed.getFullYear();
-    if (year < 1800 || year > 2100) return false;
-
-    return true;
+      // One column past the cap so a too-wide header still gets the column
+      // error from normalizeMatrix; stray cells further right are dropped.
+      const lastC = Math.min(maxC, minC + MAX_IMPORT_COLUMNS);
+      const height = maxR - minR + 1;
+      const width = lastC - minC + 1;
+      const matrix: RawCell[][] = Array.from({ length: height }, () =>
+        new Array<RawCell>(width).fill(null),
+      );
+      let dropped = 0;
+      for (const { r, c, v } of cells) {
+        if (c > lastC) dropped++;
+        else matrix[r - minR][c - minC] = v;
+      }
+      const warnings =
+        dropped > 0
+          ? [
+              `${dropped} sel di sebelah kanan kolom ke-${MAX_IMPORT_COLUMNS + 1} diabaikan (maksimum ${MAX_IMPORT_COLUMNS} kolom).`,
+            ]
+          : [];
+      return { matrix, warnings };
+    }
+    throw new BadRequestException(
+      "File Excel kosong: tidak ada lembar yang berisi data.",
+    );
   }
 
   /**
-   * Check if value is a valid number
-   * Handles various numeric formats including currency, percentages, scientific notation
-   * Based on 2025 best practices for robust number parsing
+   * Cells that hold a value, with 0-based coordinates. Uses Object.keys so the
+   * cost follows the number of stored cells, never an index range (a dense row
+   * holding one cell at column XFD is a sparse array of length 16384).
    */
-  private isValidNumber(value: any): boolean {
-    // Handle native numeric types
-    if (typeof value === "number") return !isNaN(value) && isFinite(value);
-
-    const str = String(value).trim();
-    if (!str) return false;
-
-    // Clean common numeric formats:
-    // - Currency symbols: $, €, £, ¥, Rp, etc.
-    // - Thousands separators: commas, spaces, periods (in some locales)
-    // - Percentage signs: %
-    // - Parentheses for negatives: (42.50)
-    let cleaned = str
-      .replace(/[$€£¥₹Rp%\s]/g, "") // Remove currency and % symbols
-      .replace(/,/g, "") // Remove commas (thousands separator)
-      .replace(/^\((.+)\)$/, "-$1"); // Convert (42) to -42
-
-    // Accept scientific notation (e.g., "1.5e10", "1.5E-3")
-    if (/^[+-]?\d+\.?\d*[eE][+-]?\d+$/.test(cleaned)) {
-      const num = parseFloat(cleaned);
-      return !isNaN(num) && isFinite(num);
+  private storedCells(ws: XLSX.WorkSheet): { r: number; c: number; v: RawCell }[] {
+    const out: { r: number; c: number; v: RawCell }[] = [];
+    const push = (r: number, c: number, cell: XLSX.CellObject | undefined) => {
+      if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0) return;
+      const v = this.excelCell(cell);
+      if (v !== null && v !== "") out.push({ r, c, v });
+    };
+    const data = (ws as { "!data"?: XLSX.CellObject[][] })["!data"];
+    if (Array.isArray(data)) {
+      for (const rk of Object.keys(data)) {
+        const row = data[Number(rk)];
+        if (!Array.isArray(row)) continue;
+        for (const ck of Object.keys(row)) push(Number(rk), Number(ck), row[Number(ck)]);
+      }
+    } else {
+      // Sparse sheet (a parser that ignored `dense`): keys are A1 addresses.
+      for (const key of Object.keys(ws)) {
+        if (key.startsWith("!")) continue;
+        const { r, c } = XLSX.utils.decode_cell(key);
+        push(r, c, ws[key] as XLSX.CellObject); // rows past the cap trip the row check
+      }
     }
+    return out;
+  }
 
-    // Accept standard decimal numbers
-    // Patterns: "42", "-42", "42.5", "-42.5", ".5", "-.5"
-    if (/^[+-]?\d*\.?\d+$/.test(cleaned)) {
-      const num = parseFloat(cleaned);
-      return !isNaN(num) && isFinite(num);
+  private excelCell(cell: XLSX.CellObject | undefined): RawCell {
+    if (cell === undefined || cell.v === undefined || cell.v === null) return null;
+    switch (cell.t) {
+      case "n": {
+        const v = cell.v as number;
+        const fmt = typeof cell.z === "string" ? cell.z : "";
+        if (fmt !== "" && XLSX.SSF.is_date(fmt)) {
+          const d = XLSX.SSF.parse_date_code(v);
+          if (d !== null && d !== undefined) {
+            const date = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+            return d.H || d.M || d.S
+              ? `${date} ${String(d.H).padStart(2, "0")}:${String(d.M).padStart(2, "0")}`
+              : date;
+          }
+        }
+        if (fmt.includes("%")) return { pct: Number((v * 100).toPrecision(12)) };
+        return v;
+      }
+      case "d": {
+        const dt = cell.v as unknown as Date;
+        return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+      }
+      case "b":
+        return cell.v ? "TRUE" : "FALSE";
+      case "e":
+        return null;
+      default:
+        return String(cell.v);
     }
-
-    return false;
   }
 
   /**
-   * Generate visualization suggestions based on column types
-   * Smart visualization recommendations based on data structure
-   * Handles various CSV structures: time-series, categorical, numeric-only, etc.
+   * Generate visualization suggestions based on column types.
+   * `headers` keeps the file's column order (JSON storage does not).
    */
   suggestVisualizations(
     data: any[],
     columnTypes: ColumnTypes,
+    headers?: string[],
   ): VisualizationSuggestion[] {
     const suggestions: VisualizationSuggestion[] = [];
+    const order = headers ?? Object.keys(columnTypes);
+    const cols = order.filter((c) => c in columnTypes);
+    const dateColumns = cols.filter((k) => columnTypes[k] === "DATE");
+    const numberColumns = cols.filter((k) => columnTypes[k] === "NUMBER");
+    const stringColumns = cols.filter((k) => columnTypes[k] === "STRING");
+    let colorIdx = 0;
+    const color = () => PALETTE[colorIdx++ % PALETTE.length];
 
-    // Find columns by type
-    const dateColumns = Object.keys(columnTypes).filter(
-      (k) => columnTypes[k] === "DATE",
-    );
-    const numberColumns = Object.keys(columnTypes).filter(
-      (k) => columnTypes[k] === "NUMBER",
-    );
-    const stringColumns = Object.keys(columnTypes).filter(
-      (k) => columnTypes[k] === "STRING",
-    );
+    const isPercent = (col: string) =>
+      isPercentLikeName(col) ||
+      data.some((r) => typeof r?.[col] === "string" && String(r[col]).includes("%"));
+    const fractional = (col: string) =>
+      data.some((r) => typeof r?.[col] === "number" && !Number.isInteger(r[col]));
+    const additive = (col: string) =>
+      !isPercent(col) && !isStockLikeName(col);
 
-    // STRATEGY 1: Time series (if has date + numbers)
+    // 1. Time series (date + numbers)
     if (dateColumns.length > 0 && numberColumns.length > 0) {
-      const dateCol = dateColumns[0];
-
-      // Create line chart for each numeric column (max 3)
       numberColumns.slice(0, 3).forEach((numCol) => {
         suggestions.push({
           type: "line",
-          title: `${this.humanize(numCol)} Over Time`,
-          xAxis: dateCol,
+          title: `Tren ${numCol}`,
+          xAxis: dateColumns[0],
           yAxis: [numCol],
-          color: this.getRandomColor(),
+          color: color(),
         });
       });
     }
 
-    // STRATEGY 2: Category comparison (if has strings + numbers)
+    // 2. Category comparison (text + numbers)
     if (stringColumns.length > 0 && numberColumns.length > 0) {
       const stringCol = stringColumns[0];
       const numCol = numberColumns[0];
-
       suggestions.push({
         type: "bar",
-        title: `${this.humanize(numCol)} by ${this.humanize(stringCol)}`,
+        title: `${numCol} per ${stringCol}`,
         xAxis: stringCol,
         yAxis: [numCol],
-        color: this.getRandomColor(),
+        color: color(),
       });
-
-      // Add pie chart for categorical data (top categories)
-      if (data.length >= 3) {
+      const pieCol = numberColumns.find(additive);
+      if (pieCol !== undefined && data.length >= 3 && data.length <= 12) {
         suggestions.push({
           type: "pie",
-          title: `Distribution of ${this.humanize(numCol)}`,
+          title: `Komposisi ${pieCol} per ${stringCol}`,
           nameKey: stringCol,
-          valueKey: numCol,
-          color: this.getRandomColor(),
+          valueKey: pieCol,
+          color: color(),
         });
       }
     }
 
-    // STRATEGY 3: All numeric columns (e.g., Facebook Ads metrics)
-    // When X-axis is also numeric (not date), use bar charts
-    if (
-      numberColumns.length >= 2 &&
-      dateColumns.length === 0 &&
-      stringColumns.length === 0
-    ) {
-      // Use first numeric column as X-axis, rest as Y-axes
+    // 3. Only numbers: first numeric column is the X axis
+    if (numberColumns.length >= 2 && dateColumns.length === 0 && stringColumns.length === 0) {
       const xCol = numberColumns[0];
-
       numberColumns.slice(1, 4).forEach((yCol) => {
         suggestions.push({
           type: "bar",
-          title: `${this.humanize(yCol)} vs ${this.humanize(xCol)}`,
+          title: `${yCol} vs ${xCol}`,
           xAxis: xCol,
           yAxis: [yCol],
-          color: this.getRandomColor(),
+          color: color(),
         });
       });
     }
 
-    // STRATEGY 4: Metric cards (for all numbers)
-    // Show key metrics as cards
+    // 4. Headline numbers. Percentages average, follower-style levels use the
+    // latest value, additive counts sum (same rule as portal/PDF).
     numberColumns.slice(0, 4).forEach((numCol) => {
-      suggestions.push({
-        type: "metric_card",
-        title: `Total ${this.humanize(numCol)}`,
-        valueKey: numCol,
-        aggregation: "sum",
-        precision: 2,
-      });
+      const precision = fractional(numCol) ? 2 : 0;
+      if (isPercent(numCol)) {
+        suggestions.push({
+          type: "metric_card",
+          title: /^(rata|average|avg|mean)\b/i.test(numCol) ? numCol : `Rata-rata ${numCol}`,
+          valueKey: numCol,
+          aggregation: "average",
+          precision: 2,
+        });
+      } else if (isStockLikeName(numCol)) {
+        suggestions.push({
+          type: "metric_card",
+          title: /terkini|saat ini|terakhir|latest|current/i.test(numCol)
+            ? numCol
+            : `${numCol} terkini`,
+          valueKey: numCol,
+          aggregation: "latest",
+          precision: 0,
+        });
+      } else {
+        suggestions.push({
+          type: "metric_card",
+          title: /^(total|jumlah|sum)\b/i.test(numCol) ? numCol : `Total ${numCol}`,
+          valueKey: numCol,
+          aggregation: "sum",
+          precision,
+        });
+      }
     });
 
-    // STRATEGY 5: Always include table view as fallback
-    suggestions.push({
-      type: "table",
-      title: "Data Table",
-    });
-
+    suggestions.push({ type: "table", title: "Tabel Data" });
     return suggestions;
   }
 
   /**
-   * Convert column name to human-readable
-   * "amount_spent" → "Amount Spent"
+   * "Metrics only" sections hold one row of headline numbers; every column
+   * becomes a metric card showing that value as it is.
    */
-  private humanize(columnName: string): string {
-    return columnName
-      .replace(/_/g, " ")
-      .replace(/([A-Z])/g, " $1")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .trim();
-  }
-
-  /**
-   * Get random chart color
-   */
-  private getRandomColor(): string {
-    const colors = [
-      "#1890ff",
-      "#52c41a",
-      "#faad14",
-      "#eb2f96",
-      "#722ed1",
-      "#13c2c2",
-      "#fa8c16",
-      "#a0d911",
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
+  metricVisualizations(
+    headers: string[],
+    columnTypes: ColumnTypes,
+    rows: any[],
+  ): VisualizationSuggestion[] {
+    return headers
+      .filter((h) => columnTypes[h] === "NUMBER")
+      .map((h) => ({
+        type: "metric_card" as const,
+        title: h,
+        valueKey: h,
+        aggregation: "latest" as const,
+        precision: rows.some((r) => typeof r?.[h] === "number" && !Number.isInteger(r[h]))
+          ? 2
+          : 0,
+      }));
   }
 }

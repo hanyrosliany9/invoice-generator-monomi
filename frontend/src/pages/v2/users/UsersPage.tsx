@@ -48,18 +48,8 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { usePermissions } from '@/hooks/usePermissions';
 import { userService } from '@/services/users';
 import type { User, UserRole } from '@/types/user';
+import { getInitials } from '@/utils/initials';
 
-// Sidebar — same shape used by every v2 page so the chrome reads as one
-// unified application surface, not a patchwork of bespoke screens.
-// 1–2 character avatar token from name; mirrors ClientsPage so the
-// visual vocabulary is consistent across list surfaces.
-const getInitials = (name: string): string => {
-  const trimmed = (name || '?').trim();
-  const parts = trimmed.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-};
 
 // Role badge styling — kept inline so we can think about it as a
 // single color story (navy wash for the most powerful role, sunken

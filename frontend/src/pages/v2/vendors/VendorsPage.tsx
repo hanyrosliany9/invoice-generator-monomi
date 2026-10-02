@@ -52,22 +52,7 @@ import {
   type VendorType,
   type PKPStatus,
 } from '@/types/vendor';
-
-// Sidebar mirrors the rest of v2 — keeps the chrome identical so
-// navigating between Clients and Vendors doesn't feel like two apps.
-// Avatar token — prefer the human-readable name so PT-prefixed vendors
-// don't all collapse to "PT". Fall back to "?".
-const getInitials = (vendor: Vendor): string => {
-  const source = (vendor.nameId || vendor.name || '?').trim();
-  const parts = source.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  // Skip a leading "PT" or "CV" so the initials read as the company itself.
-  if (parts.length >= 3 && /^(PT|CV)\.?$/i.test(parts[0])) {
-    return (parts[1][0] + parts[2][0]).toUpperCase();
-  }
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-};
+import { getInitials } from '@/utils/initials';
 
 // Vendor type → editorial chip. Same vocabulary as the form, single
 // place that decides "what looks like what" so the table never drifts.
@@ -224,7 +209,7 @@ export default function VendorsPageV2() {
             <div className="flex items-center gap-3 min-w-0">
               <Avatar className="h-9 w-9 shrink-0">
                 <AvatarFallback className="bg-accent-navy-wash text-text-primary text-xs font-medium tracking-wide">
-                  {getInitials(v)}
+                  {getInitials(v.nameId || v.name, { skipLegalPrefix: true })}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">

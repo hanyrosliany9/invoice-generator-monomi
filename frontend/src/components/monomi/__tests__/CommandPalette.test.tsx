@@ -30,7 +30,7 @@ vi.mock('@/hooks/usePermissions', () => ({
 }));
 
 vi.mock('@/services/clients', () => ({
-  clientService: { getClients: vi.fn(async () => [{ id: 'c1', name: 'Acme Client', company: 'Acme' }]) },
+  clientService: { getClientsWithInternal: vi.fn(async () => [{ id: 'c1', name: 'Acme Client', company: 'Acme' }]) },
 }));
 vi.mock('@/services/projects', () => ({
   projectService: { getProjects: vi.fn(async () => []) },

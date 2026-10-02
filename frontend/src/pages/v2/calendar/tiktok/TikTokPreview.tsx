@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Heart, MessageCircle, Bookmark, Share2, Music2, Plus, X,
   ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Play,
-  Grid3x3, Lock, Repeat2, Pencil, Camera, Maximize2, Trash2,
+  Pencil, Camera, Maximize2, Trash2, Bell, Send, UserPlus,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import contentCalendarService, {
@@ -24,9 +24,15 @@ import contentCalendarService, {
 } from '@/services/content-calendar';
 import { useMediaToken } from '@/hooks/useMediaToken';
 import { extractR2Key } from '@/utils/mediaProxy';
+import { contentShareMediaUrl } from '@/utils/contentShareMedia';
 import { cn } from '@/lib/utils';
+import { getInitials } from '@/utils/initials';
 
 const TIKTOK_RED = '#FE2C55';
+
+/** Scale a pt size (designed at 390pt width) to the phone's own width, so the
+ *  small launcher card and the full modal keep identical proportions. */
+const u = (pt: number) => `${((pt / 390) * 100).toFixed(3)}cqw`;
 
 type TFunc = (key: string, fallback: string, opts?: Record<string, unknown>) => string;
 
@@ -41,7 +47,7 @@ function buildResolver(token?: string | null, shareToken?: string): MediaResolve
     if (!url) return null;
     if (url.includes('/api/v1/media/proxy/') || url.includes('.r2.cloudflarestorage.com')) {
       const key = extractR2Key(url);
-      if (key && shareToken) return `/api/v1/content-calendar/public/${shareToken}/media?key=${encodeURIComponent(key)}`;
+      if (key && shareToken) return contentShareMediaUrl(shareToken, key);
       if (key && token) return `/api/v1/media/view/${key}?mt=${encodeURIComponent(token)}`;
       return url;
     }
@@ -104,12 +110,14 @@ const STATUS_TINT: Record<ContentCalendarItem['status'], string> = {
 /*  Avatar                                                             */
 /* ------------------------------------------------------------------ */
 
-function Avatar({ profile, size }: { profile?: IgProfile; size: number }) {
-  const letter = (profile?.companyName || profile?.handle || 'T').replace(/^@/, '').charAt(0).toUpperCase();
+function Avatar({ profile, size, fluid }: { profile?: IgProfile; size: number; fluid?: boolean }) {
+  const letter = getInitials(profile?.companyName || profile?.handle?.replace(/^@/, ''), { fallback: 'T' });
+  // fluid: fill the parent (which is sized in container units) instead of fixed px
+  const box = fluid ? { width: '100%', height: '100%' } : { width: size, height: size };
   return profile?.avatarUrl ? (
-    <img src={profile.avatarUrl} alt="" style={{ width: size, height: size }} className="rounded-full object-cover" />
+    <img src={profile.avatarUrl} alt="" style={box} className="rounded-full object-cover" />
   ) : (
-    <div style={{ width: size, height: size, fontSize: size * 0.42 }}
+    <div style={{ ...box, fontSize: fluid ? u(96 * 0.42) : size * 0.42 }}
          className="flex items-center justify-center rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 text-zinc-200">
       {letter}
     </div>
@@ -128,22 +136,22 @@ function GridTile({ item, resolve, onOpen }: { item: ContentCalendarItem; resolv
     <button
       type="button"
       onClick={onOpen}
-      // TikTok profile grid cells are tall portrait covers.
-      className="group relative aspect-[2/3] overflow-hidden bg-zinc-900"
+      // 2026 TikTok profile grid cells are 3:4 portrait covers.
+      className="group relative aspect-[3/4] overflow-hidden bg-zinc-200"
     >
       {cover ? (
         <img src={cover.url} alt="" loading="lazy"
              className="absolute inset-0 h-full w-full object-cover"
              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
       ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-zinc-800 to-zinc-900 p-2 text-center">
-          <Camera className="h-5 w-5 text-zinc-600" />
-          <span className="line-clamp-3 text-[10px] leading-tight text-zinc-500">{item.caption?.slice(0, 50) || t('preview.noMediaShort', 'Tanpa media')}</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-zinc-200 to-zinc-300 p-2 text-center">
+          <Camera className="h-5 w-5 text-zinc-500" />
+          <span className="line-clamp-3 text-[10px] leading-tight text-zinc-600">{item.caption?.slice(0, 50) || t('preview.noMediaShort', 'Tanpa media')}</span>
         </div>
       )}
       {/* play + view count (bottom-left), like the real app */}
-      <div className="absolute bottom-1 left-1 flex items-center gap-1 text-white drop-shadow">
-        <Play className="h-3.5 w-3.5 fill-white" />
+      <div className="absolute bottom-1 left-1.5 flex items-center gap-0.5 text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
+        <Play className="h-3 w-3 drop-shadow" />
         <span className="text-[11px] font-semibold">—</span>
       </div>
       {/* photo-mode indicator */}
@@ -194,7 +202,7 @@ function TikTokPlayer({
   }, [index, list.length, onClose, onIndex]);
 
   if (!item) return null;
-  const handle = profile?.handle?.replace(/^@/, '') ?? 'tiktok';
+  const handle = profile?.handle?.replace(/^@/, '') || profile?.companyName || '';
   const isPhoto = media.length > 1;
 
   return (
@@ -307,7 +315,7 @@ function TikTokPlayer({
         {/* bottom caption + music ticker */}
         <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 to-transparent p-3 pr-16 pb-5 text-white">
           <div className="mb-1 flex items-center gap-2">
-            <span className="text-[15px] font-bold">@{handle}</span>
+            <span className="text-[15px] font-bold">{profile?.handle ? `@${handle}` : handle}</span>
             <span className="text-[11px] text-white/60">· {scheduledLabel(item, t)}</span>
           </div>
           <p className="text-[13px] leading-snug"><Caption text={item.caption ?? ''} /></p>
@@ -366,62 +374,90 @@ function TikTokPhone({
   const grid = useMemo(() => sortByRecent(tkItems), [tkItems]);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const handle = profile?.handle ?? '@tiktok';
   const empty = grid.length === 0;
 
   return (
     <>
-      <div className="bg-black text-white">
+      <div className="bg-white text-black" style={{ containerType: 'inline-size' }}>
         {/* status bar */}
-        <div className="flex items-center justify-between px-5 pt-3 text-[11px] font-semibold text-white">
+        <div className="flex items-center justify-between px-5 pt-3 text-[11px] font-semibold text-black">
           <span>9:41</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white/60">Preview</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide text-zinc-500">Preview</span>
           <span className="tabular-nums">100%</span>
         </div>
 
-        {/* profile header */}
-        <div className="flex flex-col items-center px-4 pb-3 pt-3">
-          <Avatar profile={profile} size={88} />
-          <div className="mt-2 text-[15px] font-semibold">{handle}</div>
+        {/* top bar: back, bell + share */}
+        <div className="flex items-center justify-between" style={{ padding: `${u(10)} ${u(16)} 0` }}>
+          <ChevronLeft style={{ width: u(24), height: u(24) }} />
+          <div className="flex items-center" style={{ gap: u(18) }}>
+            <Bell style={{ width: u(22), height: u(22) }} />
+            <Share2 style={{ width: u(22), height: u(22) }} />
+          </div>
+        </div>
 
-          <div className="mt-3 flex items-center gap-6 text-center">
+        {/* profile header (Sept 2026 layout): name + username left, photo right */}
+        <div style={{ padding: `${u(8)} ${u(16)} 0` }}>
+          <div className="flex items-start justify-between" style={{ gap: u(12) }}>
+            <div className="min-w-0 flex-1">
+              <div className="line-clamp-3 break-words font-bold leading-[1.1]" style={{ fontSize: u(34) }}>
+                {profile?.companyName || profile?.handle?.replace(/^@/, '') || ''}
+              </div>
+              {profile?.handle && (
+                <div className="truncate text-zinc-500" style={{ fontSize: u(16), marginTop: u(4) }}>
+                  {profile.handle.startsWith('@') ? profile.handle : `@${profile.handle}`}
+                </div>
+              )}
+            </div>
+            <div className="shrink-0" style={{ width: u(96), height: u(96) }}>
+              <Avatar profile={profile} size={96} fluid />
+            </div>
+          </div>
+
+          <div className="flex items-start" style={{ gap: u(24), marginTop: u(14) }}>
             <Stat n="—" label={t('preview.tt.following', 'Mengikuti')} />
             <Stat n="—" label={t('preview.tt.followers', 'Pengikut')} />
             <Stat n="—" label={t('preview.tt.likes', 'Suka')} />
           </div>
 
-          <div className="mt-3 flex items-center gap-2">
-            <button className="rounded-md px-6 py-1.5 text-[13px] font-semibold text-white" style={{ background: TIKTOK_RED }}>
+          <div className="flex items-center" style={{ gap: u(8), marginTop: u(16) }}>
+            <span className="flex-1 rounded-full text-center font-bold text-white"
+                  style={{ background: TIKTOK_RED, height: u(40), lineHeight: u(40), fontSize: u(16) }}>
               {t('preview.tt.follow', 'Ikuti')}
-            </button>
-            <button className="rounded-md bg-zinc-800 px-3 py-1.5 text-[13px] font-semibold text-white">
-              ▾
-            </button>
+            </span>
+            <span className="flex shrink-0 items-center justify-center rounded-full bg-zinc-100" style={{ width: u(40), height: u(40) }}>
+              <Send style={{ width: u(18), height: u(18) }} />
+            </span>
+            <span className="flex shrink-0 items-center justify-center rounded-full bg-zinc-100" style={{ width: u(40), height: u(40) }}>
+              <UserPlus style={{ width: u(18), height: u(18) }} />
+            </span>
           </div>
 
           {profile?.bio && (
-            <p className="mt-3 max-w-[80%] whitespace-pre-line text-center text-[12px] leading-snug text-zinc-200">{profile.bio}</p>
+            <p className="whitespace-pre-line leading-snug text-black" style={{ fontSize: u(16), marginTop: u(14) }}>{profile.bio}</p>
           )}
-          <div className="mt-1 text-[12px] text-zinc-500">{profile?.companyName ?? t('preview.client', 'Klien')}</div>
         </div>
 
-        {/* tab bar (Videos active; Reposts/Liked inert mock) */}
-        <div className="flex border-t border-zinc-800 text-zinc-500">
-          <div className="flex flex-1 items-center justify-center border-b-2 border-white py-2.5 text-white"><Grid3x3 className="h-5 w-5" /></div>
-          <div className="flex flex-1 items-center justify-center py-2.5"><Repeat2 className="h-5 w-5" /></div>
-          <div className="flex flex-1 items-center justify-center py-2.5"><Heart className="h-5 w-5" /></div>
-          <div className="flex flex-1 items-center justify-center py-2.5"><Lock className="h-5 w-5" /></div>
+        {/* single grid tab with dropdown caret, centered 48pt underline */}
+        <div className="flex justify-center" style={{ marginTop: u(14) }}>
+          <div className="flex items-center justify-center border-b-2 border-black" style={{ width: u(48), paddingBottom: u(8), gap: u(3) }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"
+                 style={{ width: u(22), height: u(22) }} aria-hidden="true">
+              <path d="M7 5v14M12 5v14M17 5v14" />
+            </svg>
+            <ChevronDown style={{ width: u(10), height: u(10) }} strokeWidth={3} />
+          </div>
         </div>
+        <div className="border-t border-zinc-200" />
 
         {/* grid */}
         {empty ? (
           <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center text-zinc-500">
-            <div className="rounded-full border-2 border-zinc-700 p-4"><Camera className="h-7 w-7 text-zinc-600" /></div>
-            <p className="text-[13px] font-medium text-zinc-300">{t('preview.tt.emptyTitle', 'Belum ada konten TikTok')}</p>
+            <div className="rounded-full border-2 border-zinc-300 p-4"><Camera className="h-7 w-7 text-zinc-400" /></div>
+            <p className="text-[13px] font-medium text-zinc-700">{t('preview.tt.emptyTitle', 'Belum ada konten TikTok')}</p>
             <p className="text-[12px] text-zinc-500">{t('preview.tt.emptyDesc', 'Tandai konten dengan platform TikTok untuk melihatnya di sini.')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-[2px] bg-black pb-2">
+          <div className="grid grid-cols-3 bg-white" style={{ gap: u(2) }}>
             {grid.map((item, i) => (
               <GridTile key={item.id} item={item} resolve={resolve}
                         onOpen={() => interactive && setOpenIndex(i)} />
@@ -450,8 +486,8 @@ function TikTokPhone({
 function Stat({ n, label }: { n: number | string; label: string }) {
   return (
     <div className="leading-tight">
-      <div className="text-[15px] font-bold tabular-nums">{n}</div>
-      <div className="text-[12px] text-zinc-400">{label}</div>
+      <div className="font-bold tabular-nums" style={{ fontSize: u(20) }}>{n}</div>
+      <div className="text-zinc-500" style={{ fontSize: u(15) }}>{label}</div>
     </div>
   );
 }
@@ -484,22 +520,24 @@ export default function TikTokPreview({
     <div className="flex justify-center px-3 py-8">
       {/* inline launcher — a tappable dark phone card */}
       <div className="w-full max-w-[300px]">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label={t('preview.openTiktok', 'Buka pratinjau TikTok')}
-          className="group relative block w-full overflow-hidden rounded-[28px] border border-border-subtle bg-black text-left shadow-xl transition-transform hover:-translate-y-0.5 hover:shadow-2xl"
-        >
-          <div className="pointer-events-none max-h-[360px] overflow-hidden">
+        {/* Sibling overlay button: the phone mock has its own buttons (no nesting). */}
+        <div className="group relative block w-full overflow-hidden rounded-[28px] border border-border-subtle bg-white text-left shadow-xl transition-transform hover:-translate-y-0.5 hover:shadow-2xl">
+          <div className="pointer-events-none max-h-[360px] overflow-hidden" aria-hidden="true" inert>
             <TikTokPhone items={items} onEdit={onEdit} onDelete={onDelete} clientId={clientId} interactive={false} profileOverride={profile} shareToken={shareToken} />
           </div>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" />
           <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-4">
             <span className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-medium text-white shadow-lg" style={{ background: TIKTOK_RED }}>
               <Maximize2 className="h-3.5 w-3.5" /> {t('preview.openTiktok', 'Buka pratinjau TikTok')}
             </span>
           </div>
-        </button>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label={t('preview.openTiktok', 'Buka pratinjau TikTok')}
+            className="absolute inset-0 z-10 rounded-[28px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          />
+        </div>
         <p className="mt-3 px-2 text-center text-[11px] text-text-tertiary">
           {t('preview.visualNote', 'Pratinjau visual — klik untuk membuka tampilan ponsel penuh.')}
         </p>
@@ -511,7 +549,7 @@ export default function TikTokPreview({
           <button onClick={() => setOpen(false)} className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/20">
             <X className="h-4 w-4" /> {t('preview.close', 'Tutup')}
           </button>
-          <div className="relative flex h-[92vh] max-h-[900px] w-full max-w-[412px] flex-col overflow-hidden rounded-[44px] border-[10px] border-zinc-900 bg-black shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="relative flex h-[92vh] max-h-[900px] w-full max-w-[412px] flex-col overflow-hidden rounded-[44px] border-[10px] border-zinc-900 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="pointer-events-none absolute left-1/2 top-0 z-30 h-5 w-28 -translate-x-1/2 rounded-b-2xl bg-zinc-900" />
             <div className="min-h-0 flex-1 overflow-y-auto">
               <TikTokPhone items={items} onEdit={(it) => { setOpen(false); onEdit(it); }} onDelete={onDelete} clientId={clientId} interactive profileOverride={profile} shareToken={shareToken} />

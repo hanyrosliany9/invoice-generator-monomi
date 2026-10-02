@@ -49,7 +49,13 @@ export interface BulkDownloadJobData {
   zipFilename: string;
   contentHash?: string; // Hash of asset IDs for caching
   shareToken?: string;  // Set for public jobs — used to verify status requests
+  portalScope?: string; // Set for client-portal jobs — `${clientId}:${email}`
 }
+
+/** Who a share-originated (non-staff) bulk download job is bound to. */
+export type ShareJobBinding =
+  | { kind: "public"; shareToken: string }
+  | { kind: "portal"; portalScope: string };
 
 /**
  * BulkDownloadService
@@ -408,6 +414,36 @@ export class BulkDownloadService {
     // Validate share token (public + not expired) and get project
     const project = await this.resolveActivePublicProject(shareToken);
 
+    return this.createShareJob(
+      project,
+      { kind: "public", shareToken },
+      assetIds,
+      zipFilename,
+    );
+  }
+
+  /**
+   * Create a bulk download job for a project whose access the caller has
+   * already authorised (public share token or client-portal scope). The job
+   * is bound to `binding` so only the same share/portal scope can poll it.
+   */
+  async createShareJob(
+    project: { id: string; createdBy: string },
+    binding: ShareJobBinding,
+    assetIds: string[],
+    zipFilename?: string,
+  ): Promise<BulkDownloadJobCreatedDto> {
+    if (
+      !Array.isArray(assetIds) ||
+      assetIds.length === 0 ||
+      assetIds.length > BULK_DOWNLOAD_MAX_ASSETS ||
+      !assetIds.every((id) => typeof id === "string")
+    ) {
+      throw new BadRequestException(
+        `assetIds must be 1-${BULK_DOWNLOAD_MAX_ASSETS} asset ID strings`,
+      );
+    }
+
     // Security (IDOR guard): only assets that belong to the project resolved
     // from the token are kept; foreign IDs are silently dropped, matching the
     // authenticated createJob behaviour.
@@ -446,14 +482,18 @@ export class BulkDownloadService {
       };
     }
 
-    const jobId = `public-download-${Date.now()}-${contentHash.substring(0, 8)}`;
+    const prefix = binding.kind === "portal" ? "portal-download" : "public-download";
+    const jobId = `${prefix}-${Date.now()}-${contentHash.substring(0, 8)}`;
     const jobData: BulkDownloadJobData = {
       assetIds: validAssetIds,
       userId: project.createdBy, // Use project owner's userId for R2 access checks
       projectId: project.id,
       zipFilename: zipFilename || `media-download-${Date.now()}`,
       contentHash,
-      shareToken, // Store so getPublicJobStatus can verify ownership
+      // Store the binding so the status endpoints can verify ownership
+      ...(binding.kind === "public"
+        ? { shareToken: binding.shareToken }
+        : { portalScope: binding.portalScope }),
     };
 
     await this.downloadQueue.add(jobId, jobData, {
@@ -484,20 +524,36 @@ export class BulkDownloadService {
     // created through it.
     const project = await this.resolveActivePublicProject(shareToken);
 
+    return this.getShareJobStatus(jobId, project.id, {
+      kind: "public",
+      shareToken,
+    });
+  }
+
+  /**
+   * Job status for a share-originated job. The job must have been created for
+   * this project through the SAME binding (share token or portal scope);
+   * authenticated jobs and jobs of other bindings never match.
+   */
+  async getShareJobStatus(
+    jobId: string,
+    projectId: string,
+    binding: ShareJobBinding,
+  ): Promise<BulkDownloadJobStatusDto> {
     const job = await this.downloadQueue.getJob(jobId);
 
     if (!job) {
       throw new NotFoundException(`Job ${jobId} not found`);
     }
 
-    // Verify this job was created through this public share link (and so for
-    // this project). Authenticated jobs carry no shareToken and never match.
     const jobData = job.data as BulkDownloadJobData;
-    if (
-      typeof jobData.shareToken !== "string" ||
-      jobData.shareToken !== shareToken ||
-      jobData.projectId !== project.id
-    ) {
+    const bindingMatches =
+      binding.kind === "public"
+        ? typeof jobData.shareToken === "string" &&
+          jobData.shareToken === binding.shareToken
+        : typeof jobData.portalScope === "string" &&
+          jobData.portalScope === binding.portalScope;
+    if (!bindingMatches || jobData.projectId !== projectId) {
       throw new ForbiddenException("Access denied to this job");
     }
 

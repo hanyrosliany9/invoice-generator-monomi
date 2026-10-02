@@ -76,9 +76,14 @@ export class NotificationsService {
     }
   }
 
-  async sendNotification(dto: SendNotificationDto): Promise<void> {
-    // FIX 3: per-user preference guard
-    const emailEnabled = await this.isEmailNotificationsEnabled(dto.to);
+  async sendNotification(
+    dto: SendNotificationDto,
+    options: { bypassPreferences?: boolean } = {},
+  ): Promise<void> {
+    // FIX 3: per-user preference guard (skipped for transactional mail such as
+    // portal login codes, which must always be delivered)
+    const emailEnabled =
+      options.bypassPreferences || (await this.isEmailNotificationsEnabled(dto.to));
     if (!emailEnabled) {
       this.logger.log(
         `sendNotification: skipping ${dto.type} to ${dto.to} — emailNotifications disabled`,
@@ -146,6 +151,12 @@ export class NotificationsService {
         return this.generatePaymentReceivedEmail(data, companyName);
       case NotificationType.DECK_INVITE:
         return this.generateDeckInviteEmail(data, companyName);
+      case NotificationType.PORTAL_LOGIN_CODE:
+        return this.generatePortalLoginCodeEmail(data, companyName);
+      case NotificationType.PORTAL_INVITE:
+        return this.generatePortalInviteEmail(data, companyName);
+      case NotificationType.REPORT_READY:
+        return this.generateReportReadyEmail(data, companyName);
       default:
         return `<p>${escapeHtml(dto.subject)}</p>`;
     }
@@ -309,6 +320,61 @@ export class NotificationsService {
         <p><a href="${safeLink}" style="background-color:#6f42c1;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Terima Undangan</a></p>
         <p style="font-size:12px;color:#888;">Atau salin tautan: ${escapeHtml(rawLink)}</p>
         <p>Terima kasih.</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
+      </div>
+    `;
+  }
+
+  private generatePortalLoginCodeEmail(data: any, companyName: string): string {
+    const code = String(data.code || "").replace(/[^0-9]/g, "");
+    const minutes = Number(data.expiresInMinutes) || 10;
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #111;">Kode Masuk Portal Klien</h2>
+        <p>Halo ${escapeHtml(data.name || "")},</p>
+        <p>Gunakan kode berikut untuk masuk ke portal klien ${escapeHtml(companyName)}:</p>
+        <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; background: #f4f4f5; padding: 16px; text-align: center; border-radius: 6px;">${escapeHtml(code)}</p>
+        <p>Kode ini berlaku selama ${minutes} menit dan hanya dapat digunakan satu kali. Jangan bagikan kode ini kepada siapa pun.</p>
+        <p>Jika Anda tidak meminta kode ini, abaikan email ini.</p>
+        <p style="font-size: 12px; color: #888;">Your client portal sign-in code is ${escapeHtml(code)}. It expires in ${minutes} minutes. If you did not request it, you can ignore this email.</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
+      </div>
+    `;
+  }
+
+  private generatePortalInviteEmail(data: any, companyName: string): string {
+    const rawLink = String(data.portalUrl || "");
+    const safeLink = /^https?:\/\//i.test(rawLink) ? rawLink : "#";
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #111;">Undangan Portal Klien</h2>
+        <p>Halo ${escapeHtml(data.name || "")},</p>
+        <p>${escapeHtml(companyName)} mengundang Anda ke portal klien untuk <strong>${escapeHtml(data.clientName || "")}</strong>. Di portal ini Anda dapat melihat rencana konten, laporan media sosial, file media, dan deck presentasi.</p>
+        <p><strong>Cara masuk:</strong></p>
+        <ol>
+          <li>Buka <a href="${safeLink}">${escapeHtml(rawLink)}</a></li>
+          <li>Masukkan alamat email ini: <strong>${escapeHtml(data.email || "")}</strong></li>
+          <li>Kami akan mengirimkan kode 6 digit ke email Anda. Masukkan kode tersebut untuk masuk. Tidak perlu kata sandi.</li>
+        </ol>
+        <p><a href="${safeLink}" style="background-color:#111;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Buka Portal Klien</a></p>
+        <p style="font-size: 12px; color: #888;">You have been invited to the ${escapeHtml(companyName)} client portal. Open the link above, enter this email address, and sign in with the 6-digit code we email you. No password needed.</p>
+        <p>Salam,<br>${escapeHtml(companyName)}</p>
+      </div>
+    `;
+  }
+
+  private generateReportReadyEmail(data: any, companyName: string): string {
+    const rawLink = String(data.reportUrl || "");
+    const safeLink = /^https?:\/\//i.test(rawLink) ? rawLink : "#";
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #111;">Laporan Media Sosial Siap Dilihat</h2>
+        <p>Halo ${escapeHtml(data.name || "")},</p>
+        <p>${escapeHtml(companyName)} telah menyiapkan laporan media sosial <strong>${escapeHtml(data.reportTitle || "")}</strong> untuk <strong>${escapeHtml(data.clientName || "")}</strong>${data.period ? ` (periode ${escapeHtml(data.period)})` : ""}.</p>
+        <p>Anda dapat melihat ringkasan, grafik, dan mengunduh PDF-nya di portal klien.</p>
+        <p><a href="${safeLink}" style="background-color:#111;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Buka Laporan</a></p>
+        <p style="font-size: 12px; color: #888;">Jika tombol tidak berfungsi, salin tautan ini ke browser Anda: ${escapeHtml(rawLink)}<br>Masuk dengan alamat email ini (${escapeHtml(data.email || "")}); kami akan mengirimkan kode 6 digit. Tidak perlu kata sandi.</p>
+        <p style="font-size: 12px; color: #888;">Your monthly social media report "${escapeHtml(data.reportTitle || "")}" is ready to view in the ${escapeHtml(companyName)} client portal.</p>
         <p>Salam,<br>${escapeHtml(companyName)}</p>
       </div>
     `;
@@ -680,5 +746,74 @@ export class NotificationsService {
         isError(error) ? error.stack : undefined,
       );
     }
+  }
+
+  // ── Client portal ───────────────────────────────────────────────────────────
+
+  /**
+   * Email a portal login code. Throws if delivery fails (caller decides whether
+   * to surface it — the public request-code endpoint never does). The code is
+   * only in the HTML body: it is never put in the subject or the
+   * notification_logs row.
+   */
+  async sendPortalLoginCode(
+    to: string,
+    data: { name: string; code: string; expiresInMinutes: number },
+  ): Promise<void> {
+    await this.sendNotification(
+      {
+        type: NotificationType.PORTAL_LOGIN_CODE,
+        to,
+        subject: "Kode masuk Portal Klien / Client portal sign-in code",
+        entityType: "client_portal",
+        data,
+      },
+      { bypassPreferences: true },
+    );
+  }
+
+  /** Email a portal invitation. Throws if delivery fails (staff sees the error). */
+  async sendPortalInvite(
+    to: string,
+    data: { name: string; email: string; clientName: string; portalUrl: string },
+    contactId?: string,
+  ): Promise<void> {
+    await this.sendNotification(
+      {
+        type: NotificationType.PORTAL_INVITE,
+        to,
+        subject: `Undangan Portal Klien: ${data.clientName}`,
+        entityType: "client_portal_contact",
+        entityId: contactId,
+        data,
+      },
+      { bypassPreferences: true },
+    );
+  }
+
+  /** Email a client contact that a report is ready in the portal. Throws if delivery fails. */
+  async sendReportReady(
+    to: string,
+    data: {
+      name: string;
+      email: string;
+      clientName: string;
+      reportTitle: string;
+      period: string;
+      reportUrl: string;
+    },
+    reportId?: string,
+  ): Promise<void> {
+    await this.sendNotification(
+      {
+        type: NotificationType.REPORT_READY,
+        to,
+        subject: `Laporan media sosial siap: ${data.reportTitle}`,
+        entityType: "social_media_report",
+        entityId: reportId,
+        data,
+      },
+      { bypassPreferences: true },
+    );
   }
 }

@@ -97,7 +97,7 @@ export function Timeline({
       >
         {/* Progress fill */}
         <div
-          className="absolute left-0 top-0 h-full bg-accent/50 rounded"
+          className="absolute left-0 top-0 h-full bg-bg-glass-strong rounded"
           style={{ width: `${playheadPct}%` }}
         />
 

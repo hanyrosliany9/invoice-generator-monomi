@@ -33,6 +33,7 @@ import { invoiceService } from '@/services/invoices';
 import { paymentService } from '@/services/payments';
 import { RecordPaymentModal } from './RecordPaymentModal';
 import { cn } from '@/lib/utils';
+import { getInitials } from '@/utils/initials';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — must mirror the v2 list/dashboard exactly so the active  */
@@ -74,14 +75,6 @@ const toNumber = (v: unknown): number => {
   const n = typeof v === 'string' ? parseFloat(v) : Number(v);
   return Number.isFinite(n) ? n : 0;
 };
-
-const initialsOf = (name?: string) =>
-  (name || '?')
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
 
 const sanitize = (s?: string) =>
   (s || '').replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
@@ -404,7 +397,7 @@ export default function InvoiceDetailPageV2() {
             <div className="flex items-start gap-4">
               <Avatar className="h-12 w-12 mt-0.5">
                 <AvatarFallback className="bg-brand-navy text-brand-cream text-sm font-medium">
-                  {initialsOf(invoice.client?.name || invoice.clientName)}
+                  {getInitials(invoice.client?.name || invoice.clientName)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">

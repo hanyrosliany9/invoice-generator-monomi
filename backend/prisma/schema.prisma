@@ -93,6 +93,9 @@ model User {
   mcpAccessTokens McpAccessToken[] @relation("McpAccessTokenUser")
   mcpAuditLogs    McpAuditLog[]    @relation("McpAuditLogUser")
 
+  // Client Portal Relations
+  portalContactsCreated ClientPortalContact[] @relation("ClientPortalContactCreator")
+
   @@map("users")
 }
 
@@ -124,6 +127,61 @@ model RefreshToken {
   @@index([userId, isRevoked, expiresAt])
   @@index([token, isRevoked])
   @@map("refresh_tokens")
+}
+
+// ============================================
+// CLIENT PORTAL (external client contacts, email one-time-code login)
+// ============================================
+
+// An external contact allowed to log in to the client portal for one client.
+// The same email may be a contact of several clients (one row per client).
+// Never created for internal clients (Client.isInternal).
+model ClientPortalContact {
+  id           String    @id @default(cuid())
+  clientId     String
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  email        String // stored lowercased + trimmed
+  name         String
+  isActive     Boolean   @default(true)
+  tokenVersion Int       @default(0) // bump to revoke existing portal sessions
+  lastLoginAt  DateTime?
+  createdById  String?
+  createdBy    User?     @relation("ClientPortalContactCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([clientId, email])
+  @@index([email])
+  @@map("client_portal_contacts")
+}
+
+// One-time 6-digit login code for the client portal. Only an HMAC of the code
+// is stored (keyed with PORTAL_JWT_SECRET); never the plaintext.
+model ClientPortalLoginCode {
+  id         String    @id @default(cuid())
+  email      String // lowercased + trimmed
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  requestIp  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
+  @@map("client_portal_login_codes")
+}
+
+/// One failed portal verify-code request (any wrong / expired / unknown code)
+/// for a normalised email. Drives the per-email lockout; rows older than a day
+/// are pruned by PortalAuthService.
+model ClientPortalLoginFailure {
+  id        String   @id @default(cuid())
+  email     String // lowercased + trimmed
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([createdAt])
+  @@map("client_portal_login_failures")
 }
 
 // Client Management
@@ -162,6 +220,12 @@ model Client {
   contentSharedAt     DateTime? // When sharing was first enabled
   contentShareViews   Int       @default(0) // How many times the public link was opened
 
+  // Internal client = the agency itself (Monomi). Lets us plan our own social
+  // media in the content calendar. Never billable: excluded from invoice /
+  // quotation / project pickers and from client stats. Not settable via DTOs;
+  // created by ClientsService.ensureInternalClient().
+  isInternal Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -176,6 +240,7 @@ model Client {
   mediaProjects         MediaProject[] // Media collaboration projects
   decks                 Deck[]
   calendarEvents        CalendarEvent[]
+  portalContacts        ClientPortalContact[] // External client-portal logins
 
   @@index([name])
   @@index([email])
@@ -184,6 +249,7 @@ model Client {
   // Composite indexes for client search and filtering
   @@index([status, createdAt])
   @@index([name, status])
+  @@index([isInternal])
   @@map("clients")
 }
 

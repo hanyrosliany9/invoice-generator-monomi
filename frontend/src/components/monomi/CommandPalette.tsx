@@ -100,8 +100,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   }, [open]);
 
   const { data: clients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => clientService.getClients(),
+    // Navigation only: keep the internal client (Monomi) findable.
+    queryKey: ['clients', 'with-internal'],
+    queryFn: () => clientService.getClientsWithInternal(),
     enabled: everOpened && adminUser,
     staleTime: 60_000,
   });

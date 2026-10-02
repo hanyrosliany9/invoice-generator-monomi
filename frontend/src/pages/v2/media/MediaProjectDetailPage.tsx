@@ -68,6 +68,7 @@ import { FolderBreadcrumb, type BreadcrumbSegment } from '@/components/media/Fol
 import { MoveToFolderDialog } from '@/components/media/MoveToFolderDialog';
 import { NewCollectionDialog } from '@/components/media/NewCollectionDialog';
 import { VideoReviewModal } from '@/components/media/VideoReviewModal';
+import { getInitials } from '@/utils/initials';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — same shape as every v2 page.                             */
@@ -76,14 +77,6 @@ import { VideoReviewModal } from '@/components/media/VideoReviewModal';
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
-
-const initialsOf = (name?: string) =>
-  (name || '?')
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
 
 const formatBytes = (n: number) => {
   if (!Number.isFinite(n) || n <= 0) return '0 B';
@@ -1030,7 +1023,7 @@ export default function MediaProjectDetailPageV2() {
             <div className="flex items-start gap-4">
               <Avatar className="h-12 w-12 mt-0.5">
                 <AvatarFallback className="bg-accent-navy-wash text-text-primary text-sm font-medium">
-                  {initialsOf(project.creator?.name)}
+                  {getInitials(project.creator?.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
@@ -1159,7 +1152,7 @@ export default function MediaProjectDetailPageV2() {
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
                 {t('mediaCollab.assetGallery', 'Galeri Aset')}
               </h2>
-              <Button size="sm" onClick={() => fileInputRef.current?.click()} variant="outline" className="h-7 text-xs">
+              <Button size="sm" onClick={() => fileInputRef.current?.click()} variant="outline" className="h-9 text-xs sm:h-7">
                 <Upload className="h-3.5 w-3.5" /> {t('mediaCollab.uploadAsset', 'Unggah Aset')}
               </Button>
             </div>
@@ -1256,7 +1249,7 @@ export default function MediaProjectDetailPageV2() {
 
               {/* Folder cards — click to navigate into a subfolder */}
               {visibleSubfolders.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
+                <div className="grid grid-cols-2 min-[480px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
                   {visibleSubfolders.map((folder) => (
                     <button
                       key={folder.id}
@@ -1264,7 +1257,7 @@ export default function MediaProjectDetailPageV2() {
                       onClick={() => setActiveFolderId(folder.id)}
                       className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-md border border-border-subtle bg-bg-sunken/40 hover:bg-bg-raised hover:border-border-default transition-colors aspect-square text-center group"
                     >
-                      <FolderOpen className="h-7 w-7 text-text-tertiary group-hover:text-accent transition-colors shrink-0" />
+                      <FolderOpen className="h-7 w-7 text-text-tertiary group-hover:text-text-primary transition-colors shrink-0" />
                       <span className="text-[11px] text-text-secondary group-hover:text-text-primary transition-colors truncate w-full px-1">
                         {folder.name}
                       </span>
@@ -1284,7 +1277,7 @@ export default function MediaProjectDetailPageV2() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs"
+                className="h-9 text-xs sm:h-7"
                 onClick={() => {
                   if (selectedIds.size === filteredAssets.length) {
                     clearSelection();
@@ -1304,7 +1297,7 @@ export default function MediaProjectDetailPageV2() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs"
+                className="h-9 text-xs sm:h-7"
                 disabled={bulkDownloadPending}
                 onClick={() =>
                   startBulkDownload(filteredAssets.map((a) => a.id), bulkDownloadZipName)
@@ -1336,7 +1329,7 @@ export default function MediaProjectDetailPageV2() {
           )}
 
           {assetsLoading ? (
-            <div className="columns-3 sm:columns-4 lg:columns-5 xl:columns-6 gap-3">
+            <div className="columns-2 min-[480px]:columns-3 sm:columns-4 lg:columns-5 xl:columns-6 gap-3">
               {Array.from({ length: 10 }).map((_, i) => (
                 <Skeleton
                   key={i}
@@ -1349,7 +1342,7 @@ export default function MediaProjectDetailPageV2() {
             <UploadZone onPick={() => fileInputRef.current?.click()} />
           ) : (
             <div
-              className="columns-3 sm:columns-4 lg:columns-5 xl:columns-6 gap-3"
+              className="columns-2 min-[480px]:columns-3 sm:columns-4 lg:columns-5 xl:columns-6 gap-3"
               style={{ overflowAnchor: 'none' }}
             >
               {filteredAssets.map((asset, index) => (
@@ -1395,7 +1388,7 @@ export default function MediaProjectDetailPageV2() {
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-9 text-xs sm:h-7"
               onClick={() => setNewCollectionDialogOpen(true)}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -1670,7 +1663,7 @@ export default function MediaProjectDetailPageV2() {
           side="right"
           className="w-full sm:max-w-md bg-bg-base border-border-default text-text-primary p-0"
         >
-          <SheetHeader className="border-b border-border-subtle p-5">
+          <SheetHeader className="border-b border-border-subtle p-5 pr-14">
             <SheetTitle className="text-text-primary text-base font-display font-semibold">
               {t('mediaCollab.shareProject', 'Bagikan Proyek')}
             </SheetTitle>
@@ -1771,12 +1764,12 @@ export default function MediaProjectDetailPageV2() {
                       {t('mediaCollab.noExpiry', 'No expiry — the link stays active until disabled.')}
                     </p>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <MonomiDatePicker
                       value={shareExpiry}
                       onChange={(d) => setShareExpiry(d)}
                       placeholder={t('mediaCollab.setExpiry', 'Set expiry date')}
-                      className="bg-bg-base border-border-subtle text-text-primary"
+                      className="min-w-[10rem] flex-1 bg-bg-base border-border-subtle text-text-primary"
                     />
                     <Button
                       size="sm"
@@ -1900,7 +1893,7 @@ export default function MediaProjectDetailPageV2() {
                     <div className="h-2 w-2 rounded-full bg-text-tertiary/40" />
                   )}
                   {item.status === 'uploading' && (
-                    <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 text-text-primary animate-spin" />
                   )}
                   {item.status === 'done' && (
                     <CheckCircle2 className="h-3.5 w-3.5 text-success" />
@@ -1918,7 +1911,7 @@ export default function MediaProjectDetailPageV2() {
                       'text-[10px] shrink-0 tabular-nums',
                       item.status === 'error' ? 'text-danger' :
                       item.status === 'done' ? 'text-success' :
-                      item.status === 'uploading' ? 'text-accent' : 'text-text-tertiary',
+                      item.status === 'uploading' ? 'text-text-primary' : 'text-text-tertiary',
                     )}>
                       {item.status === 'queued' && t('mediaCollab.statusQueued', 'Waiting')}
                       {item.status === 'uploading' && `${item.progress}%`}
@@ -1929,7 +1922,7 @@ export default function MediaProjectDetailPageV2() {
                   {item.status === 'uploading' && (
                     <div className="mt-1 w-full bg-bg-base rounded-full h-1 overflow-hidden">
                       <div
-                        className="h-1 bg-accent rounded-full transition-all duration-200"
+                        className="h-1 bg-brand-cream rounded-full transition-all duration-200"
                         style={{ width: `${item.progress}%` }}
                       />
                     </div>
@@ -2123,7 +2116,7 @@ export default function MediaProjectDetailPageV2() {
                     className={cn(
                       'flex items-start gap-3 rounded-md border p-3 cursor-pointer transition-colors',
                       duplicateResolution === opt
-                        ? 'border-accent bg-accent/5'
+                        ? 'border-brand-cream bg-bg-glass-strong'
                         : 'border-border-subtle hover:border-border-default',
                     )}
                   >
@@ -2229,7 +2222,7 @@ function AssetTile({
         'group relative rounded-md overflow-hidden break-inside-avoid mb-3',
         'bg-bg-sunken border transition-colors',
         isSelected
-          ? 'border-accent ring-2 ring-accent/40'
+          ? 'border-brand-cream ring-2 ring-brand-cream/50'
           : 'border-border-subtle hover:border-border-default',
       )}
     >
@@ -2291,7 +2284,7 @@ function AssetTile({
             className={cn(
               'flex h-5 w-5 items-center justify-center rounded border-2 transition-colors',
               isSelected
-                ? 'bg-accent border-accent text-white'
+                ? 'bg-brand-cream border-brand-cream text-bg-base'
                 : 'bg-bg-base/80 border-border-default backdrop-blur-sm text-transparent',
             )}
           >
@@ -2488,7 +2481,7 @@ function CollaboratorsSection({
             >
               <Avatar className="h-8 w-8 shrink-0">
                 <AvatarFallback className="bg-accent-navy-wash text-text-primary text-[10px] font-medium">
-                  {initialsOf(c.user?.name)}
+                  {getInitials(c.user?.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
@@ -2617,7 +2610,7 @@ function CommentList({ comments, onResolve, resolvePending }: CommentListProps) 
             <div className="flex items-center gap-2 min-w-0">
               <Avatar className="h-5 w-5 shrink-0">
                 <AvatarFallback className="bg-accent-navy-wash text-text-primary text-[9px] font-medium">
-                  {initialsOf(c.author?.name)}
+                  {getInitials(c.author?.name)}
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs font-medium text-text-primary truncate">
@@ -2717,7 +2710,7 @@ function LightboxCommentList({ comments, onResolve, resolvePending }: CommentLis
             <div className="flex items-center gap-2 min-w-0">
               <Avatar className="h-5 w-5 shrink-0">
                 <AvatarFallback className="bg-white/10 text-white/70 text-[9px] font-medium">
-                  {initialsOf(c.author?.name)}
+                  {getInitials(c.author?.name)}
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs font-medium text-white/80 truncate">

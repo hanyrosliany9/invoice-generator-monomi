@@ -13,6 +13,16 @@ import { validateUrls } from "./config/url.config";
 import { registerLargeJsonBodyRoutes } from "./config/body-parser.config";
 
 const logger = new Logger("Bootstrap");
+
+/** "https://host/path" -> "https://host" (CORS compares bare origins). */
+function toOrigin(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return undefined;
+  }
+}
 const API_GLOBAL_PREFIX = "api/v1";
 
 async function bootstrap() {
@@ -110,9 +120,13 @@ async function bootstrap() {
     });
 
     // The rest of the API keeps the strict origin-allowlist CORS.
+    // PORTAL_URL (client portal, e.g. https://portal.monomiagency.com) is
+    // allowed with credentials so the portal_session cookie works.
+    const portalOrigin = toOrigin(process.env.PORTAL_URL);
     const allowedOrigins = isProduction
-      ? [process.env.FRONTEND_URL, process.env.PUBLIC_URL].filter(Boolean)
+      ? [process.env.FRONTEND_URL, process.env.PUBLIC_URL, portalOrigin].filter(Boolean)
       : [
+          ...(portalOrigin ? [portalOrigin] : []),
           process.env.FRONTEND_URL || "http://localhost:3001",
           process.env.PUBLIC_URL || "http://localhost:3000",
           "http://localhost:3001",

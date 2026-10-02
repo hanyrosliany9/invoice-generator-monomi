@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsNotEmpty,
   IsInt,
+  IsBoolean,
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
@@ -88,7 +89,24 @@ export class CreateContentDto {
   })
   @IsDateString()
   @IsOptional()
-  scheduledAt?: string;
+  scheduledAt?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      "When the post actually went live (PUBLISHED only). Defaults to the scheduled time when that is in the past, else now.",
+    example: "2025-01-15T10:00:00Z",
+  })
+  @IsDateString()
+  @IsOptional()
+  publishedAt?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      "Allow a SCHEDULED item to be (re)set to a past time. Used by undo of a drag-reschedule on an overdue item.",
+  })
+  @IsBoolean()
+  @IsOptional()
+  allowPastSchedule?: boolean;
 
   @ApiProperty({
     description: "Content status",

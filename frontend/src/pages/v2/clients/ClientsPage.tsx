@@ -44,16 +44,8 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { clientService, type Client } from '@/services/clients';
+import { getInitials } from '@/utils/initials';
 
-// Derive a 1-2 character avatar token from name or company, preferring
-// the human-name when present so individuals don't all collapse to "PT".
-const getInitials = (client: Client): string => {
-  const source = (client.name || client.company || '?').trim();
-  const parts = source.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-};
 
 const isActive = (status?: string) => (status ?? 'active') === 'active';
 
@@ -72,8 +64,8 @@ export default function ClientsPageV2() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['clients'],
-    queryFn: clientService.getClients,
+    queryKey: ['clients', 'with-internal'],
+    queryFn: clientService.getClientsWithInternal,
     placeholderData: (prev) => prev,
   });
 
@@ -96,14 +88,16 @@ export default function ClientsPageV2() {
   const stats = useMemo(() => {
     const now = new Date();
     const monthAgo = new Date(now.getFullYear(), now.getMonth(), 1);
-    const activeCount = clients.filter((c) => isActive(c.status)).length;
-    const newThisMonth = clients.filter((c) => {
+    // The internal client (Monomi) is not a customer; keep it out of the stats.
+    const real = clients.filter((c) => !c.isInternal);
+    const activeCount = real.filter((c) => isActive(c.status)).length;
+    const newThisMonth = real.filter((c) => {
       if (!c.createdAt) return false;
       return new Date(c.createdAt) >= monthAgo;
     }).length;
-    const totalRevenue = clients.reduce((sum, c) => sum + (Number(c.totalPaid) || 0), 0);
-    const totalOutstanding = clients.reduce((sum, c) => sum + (Number(c.totalPending) || 0), 0);
-    return { activeCount, newThisMonth, totalRevenue, totalOutstanding };
+    const totalRevenue = real.reduce((sum, c) => sum + (Number(c.totalPaid) || 0), 0);
+    const totalOutstanding = real.reduce((sum, c) => sum + (Number(c.totalPending) || 0), 0);
+    return { activeCount, realCount: real.length, newThisMonth, totalRevenue, totalOutstanding };
   }, [clients]);
 
   const hasActiveFilters = searchText.trim().length > 0 || statusFilter !== 'all';
@@ -122,15 +116,23 @@ export default function ClientsPageV2() {
         cell: ({ row }: { row: { original: Client } }) => {
           const c = row.original;
           return (
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex min-w-0 max-w-[260px] items-center gap-3 lg:max-w-[340px]">
               <Avatar className="h-9 w-9 shrink-0">
                 <AvatarFallback className="bg-accent-navy-wash text-text-primary text-xs font-medium tracking-wide">
-                  {getInitials(c)}
+                  {getInitials(c.name || c.company)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <div className="text-sm font-medium text-text-primary truncate">
-                  {c.name || '—'}
+                <div className="flex items-center gap-2 text-sm font-medium text-text-primary truncate">
+                  <span className="truncate">{c.name || '—'}</span>
+                  {c.isInternal && (
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 border-transparent bg-accent-navy-wash px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider text-text-secondary"
+                    >
+                      {t('clients.internalBadge', 'Internal')}
+                    </Badge>
+                  )}
                 </div>
                 {c.company && (
                   <div className="text-xs text-text-tertiary truncate">{c.company}</div>
@@ -150,7 +152,7 @@ export default function ClientsPageV2() {
             return <span className="text-text-tertiary">—</span>;
           }
           return (
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 max-w-[220px] space-y-1">
               {c.email && (
                 <div className="flex items-center gap-1.5 text-xs text-text-secondary truncate">
                   <Mail className="h-3 w-3 text-text-tertiary shrink-0" />
@@ -301,7 +303,7 @@ export default function ClientsPageV2() {
                   label={t('clients.kpi.active', 'Klien Aktif')}
                   value={stats.activeCount}
                   sublabel={t('clients.kpi.activeSub', 'dari {{total}} total', {
-                    total: clients.length,
+                    total: stats.realCount,
                   })}
                 />
                 <StatCard

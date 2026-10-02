@@ -275,4 +275,52 @@ describe("BulkDownloadService", () => {
       ).toBeGreaterThan(0);
     });
   });
+
+  describe("client-portal jobs (createShareJob / getShareJobStatus)", () => {
+    const PORTAL = { kind: "portal" as const, portalScope: "client-a:budi@alpha.co" };
+
+    it("binds the job to the portal scope, not to a share token", async () => {
+      await service.createShareJob(
+        { id: "project-a", createdBy: "owner-a" },
+        PORTAL,
+        ["asset-a1", "asset-b1"],
+      );
+      const [jobId, data] = mockQueue.add.mock.calls[0];
+      expect(jobId).toMatch(/^portal-download-/);
+      expect(data.portalScope).toBe(PORTAL.portalScope);
+      expect(data.shareToken).toBeUndefined();
+      // IDOR guard still applies: foreign asset dropped
+      expect(data.assetIds).toEqual(["asset-a1"]);
+    });
+
+    it("lets the same portal scope poll its job", async () => {
+      mockQueue.getJob.mockResolvedValueOnce(
+        fakeJob({ assetIds: ["asset-a1"], projectId: "project-a", portalScope: PORTAL.portalScope }),
+      );
+      await expect(service.getShareJobStatus("j", "project-a", PORTAL)).resolves.toMatchObject({
+        status: BulkDownloadJobStatus.PENDING,
+      });
+    });
+
+    it.each([
+      ["another portal scope", { assetIds: ["a"], projectId: "project-a", portalScope: "client-b:eve@beta.co" }],
+      ["a public share-link job", { assetIds: ["a"], projectId: "project-a", shareToken: SHARE_TOKEN }],
+      ["an authenticated job", { assetIds: ["a"], projectId: "project-a", userId: "u" }],
+      ["the same scope but another project", { assetIds: ["a"], projectId: "project-b", portalScope: PORTAL.portalScope }],
+    ])("forbids polling %s", async (_label, data) => {
+      mockQueue.getJob.mockResolvedValueOnce(fakeJob(data));
+      await expect(service.getShareJobStatus("j", "project-a", PORTAL)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+    });
+
+    it("a public share link cannot poll a portal job", async () => {
+      mockQueue.getJob.mockResolvedValueOnce(
+        fakeJob({ assetIds: ["a"], projectId: "project-a", portalScope: PORTAL.portalScope }),
+      );
+      await expect(service.getPublicJobStatus("j", SHARE_TOKEN)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+    });
+  });
 });

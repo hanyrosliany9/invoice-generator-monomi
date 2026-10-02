@@ -65,7 +65,7 @@ interface AgendaItem {
 const kindMeta: Record<ItemKind, { label: string; labelKey: string; chipClass: string; dotClass: string; icon: React.ReactNode }> = {
   invoice:   { label: 'Invoice',    labelKey: 'calendarPage.kind.invoice',    chipClass: 'bg-warning/10 text-warning',  dotClass: 'bg-warning',  icon: <Receipt        className="h-3 w-3" /> },
   quotation: { label: 'Quotation',  labelKey: 'calendarPage.kind.quotation',  chipClass: 'bg-info/10 text-info',        dotClass: 'bg-info',     icon: <FileSignature  className="h-3 w-3" /> },
-  project:   { label: 'Project',    labelKey: 'calendarPage.kind.project',    chipClass: 'bg-accent/10 text-accent',    dotClass: 'bg-accent',   icon: <Flag           className="h-3 w-3" /> },
+  project:   { label: 'Project',    labelKey: 'calendarPage.kind.project',    chipClass: 'bg-bg-glass-strong text-text-primary',    dotClass: 'bg-brand-cream',   icon: <Flag           className="h-3 w-3" /> },
   event:     { label: 'Event',      labelKey: 'calendarPage.kind.event',      chipClass: 'bg-bg-sunken text-text-secondary', dotClass: 'bg-text-tertiary', icon: <AlarmClock className="h-3 w-3" /> },
 };
 
@@ -424,9 +424,9 @@ export default function CalendarPageV2() {
                     onClick={() => setSelectedDay(day)}
                     className={cn(
                       'group relative min-h-[112px] text-left px-2 pt-2 pb-1 border-r border-b border-border-subtle',
-                      'transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60 focus-visible:z-10',
+                      'transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:z-10',
                       inMonth ? 'bg-bg-raised' : 'bg-bg-sunken/40',
-                      isSelected && 'ring-1 ring-accent/60 z-10',
+                      isSelected && 'ring-1 ring-brand-cream/50 z-10',
                     )}
                   >
                     <div className="flex items-center justify-between mb-1.5">
@@ -434,7 +434,7 @@ export default function CalendarPageV2() {
                         className={cn(
                           'inline-flex items-center justify-center text-xs tabular-nums',
                           today
-                            ? 'h-5 min-w-5 px-1 rounded-full bg-accent text-accent-foreground font-medium'
+                            ? 'h-5 min-w-5 px-1 rounded-full bg-brand-cream text-bg-base font-medium'
                             : inMonth
                             ? 'text-text-secondary'
                             : 'text-text-tertiary',

@@ -1,4 +1,8 @@
 import {
+  EXCLUDE_INTERNAL_CLIENTS,
+  assertNotInternalClient,
+} from "../../clients/client-scope";
+import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -2282,19 +2286,33 @@ export class JournalService {
 
     // Resolve the customer (Kontak): existing id or inline-typed name (find or
     // create, case-insensitive, so repeat sales don't multiply clients).
-    let client: { id: string; name: string } | null = null;
+    let client: { id: string; name: string; isInternal?: boolean } | null =
+      null;
     if (dto.clientId) {
       client = await this.prisma.client.findUnique({
         where: { id: dto.clientId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, isInternal: true },
       });
       if (!client) {
         throw new NotFoundException(`Client ${dto.clientId} not found`);
       }
+      assertNotInternalClient(client, "penjualan");
     } else if (dto.clientName?.trim()) {
       const name = dto.clientName.trim();
+      // Never silently create a duplicate of the internal client by name.
+      const internal = await this.prisma.client.findFirst({
+        where: {
+          isInternal: true,
+          name: { equals: name, mode: "insensitive" },
+        },
+        select: { id: true, isInternal: true },
+      });
+      assertNotInternalClient(internal, "penjualan");
       client = await this.prisma.client.findFirst({
-        where: { name: { equals: name, mode: "insensitive" } },
+        where: {
+          ...EXCLUDE_INTERNAL_CLIENTS,
+          name: { equals: name, mode: "insensitive" },
+        },
         select: { id: true, name: true },
       });
       if (!client) {

@@ -108,9 +108,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const isProduction = process.env.NODE_ENV === "production";
 
     // Define allowed origins based on environment
+    let portalOrigin: string | undefined;
+    try {
+      portalOrigin = process.env.PORTAL_URL
+        ? new URL(process.env.PORTAL_URL).origin
+        : undefined;
+    } catch {
+      portalOrigin = undefined;
+    }
     const allowedOrigins = isProduction
-      ? [process.env.FRONTEND_URL].filter(Boolean)
+      ? [process.env.FRONTEND_URL, portalOrigin].filter(Boolean)
       : [
+          ...(portalOrigin ? [portalOrigin] : []),
           process.env.FRONTEND_URL || "http://localhost:3001",
           "http://localhost:3001", // Dev frontend port
           "http://localhost:3000",

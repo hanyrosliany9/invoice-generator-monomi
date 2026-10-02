@@ -8,6 +8,7 @@ import { MediaService } from "../../media/media.service";
 import JSZip from "jszip";
 import { XMLParser } from "fast-xml-parser";
 import * as path from "path";
+import { assertClientMatchesProject } from "../../../common/utils/client-project-link.util";
 
 /**
  * DeckImportService — imports a .pptx (PowerPoint / Google Slides export)
@@ -85,6 +86,14 @@ export class DeckImportService {
         "Only .pptx files are supported. In Google Slides use File → Download → Microsoft PowerPoint (.pptx).",
       );
     }
+
+    // Same client/project consistency rule as DecksService.create (checked
+    // before the archive is parsed).
+    await assertClientMatchesProject(
+      this.prisma,
+      options.clientId || undefined,
+      options.projectId || undefined,
+    );
 
     let zip: JSZip;
     try {

@@ -24,6 +24,8 @@ interface LightboxOverlayProps {
   onShowDetails?: () => void;
   /** Videos are opened in a new tab instead of being buffered into a blob. */
   isVideo?: boolean;
+  /** Hide the download button (e.g. portal users without download permission). */
+  hideDownload?: boolean;
 }
 
 const ZOOM_STEP = 0.25;
@@ -44,6 +46,7 @@ export function LightboxOverlay({
   infoPanel,
   onShowDetails,
   isVideo = false,
+  hideDownload = false,
 }: LightboxOverlayProps) {
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
@@ -120,7 +123,7 @@ export function LightboxOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/92 flex flex-col"
+      className="fixed inset-0 z-[100] bg-black/97 backdrop-blur-md flex flex-col"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Toolbar */}
@@ -205,6 +208,7 @@ export function LightboxOverlay({
           </Button>
 
           {/* Download */}
+          {!hideDownload && (
           <Button
             variant="ghost"
             size="icon-sm"
@@ -215,6 +219,7 @@ export function LightboxOverlay({
           >
             <Download className="h-4 w-4" />
           </Button>
+          )}
 
           {/* Close */}
           <Button
@@ -249,7 +254,7 @@ export function LightboxOverlay({
         </div>
 
         {/* Image + right panel side-by-side (desktop) / stacked (mobile) */}
-        <div className="flex-1 flex min-h-0 overflow-hidden relative">
+        <div className="flex-1 flex max-md:flex-col min-h-0 overflow-hidden relative">
           {/* Scrollable image area */}
           <div className="flex-1 overflow-auto flex items-center justify-center p-4 select-none min-w-0">
             <img
@@ -271,7 +276,7 @@ export function LightboxOverlay({
           {showInfo && infoPanel && (
             <>
               {/* Mobile: slide-up bottom sheet */}
-              <div className="md:hidden absolute inset-x-0 bottom-0 z-20 flex max-h-[58vh] flex-col border-t border-white/10 bg-[#0d0d0d]/95 backdrop-blur-sm">
+              <div className="md:hidden relative shrink-0 z-20 flex max-h-[45vh] flex-col border-t border-white/10 bg-[#0d0d0d]/95 backdrop-blur-sm">
                 {/* drag handle */}
                 <div className="flex shrink-0 items-center justify-between px-4 py-2.5 border-b border-white/10">
                   <div className="mx-auto h-1 w-8 rounded-full bg-white/20" />
@@ -283,7 +288,7 @@ export function LightboxOverlay({
                   <button
                     type="button"
                     onClick={() => setShowInfo(false)}
-                    className="text-white/40 hover:text-white/80 transition-colors p-1"
+                    className="text-white/40 hover:text-white/80 transition-colors p-2 -m-1"
                     title={t('mediaReview.lightbox.hideDetails', 'Hide details')}
                   >
                     <X className="h-4 w-4" />

@@ -43,6 +43,7 @@ import { mediaCollabService } from '@/services/media-collab';
 import type { Expense } from '@/types/expense';
 import { QuickExpenseSheet } from '@/pages/v2/expenses/QuickExpenseSheet';
 import { RealizeExpenseDialog, type PlannedLine } from './RealizeExpenseDialog';
+import { getInitials } from '@/utils/initials';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — identical shape to the list page so navigation rhythm    */
@@ -115,14 +116,6 @@ const toNumber = (v: unknown): number => {
   const n = typeof v === 'string' ? parseFloat(v) : Number(v);
   return Number.isFinite(n) ? n : 0;
 };
-
-const initialsOf = (name?: string) =>
-  (name || '?')
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
 
 /* ------------------------------------------------------------------ */
 /*  Module-scope components (hoisted to prevent remount on render)    */
@@ -724,7 +717,7 @@ export default function ProjectDetailPageV2() {
               <div className="flex items-start gap-4">
                 <Avatar className="h-12 w-12 mt-0.5">
                   <AvatarFallback className="bg-accent-navy-wash text-text-primary text-sm font-medium">
-                    {initialsOf(project.client.name)}
+                    {getInitials(project.client.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
@@ -734,7 +727,7 @@ export default function ProjectDetailPageV2() {
                   <button
                     type="button"
                     onClick={() => navigate(`/clients/${project.client!.id}`)}
-                    className="block text-base font-medium text-text-primary hover:text-text-secondary transition-colors truncate text-left"
+                    className="block max-w-full text-base font-medium text-text-primary hover:text-text-secondary transition-colors truncate text-left"
                   >
                     {project.client.name}
                   </button>
@@ -1510,7 +1503,7 @@ export default function ProjectDetailPageV2() {
                   >
                     <div className="min-w-0 flex items-center gap-3">
                       <Presentation className="h-4 w-4 shrink-0 text-text-tertiary" />
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-sm text-text-primary truncate">{deck.title}</div>
                         {deck.description && <div className="text-xs text-text-tertiary truncate mt-0.5">{deck.description}</div>}
                       </div>
@@ -1565,7 +1558,7 @@ export default function ProjectDetailPageV2() {
                   >
                     <div className="min-w-0 flex items-center gap-3">
                       <FileText className="h-4 w-4 shrink-0 text-text-tertiary" />
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-sm text-text-primary truncate">{cs.productionName || t('projectDetail.callSheetFallback', 'Call Sheet #{{n}}', { n: cs.callSheetNumber })}</div>
                         <div className="text-xs text-text-tertiary truncate mt-0.5">{new Date(cs.shootDate).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</div>
                       </div>
@@ -1620,7 +1613,7 @@ export default function ProjectDetailPageV2() {
                   >
                     <div className="min-w-0 flex items-center gap-3">
                       <Images className="h-4 w-4 shrink-0 text-text-tertiary" />
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-sm text-text-primary truncate">{mp.name}</div>
                         {mp.description && <div className="text-xs text-text-tertiary truncate mt-0.5">{mp.description}</div>}
                       </div>

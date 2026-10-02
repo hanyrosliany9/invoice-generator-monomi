@@ -333,8 +333,8 @@
     "error": {
       "title": "Tidak bisa memuat dashboard"
     },
-    "newQuotation": "+ Penawaran Baru",
-    "newInvoice": "+ Invoice Baru",
+    "newQuotation": "Penawaran Baru",
+    "newInvoice": "Invoice Baru",
     "invoiceStatus": "Status Invoice",
     "invoiceStatusDesc": "Distribusi berdasarkan jumlah",
     "noInvoiceData": "Belum ada data invoice"
@@ -877,6 +877,7 @@
   },
   "clients": {
     "title": "Klien",
+    "internalBadge": "Internal",
     "create": {
       "error": "Gagal menambahkan klien. Coba lagi.",
       "subtitle": "Tambahkan klien baru untuk mulai mencatat proyek, penawaran, dan invoice.",
@@ -2291,7 +2292,61 @@
     "highlightEditing": "Mengedit highlight",
     "highlightNewInstead": "+ Highlight baru",
     "highlightUpdate": "Perbarui Highlight",
-    "highlightUpdated": "Highlight diperbarui."
+    "highlightUpdated": "Highlight diperbarui.",
+    "planner": {
+      "addOnDay": "Tambah",
+      "bulk": {
+        "apply": "Terapkan",
+        "clear": "Batal pilih",
+        "days": "hari",
+        "deleteDesc": "Tindakan ini tidak dapat dibatalkan. File media yang masih dipakai konten lain tidak ikut terhapus.",
+        "deleteTitle": "Hapus {{n}} konten?",
+        "done": "{{n}} konten diperbarui.",
+        "failed": "Aksi massal gagal.",
+        "partial": "{{ok}} berhasil, {{bad}} gagal: {{reason}}",
+        "selectAll": "Pilih semua ({{n}})",
+        "selectAllRows": "Pilih semua baris",
+        "selectRow": "Pilih konten",
+        "selected": "{{n}} dipilih",
+        "setStatus": "Ubah status",
+        "shift": "Geser jadwal",
+        "shiftDesc": "Jam tayang (WIB) tetap sama. Angka negatif memajukan jadwal. Konten tanpa jadwal dilewati.",
+        "shiftTitle": "Geser jadwal {{n}} konten"
+      },
+      "clearDate": "Hapus jadwal",
+      "dragHint": "seret untuk memindah jadwal",
+      "duplicate": "Duplikat",
+      "duplicateFailed": "Gagal menduplikasi konten.",
+      "duplicated": "Draf duplikat dibuat. Atur jadwalnya.",
+      "formatPlatform": "Format & Platform",
+      "kind": {
+        "carousel": "Carousel",
+        "post": "Post",
+        "reel": "Reel",
+        "story": "Story"
+      },
+      "moveUndone": "Jadwal dikembalikan.",
+      "moved": "Dipindah ke {{date}}",
+      "noPostsDay": "Belum ada konten di tanggal ini.",
+      "overdue": "Terlambat",
+      "overdueHint": "Jadwal sudah lewat. Tandai terbit atau jadwalkan ulang.",
+      "pastSchedule": "Waktu {{when}} sudah lewat. Pilih waktu berikutnya atau simpan sebagai draf.",
+      "pickDay": "Pilih tanggal",
+      "publish": {
+        "confirm": "Tandai terbit",
+        "desc": "Kapan konten ini benar-benar tayang? Tanggal ini dipakai di kalender dan laporan.",
+        "future": "Waktu terbit tidak boleh di masa depan.",
+        "title": "Tandai sudah terbit"
+      },
+      "publishedAtDate": "Tanggal Terbit",
+      "publishedAtTime": "Jam Terbit",
+      "saveAsPublished": "Simpan sebagai Terbit",
+      "undo": "Urungkan",
+      "uploadPartial": "{{ok}} dari {{total}} file terunggah. {{reason}}",
+      "uploadTrimmed": "Hanya {{n}} file pertama yang dipakai (batas {{max}} media).",
+      "wibHint": "Jam diatur dalam WIB (Asia/Jakarta), tidak mengikuti zona waktu browser.",
+      "wibNote": "Jam ditampilkan dalam WIB (Asia/Jakarta). Seret konten ke tanggal lain untuk menjadwalkan ulang."
+    }
   },
   "expenses": {
     "action": {
@@ -5375,7 +5430,7 @@
     "outputHint": "Hasil akhir, contoh: video, kampanye, website",
     "scope": "Lingkup Pekerjaan",
     "scopeHint": "Opsional. Detail tugas, hasil, revisi, timeline.",
-    "scopePh": "Isi lingkup pekerjaan",
+    "scopePh": "Contoh:\n1. Pengembangan konsep kreatif\n2. Produksi video 30 detik\n3. Editing dan color grading\n4. Maksimal 3 kali revisi\n\nTimeline: 2 minggu\nDeliverables: Video final MP4 1080p",
     "classification": {
       "title": "Klien & Jenis",
       "desc": "Klien menjadi pemilik proyek; jenis menentukan awalan penomoran."
@@ -5676,7 +5731,8 @@
     },
     "noSections": {
       "title": "Belum ada bagian",
-      "desc": "Tambahkan sumber data CSV dan visualisasi melalui editor laporan."
+      "desc": "Tambahkan sumber data CSV dan visualisasi melalui editor laporan.",
+      "desc2": "Tambahkan data (unggah file atau ketik angka) di editor laporan."
     },
     "openBuilder": "Buka Editor",
     "noData": "Tidak ada data",
@@ -5685,7 +5741,12 @@
     "noViz": "Belum ada visualisasi di bagian ini.",
     "invalidPdfUrl": "URL PDF tidak valid",
     "back": "Kembali",
-    "generatePdfPending": "Membuat…"
+    "generatePdfPending": "Membuat…",
+    "pdfDownloaded": "PDF diunduh.",
+    "editData": "Ubah data",
+    "subtitle2": "Ini adalah laporan seperti yang dilihat klien.",
+    "contents": "Isi",
+    "contentsValue": "{{sections}} bagian, {{charts}} grafik, {{rows}} baris"
   },
   "reportBuilder": {
     "createTitle": "Laporan Baru",
@@ -5707,7 +5768,9 @@
     "identity": {
       "title": "Identitas Laporan",
       "editSubtitle": "Identitas terkunci setelah laporan dibuat. Hubungi admin untuk perubahan terstruktur.",
-      "createSubtitle": "Judul, proyek, dan periode laporan. Akan dikunci setelah disimpan."
+      "createSubtitle": "Judul, proyek, dan periode laporan. Akan dikunci setelah disimpan.",
+      "editSubtitle2": "Judul, deskripsi, dan periode dapat diubah. Proyek tidak dapat diganti.",
+      "createSubtitle2": "Judul, proyek, dan periode laporan."
     },
     "field": {
       "title": "Judul Laporan",
@@ -5726,7 +5789,8 @@
     },
     "sections": {
       "title": "Bagian Data",
-      "subtitle": "{{count}} bagian — setiap bagian satu file CSV"
+      "subtitle": "{{count}} bagian — setiap bagian satu file CSV",
+      "subtitle2": "{{count}} bagian. Setiap bagian adalah satu tabel angka beserta grafiknya."
     },
     "addSection": "Tambah Bagian",
     "csvRequired": "Pilih file CSV terlebih dahulu.",
@@ -5739,7 +5803,8 @@
     "confirmRemoveSection": "Hapus bagian ini?",
     "noSections": {
       "title": "Belum ada bagian",
-      "desc": "Unggah file CSV di atas untuk membuat bagian pertama."
+      "desc": "Unggah file CSV di atas untuk membuat bagian pertama.",
+      "desc2": "Unggah file, ketik angka di tabel, atau isi beberapa angka utama di atas untuk membuat bagian pertama."
     },
     "viz": {
       "title": "Visualisasi",
@@ -5769,7 +5834,30 @@
       "body": "Editor drag-and-drop kanvas, palet widget (Teks/Metrik/Gambar/Callout), tata letak grid bebas, dan pratinjau langsung tersedia di editor klasik. Versi v2 fokus pada alur identitas + bagian CSV + visualisasi yang dikonfigurasi melalui formulir."
     },
     "vizFailed": "Gagal menyimpan visualisasi.",
-    "vizSaved": "Visualisasi tersimpan."
+    "vizSaved": "Visualisasi tersimpan.",
+    "identitySaved": "Detail laporan disimpan.",
+    "identitySaveFailed": "Gagal menyimpan detail laporan.",
+    "dataReplaced": "Data diunggah.",
+    "dataReplaceFailed": "Gagal mengunggah data.",
+    "liveEditConfirm": "Laporan ini tayang di portal klien. Perubahan Anda akan langsung terlihat oleh klien. Tetap simpan?",
+    "liveWarning": "Laporan ini tayang di portal klien. Setiap perubahan yang Anda simpan (detail, bagian, grafik) langsung terlihat oleh klien. Kembalikan ke draf dari halaman laporan untuk mengedit secara pribadi.",
+    "saveDetails": "Simpan detail",
+    "noDataYet": "Belum ada data. Grafik dipertahankan; unggah CSV bulan ini untuk mengisinya.",
+    "uploading": "Mengunggah…",
+    "uploadData": "Unggah data",
+    "replaceData": "Ganti data",
+    "moveUp": "Naikkan",
+    "moveDown": "Turunkan",
+    "removeSection": "Hapus bagian",
+    "editSubtitle2": "Isi data bulan ini, periksa grafiknya, lalu pratinjau sebagai klien dan kirim.",
+    "finish": "Selesai: lihat laporan",
+    "finishShort": "Selesai",
+    "jumpToSection": "Lompat ke bagian",
+    "sectionNumber": "Bagian {{n}}",
+    "clash": "Laporan untuk proyek ini pada {{period}} sudah ada: {{title}}.",
+    "openExisting": "Buka",
+    "copyHint": "Laporan terakhir proyek ini: {{title}} ({{period}}). Salin bagian dan grafiknya ke {{target}} lalu cukup isi angka baru.",
+    "copyAction": "Salin laporan terakhir"
   },
   "socialMediaReports": {
     "title": "Laporan Sosial Media",
@@ -5790,7 +5878,13 @@
       "engagement": "Tingkat Engagement",
       "engagementSub": "rata-rata lintas-platform",
       "reports": "Laporan Tersimpan",
-      "reportsSub": "siap dibagikan"
+      "reportsSub": "siap dibagikan",
+      "reportsAll": "dari semua klien",
+      "drafts": "Draf",
+      "draftsSub": "belum terlihat oleh klien",
+      "live": "Tayang di portal klien",
+      "liveSub": "{{count}} dikirim lewat email ke klien",
+      "thisMonth": "Laporan bulan ini"
     },
     "platform": {
       "title": "Breakdown per Platform",
@@ -5833,7 +5927,15 @@
       "actions": "Tindakan"
     },
     "reportActions": "Tindakan laporan",
-    "sampleDataNotice": "Data sampel — analitik nyata segera hadir. Angka di bawah ini adalah placeholder dan tidak mencerminkan performa akun sebenarnya."
+    "sampleDataNotice": "Data sampel — analitik nyata segera hadir. Angka di bawah ini adalah placeholder dan tidak mencerminkan performa akun sebenarnya.",
+    "subtitle2": "Laporan kinerja bulanan untuk klien Anda: buat, tinjau, dan kirim.",
+    "month": {
+      "title": "Laporan {{period}}",
+      "allDone": "Semua proyek yang pernah dilaporkan sudah punya laporan bulan ini.",
+      "missing": "{{count}} proyek masih memerlukan laporan bulan ini. Salin struktur bulan lalu untuk memulai.",
+      "lastReport": "laporan terakhir: {{period}}",
+      "copy": "Salin laporan terakhir"
+    }
   },
   "calendarPage": {
     "title": "Kalender",
@@ -7063,7 +7165,25 @@
       "searchPlaceholder": "Cari berkas...",
       "noFilesMatch": "Tidak ada berkas yang cocok",
       "tryOtherKeyword": "Coba kata kunci lain atau hapus pencarian.",
-      "emptyFolder": "Belum ada aset atau folder di tingkat ini."
+      "emptyFolder": "Belum ada aset atau folder di tingkat ini.",
+      "galleryTitle": "Galeri Media",
+      "assets": "berkas",
+      "folders": "folder",
+      "foldersLabel": "Folder",
+      "assetsLabel": "Berkas",
+      "emptyFolderTitle": "Folder ini kosong",
+      "clearSearch": "Hapus pencarian",
+      "publicGallery": "Galeri Publik",
+      "views": "{{count}} tampilan",
+      "projectSummary": "Ringkasan Proyek",
+      "rootFolder": "Folder Utama",
+      "openFolder": "Buka folder",
+      "poweredBy": "Didukung oleh Monomi · Kolaborasi Media",
+      "studioPublicGallery": "Monomi Studio · Galeri Publik",
+      "cannotOpen": "Tidak Dapat Dibuka",
+      "zoom": "Perbesar",
+      "zoomFullscreen": "Perbesar / layar penuh",
+      "close": "Tutup"
     },
     "deckAcceptInvite": {
       "genericError": "Terjadi kesalahan. Silakan coba lagi.",
@@ -7676,7 +7796,18 @@
     "aboutThisDeck": "Tentang Deck Ini",
     "navHint": "Gunakan ← → untuk navigasi antar slide",
     "slideCount": "{{count}} slide",
-    "viewCount": "{{count}} tampilan"
+    "viewCount": "{{count}} tampilan",
+    "exportPdf": "Ekspor PDF",
+    "exportFailed": "Ekspor gagal",
+    "exportReady": "PDF siap — periksa folder unduhan Anda",
+    "commentPosted": "Komentar terkirim",
+    "commentFailed": "Gagal mengirim komentar",
+    "commentsTitle": "Komentar",
+    "currentSlide": "slide ini",
+    "noComments": "Belum ada komentar. Jadilah yang pertama!",
+    "guest": "Tamu",
+    "namePlaceholder": "Nama Anda (opsional)",
+    "commentPlaceholder": "Tulis komentar…"
   },
   "deckInvite": {
     "eyebrow": "Undangan Deck",
@@ -7906,6 +8037,15 @@
     "delete": "Hapus",
     "follow": "Ikuti",
     "message": "Pesan",
+    "tabGridLabel": "Kisi",
+    "tabHighlights": "Highlights",
+    "tabReelsLabel": "Reels",
+    "tabReposts": "Repost",
+    "tabTagged": "Ditandai",
+    "manageHighlights": "Kelola highlight",
+    "noHighlights": "Belum ada highlight.",
+    "noReposts": "Belum ada repost.",
+    "noTagged": "Belum ada kiriman yang ditandai.",
     "reorderFailed": "Gagal menyimpan urutan kisi.",
     "formatUpdated": "Format konten diperbarui.",
     "formatFailed": "Gagal memperbarui format."
@@ -7916,5 +8056,355 @@
     "invalidDesc": "Tautan berbagi ini tidak ditemukan atau telah dinonaktifkan. Hubungi agensi Anda untuk tautan terbaru.",
     "subtitle": "Rencana konten media sosial — pratinjau seperti tampil di aplikasi.",
     "posts": "konten"
+  },
+  "portal": {
+    "common": {
+      "tooMany": "Terlalu banyak permintaan. Coba lagi sebentar lagi.",
+      "loadError": "Tidak dapat memuat data. Periksa koneksi Anda lalu coba lagi.",
+      "retry": "Coba lagi",
+      "logout": "Keluar",
+      "switchClient": "Ganti klien"
+    },
+    "picker": {
+      "title": "Pilih klien",
+      "subtitle": "Halo, {{name}}. Akun Anda memiliki akses ke beberapa klien.",
+      "noneTitle": "Belum ada klien",
+      "noneDesc": "Akun Anda belum dikaitkan dengan klien mana pun. Hubungi Monomi."
+    },
+    "tabs": {
+      "label": "Bagian portal",
+      "content": "Konten",
+      "reports": "Laporan",
+      "media": "Media",
+      "decks": "Deck"
+    },
+    "content": {
+      "subtitle": "Rencana konten media sosial — pratinjau seperti tampil di aplikasi.",
+      "emptyTitle": "Belum ada konten",
+      "emptyDesc": "Rencana konten Anda akan muncul di sini setelah tim Monomi menyusunnya."
+    },
+    "decks": {
+      "emptyTitle": "Belum ada deck",
+      "emptyDesc": "Presentasi yang dibagikan Monomi akan muncul di sini.",
+      "slideCount": "{{count}} slide",
+      "back": "Semua deck",
+      "notFoundTitle": "Deck tidak ditemukan",
+      "notFoundBody": "Deck ini tidak ditemukan atau Anda tidak memiliki akses."
+    },
+    "login": {
+      "emailInvalid": "Masukkan alamat email yang valid.",
+      "tooMany": "Terlalu banyak percobaan. Silakan coba lagi beberapa saat lagi.",
+      "sendFailed": "Kode tidak dapat dikirim saat ini. Coba lagi sebentar lagi.",
+      "codeInvalid": "Kode salah atau sudah kedaluwarsa. Periksa kembali atau minta kode baru.",
+      "verifyFailed": "Tidak dapat memverifikasi kode saat ini. Coba lagi.",
+      "eyebrow": "Portal Klien",
+      "title": "Masuk ke portal Anda",
+      "codeTitle": "Masukkan kode",
+      "expired": "Sesi Anda telah berakhir. Silakan masuk kembali.",
+      "emailHelp": "Masukkan email Anda. Kami akan mengirimkan kode 6 digit untuk masuk.",
+      "email": "Email",
+      "sendCode": "Kirim kode",
+      "codeHelp": "Jika {{email}} terdaftar, kami telah mengirimkan kode 6 digit. Kode berlaku beberapa menit.",
+      "code": "Kode 6 digit",
+      "verify": "Masuk",
+      "changeEmail": "Ganti email",
+      "resendIn": "Kirim ulang kode ({{seconds}} dtk)",
+      "resend": "Kirim ulang kode",
+      "footer": "Akses hanya untuk kontak klien yang terdaftar"
+    },
+    "media": {
+      "emptyTitle": "Belum ada galeri media",
+      "emptyDesc": "Foto dan video hasil produksi Anda akan muncul di sini.",
+      "assetCount": "{{count}} berkas",
+      "back": "Semua galeri",
+      "notFoundTitle": "Galeri tidak ditemukan",
+      "notFoundBody": "Galeri ini tidak ditemukan atau Anda tidak memiliki akses."
+    },
+    "reports": {
+      "back": "Semua laporan",
+      "subtitle": "Ringkasan kinerja media sosial Anda, bulan demi bulan.",
+      "latest": "Terbaru",
+      "view": "Lihat laporan",
+      "sectionsCount": "{{count}} bagian",
+      "teaserFallback": "Isi: {{titles}}",
+      "updated": "Diperbarui {{date}}",
+      "summary": "Ringkasan",
+      "summaryHint": "Angka-angka utama dari laporan ini.",
+      "toc": "Isi laporan",
+      "showData": "Lihat data",
+      "hideData": "Sembunyikan data",
+      "noData": "Belum ada data untuk ditampilkan.",
+      "pdfPreparing": "Menyiapkan PDF…",
+      "pdfHint": "PDF disiapkan saat diminta dan bisa memakan waktu hingga 30 detik.",
+      "others": "Lainnya",
+      "pieTotal": "Total",
+      "kpi": {
+        "total": "Total periode ini",
+        "average": "Rata-rata",
+        "highest": "Nilai tertinggi",
+        "lowest": "Nilai terendah",
+        "count": "Jumlah data",
+        "latest": "Per {{date}}",
+        "lastValueAt": "Nilai terakhir ({{date}})",
+        "lastValue": "Nilai terakhir"
+      },
+      "delta": {
+        "since": "dibanding {{date}}",
+        "points": "{{value}} poin"
+      },
+      "insight": {
+        "up": "{{label}} naik {{change}} dari {{from}} ({{fromValue}}) ke {{to}} ({{toValue}}).",
+        "down": "{{label}} turun {{change}} dari {{from}} ({{fromValue}}) ke {{to}} ({{toValue}}).",
+        "flat": "{{label}} relatif stabil di sekitar {{value}}.",
+        "peak": "Tertinggi: {{value}} pada {{at}}.",
+        "highest": "Tertinggi: {{name}} ({{value}}).",
+        "lowest": "Terendah: {{name}} ({{value}}).",
+        "pie": "{{name}} terbesar: {{percent}} dari total {{total}}."
+      },
+      "pdfFailed": "PDF tidak dapat diunduh. Coba lagi.",
+      "loadError": "Laporan tidak dapat dimuat atau Anda tidak memiliki akses.",
+      "downloadPdf": "Unduh PDF",
+      "noSectionsTitle": "Laporan belum memiliki isi",
+      "noSectionsDesc": "Bagian laporan akan tampil di sini setelah tim Monomi menyelesaikannya.",
+      "status": {
+        "completed": "Selesai",
+        "sent": "Terkirim",
+        "draft": "Draf"
+      },
+      "emptyTitle": "Belum ada laporan",
+      "emptyDesc": "Laporan media sosial bulanan Anda akan muncul di sini."
+    },
+    "admin": {
+      "added": "Kontak portal ditambahkan",
+      "addFailed": "Gagal menambah kontak",
+      "updateFailed": "Gagal memperbarui kontak",
+      "removed": "Kontak portal dihapus",
+      "removeFailed": "Gagal menghapus kontak",
+      "inviteSent": "Undangan dikirim ke {{email}}",
+      "inviteFailed": "Gagal mengirim undangan",
+      "confirmRemove": "Hapus akses portal untuk {{email}}? Kontak ini tidak akan bisa masuk lagi.",
+      "emailInvalid": "Masukkan alamat email yang valid",
+      "nameRequired": "Nama kontak wajib diisi",
+      "copyFailed": "Tidak dapat menyalin. Salin tautan secara manual.",
+      "title": "Portal Klien",
+      "subtitle": "Kontak di bawah dapat masuk ke portal dengan kode yang dikirim ke email mereka, dan hanya melihat konten, laporan, media, dan deck klien ini.",
+      "copyUrl": "Salin tautan portal",
+      "loadFailed": "Gagal memuat kontak portal",
+      "empty": "Belum ada kontak portal. Tambahkan di bawah.",
+      "inactive": "Nonaktif",
+      "lastLogin": "Login terakhir",
+      "neverLoggedIn": "Belum pernah masuk",
+      "active": "Aktif",
+      "invite": "Kirim undangan",
+      "namePlaceholder": "Nama kontak",
+      "emailPlaceholder": "Email kontak",
+      "add": "Tambah kontak"
+    }
+  },
+  "reportActions": {
+    "edit": {
+      "saved": "Detail laporan diperbarui.",
+      "failed": "Gagal memperbarui detail laporan.",
+      "title": "Ubah detail laporan",
+      "desc": "Ubah judul, deskripsi, atau periode laporan. Bagian dan data tidak berubah.",
+      "liveWarning": "Laporan ini tayang di portal klien. Perubahan langsung terlihat oleh klien. Kembalikan ke draf dulu jika ingin mengedit secara pribadi.",
+      "periodHint": "Periode baru: {{period}}. Setiap proyek hanya bisa punya satu laporan per bulan.",
+      "menu": "Ubah judul & periode"
+    },
+    "send": {
+      "partial": "Terkirim ke {{sent}} kontak; {{failed}} gagal.",
+      "done": "Laporan terkirim ke {{count}} kontak.",
+      "failed": "Email tidak dapat dikirim.",
+      "title": "Kirim ke klien",
+      "desc": "Mengirim email berisi tautan laporan di portal klien ke kontak portal aktif milik klien, lalu menandai laporan sebagai Terkirim.",
+      "partialHint": "Sebagian email gagal. Periksa konfigurasi SMTP lalu kirim lagi; kontak yang sudah menerima akan menerimanya lagi.",
+      "loadFailed": "Penerima tidak dapat dimuat.",
+      "internal": "Laporan ini milik klien internal yang tidak memiliki portal klien.",
+      "noContacts": "{{client}} belum memiliki kontak portal aktif, jadi tidak ada yang bisa dikirimi email.",
+      "noContactsHint": "Tambahkan kontak di bagian \"Portal Klien\" pada halaman klien, lalu kembali ke sini.",
+      "openClient": "Buka halaman klien",
+      "willNotify": "Kontak berikut akan dikirimi email ({{count}})",
+      "link": "Tautan di email",
+      "draftNote": "Laporan ini masih draf. Mengirimnya akan menayangkannya di portal klien.",
+      "lastSent": "Terakhir dikirim {{date}}. Mengirim lagi akan mengirim email ke kontak tersebut lagi.",
+      "noData": "Laporan ini belum memiliki data. Unggah data ke minimal satu bagian sebelum mengirim.",
+      "retry": "Coba lagi",
+      "submit": "Kirim email",
+      "again": "Kirim ke klien lagi",
+      "menu": "Kirim ke klien"
+    },
+    "duplicate": {
+      "done": "Disalin ke {{period}} sebagai draf. Unggah data baru ke tiap bagian.",
+      "failed": "Gagal menyalin laporan.",
+      "menu": "Salin ke bulan depan"
+    },
+    "revert": {
+      "done": "Laporan dikembalikan ke draf. Tidak lagi terlihat oleh klien.",
+      "confirm": "Kembalikan laporan ini ke draf? Laporan akan hilang dari portal klien sampai Anda menyelesaikan atau mengirimnya lagi.",
+      "menu": "Kembalikan ke draf"
+    },
+    "publish": "Tayangkan di portal (tanpa email)",
+    "banner": {
+      "draft": "Draf: belum terlihat oleh klien.",
+      "live": "Tayang di portal klien. Perubahan langsung terlihat oleh klien.",
+      "emailed": "Dikirim lewat email ke {{to}} pada {{date}}.",
+      "notEmailed": "Klien belum diberi tahu lewat email."
+    }
+  },
+  "reportData": {
+    "periodMismatch": "Data berisi tanggal di luar {{period}} — tetap gunakan?",
+    "periodMismatchDetail": "{{outside}} dari {{total}} tanggal di kolom \"{{column}}\" berada di luar bulan tersebut (data berkisar dari {{min}} sampai {{max}}).",
+    "periodConfirmFirst": "Konfirmasi dulu bahwa Anda ingin memakai data dari bulan lain.",
+    "periodUseAnyway": "Ya, tetap gunakan data ini",
+    "confirmDesc": "Periksa dulu sebelum data diterapkan. Belum ada yang diubah.",
+    "confirmApply": "Tetap gunakan data ini",
+    "confirmAddTitle": "Tambahkan data dari bulan lain?",
+    "confirmSaveTitle": "Simpan data dari bulan lain?",
+    "confirmReplaceTitle": "Ganti data \"{{title}}\"?",
+    "chartsReplaced": "Data baru memiliki kolom yang berbeda. {{count}} grafik berikut akan dihapus:",
+    "chartsRemoved": "{{count}} grafik berikut memakai kolom yang tidak ada di data baru dan akan dihapus:",
+    "chartsRegenerated": "{{count}} grafik baru akan dibuat otomatis dari kolom baru. Periksa kembali setelahnya.",
+    "chartsKept": "{{count}} grafik lain tetap berfungsi.",
+    "chartsReplacedNote": "Data baru memiliki kolom yang berbeda, jadi grafik dibuat ulang otomatis. Dihapus: {{names}}. Mohon periksa kembali.",
+    "chartsRemovedNote": "Dihapus karena kolomnya tidak ada di data baru: {{names}}.",
+    "notes": "Mohon periksa",
+    "readFailed": "File tidak dapat dibaca.",
+    "suggest": {
+      "content": "Konten teratas"
+    },
+    "noRows": "Isi minimal satu baris angka terlebih dahulu.",
+    "noMetrics": "Isi minimal satu angka.",
+    "mode": {
+      "file": "Unggah file",
+      "fileHint": "Ekspor CSV atau Excel",
+      "manual": "Ketik di tabel",
+      "manualHint": "Isi seperti spreadsheet",
+      "metrics": "Angka utama",
+      "metricsHint": "Cukup beberapa total"
+    },
+    "addSectionOpen": "Tambah bagian data",
+    "addSectionTitle": "Tambah bagian data",
+    "addSectionHint": "Satu bagian adalah satu tabel angka (misalnya Instagram harian) beserta grafiknya.",
+    "dropFile": "Pilih file atau seret ke sini",
+    "previewSummary": "{{rows}} baris, {{cols}} kolom dibaca dari {{name}}",
+    "startFrom": "Mulai dari",
+    "tpl": {
+      "instagram": "Instagram harian",
+      "tiktok": "TikTok harian",
+      "content": "Konten teratas"
+    },
+    "blank": "Tabel kosong",
+    "choosePreset": "Pilih tabel awal di atas. Tabel harian sudah berisi semua tanggal pada bulan laporan.",
+    "dataSaved": "Data tersimpan.",
+    "dataSaveFailed": "Data tidak dapat disimpan.",
+    "editData": "Ubah data",
+    "editDataHint": "Perbaiki angka yang salah atau tambah baris, lalu simpan. Grafik tetap dipertahankan.",
+    "fillDataHint": "Ketik angka bulan ini (atau tempel dari Excel), lalu simpan. Grafiknya sudah siap.",
+    "saveData": "Simpan data",
+    "renamed": "Bagian diperbarui.",
+    "renameFailed": "Bagian tidak dapat diperbarui.",
+    "source": {
+      "metrics": "Angka utama",
+      "manual": "Diketik manual",
+      "file": "File: {{name}}"
+    },
+    "rename": "Ubah nama bagian",
+    "rowsCols": "{{rows}} baris, {{cols}} kolom",
+    "typeData": "Ketik datanya",
+    "tooBig": "Terlalu besar untuk diubah di sini. Ganti dengan file.",
+    "editNumbers": "Ubah angka",
+    "viewEdit": "Lihat & ubah data",
+    "hideRows": "Sembunyikan baris",
+    "showRows": "Tampilkan baris",
+    "dismiss": "Tutup",
+    "kind": {
+      "date": "Tanggal",
+      "number": "Angka",
+      "percent": "Persen",
+      "currency": "Rupiah",
+      "text": "Teks"
+    },
+    "column": "Kolom",
+    "pasteTable": "Tempel dari Excel",
+    "addRow": "Tambah baris",
+    "addColumn": "Tambah kolom",
+    "gridCount": "{{rows}} baris, {{cols}} kolom",
+    "pasteHelp": "Salin tabel dari Excel atau Google Sheets (termasuk baris judul) lalu tempel di sini. Ini menggantikan tabel di bawah.",
+    "usePasted": "Pakai tabel yang ditempel",
+    "columnName": "Nama kolom",
+    "removeColumn": "Hapus kolom",
+    "removeRow": "Hapus baris {{n}}",
+    "gridHelp": "Ketik angka seperti yang tampil di aplikasi (1.234 atau 12,5 sama-sama bisa). Tanggal: 01/09/2026 atau 1 Sep 2026. Anda bisa menempel sel dari Excel ke sel mana pun.",
+    "metricsHelp": "Isi angka-angka utama bulan ini. Setiap angka menjadi kartu di laporan. Tidak perlu file.",
+    "metricName": "Nama metrik",
+    "metricValue": "Nilai",
+    "metricKind": "Jenis",
+    "removeMetric": "Hapus metrik",
+    "addMetric": "Tambah metrik",
+    "previewMore": "Menampilkan {{shown}} dari {{total}} baris pertama.",
+    "tplFailed": "Template tidak dapat diunduh. Coba lagi.",
+    "tplTitle": "Belum punya file? Unduh template dengan kolom yang benar",
+    "formatHelp": "Didukung: .csv (pemisah koma atau titik koma) dan Excel .xlsx/.xls, maksimal 5 MB. Satu baris per hari (atau per postingan). Tanggal seperti 2026-09-01, 01/09/2026 atau 1 Sep 2026; angka seperti 1234, 1.234, 12,5 atau 3,4%. Baris pertama berisi nama kolom.",
+    "tooLarge": "File terlalu besar (maksimal 5 MB)."
+  },
+  "reportCopy": {
+    "title": "Salin laporan ke bulan lain",
+    "desc": "Menyalin \"{{title}}\" ({{period}}) sebagai draf baru: bagian dan grafik sama, tanpa data.",
+    "loadFailed": "Tidak dapat memeriksa bulan mana yang sudah memiliki laporan.",
+    "skipped": "{{skipped}} sudah memiliki laporan untuk proyek ini, jadi bulan kosong berikutnya adalah {{target}}. Anda bisa memilih bulan lain di bawah.",
+    "exists": "sudah ada",
+    "clash": "{{period}} sudah memiliki laporan untuk proyek ini. Pilih bulan lain.",
+    "target": "Salinan akan dibuat untuk {{period}}.",
+    "submit": "Salin ke {{period}}"
+  },
+  "reportViz": {
+    "autoTrend": "Tren {{y}}",
+    "autoPer": "{{y}} per {{x}}",
+    "noPlottable": "Tidak ada data untuk grafik ini. Grafik disembunyikan dari klien sampai kolomnya berisi nilai.",
+    "agg": {
+      "sum": "Total (jumlah)",
+      "average": "Rata-rata",
+      "latest": "Nilai terakhir",
+      "max": "Tertinggi",
+      "min": "Terendah",
+      "count": "Jumlah baris"
+    },
+    "noDataPreview": "Pratinjau muncul setelah bagian ini berisi data.",
+    "pickColumn": "Pilih kolom untuk melihat angkanya.",
+    "remove": "Hapus grafik",
+    "missingColumns": "Grafik ini memakai kolom yang tidak ada di data: {{cols}}. Pilih kolom lain.",
+    "howToCombine": "Cara menggabungkan baris",
+    "yAxisMulti": "Nilai (ketuk untuk memilih satu atau lebih)",
+    "noNumeric": "Belum ada kolom angka pada data ini.",
+    "preview": "Pratinjau seperti yang dilihat klien",
+    "newCard": "Angka baru",
+    "unsaved": "Belum disimpan",
+    "addCard": "Tambah kartu angka",
+    "collapse": "Sembunyikan pengaturan grafik",
+    "expand": "Tampilkan pengaturan grafik ({{count}})",
+    "leaveConfirm": "Ada perubahan grafik yang belum disimpan. Tinggalkan halaman tanpa menyimpan?",
+    "type": {
+      "line": "Garis",
+      "bar": "Batang",
+      "area": "Area",
+      "pie": "Lingkaran",
+      "metric": "Kartu angka",
+      "table": "Tabel"
+    }
+  },
+  "reportStatus": {
+    "completed": "Selesai",
+    "sent": "Terkirim",
+    "draft": "Draf"
+  },
+  "reportPreview": {
+    "emptyHidden": "{{count}} bagian belum berisi data dan disembunyikan dari klien: {{names}}.",
+    "fillData": "Isi data",
+    "noContent": "Laporan ini belum berisi data, sehingga klien akan melihat laporan kosong.",
+    "banner": "Pratinjau: beginilah tampilan untuk klien",
+    "draftNote": "Status: {{status}}. Klien belum bisa membukanya.",
+    "liveNote": "Status: {{status}}. Sudah terlihat oleh klien.",
+    "pdf": "Pratinjau PDF",
+    "button": "Pratinjau sebagai klien"
   }
 }

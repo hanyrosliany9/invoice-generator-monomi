@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,10 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { decksApi } from '@/services/decks';
+import { publicDeckSource, type DeckShareSource } from '@/services/shareSources';
 import type { DeckSlide, DeckSlideComment } from '@/types/deck';
 import { cn } from '@/lib/utils';
 import { safeUrl } from '@/utils/safeUrl';
+import { PortalNotFound } from '@/portal/ui';
 
 /* ------------------------------------------------------------------ */
 /*  PublicDeckViewPage                                                  */
@@ -32,6 +33,38 @@ import { safeUrl } from '@/utils/safeUrl';
 export const PublicDeckViewPage = () => {
   const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
+  const source = useMemo(() => (token ? publicDeckSource(token) : null), [token]);
+
+  /* ----- missing token ----- */
+  if (!source) {
+    return (
+      <ShellFrame>
+        <ErrorPanel
+          title={t('guest.publicDeckView.incompleteLink', 'Tautan Tidak Lengkap')}
+          body={t('guest.publicDeckView.incompleteLinkBody', 'Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.')}
+        />
+      </ShellFrame>
+    );
+  }
+
+  return <DeckView source={source} />;
+};
+
+/* ------------------------------------------------------------------ */
+/*  DeckView — viewer driven by a DeckShareSource (public token or the  */
+/*  client portal). `embedded` drops the public-link chrome.            */
+/* ------------------------------------------------------------------ */
+
+export const DeckView = ({
+  source,
+  embedded = false,
+  backSlot,
+}: {
+  source: DeckShareSource;
+  embedded?: boolean;
+  backSlot?: ReactNode;
+}) => {
+  const { t } = useTranslation();
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [exportJobId, setExportJobId] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<'idle' | 'pending' | 'processing' | 'completed' | 'failed'>('idle');
@@ -43,21 +76,25 @@ export const PublicDeckViewPage = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['public-deck', token],
-    queryFn: () => decksApi.getPublic(token!),
-    enabled: !!token,
+    queryKey: ['public-deck', source.key],
+    queryFn: () => source.getDeck(),
     retry: false,
   });
 
   /* ----- PDF export (DOWNLOAD level) ----- */
   const exportMutation = useMutation({
-    mutationFn: () => decksApi.startPublicExportPdf(token!),
+    mutationFn: () => source.startExport(),
     onSuccess: (data) => {
       setExportJobId(data.jobId);
       setExportStatus('pending');
     },
     onError: (err: Error) => {
-      toast.error(err.message || t('deckPublic.exportFailed', 'Export failed'));
+      const status = (err as { response?: { status?: number } }).response?.status;
+      toast.error(
+        status === 429
+          ? t('portal.common.tooMany', 'Terlalu banyak permintaan. Coba lagi sebentar lagi.')
+          : err.message || t('deckPublic.exportFailed', 'Export failed'),
+      );
     },
   });
 
@@ -67,14 +104,14 @@ export const PublicDeckViewPage = () => {
 
     const interval = setInterval(async () => {
       try {
-        const status = await decksApi.getPublicExportPdfStatus(token!, exportJobId);
+        const status = await source.getExportStatus(exportJobId);
         setExportStatus(status.status as typeof exportStatus);
         if (status.status === 'completed') {
           clearInterval(interval);
           toast.success(t('deckPublic.exportReady', 'PDF is ready — check your downloads'));
           // Open authenticated download URL — the job lives on the server briefly
           // Redirect to the backend download endpoint (public download via jobId)
-          window.open(`/api/decks/${deck?.id}/export/pdf/download/${exportJobId}`, '_blank');
+          if (deck) window.open(source.exportDownloadUrl(deck, exportJobId), '_blank');
         } else if (status.status === 'failed') {
           clearInterval(interval);
           toast.error(t('deckPublic.exportFailed', 'Export failed'));
@@ -87,7 +124,7 @@ export const PublicDeckViewPage = () => {
 
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exportJobId, exportStatus, token]);
+  }, [exportJobId, exportStatus, source]);
 
   /* ----- keyboard navigation ----- */
   useEffect(() => {
@@ -106,24 +143,23 @@ export const PublicDeckViewPage = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [deck?.slides]);
 
-  /* ----- missing or invalid token ----- */
-  if (!token) {
+  if (error && embedded) {
     return (
-      <ShellFrame>
-        <ErrorPanel
-          title={t('guest.publicDeckView.incompleteLink', 'Tautan Tidak Lengkap')}
-          body={t('guest.publicDeckView.incompleteLinkBody', 'Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.')}
-        />
-      </ShellFrame>
+      <PortalNotFound
+        title={t('portal.decks.notFoundTitle', 'Deck tidak ditemukan')}
+        body={t('portal.decks.notFoundBody', 'Deck ini tidak ditemukan atau Anda tidak memiliki akses.')}
+        back={backSlot}
+      />
     );
   }
-
   if (error) {
     return (
       <ShellFrame>
         <ErrorPanel
           title={t('guest.publicDeckView.deckNotFound', 'Deck Tidak Ditemukan')}
-          body={t('guest.publicDeckView.deckNotFoundBody', 'Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya.')}
+          body={embedded
+            ? t('portal.decks.notFoundBody', 'Deck ini tidak ditemukan atau Anda tidak memiliki akses.')
+            : t('guest.publicDeckView.deckNotFoundBody', 'Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya.')}
         />
       </ShellFrame>
     );
@@ -135,26 +171,30 @@ export const PublicDeckViewPage = () => {
   const totalSlides = slides.length;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-bg-base">
-      <AuroraBackground />
+    <div className={embedded ? 'relative w-full' : 'relative min-h-screen w-full overflow-hidden bg-bg-base'}>
+      {!embedded && <AuroraBackground />}
 
       {/* ─────────────── Hero header bar ─────────────── */}
       <header className="relative z-10 border-b border-border-subtle bg-bg-base/60 backdrop-blur-[12px]">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <span className="font-display text-xl font-semibold tracking-tight text-text-primary">
-                monomi
-              </span>
-              <span className="h-4 w-px bg-border-default" />
-              <span className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
-                {t('deckPublic.eyebrow', 'Public Deck')}
-              </span>
-            </div>
+            {embedded ? (
+              backSlot
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="font-display text-xl font-semibold tracking-tight text-text-primary">
+                  monomi
+                </span>
+                <span className="h-4 w-px bg-border-default" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
+                  {t('deckPublic.eyebrow', 'Public Deck')}
+                </span>
+              </div>
+            )}
             {isLoading ? (
               <Skeleton className="mt-2 h-5 w-72 rounded" />
             ) : (
-              <h1 className="mt-1 truncate text-base font-medium text-text-primary sm:text-lg">
+              <h1 className="mt-1 line-clamp-3 break-words text-base font-medium text-text-primary sm:text-lg">
                 {deck?.title ?? '—'}
               </h1>
             )}
@@ -171,16 +211,18 @@ export const PublicDeckViewPage = () => {
                   <LayoutIcon className="h-3 w-3" />
                   {t('deckPublic.slideCount', '{{count}} slide', { count: totalSlides })}
                 </Badge>
-                <Badge
-                  variant="outline"
-                  className="border-info/30 bg-info/[0.08] text-info gap-1.5 px-2.5 py-1 text-xs"
-                >
-                  <Eye className="h-3 w-3" />
-                  {t('deckPublic.viewCount', '{{count}} views', { count: deck.publicViewCount ?? 0 })}
-                </Badge>
+                {!embedded && (
+                  <Badge
+                    variant="outline"
+                    className="border-info/30 bg-info/[0.08] text-info gap-1.5 px-2.5 py-1 text-xs"
+                  >
+                    <Eye className="h-3 w-3" />
+                    {t('deckPublic.viewCount', '{{count}} views', { count: deck.publicViewCount ?? 0 })}
+                  </Badge>
+                )}
 
                 {/* Download button — only when DOWNLOAD access level */}
-                {deck.publicAccessLevel === 'DOWNLOAD' && (
+                {source.canExport(deck) && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -231,7 +273,7 @@ export const PublicDeckViewPage = () => {
         ) : (
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
             {/* ── Slide thumbnail sidebar ── */}
-            <aside className="w-full lg:w-52 shrink-0">
+            <aside className="order-2 w-full shrink-0 lg:order-1 lg:w-52">
               <GlassPanel surface="glass" padding="none" className="overflow-hidden">
                 <div className="border-b border-border-subtle px-4 py-3">
                   <span className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium">
@@ -241,7 +283,7 @@ export const PublicDeckViewPage = () => {
                     {totalSlides}
                   </span>
                 </div>
-                <div className="divide-y divide-border-subtle">
+                <div className="max-h-72 divide-y divide-border-subtle overflow-y-auto lg:max-h-none">
                   {slides.map((slide, idx) => (
                     <SlideThumbnailButton
                       key={slide.id}
@@ -256,7 +298,7 @@ export const PublicDeckViewPage = () => {
             </aside>
 
             {/* ── Active slide canvas ── */}
-            <div className="flex-1 min-w-0">
+            <div className="order-1 min-w-0 flex-1 lg:order-2">
               {activeSlide && (
                 <GlassPanel surface="glass" padding="none" className="overflow-hidden">
                   {/* Slide header */}
@@ -319,17 +361,19 @@ export const PublicDeckViewPage = () => {
         )}
 
         {/* Comment panel — only when COMMENT access level */}
-        {deck && deck.publicAccessLevel === 'COMMENT' && activeSlide && token && (
+        {deck && source.canComment(deck) && activeSlide && (
           <PublicCommentPanel
-            token={token}
+            source={source}
             slideId={activeSlide.id}
-            onInvalidate={() => queryClient.invalidateQueries({ queryKey: ['public-deck-comments', token, activeSlide.id] })}
+            onInvalidate={() => queryClient.invalidateQueries({ queryKey: ['public-deck-comments', source.key, activeSlide.id] })}
           />
         )}
 
-        <div className="mt-8 text-center text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-          Powered by Monomi · Deck Viewer
-        </div>
+        {!embedded && (
+          <div className="mt-8 text-center text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+            Powered by Monomi · Deck Viewer
+          </div>
+        )}
       </main>
     </div>
   );
@@ -340,11 +384,11 @@ export const PublicDeckViewPage = () => {
 /* ------------------------------------------------------------------ */
 
 function PublicCommentPanel({
-  token,
+  source,
   slideId,
   onInvalidate,
 }: {
-  token: string;
+  source: DeckShareSource;
   slideId: string;
   onInvalidate: () => void;
 }) {
@@ -353,17 +397,17 @@ function PublicCommentPanel({
   const [commentText, setCommentText] = useState('');
 
   const { data: comments = [], isLoading } = useQuery<DeckSlideComment[]>({
-    queryKey: ['public-deck-comments', token, slideId],
-    queryFn: () => decksApi.getPublicComments(token, slideId),
+    queryKey: ['public-deck-comments', source.key, slideId],
+    queryFn: () => source.getComments(slideId),
     retry: false,
   });
 
   const postMutation = useMutation({
     mutationFn: () =>
-      decksApi.createPublicComment(token, {
+      source.createComment({
         slideId,
         content: commentText.trim(),
-        guestName: guestName.trim() || undefined,
+        guestName: source.askGuestName ? guestName.trim() || undefined : undefined,
       }),
     onSuccess: () => {
       setCommentText('');
@@ -418,12 +462,14 @@ function PublicCommentPanel({
 
       {/* Comment form */}
       <form onSubmit={handleSubmit} className="space-y-2">
-        <Input
-          value={guestName}
-          onChange={(e) => setGuestName(e.target.value)}
-          placeholder={t('deckPublic.namePlaceholder', 'Your name (optional)')}
-          className="bg-bg-sunken border-border-default text-text-primary h-8 text-xs"
-        />
+        {source.askGuestName && (
+          <Input
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            placeholder={t('deckPublic.namePlaceholder', 'Your name (optional)')}
+            className="bg-bg-sunken border-border-default text-text-primary h-8 text-xs"
+          />
+        )}
         <div className="flex gap-2">
           <Input
             value={commentText}
@@ -548,7 +594,7 @@ function SlideCanvas({ slide }: { slide: DeckSlide }) {
           <ul className="space-y-1.5 text-sm text-text-secondary">
             {items.map((item, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-cream" />
                 <span className="leading-relaxed">{item}</span>
               </li>
             ))}
@@ -657,16 +703,16 @@ function SlideThumbnailButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'w-full px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60',
+        'w-full px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
         isActive
-          ? 'bg-accent/[0.10] border-l-2 border-l-accent'
+          ? 'bg-bg-glass-strong border-l-2 border-l-brand-cream'
           : 'hover:bg-bg-sunken/60 border-l-2 border-l-transparent',
       )}
     >
       <div className="flex items-center gap-2">
         <span className={cn(
           'shrink-0 text-[11px] tabular-nums font-medium',
-          isActive ? 'text-accent' : 'text-text-tertiary',
+          isActive ? 'text-text-primary' : 'text-text-tertiary',
         )}>
           {index + 1}
         </span>

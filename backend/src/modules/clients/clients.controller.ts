@@ -66,6 +66,13 @@ export class ClientsController {
     type: String,
     description: "Kata kunci pencarian",
   })
+  @ApiQuery({
+    name: "includeInternal",
+    required: false,
+    type: Boolean,
+    description:
+      "Sertakan klien internal (Monomi). Default false; hanya untuk halaman Klien & kalender konten.",
+  })
   @ApiResponse({
     status: 200,
     description: "Daftar klien berhasil diambil",
@@ -115,8 +122,15 @@ export class ClientsController {
     @Query("limit") limit = 10,
     @Query("search") search?: string,
     @Query("status") status?: string,
+    @Query("includeInternal") includeInternal?: string,
   ) {
-    return this.clientsService.findAll(+page, +limit, search, status);
+    return this.clientsService.findAll(
+      +page,
+      +limit,
+      search,
+      status,
+      includeInternal === "true" || includeInternal === "1",
+    );
   }
 
   @Get("stats")

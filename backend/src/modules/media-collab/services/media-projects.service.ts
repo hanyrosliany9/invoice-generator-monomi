@@ -18,6 +18,10 @@ import {
   hasGlobalMediaReadAccess,
   mediaProjectReadWhere,
 } from "../utils/media-access.util";
+import {
+  assertClientMatchesProject,
+  effectiveLink,
+} from "../../../common/utils/client-project-link.util";
 
 /**
  * MediaProjectsService
@@ -57,6 +61,14 @@ export class MediaProjectsService {
         throw new NotFoundException("Project not found");
       }
     }
+
+    // An explicit client must match the linked project's client (the client
+    // portal treats clientId as authoritative; a mismatch would mislabel it).
+    await assertClientMatchesProject(
+      this.prisma,
+      createDto.clientId,
+      createDto.projectId,
+    );
 
     // Verify folder exists if provided
     if (createDto.folderId) {
@@ -362,6 +374,22 @@ export class MediaProjectsService {
       }
     }
 
+    // Client/project consistency, judged on the values AFTER this update.
+    if (updateDto.clientId !== undefined || updateDto.projectId !== undefined) {
+      const current = await this.prisma.mediaProject.findUnique({
+        where: { id: projectId },
+        select: { clientId: true, projectId: true },
+      });
+      if (!current) {
+        throw new NotFoundException("Media project not found");
+      }
+      await assertClientMatchesProject(
+        this.prisma,
+        effectiveLink(updateDto.clientId, current.clientId),
+        effectiveLink(updateDto.projectId, current.projectId),
+      );
+    }
+
     const updatedProject = await this.prisma.mediaProject.update({
       where: { id: projectId },
       data: updateDto,
@@ -661,41 +689,61 @@ export class MediaProjectsService {
   }
 
   /**
+   * Fields returned to share viewers (public link / client portal). createdBy
+   * is selected for internal authorId use but never enumerated in responses.
+   */
+  private readonly shareProjectSelect = {
+    id: true,
+    name: true,
+    description: true,
+    isPublic: true,
+    publicAccessLevel: true,
+    publicViewCount: true,
+    publicShareExpiresAt: true,
+    createdAt: true,
+    updatedAt: true,
+    // createdBy is kept internally for authorId usage but NOT exposed in the return shape
+    createdBy: true,
+    client: {
+      select: {
+        id: true,
+        name: true,
+      },
+    },
+    creator: {
+      select: {
+        id: true,
+        name: true,
+      },
+    },
+    _count: {
+      select: {
+        assets: true,
+      },
+    },
+  } as const;
+
+  /**
+   * Strip internal fields before returning to share viewers. createdBy is
+   * re-attached as a non-enumerable property so internal callers can still
+   * read it for authorId (it is not serialised into the JSON response).
+   */
+  private toShareProjectView<T extends { createdBy: string }>(project: T) {
+    const { createdBy, ...publicProject } = project;
+    Object.defineProperty(publicProject, "createdBy", {
+      value: createdBy,
+      enumerable: false,
+    });
+    return publicProject as Omit<T, "createdBy"> & { createdBy: string };
+  }
+
+  /**
    * Get project by public share token (no auth required)
    */
   async getPublicProject(token: string) {
     const project = await this.prisma.mediaProject.findUnique({
       where: { publicShareToken: token },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        isPublic: true,
-        publicAccessLevel: true,
-        publicViewCount: true,
-        publicShareExpiresAt: true,
-        createdAt: true,
-        updatedAt: true,
-        // createdBy is kept internally for authorId usage but NOT exposed in the return shape
-        createdBy: true,
-        client: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        creator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            assets: true,
-          },
-        },
-      },
+      select: this.shareProjectSelect,
     });
 
     assertActivePublicShare(project);
@@ -706,13 +754,23 @@ export class MediaProjectsService {
       data: { publicViewCount: { increment: 1 } },
     });
 
-    // Strip internal fields before returning to anonymous callers
-    const { createdBy, ...publicProject } = project;
-    // Re-attach createdBy as a non-enumerable property so internal callers
-    // (e.g. public.controller.ts) can still read project.createdBy for authorId.
-    Object.defineProperty(publicProject, 'createdBy', { value: createdBy, enumerable: false });
+    return this.toShareProjectView(project);
+  }
 
-    return publicProject as typeof publicProject & { createdBy: string };
+  /**
+   * Same payload as getPublicProject, for a project whose access was already
+   * authorised by the caller (client portal scope). Does not require public
+   * sharing to be enabled and does not bump the public view counter.
+   */
+  async getShareProjectById(projectId: string) {
+    const project = await this.prisma.mediaProject.findUnique({
+      where: { id: projectId },
+      select: this.shareProjectSelect,
+    });
+    if (!project) {
+      throw new NotFoundException("Media project not found");
+    }
+    return this.toShareProjectView(project);
   }
 
   /**
@@ -725,8 +783,16 @@ export class MediaProjectsService {
 
     assertActivePublicShare(project);
 
+    return this.listShareAssets(project.id);
+  }
+
+  /**
+   * Asset list as returned to share viewers (no internal R2 key). Caller must
+   * have authorised access to projectId (public token or portal scope).
+   */
+  async listShareAssets(projectId: string) {
     return this.prisma.mediaAsset.findMany({
-      where: { projectId: project.id },
+      where: { projectId },
       select: {
         id: true,
         projectId: true,
@@ -789,6 +855,13 @@ export class MediaProjectsService {
 
     assertActivePublicShare(project);
 
+    return this.getProjectKeyPrefixes(project.id);
+  }
+
+  /**
+   * R2 key prefixes for every asset in an (already authorised) project.
+   */
+  async getProjectKeyPrefixes(projectId: string): Promise<string[]> {
     // Fetch the R2 `key` for every asset in this project.
     // `thumbnailUrl` is stored as a full URL (not a bare R2 key), so we only
     // need the asset's primary key here.  Thumbnail R2 keys follow the same
@@ -797,7 +870,7 @@ export class MediaProjectsService {
     // the same day; for robustness we also include "thumbnails/" as a blanket
     // prefix whenever the project contains at least one VIDEO asset.
     const assets = await this.prisma.mediaAsset.findMany({
-      where: { projectId: project.id },
+      where: { projectId },
       select: { key: true, mediaType: true },
     });
 
@@ -850,8 +923,16 @@ export class MediaProjectsService {
 
     assertActivePublicShare(project);
 
+    return this.listShareFolders(project.id);
+  }
+
+  /**
+   * Folder list as returned to share viewers. Caller must have authorised
+   * access to projectId (public token or portal scope).
+   */
+  async listShareFolders(projectId: string) {
     return this.prisma.mediaFolder.findMany({
-      where: { projectId: project.id },
+      where: { projectId },
       include: {
         _count: {
           select: {

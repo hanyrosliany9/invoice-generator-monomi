@@ -332,7 +332,7 @@ export function VideoReviewModal({
       className={cn(
         'flex flex-col items-center gap-0.5 py-2 px-3 text-[10px] transition-colors',
         sidebarTab === tab
-          ? 'text-white border-b-2 border-accent'
+          ? 'text-white border-b-2 border-brand-cream'
           : 'text-white/40 hover:text-white/70 border-b-2 border-transparent',
       )}
       onClick={() => setSidebarTab(tab)}
@@ -389,7 +389,7 @@ export function VideoReviewModal({
           className={cn(
             'h-7 text-xs gap-1.5',
             drawingActive
-              ? 'bg-accent text-white'
+              ? 'bg-brand-cream text-bg-base'
               : 'text-white/60 hover:text-white hover:bg-white/10',
           )}
           onClick={() => {

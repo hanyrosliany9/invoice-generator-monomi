@@ -176,14 +176,14 @@ export function DataTable<TData, TValue = unknown>({
           </span>
           <div className="flex gap-2">
             <button
-              className="px-3 py-1.5 rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-accent-navy-soft disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="px-3 py-2 sm:py-1.5 rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-accent-navy-soft disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
               Sebelumnya
             </button>
             <button
-              className="px-3 py-1.5 rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-accent-navy-soft disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              className="px-3 py-2 sm:py-1.5 rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-accent-navy-soft disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >

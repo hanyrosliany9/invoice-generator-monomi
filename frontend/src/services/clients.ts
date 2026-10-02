@@ -13,6 +13,8 @@ export interface Client {
   taxNumber?: string
   bankAccount?: string
   notes?: string
+  /** The agency itself (Monomi). Non-billable; only used for the content calendar. */
+  isInternal?: boolean
   instagramHandle?: string | null
   instagramAvatarUrl?: string | null
   instagramBio?: string | null
@@ -65,6 +67,16 @@ export const clientService = {
   // Get all clients
   getClients: async (): Promise<Client[]> => {
     const response = await apiClient.get('/clients', { params: { limit: 200 } })
+    return response?.data?.data || []
+  },
+
+  // Same list but INCLUDING the internal client (Monomi), listed first.
+  // Only the Clients page and the content calendar use this; every billing
+  // picker uses getClients(), which the backend filters to exclude internal.
+  getClientsWithInternal: async (): Promise<Client[]> => {
+    const response = await apiClient.get('/clients', {
+      params: { limit: 200, includeInternal: true },
+    })
     return response?.data?.data || []
   },
 

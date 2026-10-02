@@ -72,6 +72,10 @@ services:
       - UPLOAD_PATH=/app/uploads
       - CORS_ORIGIN=https://admin.monomiagency.com
       - FRONTEND_URL=https://admin.monomiagency.com
+      # Client portal: separate session secret (required in production — the
+      # app refuses to boot without it) and the portal origin for CORS/emails.
+      - PORTAL_JWT_SECRET=${PORTAL_JWT_SECRET:?PORTAL_JWT_SECRET must be set in .env}
+      - PORTAL_URL=https://portal.monomiagency.com
       - PUBLIC_URL=https://share.monomiagency.com
       - MEDIA_URL=https://media.monomiagency.com
       # MCP custom connector — Claude.ai users connect via the admin hostname
@@ -203,8 +207,12 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
+    # Loopback only: public traffic arrives through the Cloudflare tunnel over
+    # the Docker network. Publishing on all interfaces let the internet bypass
+    # Cloudflare, and docker-proxy traffic (e.g. IPv6) arrives from the bridge
+    # gateway, which nginx trusts for CF-Connecting-IP.
     ports:
-      - "80:80"
+      - "127.0.0.1:80:80"
     volumes:
       - ./nginx/nginx-cloudflare.conf:/etc/nginx/nginx.conf:ro
       - ./logs/nginx:/var/log/nginx:rw

@@ -10,7 +10,7 @@
 /*  inside the app's dark chrome like a device on a desk.              */
 /* ------------------------------------------------------------------ */
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor,
@@ -24,6 +24,7 @@ import {
   Heart, MessageCircle, Send, Bookmark, Grid3x3, Film, Play,
   GripVertical, SquareStack, ChevronLeft, ChevronRight, X,
   MoreHorizontal, Pencil, Camera, Rocket, Maximize2, Trash2,
+  ChevronDown, Repeat2, SquareUser, SquarePlay, UserPlus, Settings2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -35,7 +36,9 @@ import contentCalendarService, {
 } from '@/services/content-calendar';
 import { useMediaToken } from '@/hooks/useMediaToken';
 import { extractR2Key } from '@/utils/mediaProxy';
+import { contentShareMediaUrl } from '@/utils/contentShareMedia';
 import { cn } from '@/lib/utils';
+import { getInitials } from '@/utils/initials';
 
 // Minimal shape of the i18n t() so module-level helpers can take it.
 type TFunc = (key: string, fallback: string, opts?: Record<string, unknown>) => string;
@@ -63,7 +66,7 @@ function buildResolver(token?: string | null, shareToken?: string): MediaResolve
     if (!url) return null;
     if (url.includes('/api/v1/media/proxy/') || url.includes('.r2.cloudflarestorage.com')) {
       const key = extractR2Key(url);
-      if (key && shareToken) return `/api/v1/content-calendar/public/${shareToken}/media?key=${encodeURIComponent(key)}`;
+      if (key && shareToken) return contentShareMediaUrl(shareToken, key);
       if (key && token) return `/api/v1/media/view/${key}?mt=${encodeURIComponent(token)}`;
       return url;
     }
@@ -100,14 +103,19 @@ function orderedMedia(item: ContentCalendarItem) {
   return [...(item.media ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
-/** Instagram grid order: manual gridOrder first (nulls last), then newest. */
+/**
+ * Instagram grid order. Items without a manual gridOrder are NEW posts (created
+ * after a rearrange numbered the others), so they go first (top-left), newest
+ * first; then the manually arranged ones by gridOrder (the server also hands new
+ * posts an order below the current minimum).
+ */
 function sortForGrid(items: ContentCalendarItem[]): ContentCalendarItem[] {
   return [...items].sort((a, b) => {
     const ao = a.gridOrder ?? null;
     const bo = b.gridOrder ?? null;
     if (ao !== null && bo !== null && ao !== bo) return ao - bo;
-    if (ao !== null && bo === null) return -1;
-    if (ao === null && bo !== null) return 1;
+    if (ao !== null && bo === null) return 1;
+    if (ao === null && bo !== null) return -1;
     const ad = a.scheduledAt ? +new Date(a.scheduledAt) : +new Date(a.createdAt);
     const bd = b.scheduledAt ? +new Date(b.scheduledAt) : +new Date(b.createdAt);
     return bd - ad; // newest first (top-left), like a real profile
@@ -141,6 +149,19 @@ const STATUS_TINT: Record<ContentCalendarItem['status'], string> = {
   FAILED: 'bg-red-500',
   ARCHIVED: 'bg-zinc-400',
 };
+
+/** Instagram's Highlights tab icon: a heart inside a dashed circle. */
+function HighlightsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+         strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="10" strokeDasharray="2.6 3.2" />
+      <path d="M12 16.4c-3.2-2-4.6-3.5-4.6-5.2a2.3 2.3 0 0 1 4.6-.7 2.3 2.3 0 0 1 4.6.7c0 1.7-1.4 3.2-4.6 5.2z" />
+    </svg>
+  );
+}
+
+type IgTab = 'grid' | 'highlights' | 'reels' | 'reposts' | 'tagged';
 
 /* ------------------------------------------------------------------ */
 /*  Tile cover (shared by grid + reels)                               */
@@ -302,7 +323,7 @@ function PostModal({
         <div className="flex items-center gap-2.5 px-3 py-2.5">
           <Avatar profile={profile} size={32} ring />
           <div className="min-w-0 flex-1 leading-tight">
-            <div className="truncate text-[13px] font-semibold">{profile?.handle?.replace(/^@/, '') ?? 'monomi'}</div>
+            <div className="truncate text-[13px] font-semibold">{profile?.handle?.replace(/^@/, '') || profile?.companyName || ''}</div>
             <div className="truncate text-[11px] text-zinc-500">{scheduledLabel(item, t)}</div>
           </div>
           <button onClick={onClose} className="rounded-full p-1 text-zinc-500 hover:bg-zinc-100">
@@ -377,7 +398,7 @@ function PostModal({
         {/* caption + meta (scrolls if long) */}
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2">
           <p className="text-[13px] leading-snug">
-            <span className="mr-1.5 font-semibold">{profile?.handle?.replace(/^@/, '') ?? 'monomi'}</span>
+            <span className="mr-1.5 font-semibold">{profile?.handle?.replace(/^@/, '') || profile?.companyName || ''}</span>
             <Caption text={item.caption ?? ''} />
           </p>
 
@@ -493,7 +514,7 @@ function StoryViewer({
         {/* header */}
         <div className="absolute left-0 right-0 top-3 z-20 flex items-center gap-2 px-3 pt-2 text-white">
           <Avatar profile={profile} size={28} ring />
-          <span className="text-[13px] font-semibold">{profile?.handle?.replace(/^@/, '') ?? 'monomi'}</span>
+          <span className="text-[13px] font-semibold">{profile?.handle?.replace(/^@/, '') || profile?.companyName || ''}</span>
           <span className="text-[12px] text-white/70">{scheduledLabel(item, t)}</span>
           {onEdit && (
             <button onClick={() => onEdit(item)} className="ml-auto rounded-full p-1 hover:bg-white/10" aria-label={t('preview.edit', 'Edit')}>
@@ -542,7 +563,7 @@ function StoryViewer({
 /* ------------------------------------------------------------------ */
 
 function Avatar({ profile, size, ring }: { profile?: IgProfile; size: number; ring?: boolean }) {
-  const letter = (profile?.companyName || profile?.handle || 'M').replace(/^@/, '').charAt(0).toUpperCase();
+  const letter = getInitials(profile?.companyName || profile?.handle?.replace(/^@/, ''), { fallback: 'M' });
   const inner = (
     profile?.avatarUrl
       ? <img src={profile.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
@@ -564,7 +585,7 @@ function Avatar({ profile, size, ring }: { profile?: IgProfile; size: number; ri
 /* ------------------------------------------------------------------ */
 
 function InstagramPhone({
-  items, onEdit, onDelete, clientId, interactive = true, profileOverride, shareToken, highlightsOverride,
+  items, onEdit, onDelete, clientId, interactive = true, profileOverride, shareToken, highlightsOverride, onManageHighlights,
 }: {
   items: ContentCalendarItem[];
   onEdit: (item: ContentCalendarItem) => void;
@@ -574,6 +595,7 @@ function InstagramPhone({
   profileOverride?: IgProfile;        // share mode: profile comes from the public payload
   shareToken?: string;                // share mode: resolve media via the public endpoint
   highlightsOverride?: StoryHighlight[]; // share mode: highlights from the public payload
+  onManageHighlights?: () => void;       // staff mode: open the highlight manager
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -618,7 +640,7 @@ function InstagramPhone({
     ? localIds.map((id) => byId.get(id)).filter(Boolean) as ContentCalendarItem[]
     : sortedGrid;
 
-  const [tab, setTab] = useState<'grid' | 'reels'>('grid');
+  const [tab, setTab] = useState<IgTab>('grid');
   const [rearrange, setRearrange] = useState(false);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [storyIndex, setStoryIndex] = useState<number | null>(null);
@@ -665,6 +687,8 @@ function InstagramPhone({
   }
 
   const empty = igItems.length === 0;
+  // Never invent a handle: fall back to the client's name.
+  const username = profile?.handle?.replace(/^@/, '') || profile?.companyName || '';
 
   return (
     <>
@@ -676,11 +700,19 @@ function InstagramPhone({
             <span className="tabular-nums">100%</span>
           </div>
 
+          {/* top bar: @username + chevron, more */}
+          <div className="flex items-center justify-between px-4 pt-3 text-zinc-900">
+            <div className="flex min-w-0 items-center gap-1">
+              <span className="truncate text-[18px] font-bold leading-none">{username}</span>
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            </div>
+            <MoreHorizontal className="h-5 w-5 shrink-0" />
+          </div>
+
           {/* profile header — tapping the avatar plays ALL planned stories in
-              sequence (like Instagram active stories), so a 30-day plan with
-              30 stories scales without cluttering the UI. */}
+              sequence (like Instagram active stories). */}
           <div className="px-4 pb-3 pt-3 text-zinc-900">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-4">
               <button
                 type="button"
                 onClick={() => storyItems.length && setStoryIndex(0)}
@@ -688,7 +720,7 @@ function InstagramPhone({
                 aria-label={storyItems.length ? t('preview.playStories', 'Putar {{n}} story', { n: storyItems.length }) : undefined}
                 className={cn('relative shrink-0', storyItems.length ? 'cursor-pointer' : 'cursor-default')}
               >
-                <Avatar profile={profile} size={76} ring={storyItems.length > 0} />
+                <Avatar profile={profile} size={80} ring={storyItems.length > 0} />
                 {storyItems.length > 0 && (
                   <span className="absolute -bottom-0.5 -right-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white ring-2 ring-white"
                         style={{ background: IG_BLUE }}>
@@ -696,68 +728,48 @@ function InstagramPhone({
                   </span>
                 )}
               </button>
-              <div className="flex flex-1 justify-around text-center">
-                <Stat n={profile?.postCount ?? gridSource.length} label={t('preview.posts', 'kiriman')} />
-                <Stat n="—" label={t('preview.followers', 'pengikut')} />
-                <Stat n="—" label={t('preview.following', 'diikuti')} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[14px] font-semibold leading-tight">{profile?.companyName ?? 'Monomi Agency'}</div>
+                <div className="mt-1.5 flex items-start gap-4">
+                  <Stat n={profile?.postCount ?? gridSource.length} label={t('preview.posts', 'kiriman')} />
+                  <Stat n="—" label={t('preview.followers', 'pengikut')} />
+                  <Stat n="—" label={t('preview.following', 'diikuti')} />
+                </div>
               </div>
             </div>
-            <div className="mt-3">
-              <div className="text-[14px] font-semibold">{profile?.companyName ?? 'Monomi Agency'}</div>
-              {profile?.bio && <div className="whitespace-pre-line text-[13px] leading-snug text-zinc-700">{profile.bio}</div>}
-              <div className="mt-0.5 text-[12px] text-zinc-400">{profile?.handle ?? '@monomi'}</div>
-            </div>
+            {profile?.bio && <div className="mt-2.5 whitespace-pre-line text-[13px] leading-snug text-zinc-800">{profile.bio}</div>}
 
-            {/* action row — visual placeholders mirroring the real profile chrome
-                (Instagram shows Follow / Message here). Inert by design: this is a
-                planning preview, not a live account. */}
+            {/* action row — inert visual placeholders mirroring the visitor view:
+                Follow | Message | add-person. */}
             <div className="mt-3 flex items-center gap-1.5">
               <span className="flex-1 rounded-lg py-1.5 text-center text-[13px] font-semibold text-white" style={{ background: IG_BLUE }}>
                 {t('preview.follow', 'Ikuti')}
               </span>
-              <span className="flex-1 rounded-lg bg-zinc-100 py-1.5 text-center text-[13px] font-semibold text-zinc-900">
+              <span className="flex-1 rounded-lg bg-[#EFEFEF] py-1.5 text-center text-[13px] font-semibold text-zinc-900">
                 {t('preview.message', 'Pesan')}
               </span>
-              <span className="rounded-lg bg-zinc-100 px-2.5 py-1.5 text-[13px] font-semibold text-zinc-900">▾</span>
+              <span className="flex items-center justify-center rounded-lg bg-[#EFEFEF] px-2.5 py-1.5 text-zinc-900">
+                <UserPlus className="h-4 w-4" />
+              </span>
             </div>
           </div>
 
-          {/* story highlights — gray-ringed circles (distinct from the story
-              ring on the avatar); tap to play that highlight's media. */}
-          {highlights.length > 0 && (
-            <div className="flex gap-4 overflow-x-auto px-4 pb-3 pt-1">
-              {highlights.map((h) => {
-                const cover = resolve(h.coverUrl ?? h.media?.[0]?.url);
-                return (
-                  <button
-                    key={h.id}
-                    onClick={() => setHighlightView({ items: highlightToItems(h), index: 0 })}
-                    className="flex w-16 shrink-0 flex-col items-center gap-1"
-                  >
-                    <span className="rounded-full border border-zinc-300 p-[3px]">
-                      {cover
-                        ? <img src={cover} alt="" className="h-14 w-14 rounded-full object-cover" />
-                        : <span className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100"><Camera className="h-5 w-5 text-zinc-400" /></span>}
-                    </span>
-                    <span className="w-full truncate text-center text-[10px] text-zinc-700">{h.title}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* tab bar */}
-          <div className="flex border-t border-zinc-200 text-zinc-400">
-            <button onClick={() => setTab('grid')}
-                    className={cn('flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold',
-                      tab === 'grid' ? 'border-t-2 border-zinc-900 text-zinc-900' : 'hover:text-zinc-600')}>
-              <Grid3x3 className="h-4 w-4" /> {t('preview.tabGrid', 'KISI')}
-            </button>
-            <button onClick={() => setTab('reels')}
-                    className={cn('flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[12px] font-semibold',
-                      tab === 'reels' ? 'border-t-2 border-zinc-900 text-zinc-900' : 'hover:text-zinc-600')}>
-              <Film className="h-4 w-4" /> {t('preview.tabReels', 'REELS')}
-            </button>
+          {/* icon-only tab row (Highlights moved into its own tab) */}
+          <div role="tablist" className="flex text-zinc-400">
+            {([
+              ['grid', t('preview.tabGridLabel', 'Kisi'), <Grid3x3 key="g" className="h-[22px] w-[22px]" />],
+              ['highlights', t('preview.tabHighlights', 'Highlights'), <HighlightsIcon key="h" className="h-[22px] w-[22px]" />],
+              ['reels', t('preview.tabReelsLabel', 'Reels'), <SquarePlay key="r" className="h-[22px] w-[22px]" />],
+              ['reposts', t('preview.tabReposts', 'Repost'), <Repeat2 key="p" className="h-[22px] w-[22px]" />],
+              ['tagged', t('preview.tabTagged', 'Ditandai'), <SquareUser key="t" className="h-[22px] w-[22px]" />],
+            ] as [IgTab, string, ReactNode][]).map(([key, label, icon]) => (
+              <button key={key} type="button" role="tab" aria-selected={tab === key} aria-label={label} title={label}
+                      onClick={() => setTab(key)}
+                      className={cn('flex flex-1 items-center justify-center border-b-[1.5px] py-2.5',
+                        tab === key ? 'border-zinc-900 text-zinc-900' : 'border-transparent hover:text-zinc-600')}>
+                {icon}
+              </button>
+            ))}
           </div>
 
           {/* rearrange toggle (grid tab only) */}
@@ -773,7 +785,47 @@ function InstagramPhone({
           )}
 
           {/* body */}
-          {empty ? (
+          {tab === 'highlights' ? (
+            <div>
+              {!readOnly && onManageHighlights && interactive && (
+                <div className="flex justify-end px-3 pt-2">
+                  <button type="button" onClick={onManageHighlights}
+                          className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-[11px] font-medium text-zinc-600 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100">
+                    <Settings2 className="h-3.5 w-3.5" /> {t('preview.manageHighlights', 'Kelola highlight')}
+                  </button>
+                </div>
+              )}
+              {highlights.length === 0 ? (
+                <EmptyTab icon={<HighlightsIcon className="h-8 w-8" />} label={t('preview.noHighlights', 'Belum ada highlight.')} />
+              ) : (
+                <div className="grid grid-cols-3 gap-[1.5px] pt-1">
+                  {highlights.map((h) => {
+                    const cover = resolve(h.coverUrl ?? h.media?.[0]?.url);
+                    return (
+                      <button key={h.id} type="button"
+                              onClick={() => setHighlightView({ items: highlightToItems(h), index: 0 })}
+                              className="relative aspect-[3/4] overflow-hidden bg-zinc-100 text-left">
+                        {cover
+                          ? <img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy"
+                                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                          : <span className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200"><Camera className="h-5 w-5 text-zinc-400" /></span>}
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent px-2 pb-1.5 pt-6 text-[11px] font-semibold leading-tight text-white">
+                          <span className="line-clamp-2">{h.title}</span>
+                        </span>
+                        <span className="pointer-events-none absolute right-1.5 top-1.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+                          <HighlightsIcon className="h-4 w-4" />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : tab === 'reposts' ? (
+            <EmptyTab icon={<Repeat2 className="h-8 w-8" />} label={t('preview.noReposts', 'Belum ada repost.')} />
+          ) : tab === 'tagged' ? (
+            <EmptyTab icon={<SquareUser className="h-8 w-8" />} label={t('preview.noTagged', 'Belum ada kiriman yang ditandai.')} />
+          ) : empty ? (
             <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center text-zinc-500">
               <div className="rounded-full border-2 border-zinc-300 p-4"><Camera className="h-7 w-7 text-zinc-400" /></div>
               <p className="text-[13px] font-medium text-zinc-700">{t('preview.igEmptyTitle', 'Belum ada konten Instagram')}</p>
@@ -785,7 +837,7 @@ function InstagramPhone({
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
                 <SortableContext items={displayGrid.map((i) => i.id)} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-3 gap-[3px] bg-white p-[3px]">
+                  <div className="grid grid-cols-3 gap-[1.5px] bg-white pt-[1.5px]">
                     {displayGrid.map((item, i) => (
                       <GridTile key={item.id} item={item} rearrange={rearrange} resolve={resolve}
                                 onOpen={() => { setTab('grid'); setOpenIndex(i); }} />
@@ -797,7 +849,7 @@ function InstagramPhone({
           ) : reelItems.length === 0 ? (
             <EmptyTab label={t('preview.noReels', 'Belum ada Reels.')} />
           ) : (
-            <div className="grid grid-cols-3 gap-[3px] bg-white p-[3px]">
+            <div className="grid grid-cols-3 gap-[1.5px] bg-white pt-[1.5px]">
               {reelItems.map((item, i) => (
                 <button key={item.id} onClick={() => setOpenIndex(i)}
                         className="group relative aspect-[9/16] overflow-hidden bg-zinc-100">
@@ -860,7 +912,7 @@ function InstagramPhone({
 /* ------------------------------------------------------------------ */
 
 export default function InstagramPreview({
-  items, onEdit, onDelete, clientId, profile, shareToken, highlights,
+  items, onEdit, onDelete, clientId, profile, shareToken, highlights, onManageHighlights,
 }: {
   items: ContentCalendarItem[];
   onEdit: (item: ContentCalendarItem) => void;
@@ -869,6 +921,7 @@ export default function InstagramPreview({
   profile?: IgProfile;     // share mode: profile from the public payload
   shareToken?: string;     // share mode: resolve media via the public endpoint
   highlights?: StoryHighlight[]; // share mode: highlights from the public payload
+  onManageHighlights?: () => void; // staff mode: open the highlight manager
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -885,13 +938,10 @@ export default function InstagramPreview({
     <div className="flex justify-center px-3 py-8">
       {/* inline launcher — a tappable phone card */}
       <div className="w-full max-w-[300px]">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label={t('preview.openIg', 'Buka pratinjau Instagram')}
-          className="group relative block w-full overflow-hidden rounded-[28px] border border-border-subtle bg-white text-left shadow-xl transition-transform hover:-translate-y-0.5 hover:shadow-2xl"
-        >
-          <div className="pointer-events-none max-h-[360px] overflow-hidden">
+        {/* The phone mock contains its own buttons, so the launcher is a sibling
+            overlay button rather than the wrapper (no nested interactive elements). */}
+        <div className="group relative block w-full overflow-hidden rounded-[28px] border border-border-subtle bg-white text-left shadow-xl transition-transform hover:-translate-y-0.5 hover:shadow-2xl">
+          <div className="pointer-events-none max-h-[360px] overflow-hidden" aria-hidden="true" inert>
             <InstagramPhone items={items} onEdit={onEdit} onDelete={onDelete} clientId={clientId} interactive={false} profileOverride={profile} shareToken={shareToken} highlightsOverride={highlights} />
           </div>
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent" />
@@ -900,10 +950,16 @@ export default function InstagramPreview({
               <Maximize2 className="h-3.5 w-3.5" /> {t('preview.openPhone', 'Buka pratinjau ponsel')}
             </span>
           </div>
-          <span className="absolute right-2.5 top-2.5 rounded-full bg-black/55 p-1.5 text-white opacity-0 transition group-hover:opacity-100">
+          <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-full bg-black/55 p-1.5 text-white opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
             <Maximize2 className="h-3.5 w-3.5" />
           </span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label={t('preview.openIg', 'Buka pratinjau Instagram')}
+            className="absolute inset-0 z-10 rounded-[28px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
+          />
+        </div>
         <p className="mt-3 px-2 text-center text-[11px] text-text-tertiary">
           {t('preview.visualNote', 'Pratinjau visual — klik untuk membuka tampilan ponsel penuh.')}
         </p>
@@ -938,6 +994,7 @@ export default function InstagramPreview({
                 profileOverride={profile}
                 shareToken={shareToken}
                 highlightsOverride={highlights}
+                onManageHighlights={onManageHighlights ? () => { setOpen(false); onManageHighlights(); } : undefined}
               />
             </div>
           </div>
@@ -951,15 +1008,15 @@ function Stat({ n, label }: { n: number | string; label: string }) {
   return (
     <div className="leading-tight">
       <div className="text-[15px] font-semibold tabular-nums">{n}</div>
-      <div className="text-[12px] text-zinc-500">{label}</div>
+      <div className="text-[12px] text-zinc-700">{label}</div>
     </div>
   );
 }
 
-function EmptyTab({ label }: { label: string }) {
+function EmptyTab({ label, icon }: { label: string; icon?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center text-zinc-400">
-      <Rocket className="h-6 w-6" />
+      {icon ?? <Rocket className="h-6 w-6" />}
       <p className="text-[12px]">{label}</p>
     </div>
   );

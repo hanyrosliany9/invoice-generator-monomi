@@ -48,8 +48,8 @@ export default function ContentCalendarClientsPage() {
   const [search, setSearch] = useState('');
 
   const { data: clients = [], isLoading: loadingClients } = useQuery({
-    queryKey: ['clients'],
-    queryFn: clientService.getClients,
+    queryKey: ['clients', 'with-internal'],
+    queryFn: clientService.getClientsWithInternal,
   });
 
   // One fetch of all content; counts are grouped per client client-side.
@@ -91,7 +91,7 @@ export default function ContentCalendarClientsPage() {
   const totals = useMemo(() => {
     const items = content as ContentCalendarItem[];
     return {
-      clients: clients.filter((c) => socialClientIds.has(c.id)).length,
+      clients: clients.filter((c) => !c.isInternal && socialClientIds.has(c.id)).length,
       content: items.length,
       scheduled: items.filter((i) => i.status === 'SCHEDULED').length,
     };
@@ -99,7 +99,10 @@ export default function ContentCalendarClientsPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const list = [...clients].filter((c) => socialClientIds.has(c.id)).sort((a, b) => {
+    // The internal client (Monomi) is always listed, pinned first, even before
+    // it has a Social Media project.
+    const list = [...clients].filter((c) => c.isInternal || socialClientIds.has(c.id)).sort((a, b) => {
+      if (!!a.isInternal !== !!b.isInternal) return a.isInternal ? -1 : 1;
       // clients with content float to the top, then alphabetical
       const ca = statsByClient.get(a.id)?.total ?? 0;
       const cb = statsByClient.get(b.id)?.total ?? 0;
@@ -242,7 +245,14 @@ function ClientFolderCard({
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] font-semibold text-text-primary">{client.name}</div>
+          <div className="flex items-center gap-1.5 text-[14px] font-semibold text-text-primary">
+            <span className="truncate">{client.name}</span>
+            {client.isInternal && (
+              <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px] uppercase tracking-wider">
+                {t('clients.internalBadge', 'Internal')}
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-1 truncate text-[11px] text-text-tertiary">
             <AtSign className="h-3 w-3 shrink-0" />
             <span className="truncate">{handle.replace(/^@/, '')}</span>

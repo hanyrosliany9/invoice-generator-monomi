@@ -52,6 +52,8 @@ import { clientService, type Client } from '@/services/clients';
 import { projectService, type Project } from '@/services/projects';
 import { invoiceService, type Invoice } from '@/services/invoices';
 import { quotationService, type Quotation } from '@/services/quotations';
+import { PortalContactsCard } from './PortalContactsCard';
+import { getInitials } from '@/utils/initials';
 
 /* ------------------------------------------------------------------ */
 /*  SectionHeader — hoisted to module scope to prevent remount on     */
@@ -79,14 +81,6 @@ const SectionHeader = ({
   </div>
 );
 
-// Avatar token — prefer the human name so individuals don't collapse to "PT".
-const getInitials = (client: Pick<Client, 'name' | 'company'>): string => {
-  const source = (client.name || client.company || '?').trim();
-  const parts = source.split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-};
 
 const isActive = (status?: string) => (status ?? 'active') === 'active';
 
@@ -571,7 +565,7 @@ export default function ClientDetailPageV2() {
                   <DropdownMenuItem
                     variant="destructive"
                     onSelect={handleDelete}
-                    disabled={deleteMutation.isPending}
+                    disabled={deleteMutation.isPending || !!client.isInternal}
                   >
                     <Trash2 className="h-4 w-4" />
                     {deleteMutation.isPending
@@ -593,18 +587,28 @@ export default function ClientDetailPageV2() {
           <GlassPanel surface="glass" padding="lg">
             <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 md:gap-12 items-start">
               {/* Identity */}
-              <div className="flex items-start gap-5">
-                <Avatar className="h-16 w-16 shrink-0">
+              <div className="flex items-start gap-3 sm:gap-5">
+                <Avatar className="h-12 w-12 sm:h-16 sm:w-16 shrink-0">
                   <AvatarFallback className="bg-accent-navy-wash text-text-primary text-lg font-display font-medium tracking-wide">
-                    {getInitials(client)}
+                    {getInitials(client.name || client.company)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <h2 className="text-xl font-display font-semibold text-text-primary tracking-tight leading-tight">
-                    {client.name}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-display font-semibold text-text-primary tracking-tight leading-tight">
+                      {client.name}
+                    </h2>
+                    {client.isInternal && (
+                      <Badge
+                        variant="outline"
+                        className="shrink-0 border-transparent bg-accent-navy-wash px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider text-text-secondary"
+                      >
+                        {t('clients.internalBadge', 'Internal')}
+                      </Badge>
+                    )}
+                  </div>
                   {client.company && (
-                    <p className="mt-0.5 text-sm text-text-secondary truncate">
+                    <p className="mt-0.5 text-sm text-text-secondary break-words">
                       {client.company}
                     </p>
                   )}
@@ -657,7 +661,7 @@ export default function ClientDetailPageV2() {
                     value={
                       <a
                         href={`mailto:${client.email}`}
-                        className="text-text-primary hover:text-brand-cream transition-colors"
+                        className="-my-1.5 inline-block py-1.5 text-text-primary hover:text-brand-cream transition-colors"
                       >
                         {client.email}
                       </a>
@@ -671,7 +675,7 @@ export default function ClientDetailPageV2() {
                     value={
                       <a
                         href={`tel:${client.phone}`}
-                        className="text-text-primary hover:text-brand-cream transition-colors"
+                        className="-my-1.5 inline-block py-1.5 text-text-primary hover:text-brand-cream transition-colors"
                       >
                         {client.phone}
                       </a>
@@ -722,6 +726,9 @@ export default function ClientDetailPageV2() {
             </div>
           </GlassPanel>
         </section>
+
+        {/* Client portal access — external contacts; n/a for the internal client */}
+        {!client.isInternal && <PortalContactsCard clientId={client.id} />}
 
         {/* ───────────────────────────────────────────────────────
             KPI band — financial first (revenue, outstanding),
@@ -851,6 +858,10 @@ export default function ClientDetailPageV2() {
           </GlassPanel>
         </section>
 
+        {/* Invoices and quotations: an internal client is never billed, so the
+            billing sections (and their "create" buttons) are not offered. */}
+        {!client.isInternal && (
+        <>
         {/* Invoices */}
         <section className="mb-10">
           <GlassPanel surface="glass" padding="lg">
@@ -933,6 +944,9 @@ export default function ClientDetailPageV2() {
           </GlassPanel>
         </section>
 
+        </>
+        )}
+
         {/* Notes — last, lowest hierarchy. Only renders when present. */}
         {client.notes && (
           <section className="mb-10">
@@ -973,6 +987,6 @@ const ContactRow = ({ icon, label, value }: ContactRowProps) => (
       <span className="text-text-tertiary">{icon}</span>
       {label}
     </div>
-    <div className="mt-1 text-sm text-text-primary truncate">{value}</div>
+    <div className="mt-1 text-sm text-text-primary [overflow-wrap:anywhere]">{value}</div>
   </div>
 );

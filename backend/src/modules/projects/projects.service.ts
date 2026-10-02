@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { randomBytes } from "crypto";
+import { EXCLUDE_INTERNAL_CLIENTS } from "../clients/client-scope";
 import { PrismaService } from "../prisma/prisma.service";
 import { DocumentsService } from "../documents/documents.service";
 import { CreateProjectDto } from "./dto/create-project.dto";
@@ -147,6 +148,8 @@ export class ProjectsService {
     if (!existingClient) {
       throw new NotFoundException("Client tidak ditemukan");
     }
+    // Note: the internal client (Monomi) MAY own projects (own productions).
+    // Billing documents for such projects are rejected in quotations/invoices.
 
     // FIX 3: Wrap number generation + insert in a transaction so the FOR UPDATE
     // row lock on the counter row is held until the project row is committed,
@@ -654,8 +657,13 @@ export class ProjectsService {
     );
 
     // Profitability statistics
+    // Internal-client projects (own productions) have no billed revenue, so
+    // they would skew margins negative; exclude from profitability stats.
     const profitableProjects = await this.prisma.project.count({
-      where: { netMarginPercent: { gte: 0 } },
+      where: {
+        client: EXCLUDE_INTERNAL_CLIENTS,
+        netMarginPercent: { gte: 0 },
+      },
     });
 
     const avgMargins = await this.prisma.project.aggregate({
@@ -664,6 +672,7 @@ export class ProjectsService {
         netMarginPercent: true,
       },
       where: {
+        client: EXCLUDE_INTERNAL_CLIENTS,
         status: { in: ["IN_PROGRESS", "COMPLETED"] },
         profitCalculatedAt: { not: null },
       },
@@ -704,7 +713,7 @@ export class ProjectsService {
     status?: string;
     minMargin?: number;
   }) {
-    const where: any = {};
+    const where: any = { client: EXCLUDE_INTERNAL_CLIENTS };
 
     if (filters?.status) {
       where.status = filters.status;

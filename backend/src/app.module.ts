@@ -49,6 +49,7 @@ import { HealthModule } from "./health/health.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { McpModule } from "./modules/mcp/mcp.module";
 import { SalariesModule } from "./modules/salaries/salaries.module";
+import { PortalModule } from "./modules/portal/portal.module";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
@@ -120,6 +121,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     MetricsModule,
     McpModule,
     SalariesModule,
+    PortalModule,
   ],
   providers: [
     {

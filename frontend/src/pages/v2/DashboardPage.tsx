@@ -165,11 +165,11 @@ export default function DashboardPageV2() {
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate('/quotations/new')}>
                 <Plus className="h-4 w-4" />
-                {t('dashboard.newQuotation', '+ Penawaran Baru')}
+                {t('dashboard.newQuotation', 'Penawaran Baru')}
               </Button>
               <Button size="sm" onClick={() => navigate('/invoices/new')}>
                 <Plus className="h-4 w-4" />
-                {t('dashboard.newInvoice', '+ Invoice Baru')}
+                {t('dashboard.newInvoice', 'Invoice Baru')}
               </Button>
             </div>
           }
@@ -348,11 +348,11 @@ export default function DashboardPageV2() {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Recent Quotations */}
           <GlassPanel surface="glass" padding="lg">
-            <div className="mb-5 flex items-baseline justify-between">
+            <div className="mb-5 flex items-center justify-between">
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
                 {t('dashboard.recentQuotations', 'Penawaran Terbaru')}
               </h2>
-              <a href="/quotations" className="text-xs text-text-tertiary hover:text-text-primary transition-colors">
+              <a href="/quotations" className="inline-flex min-h-9 items-center text-xs text-text-tertiary hover:text-text-primary transition-colors">
                 {t('common.viewAll', 'Lihat semua')} →
               </a>
             </div>
@@ -370,7 +370,7 @@ export default function DashboardPageV2() {
                 action={
                   <Button size="sm" onClick={() => navigate('/quotations/new')}>
                     <Plus className="h-4 w-4" />
-                    {t('dashboard.newQuotation', '+ Penawaran Baru')}
+                    {t('dashboard.newQuotation', 'Penawaran Baru')}
                   </Button>
                 }
               />
@@ -416,11 +416,11 @@ export default function DashboardPageV2() {
 
           {/* Recent Invoices */}
           <GlassPanel surface="glass" padding="lg">
-            <div className="mb-5 flex items-baseline justify-between">
+            <div className="mb-5 flex items-center justify-between">
               <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
                 {t('dashboard.recentInvoices', 'Invoice Terbaru')}
               </h2>
-              <a href="/invoices" className="text-xs text-text-tertiary hover:text-text-primary transition-colors">
+              <a href="/invoices" className="inline-flex min-h-9 items-center text-xs text-text-tertiary hover:text-text-primary transition-colors">
                 {t('common.viewAll', 'Lihat semua')} →
               </a>
             </div>
@@ -438,7 +438,7 @@ export default function DashboardPageV2() {
                 action={
                   <Button size="sm" onClick={() => navigate('/invoices/new')}>
                     <Plus className="h-4 w-4" />
-                    {t('dashboard.newInvoice', '+ Invoice Baru')}
+                    {t('dashboard.newInvoice', 'Invoice Baru')}
                   </Button>
                 }
               />

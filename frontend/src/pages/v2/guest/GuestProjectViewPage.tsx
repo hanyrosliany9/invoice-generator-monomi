@@ -124,7 +124,7 @@ export const GuestProjectViewPage = () => {
             {projectLoading ? (
               <Skeleton className="mt-2 h-5 w-64 rounded" />
             ) : (
-              <h1 className="mt-1 truncate text-base font-medium text-text-primary sm:text-lg">
+              <h1 className="mt-1 line-clamp-3 break-words text-base font-medium text-text-primary sm:text-lg">
                 {projectData?.project.name ?? '—'}
               </h1>
             )}
@@ -135,7 +135,7 @@ export const GuestProjectViewPage = () => {
             {projectData?.role && (
               <Badge
                 variant="outline"
-                className="border-accent/40 bg-accent/[0.07] text-accent gap-1.5 px-2.5 py-1 text-xs"
+                className="border-brand-cream/30 bg-bg-glass-strong text-text-primary gap-1.5 px-2.5 py-1 text-xs"
               >
                 <ShieldCheck className="h-3 w-3" />
                 {ROLE_LABEL[projectData.role] ?? projectData.role}
@@ -329,7 +329,7 @@ function AssetTile({
       className={cn(
         'group block w-full text-left',
         'rounded-md border border-border-subtle bg-bg-sunken overflow-hidden',
-        'transition-colors hover:border-border-default focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60',
+        'transition-colors hover:border-border-default focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
       )}
     >
       <div className="relative aspect-square w-full bg-bg-base">

@@ -143,7 +143,7 @@ function FolderNode({
           className={cn(
             'group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer select-none transition-colors',
             isSelected
-              ? 'bg-accent/10 text-text-primary'
+              ? 'bg-bg-glass-strong text-text-primary'
               : 'hover:bg-bg-raised text-text-secondary hover:text-text-primary',
           )}
         >
@@ -170,7 +170,7 @@ function FolderNode({
             onClick={() => onSelectFolder(folder.id)}
           >
             {isSelected || isExpanded
-              ? <FolderOpen className="h-3.5 w-3.5 shrink-0 text-accent" />
+              ? <FolderOpen className="h-3.5 w-3.5 shrink-0 text-text-primary" />
               : <Folder className="h-3.5 w-3.5 shrink-0 text-text-tertiary" />}
             <span className="text-xs truncate flex-1">{folder.name}</span>
             {(assetCount > 0 || childCount > 0) && (
@@ -451,7 +451,7 @@ export function FolderSidebar({
         className={cn(
           'flex items-center gap-1.5 rounded-md px-2 py-1.5 cursor-pointer select-none transition-colors text-xs',
           selectedFolderId === null
-            ? 'bg-accent/10 text-text-primary font-medium'
+            ? 'bg-bg-glass-strong text-text-primary font-medium'
             : 'hover:bg-bg-raised text-text-secondary hover:text-text-primary',
         )}
         onClick={() => onSelectFolder(null)}

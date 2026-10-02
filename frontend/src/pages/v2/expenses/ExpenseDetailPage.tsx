@@ -31,6 +31,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { expenseService } from '@/services/expenses';
 import { cn } from '@/lib/utils';
+import { getInitials } from '@/utils/initials';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation — identical to v2/expenses list so active state matches */
@@ -69,14 +70,6 @@ const toNumber = (v: unknown): number => {
   const n = typeof v === 'string' ? parseFloat(v) : Number(v);
   return Number.isFinite(n) ? n : 0;
 };
-
-const initialsOf = (name?: string) =>
-  (name || '?')
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
 
 /* ------------------------------------------------------------------ */
 /*  Shell — hoisted to module scope to prevent focus-loss remounts     */
@@ -364,7 +357,7 @@ export default function ExpenseDetailPageV2() {
             <div className="flex items-start gap-4">
               <Avatar className="h-12 w-12 mt-0.5">
                 <AvatarFallback className="bg-brand-navy text-brand-cream text-sm font-medium">
-                  {initialsOf(expense.vendorName)}
+                  {getInitials(expense.vendorName)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
@@ -774,7 +767,7 @@ export default function ExpenseDetailPageV2() {
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-bg-sunken text-text-secondary text-xs">
-                    {initialsOf(expense.approver.name)}
+                    {getInitials(expense.approver.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">

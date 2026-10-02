@@ -16,6 +16,7 @@ import { accountForSource } from "../accounting/cash-accounts.util";
 import { RevenueRecognitionService } from "../accounting/services/revenue-recognition.service";
 import { InvoiceCounterService } from "./services/invoice-counter.service";
 import { DocumentsService } from "../documents/documents.service";
+import { assertNotInternalClient } from "../clients/client-scope";
 import { ProfitCalculationService } from "../projects/profit-calculation.service";
 import { CreateInvoiceDto } from "./dto/create-invoice.dto";
 import { UpdateInvoiceDto } from "./dto/update-invoice.dto";
@@ -65,6 +66,7 @@ export class InvoicesService {
         `Client dengan ID ${createInvoiceDto.clientId} tidak ditemukan`,
       );
     }
+    assertNotInternalClient(client);
     if (client.status !== "active") {
       throw new BadRequestException(
         "Cannot create document for an inactive client",
@@ -74,13 +76,20 @@ export class InvoicesService {
     // Validate project exists and get scopeOfWork & priceBreakdown
     const project = await this.prisma.project.findUnique({
       where: { id: createInvoiceDto.projectId },
-      select: { id: true, priceBreakdown: true, scopeOfWork: true },
+      select: {
+        id: true,
+        priceBreakdown: true,
+        scopeOfWork: true,
+        client: { select: { isInternal: true } },
+      },
     });
     if (!project) {
       throw new NotFoundException(
         `Project dengan ID ${createInvoiceDto.projectId} tidak ditemukan`,
       );
     }
+    // A project owned by the internal client is not billable either.
+    assertNotInternalClient(project.client);
 
     // Get quotation scopeOfWork & priceBreakdown if quotationId is provided
     let quotation = null;
@@ -614,6 +623,29 @@ export class InvoicesService {
           'Cannot edit the amount of a paid invoice. Reverse the payment first.',
         );
       }
+    }
+
+    // Never allow moving an invoice onto the internal (non-billable) client.
+    if (
+      updateInvoiceDto.clientId &&
+      updateInvoiceDto.clientId !== invoice.clientId
+    ) {
+      assertNotInternalClient(
+        await this.prisma.client.findUnique({
+          where: { id: updateInvoiceDto.clientId },
+          select: { isInternal: true },
+        }),
+      );
+    }
+    if (
+      updateInvoiceDto.projectId &&
+      updateInvoiceDto.projectId !== invoice.projectId
+    ) {
+      const targetProject = await this.prisma.project.findUnique({
+        where: { id: updateInvoiceDto.projectId },
+        select: { client: { select: { isInternal: true } } },
+      });
+      assertNotInternalClient(targetProject?.client);
     }
 
     // Recalculate materai requirement if total amount changed

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useParams } from 'react-router-dom';
@@ -18,15 +18,15 @@ import {
   DEFAULT_FILTERS,
   type FilterState,
 } from '@/components/media/FilterSortBar';
-import {
-  mediaCollabService, type MediaAsset, type MediaFolder,
-} from '@/services/media-collab';
+import type { MediaAsset, MediaFolder } from '@/services/media-collab';
+import { publicMediaSource, type MediaShareSource } from '@/services/shareSources';
 import { getProxyUrl } from '@/utils/mediaProxy';
 import { downloadFile } from '@/utils/downloadFile';
 import { useBulkDownloadJob } from '@/hooks/useBulkDownloadJob';
 import { cn } from '@/lib/utils';
 import { LightboxOverlay } from '@/components/media/LightboxOverlay';
 import { GuestFeedbackPanel } from './GuestFeedbackPanel';
+import { PortalNotFound } from '@/portal/ui';
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                                */
@@ -59,38 +59,73 @@ export const PublicProjectViewPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const source = useMemo(() => (shareToken ? publicMediaSource(shareToken) : null), [shareToken]);
+
+  /* ----- missing token ----- */
+  if (!source) {
+    return (
+      <ShellFrame>
+        <ErrorPanel
+          title={t('guest.publicProjectView.incompleteLink', 'Tautan Tidak Lengkap')}
+          body={t('guest.publicProjectView.incompleteLinkBody', 'Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.')}
+        />
+      </ShellFrame>
+    );
+  }
+
+  return <MediaGalleryView source={source} />;
+};
+
+/* ------------------------------------------------------------------ */
+/*  MediaGalleryView — the gallery itself, driven by a MediaShareSource */
+/*  (public token or client portal). `embedded` renders it inside the   */
+/*  portal shell: no aurora/min-height, no public-link chrome.          */
+/* ------------------------------------------------------------------ */
+
+export const MediaGalleryView = ({
+  source,
+  embedded = false,
+  backSlot,
+}: {
+  source: MediaShareSource;
+  embedded?: boolean;
+  backSlot?: ReactNode;
+}) => {
+  const { t } = useTranslation();
+
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [selected, setSelected] = useState<MediaAsset | null>(null);
 
   /* ----- data ----- */
   const { data: project, isLoading: projectLoading, error: projectError } = useQuery({
-    queryKey: ['public-project-v2', shareToken],
-    queryFn: () => mediaCollabService.getPublicProject(shareToken!),
-    enabled: !!shareToken,
+    queryKey: ['public-project-v2', source.key],
+    queryFn: () => source.getProject(),
     retry: false,
   });
 
   const { data: assets = [], isLoading: assetsLoading } = useQuery({
-    queryKey: ['public-assets-v2', shareToken],
-    queryFn: () => mediaCollabService.getPublicAssets(shareToken!),
-    enabled: !!shareToken,
+    queryKey: ['public-assets-v2', source.key],
+    queryFn: () => source.getAssets(),
   });
 
   const { data: folders = [] } = useQuery({
-    queryKey: ['public-folders-v2', shareToken],
-    queryFn: () => mediaCollabService.getPublicFolders(shareToken!),
-    enabled: !!shareToken,
+    queryKey: ['public-folders-v2', source.key],
+    queryFn: () => source.getFolders(),
   });
 
   // Signed Cloudflare Worker JWT — 24h cache so we don't refetch when
   // the user re-enters the page within the same browser session.
   const { data: mediaToken } = useQuery({
-    queryKey: ['public-media-token-v2', shareToken],
-    queryFn: () => mediaCollabService.getPublicMediaToken(shareToken!),
-    enabled: !!shareToken,
+    queryKey: ['public-media-token-v2', source.key],
+    queryFn: () => source.getMediaToken(),
     staleTime: 23 * 60 * 60 * 1000,
   });
+
+  // Portal responses carry explicit permissions; public links keep their behaviour.
+  const canDownload = project?.portalAccess?.canDownload !== false;
+  const canComment = project?.portalAccess?.canComment !== false;
+  const canRate = project?.portalAccess?.canRate !== false;
 
   /* ----- derived navigation state ----- */
   const folderAssets = useMemo(
@@ -208,9 +243,8 @@ export const PublicProjectViewPage = () => {
     isPending: bulkDownloadPending,
     progress: bulkDownloadProgress,
   } = useBulkDownloadJob({
-    createJob: (ids, zipFilename) =>
-      mediaCollabService.createPublicBulkDownloadJob(shareToken!, ids, zipFilename),
-    getStatus: (jobId) => mediaCollabService.getPublicBulkDownloadJobStatus(shareToken!, jobId),
+    createJob: (ids, zipFilename) => source.createBulkJob(ids, zipFilename),
+    getStatus: (jobId) => source.getBulkStatus(jobId),
   });
 
   /* ----- lightbox keyboard nav ----- */
@@ -238,24 +272,24 @@ export const PublicProjectViewPage = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [selected, imageAssets]);
 
-  /* ----- missing or invalid token states ----- */
-  if (!shareToken) {
+  /* ----- invalid / inaccessible project ----- */
+  if (projectError && embedded) {
     return (
-      <ShellFrame>
-        <ErrorPanel
-          title={t('guest.publicProjectView.incompleteLink', 'Tautan Tidak Lengkap')}
-          body={t('guest.publicProjectView.incompleteLinkBody', 'Tautan berbagi ini terlihat rusak atau tidak lengkap. Mintalah pengirim untuk membagikan ulang tautan.')}
-        />
-      </ShellFrame>
+      <PortalNotFound
+        title={t('portal.media.notFoundTitle', 'Galeri tidak ditemukan')}
+        body={t('portal.media.notFoundBody', 'Galeri ini tidak ditemukan atau Anda tidak memiliki akses.')}
+        back={backSlot}
+      />
     );
   }
-
   if (projectError) {
     return (
       <ShellFrame>
         <ErrorPanel
           title={t('guest.publicProjectView.galleryNotFound', 'Galeri Tidak Ditemukan')}
-          body={t('guest.publicProjectView.galleryNotFoundBody', 'Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya.')}
+          body={embedded
+            ? t('portal.media.notFoundBody', 'Galeri ini tidak ditemukan atau Anda tidak memiliki akses.')
+            : t('guest.publicProjectView.galleryNotFoundBody', 'Tautan publik ini tidak valid atau telah dinonaktifkan oleh pemiliknya.')}
         />
       </ShellFrame>
     );
@@ -265,26 +299,30 @@ export const PublicProjectViewPage = () => {
   const isLoading = projectLoading || assetsLoading;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-bg-base">
-      <AuroraBackground />
+    <div className={embedded ? 'relative w-full' : 'relative min-h-screen w-full overflow-hidden bg-bg-base'}>
+      {!embedded && <AuroraBackground />}
 
       {/* ─────────────── Hero header bar ─────────────── */}
       <header className="relative z-10 border-b border-border-subtle bg-bg-base/60 backdrop-blur-[12px]">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <span className="font-display text-xl font-semibold tracking-tight text-text-primary">
-                monomi
-              </span>
-              <span className="h-4 w-px bg-border-default" />
-              <span className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
-                Public Gallery
-              </span>
-            </div>
+            {embedded ? (
+              backSlot
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="font-display text-xl font-semibold tracking-tight text-text-primary">
+                  monomi
+                </span>
+                <span className="h-4 w-px bg-border-default" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
+                  {t('guest.publicProjectView.publicGallery', 'Public Gallery')}
+                </span>
+              </div>
+            )}
             {projectLoading ? (
               <Skeleton className="mt-2 h-5 w-72 rounded" />
             ) : (
-              <h1 className="mt-1 truncate text-base font-medium text-text-primary sm:text-lg">
+              <h1 className="mt-1 line-clamp-3 break-words text-base font-medium text-text-primary sm:text-lg">
                 {project?.name ?? '—'}
               </h1>
             )}
@@ -292,13 +330,13 @@ export const PublicProjectViewPage = () => {
 
           {/* Right rail: view count chip */}
           <div className="flex items-center gap-2">
-            {project && (
+            {project && !embedded && (
               <Badge
                 variant="outline"
                 className="border-info/30 bg-info/[0.08] text-info gap-1.5 px-2.5 py-1 text-xs"
               >
                 <Eye className="h-3 w-3" />
-                {project.publicViewCount ?? 0} views
+                {t('guest.publicProjectView.views', '{{count}} views', { count: project.publicViewCount ?? 0 })}
               </Badge>
             )}
           </div>
@@ -311,7 +349,7 @@ export const PublicProjectViewPage = () => {
         {project?.description && (
           <GlassPanel surface="subtle" padding="md" className="mb-5">
             <div className="text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium mb-1.5">
-              Project Summary
+              {t('guest.publicProjectView.projectSummary', 'Project Summary')}
             </div>
             <p className="text-sm text-text-secondary leading-relaxed">
               {project.description}
@@ -333,7 +371,7 @@ export const PublicProjectViewPage = () => {
                   {subfolders.length > 0 && ` · ${subfolders.length} ${t('guest.publicProjectView.folders', 'folders')}`}
                 </span>
               </div>
-              {downloadAssets.length > 0 && (
+              {canDownload && downloadAssets.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
                   {bulkDownloadPending && bulkDownloadProgress !== null && (
                     <span className="text-xs text-text-tertiary tabular-nums">
@@ -393,7 +431,7 @@ export const PublicProjectViewPage = () => {
                 className="h-7 px-2 text-text-tertiary hover:text-text-primary"
               >
                 <Home className="h-3.5 w-3.5" />
-                Root Folder
+                {t('guest.publicProjectView.rootFolder', 'Root Folder')}
               </Button>
               {folderPath.map((folder, idx) => (
                 <div key={folder.id} className="flex items-center gap-1">
@@ -512,17 +550,22 @@ export const PublicProjectViewPage = () => {
           </div>
         </GlassPanel>
 
-        <div className="mt-8 text-center text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
-          Powered by Monomi · Media Collaboration
-        </div>
+        {!embedded && (
+          <div className="mt-8 text-center text-[11px] uppercase tracking-[0.18em] text-text-tertiary">
+            {t('guest.publicProjectView.poweredBy', 'Powered by Monomi · Media Collaboration')}
+          </div>
+        )}
       </main>
 
       {/* Lightbox */}
-      {selected && shareToken && (
+      {selected && (
         <PreviewOverlay
           asset={selected}
           mediaToken={mediaToken ?? null}
-          shareToken={shareToken}
+          source={source}
+          canDownload={canDownload}
+          canComment={canComment}
+          canRate={canRate}
           imageAssets={imageAssets}
           onClose={() => setSelected(null)}
           onNavigate={(next) => setSelected(next)}
@@ -537,11 +580,12 @@ export const PublicProjectViewPage = () => {
 /* ------------------------------------------------------------------ */
 
 function ShellFrame({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-bg-base">
       <AuroraBackground />
       <div className="absolute top-6 right-8 z-10 text-[10px] uppercase tracking-[0.2em] text-text-tertiary">
-        Monomi Studio · Public Gallery
+        {t('guest.publicProjectView.studioPublicGallery', 'Monomi Studio · Public Gallery')}
       </div>
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         {children}
@@ -556,11 +600,12 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
 /* ------------------------------------------------------------------ */
 
 function ErrorPanel({ title, body }: { title: string; body: string }) {
+  const { t } = useTranslation();
   return (
     <GlassPanel surface="strong" padding="lg" className="w-full max-w-[460px]">
       <div className="mb-6">
         <div className="text-[10px] uppercase tracking-[0.2em] text-text-tertiary mb-2">
-          Public Gallery
+          {t('guest.publicProjectView.publicGallery', 'Public Gallery')}
         </div>
         <h1 className="text-[36px] leading-none font-display font-semibold text-text-primary tracking-tight">
           monomi
@@ -570,7 +615,7 @@ function ErrorPanel({ title, body }: { title: string; body: string }) {
         <div className="flex items-center gap-2 mb-1 text-danger">
           <AlertTriangle className="h-5 w-5" />
           <span className="text-[10px] uppercase tracking-[0.16em] font-medium">
-            Cannot Open
+            {t('guest.publicProjectView.cannotOpen', 'Cannot Open')}
           </span>
         </div>
         <h2 className="text-base font-display font-semibold tracking-tight text-text-primary">
@@ -594,6 +639,7 @@ function FolderTile({
   folder: MediaFolder;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -601,7 +647,7 @@ function FolderTile({
       className={cn(
         'group block w-full text-left',
         'rounded-md border border-border-subtle bg-bg-sunken overflow-hidden',
-        'transition-colors hover:border-border-default focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60',
+        'transition-colors hover:border-border-default focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
       )}
     >
       <div className="flex aspect-square w-full items-center justify-center bg-bg-base/60">
@@ -615,7 +661,7 @@ function FolderTile({
           {folder.name}
         </div>
         <div className="mt-0.5 text-[11px] text-text-tertiary">
-          Open folder
+          {t('guest.publicProjectView.openFolder', 'Open folder')}
         </div>
       </div>
     </button>
@@ -649,7 +695,7 @@ function AssetTile({
       className={cn(
         'group block w-full text-left break-inside-avoid mb-3',
         'rounded-md border border-border-subtle bg-bg-sunken overflow-hidden',
-        'transition-colors hover:border-border-default focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60',
+        'transition-colors hover:border-border-default focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
       )}
     >
       <div className="relative w-full bg-bg-base">
@@ -707,11 +753,14 @@ function AssetTile({
 /* ------------------------------------------------------------------ */
 
 function PreviewOverlay({
-  asset, mediaToken, shareToken, imageAssets, onClose, onNavigate,
+  asset, mediaToken, source, canDownload, canComment, canRate, imageAssets, onClose, onNavigate,
 }: {
   asset: MediaAsset;
   mediaToken: string | null;
-  shareToken: string;
+  source: MediaShareSource;
+  canDownload: boolean;
+  canComment: boolean;
+  canRate: boolean;
   imageAssets: MediaAsset[];
   onClose: () => void;
   onNavigate: (asset: MediaAsset) => void;
@@ -761,7 +810,7 @@ function PreviewOverlay({
   // the tile badge in the gallery behind the overlay updates immediately.
   const handleRatingChange = (newRating: number) => {
     queryClient.setQueryData<MediaAsset[]>(
-      ['public-assets-v2', shareToken],
+      ['public-assets-v2', source.key],
       (prev) =>
         prev?.map((a) => (a.id === asset.id ? { ...a, starRating: newRating } : a)) ?? prev,
     );
@@ -829,13 +878,14 @@ function PreviewOverlay({
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setLightboxOpen(true)}
-                  aria-label="Zoom"
-                  title="Zoom / fullscreen"
+                  aria-label={t('guest.publicProjectView.zoom', 'Zoom')}
+                  title={t('guest.publicProjectView.zoomFullscreen', 'Zoom / fullscreen')}
                   className="text-text-tertiary hover:text-text-primary"
                 >
                   <Maximize2 className="h-4 w-4" />
                 </Button>
               )}
+              {canDownload && (
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -850,11 +900,12 @@ function PreviewOverlay({
               >
                 <Download className="h-4 w-4" />
               </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon-sm"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={t('guest.publicProjectView.close', 'Close')}
                 className="text-text-tertiary hover:text-text-primary"
               >
                 <X className="h-4 w-4" />
@@ -887,8 +938,10 @@ function PreviewOverlay({
         {/* ── Right column: feedback panel ── */}
         <div className="w-full md:w-[320px] md:shrink-0 overflow-y-auto">
           <GuestFeedbackPanel
-            shareToken={shareToken}
+            source={source}
             asset={asset}
+            canComment={canComment}
+            canRate={canRate}
             onRatingChange={handleRatingChange}
           />
         </div>
@@ -900,11 +953,14 @@ function PreviewOverlay({
           src={src}
           alt={asset.originalName}
           downloadUrl={src}
+          hideDownload={!canDownload}
           onClose={() => setLightboxOpen(false)}
           infoPanel={(
             <GuestFeedbackPanel
-              shareToken={shareToken}
+              source={source}
               asset={asset}
+              canComment={canComment}
+              canRate={canRate}
               onRatingChange={handleRatingChange}
             />
           )}

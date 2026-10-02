@@ -22,6 +22,7 @@ import {
   validateStatusTransition,
   QuotationStatus as ValidatorQuotationStatus,
 } from "./validators/status-transition.validator";
+import { assertNotInternalClient } from "../clients/client-scope";
 import { wibStartOfDay } from "../../common/utils/wib-date.util";
 
 @Injectable()
@@ -51,12 +52,16 @@ export class QuotationsService {
         id: true,
         priceBreakdown: true,
         scopeOfWork: true,
+        client: { select: { isInternal: true } },
       },
     });
 
     if (!project) {
       throw new NotFoundException("Project tidak ditemukan");
     }
+    // Projects owned by the internal client (Monomi's own productions) are
+    // not billable.
+    assertNotInternalClient(project.client);
 
     if (project.clientId !== createQuotationDto.clientId) {
       throw new BadRequestException(
@@ -67,11 +72,12 @@ export class QuotationsService {
     // Guard: reject if client is inactive
     const client = await this.prisma.client.findUnique({
       where: { id: createQuotationDto.clientId },
-      select: { status: true },
+      select: { status: true, isInternal: true },
     });
     if (!client) {
       throw new NotFoundException("Klien tidak ditemukan");
     }
+    assertNotInternalClient(client);
     if (client.status !== "active") {
       throw new BadRequestException(
         "Cannot create document for an inactive client",
@@ -322,9 +328,20 @@ export class QuotationsService {
 
     // Add relation connects if IDs are provided
     if (clientId) {
+      assertNotInternalClient(
+        await this.prisma.client.findUnique({
+          where: { id: clientId },
+          select: { isInternal: true },
+        }),
+      );
       updateData.client = { connect: { id: clientId } };
     }
     if (projectId) {
+      const targetProject = await this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { client: { select: { isInternal: true } } },
+      });
+      assertNotInternalClient(targetProject?.client);
       updateData.project = { connect: { id: projectId } };
     }
 

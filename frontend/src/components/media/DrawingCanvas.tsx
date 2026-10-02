@@ -253,7 +253,7 @@ export function DrawingCanvas({
       className={cn(
         'h-7 w-7',
         activeTool === tool
-          ? 'bg-accent text-white'
+          ? 'bg-brand-cream text-bg-base'
           : 'text-white/70 hover:text-white hover:bg-white/10',
       )}
       title={label}

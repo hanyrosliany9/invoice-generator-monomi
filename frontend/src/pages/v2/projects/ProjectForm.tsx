@@ -264,8 +264,10 @@ export const ProjectForm = ({
   // so we let TanStack cache them globally and accept the loading shimmer
   // on first paint.
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ['clients'],
-    queryFn: clientService.getClients,
+    // Includes the internal client (Monomi) so its own productions can be
+    // tracked as projects; quotations/invoices still reject it server-side.
+    queryKey: ['clients', 'with-internal'],
+    queryFn: clientService.getClientsWithInternal,
   });
   const { data: projectTypes = [], isLoading: projectTypesLoading } = useQuery({
     queryKey: ['project-types'],
@@ -464,6 +466,11 @@ export const ProjectForm = ({
                     node: (
                       <span className="flex items-baseline gap-1.5">
                         <span>{c.name}</span>
+                        {c.isInternal && (
+                          <span className="rounded bg-surface-secondary px-1.5 text-[10px] uppercase text-text-tertiary">
+                            {t('clients.internalBadge', 'Internal')}
+                          </span>
+                        )}
                         {c.company && (
                           <span className="text-text-tertiary text-xs">· {c.company}</span>
                         )}

@@ -106,7 +106,7 @@ export function FilterSortBar({
                 type="button"
                 onClick={() => onChange({ ...filters, mediaType: opt })}
                 className={cn(
-                  'px-3 py-1.5 rounded-sm transition-colors font-medium',
+                  'px-3 py-2 sm:py-1.5 rounded-sm transition-colors font-medium',
                   active
                     ? 'bg-bg-raised text-text-primary shadow-[var(--shadow-glow)]'
                     : 'text-text-tertiary hover:text-text-secondary',
@@ -142,7 +142,7 @@ export function FilterSortBar({
         {activeFilterCount > 0 && (
           <Button variant="ghost" size="sm" onClick={reset} className="h-8 text-xs text-text-tertiary hover:text-text-primary gap-1.5">
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            <Badge className="bg-accent/20 text-text-secondary text-[10px] px-1.5 py-0 h-4">
+            <Badge className="bg-bg-glass-strong text-text-secondary text-[10px] px-1.5 py-0 h-4">
               {activeFilterCount}
             </Badge>
             {t('mediaReview.clearFilters', 'Clear')}
@@ -157,7 +157,7 @@ export function FilterSortBar({
           value={filters.reviewStatus}
           onValueChange={(v) => onChange({ ...filters, reviewStatus: v as ReviewStatusFilter })}
         >
-          <SelectTrigger size="sm" className="h-8 text-xs bg-bg-sunken border-border-subtle text-text-primary w-[150px]">
+          <SelectTrigger size="sm" className="h-9 sm:h-8 text-xs bg-bg-sunken border-border-subtle text-text-primary w-auto min-w-[150px]">
             <SelectValue placeholder={t('mediaReview.statusAll', 'All statuses')} />
           </SelectTrigger>
           <SelectContent>
@@ -175,7 +175,7 @@ export function FilterSortBar({
           value={String(filters.minStar)}
           onValueChange={(v) => onChange({ ...filters, minStar: Number(v) as StarFilter })}
         >
-          <SelectTrigger size="sm" className="h-8 text-xs bg-bg-sunken border-border-subtle text-text-primary w-[130px]">
+          <SelectTrigger size="sm" className="h-9 sm:h-8 text-xs bg-bg-sunken border-border-subtle text-text-primary w-auto min-w-[130px]">
             <SelectValue placeholder={t('mediaReview.anyRating', 'Any rating')} />
           </SelectTrigger>
           <SelectContent>
@@ -193,7 +193,7 @@ export function FilterSortBar({
           value={filters.sortBy}
           onValueChange={(v) => onChange({ ...filters, sortBy: v as SortField })}
         >
-          <SelectTrigger size="sm" className="h-8 text-xs bg-bg-sunken border-border-subtle text-text-primary w-[140px]">
+          <SelectTrigger size="sm" className="h-9 sm:h-8 text-xs bg-bg-sunken border-border-subtle text-text-primary w-auto min-w-[140px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

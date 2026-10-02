@@ -12,6 +12,10 @@ import {
   generateDeckShareToken,
   generateDeckShareUrl,
 } from "../utils/deck-share.util";
+import {
+  assertClientMatchesProject,
+  effectiveLink,
+} from "../../../common/utils/client-project-link.util";
 
 @Injectable()
 export class DecksService {
@@ -47,6 +51,10 @@ export class DecksService {
       });
       if (!mediaProject) throw new NotFoundException("Media project not found");
     }
+
+    // An explicit client must match the linked project's client (the client
+    // portal treats clientId as authoritative; a mismatch would mislabel it).
+    await assertClientMatchesProject(this.prisma, dto.clientId, dto.projectId);
 
     // Create deck with creator as OWNER collaborator
     const deck = await this.prisma.deck.create({
@@ -176,6 +184,15 @@ export class DecksService {
     const collaborator = deck.collaborators.find((c) => c.userId === userId);
     if (!collaborator || !["OWNER", "EDITOR"].includes(collaborator.role)) {
       throw new ForbiddenException("Edit permission required");
+    }
+
+    // Client/project consistency, judged on the values AFTER this update.
+    if (dto.clientId !== undefined || dto.projectId !== undefined) {
+      await assertClientMatchesProject(
+        this.prisma,
+        effectiveLink(dto.clientId, deck.clientId),
+        effectiveLink(dto.projectId, deck.projectId),
+      );
     }
 
     return this.prisma.deck.update({

@@ -25,6 +25,8 @@ const LARGE_JSON_BODY_ROUTE_PATTERNS: readonly string[] = [
   "media-collab/bulk-download/jobs",
   // Public share link async "Download All" job
   "media-collab/public/:token/async-bulk-download",
+  // Client portal async "Download All" job
+  "portal/clients/:clientId/media-projects/:projectId/async-bulk-download",
 ];
 
 function escapeRegExp(value: string): string {

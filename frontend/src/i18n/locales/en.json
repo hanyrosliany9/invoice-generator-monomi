@@ -242,8 +242,8 @@
     "error": {
       "title": "Cannot load dashboard"
     },
-    "newQuotation": "+ New Quotation",
-    "newInvoice": "+ New Invoice",
+    "newQuotation": "New Quotation",
+    "newInvoice": "New Invoice",
     "invoiceStatus": "Invoice Status",
     "invoiceStatusDesc": "Distribution by count",
     "noInvoiceData": "No invoice data yet"
@@ -786,6 +786,7 @@
   },
   "clients": {
     "title": "Clients",
+    "internalBadge": "Internal",
     "create": {
       "error": "Failed to add client. Please try again.",
       "subtitle": "Add a new client to start recording projects, quotations, and invoices.",
@@ -2200,7 +2201,61 @@
     "highlightEditing": "Editing highlight",
     "highlightNewInstead": "+ New highlight",
     "highlightUpdate": "Update Highlight",
-    "highlightUpdated": "Highlight updated."
+    "highlightUpdated": "Highlight updated.",
+    "planner": {
+      "addOnDay": "Add",
+      "bulk": {
+        "apply": "Apply",
+        "clear": "Clear selection",
+        "days": "days",
+        "deleteDesc": "This cannot be undone. Media files still used by other posts are not removed.",
+        "deleteTitle": "Delete {{n}} posts?",
+        "done": "{{n}} posts updated.",
+        "failed": "Bulk action failed.",
+        "partial": "{{ok}} succeeded, {{bad}} failed: {{reason}}",
+        "selectAll": "Select all ({{n}})",
+        "selectAllRows": "Select all rows",
+        "selectRow": "Select post",
+        "selected": "{{n}} selected",
+        "setStatus": "Change status",
+        "shift": "Shift schedule",
+        "shiftDesc": "The WIB time of day stays the same. A negative number moves posts earlier. Posts without a schedule are skipped.",
+        "shiftTitle": "Shift schedule of {{n}} posts"
+      },
+      "clearDate": "Clear schedule",
+      "dragHint": "drag to reschedule",
+      "duplicate": "Duplicate",
+      "duplicateFailed": "Failed to duplicate the post.",
+      "duplicated": "Draft copy created. Set its schedule.",
+      "formatPlatform": "Format & Platform",
+      "kind": {
+        "carousel": "Carousel",
+        "post": "Post",
+        "reel": "Reel",
+        "story": "Story"
+      },
+      "moveUndone": "Schedule restored.",
+      "moved": "Moved to {{date}}",
+      "noPostsDay": "No posts on this day yet.",
+      "overdue": "Overdue",
+      "overdueHint": "The scheduled time has passed. Mark it published or reschedule it.",
+      "pastSchedule": "{{when}} has already passed. Pick a later time or save as a draft.",
+      "pickDay": "Pick a day",
+      "publish": {
+        "confirm": "Mark as published",
+        "desc": "When did this post actually go live? This date is used in the calendar and reports.",
+        "future": "The published time cannot be in the future.",
+        "title": "Mark as published"
+      },
+      "publishedAtDate": "Published date",
+      "publishedAtTime": "Published time",
+      "saveAsPublished": "Save as Published",
+      "undo": "Undo",
+      "uploadPartial": "{{ok}} of {{total}} files uploaded. {{reason}}",
+      "uploadTrimmed": "Only the first {{n}} files were used (limit {{max}} media).",
+      "wibHint": "Times are set in WIB (Asia/Jakarta), not in the browser time zone.",
+      "wibNote": "Times are shown in WIB (Asia/Jakarta). Drag a post to another day to reschedule it."
+    }
   },
   "expenses": {
     "action": {
@@ -5285,7 +5340,7 @@
     "outputHint": "Final deliverable, e.g. video, campaign, website",
     "scope": "Scope of Work",
     "scopeHint": "Optional. Detail tasks, deliverables, revisions, timeline.",
-    "scopePh": "Scope placeholder",
+    "scopePh": "Example:\n1. Creative concept development\n2. 30-second video production\n3. Editing and color grading\n4. Up to 3 revisions\n\nTimeline: 2 weeks\nDeliverables: Final video MP4 1080p",
     "classification": {
       "title": "Client & Type",
       "desc": "Client becomes the project owner; type determines the numbering prefix."
@@ -5586,7 +5641,8 @@
     },
     "noSections": {
       "title": "No sections yet",
-      "desc": "Add CSV data sources and visualizations via the report editor."
+      "desc": "Add CSV data sources and visualizations via the report editor.",
+      "desc2": "Add data (upload a file or type the numbers) in the report editor."
     },
     "openBuilder": "Open Editor",
     "noData": "No data",
@@ -5595,7 +5651,12 @@
     "noViz": "No visualizations in this section yet.",
     "invalidPdfUrl": "Invalid PDF URL",
     "back": "Back",
-    "generatePdfPending": "Generating…"
+    "generatePdfPending": "Generating…",
+    "pdfDownloaded": "PDF downloaded.",
+    "editData": "Edit data",
+    "subtitle2": "This is the report as the client sees it.",
+    "contents": "Contents",
+    "contentsValue": "{{sections}} sections, {{charts}} charts, {{rows}} rows"
   },
   "reportBuilder": {
     "createTitle": "New Report",
@@ -5617,7 +5678,9 @@
     "identity": {
       "title": "Report Identity",
       "editSubtitle": "Identity is locked after the report is created. Contact admin for structural changes.",
-      "createSubtitle": "Title, project, and reporting period. Locked after saving."
+      "createSubtitle": "Title, project, and reporting period. Locked after saving.",
+      "editSubtitle2": "Title, description and period can be changed. The project is fixed.",
+      "createSubtitle2": "Title, project, and reporting period."
     },
     "field": {
       "title": "Report Title",
@@ -5636,7 +5699,8 @@
     },
     "sections": {
       "title": "Data Sections",
-      "subtitle": "{{count}} sections — one CSV file per section"
+      "subtitle": "{{count}} sections — one CSV file per section",
+      "subtitle2": "{{count}} sections. Each section is one table of numbers with its charts."
     },
     "addSection": "Add Section",
     "csvRequired": "Please select a CSV file first.",
@@ -5649,7 +5713,8 @@
     "confirmRemoveSection": "Remove this section?",
     "noSections": {
       "title": "No sections yet",
-      "desc": "Upload a CSV file above to create your first section."
+      "desc": "Upload a CSV file above to create your first section.",
+      "desc2": "Upload a file, type the numbers in a table, or enter a few headline numbers above to create your first section."
     },
     "viz": {
       "title": "Visualizations",
@@ -5679,7 +5744,30 @@
       "body": "Drag-and-drop canvas editor, widget palette (Text/Metric/Image/Callout), freeform grid layout, and live preview are available in the classic editor. The v2 version focuses on the identity + CSV sections + form-configured visualizations flow."
     },
     "vizFailed": "Failed to save visualization.",
-    "vizSaved": "Visualization saved."
+    "vizSaved": "Visualization saved.",
+    "identitySaved": "Report details saved.",
+    "identitySaveFailed": "Failed to save report details.",
+    "dataReplaced": "Data uploaded.",
+    "dataReplaceFailed": "Failed to upload data.",
+    "liveEditConfirm": "This report is live in the client portal. Your changes will be visible to the client immediately. Save anyway?",
+    "liveWarning": "This report is live in the client portal. Every change you save (details, sections, charts) is visible to the client immediately. Move it back to draft from the report page to edit privately.",
+    "saveDetails": "Save details",
+    "noDataYet": "No data yet. The charts are kept; upload this month's CSV to fill them.",
+    "uploading": "Uploading…",
+    "uploadData": "Upload data",
+    "replaceData": "Replace data",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeSection": "Remove section",
+    "editSubtitle2": "Add this month's data, check the charts, then preview as the client and send.",
+    "finish": "Done: view report",
+    "finishShort": "Done",
+    "jumpToSection": "Jump to section",
+    "sectionNumber": "Section {{n}}",
+    "clash": "A report for this project in {{period}} already exists: {{title}}.",
+    "openExisting": "Open it",
+    "copyHint": "Last report for this project: {{title}} ({{period}}). Copy its sections and charts to {{target}} and only fill in the new numbers.",
+    "copyAction": "Copy last report"
   },
   "socialMediaReports": {
     "title": "Social Media Reports",
@@ -5700,7 +5788,13 @@
       "engagement": "Engagement Rate",
       "engagementSub": "average across platforms",
       "reports": "Saved Reports",
-      "reportsSub": "ready to share"
+      "reportsSub": "ready to share",
+      "reportsAll": "across all clients",
+      "drafts": "Drafts",
+      "draftsSub": "not visible to clients",
+      "live": "Live in client portal",
+      "liveSub": "{{count}} emailed to the client",
+      "thisMonth": "Reports this month"
     },
     "platform": {
       "title": "Per-Platform Breakdown",
@@ -5743,7 +5837,15 @@
       "actions": "Actions"
     },
     "reportActions": "Report actions",
-    "sampleDataNotice": "Sample data — real analytics coming soon. The numbers below are placeholders and do not reflect actual account performance."
+    "sampleDataNotice": "Sample data — real analytics coming soon. The numbers below are placeholders and do not reflect actual account performance.",
+    "subtitle2": "Monthly performance reports for your clients: create, review and send.",
+    "month": {
+      "title": "Reports for {{period}}",
+      "allDone": "Every project that has reported before already has a report this month.",
+      "missing": "{{count}} project(s) still need a report this month. Copy last month's structure to start.",
+      "lastReport": "last report: {{period}}",
+      "copy": "Copy last report"
+    }
   },
   "calendarPage": {
     "title": "Calendar",
@@ -7064,7 +7166,25 @@
       "searchPlaceholder": "Search files...",
       "noFilesMatch": "No matching files",
       "tryOtherKeyword": "Try a different keyword or clear the search.",
-      "emptyFolder": "No assets or folders at this level yet."
+      "emptyFolder": "No assets or folders at this level yet.",
+      "galleryTitle": "Media Gallery",
+      "assets": "assets",
+      "folders": "folders",
+      "foldersLabel": "Folders",
+      "assetsLabel": "Assets",
+      "emptyFolderTitle": "This folder is empty",
+      "clearSearch": "Clear search",
+      "publicGallery": "Public Gallery",
+      "views": "{{count}} views",
+      "projectSummary": "Project Summary",
+      "rootFolder": "Root Folder",
+      "openFolder": "Open folder",
+      "poweredBy": "Powered by Monomi · Media Collaboration",
+      "studioPublicGallery": "Monomi Studio · Public Gallery",
+      "cannotOpen": "Cannot Open",
+      "zoom": "Zoom",
+      "zoomFullscreen": "Zoom / fullscreen",
+      "close": "Close"
     },
     "deckAcceptInvite": {
       "genericError": "Something went wrong. Please try again.",
@@ -7677,7 +7797,18 @@
     "aboutThisDeck": "About this deck",
     "navHint": "Use ← → to navigate between slides",
     "slideCount": "{{count}} slide",
-    "viewCount": "{{count}} views"
+    "viewCount": "{{count}} views",
+    "exportPdf": "Export PDF",
+    "exportFailed": "Export failed",
+    "exportReady": "PDF is ready — check your downloads",
+    "commentPosted": "Comment posted",
+    "commentFailed": "Failed to post comment",
+    "commentsTitle": "Comments",
+    "currentSlide": "this slide",
+    "noComments": "No comments yet. Be the first!",
+    "guest": "Guest",
+    "namePlaceholder": "Your name (optional)",
+    "commentPlaceholder": "Leave a comment…"
   },
   "deckInvite": {
     "eyebrow": "Deck Invitation",
@@ -7907,6 +8038,15 @@
     "delete": "Delete",
     "follow": "Follow",
     "message": "Message",
+    "tabGridLabel": "Grid",
+    "tabHighlights": "Highlights",
+    "tabReelsLabel": "Reels",
+    "tabReposts": "Reposts",
+    "tabTagged": "Tagged",
+    "manageHighlights": "Manage highlights",
+    "noHighlights": "No highlights yet.",
+    "noReposts": "No reposts yet.",
+    "noTagged": "No tagged posts yet.",
     "reorderFailed": "Couldn't save grid order.",
     "formatUpdated": "Content format updated.",
     "formatFailed": "Couldn't update format."
@@ -7917,5 +8057,355 @@
     "invalidDesc": "This share link wasn't found or has been disabled. Contact your agency for an updated link.",
     "subtitle": "Social media content plan — previewed as it appears in the apps.",
     "posts": "content"
+  },
+  "portal": {
+    "common": {
+      "tooMany": "Too many requests. Please try again shortly.",
+      "loadError": "Unable to load data. Check your connection and try again.",
+      "retry": "Try again",
+      "logout": "Log out",
+      "switchClient": "Switch client"
+    },
+    "picker": {
+      "title": "Choose a client",
+      "subtitle": "Hi, {{name}}. Your account has access to several clients.",
+      "noneTitle": "No clients yet",
+      "noneDesc": "Your account is not linked to any client yet. Please contact Monomi."
+    },
+    "tabs": {
+      "label": "Portal sections",
+      "content": "Content",
+      "reports": "Reports",
+      "media": "Media",
+      "decks": "Decks"
+    },
+    "content": {
+      "subtitle": "Social media content plan — previews as they appear in the app.",
+      "emptyTitle": "No content yet",
+      "emptyDesc": "Your content plan will appear here once the Monomi team has prepared it."
+    },
+    "decks": {
+      "emptyTitle": "No decks yet",
+      "emptyDesc": "Presentations shared by Monomi will appear here.",
+      "slideCount": "{{count}} slides",
+      "back": "All decks",
+      "notFoundTitle": "Deck not found",
+      "notFoundBody": "This deck was not found or you do not have access."
+    },
+    "login": {
+      "emailInvalid": "Enter a valid email address.",
+      "tooMany": "Too many attempts. Please try again in a little while.",
+      "sendFailed": "We could not send the code right now. Please try again shortly.",
+      "codeInvalid": "The code is incorrect or has expired. Check it again or request a new one.",
+      "verifyFailed": "We could not verify the code right now. Please try again.",
+      "eyebrow": "Client Portal",
+      "title": "Sign in to your portal",
+      "codeTitle": "Enter the code",
+      "expired": "Your session has ended. Please sign in again.",
+      "emailHelp": "Enter your email. We will send you a 6-digit code to sign in.",
+      "email": "Email",
+      "sendCode": "Send code",
+      "codeHelp": "If {{email}} is registered, we have sent a 6-digit code. It is valid for a few minutes.",
+      "code": "6-digit code",
+      "verify": "Sign in",
+      "changeEmail": "Change email",
+      "resendIn": "Resend code ({{seconds}}s)",
+      "resend": "Resend code",
+      "footer": "Access for registered client contacts only"
+    },
+    "media": {
+      "emptyTitle": "No media galleries yet",
+      "emptyDesc": "Photos and videos from your productions will appear here.",
+      "assetCount": "{{count}} files",
+      "back": "All galleries",
+      "notFoundTitle": "Gallery not found",
+      "notFoundBody": "This gallery was not found or you do not have access."
+    },
+    "reports": {
+      "back": "All reports",
+      "subtitle": "Your social media performance, month by month.",
+      "latest": "Latest",
+      "view": "View report",
+      "sectionsCount": "{{count}} sections",
+      "teaserFallback": "Includes: {{titles}}",
+      "updated": "Updated {{date}}",
+      "summary": "Summary",
+      "summaryHint": "The key numbers from this report.",
+      "toc": "In this report",
+      "showData": "View data",
+      "hideData": "Hide data",
+      "noData": "No data to show yet.",
+      "pdfPreparing": "Preparing PDF…",
+      "pdfHint": "The PDF is prepared on request and can take up to 30 seconds.",
+      "others": "Others",
+      "pieTotal": "Total",
+      "kpi": {
+        "total": "Total this period",
+        "average": "Average",
+        "highest": "Highest value",
+        "lowest": "Lowest value",
+        "count": "Data points",
+        "latest": "As of {{date}}",
+        "lastValueAt": "Nilai terakhir ({{date}})",
+        "lastValue": "Nilai terakhir"
+      },
+      "delta": {
+        "since": "vs {{date}}",
+        "points": "{{value}} pts"
+      },
+      "insight": {
+        "up": "{{label}} rose {{change}} from {{from}} ({{fromValue}}) to {{to}} ({{toValue}}).",
+        "down": "{{label}} fell {{change}} from {{from}} ({{fromValue}}) to {{to}} ({{toValue}}).",
+        "flat": "{{label}} stayed steady around {{value}}.",
+        "peak": "Highest: {{value}} on {{at}}.",
+        "highest": "Highest: {{name}} ({{value}}).",
+        "lowest": "Lowest: {{name}} ({{value}}).",
+        "pie": "{{name}} is the largest: {{percent}} of the total {{total}}."
+      },
+      "pdfFailed": "The PDF could not be downloaded. Please try again.",
+      "loadError": "The report could not be loaded or you do not have access.",
+      "downloadPdf": "Download PDF",
+      "noSectionsTitle": "This report has no content yet",
+      "noSectionsDesc": "Report sections will appear here once the Monomi team has finished them.",
+      "status": {
+        "completed": "Completed",
+        "sent": "Sent",
+        "draft": "Draft"
+      },
+      "emptyTitle": "No reports yet",
+      "emptyDesc": "Your monthly social media reports will appear here."
+    },
+    "admin": {
+      "added": "Portal contact added",
+      "addFailed": "Failed to add contact",
+      "updateFailed": "Failed to update contact",
+      "removed": "Portal contact removed",
+      "removeFailed": "Failed to remove contact",
+      "inviteSent": "Invitation sent to {{email}}",
+      "inviteFailed": "Failed to send invitation",
+      "confirmRemove": "Remove portal access for {{email}}? This contact will no longer be able to sign in.",
+      "emailInvalid": "Enter a valid email address",
+      "nameRequired": "Contact name is required",
+      "copyFailed": "Could not copy. Please copy the link manually.",
+      "title": "Client Portal",
+      "subtitle": "The contacts below can sign in to the portal with a code sent to their email, and only see this client's content, reports, media and decks.",
+      "copyUrl": "Copy portal link",
+      "loadFailed": "Failed to load portal contacts",
+      "empty": "No portal contacts yet. Add one below.",
+      "inactive": "Inactive",
+      "lastLogin": "Last login",
+      "neverLoggedIn": "Never signed in",
+      "active": "Active",
+      "invite": "Send invitation",
+      "namePlaceholder": "Contact name",
+      "emailPlaceholder": "Contact email",
+      "add": "Add contact"
+    }
+  },
+  "reportActions": {
+    "edit": {
+      "saved": "Report details updated.",
+      "failed": "Failed to update report details.",
+      "title": "Edit report details",
+      "desc": "Change the title, description or reporting period. Sections and data are not affected.",
+      "liveWarning": "This report is live in the client portal. Changes are visible to the client immediately. Move it back to draft first if you want to edit privately.",
+      "periodHint": "New period: {{period}}. Each project can have one report per month.",
+      "menu": "Edit title & period"
+    },
+    "send": {
+      "partial": "Sent to {{sent}} contact(s); {{failed}} failed.",
+      "done": "Report sent to {{count}} contact(s).",
+      "failed": "The email could not be sent.",
+      "title": "Send to client",
+      "desc": "Emails the client's active portal contacts a link to this report in the client portal, then marks it as Sent.",
+      "partialHint": "Some emails failed. Check the SMTP configuration, then send again; contacts already notified will receive it again.",
+      "loadFailed": "Could not load the recipients.",
+      "internal": "This report belongs to an internal client, which has no client portal.",
+      "noContacts": "{{client}} has no active portal contacts yet, so there is nobody to email.",
+      "noContactsHint": "Add a contact under \"Client Portal\" on the client page, then come back here.",
+      "openClient": "Open client page",
+      "willNotify": "These contacts will be emailed ({{count}})",
+      "link": "Link in the email",
+      "draftNote": "This report is still a draft. Sending it publishes it to the client portal.",
+      "lastSent": "Last sent {{date}}. Sending again will email the contacts again.",
+      "noData": "This report has no data yet. Upload data to at least one section before sending.",
+      "retry": "Try again",
+      "submit": "Send email",
+      "again": "Send to client again",
+      "menu": "Send to client"
+    },
+    "duplicate": {
+      "done": "Copied to {{period}} as a draft. Upload new data to each section.",
+      "failed": "Failed to copy the report.",
+      "menu": "Copy to next month"
+    },
+    "revert": {
+      "done": "Report moved back to draft. It is no longer visible to the client.",
+      "confirm": "Move this report back to draft? It will disappear from the client portal until you complete or send it again.",
+      "menu": "Back to draft"
+    },
+    "publish": "Publish to portal (no email)",
+    "banner": {
+      "draft": "Draft: not visible to the client yet.",
+      "live": "Live in the client portal. Edits are visible to the client immediately.",
+      "emailed": "Emailed to {{to}} on {{date}}.",
+      "notEmailed": "The client has not been emailed about it."
+    }
+  },
+  "reportData": {
+    "periodMismatch": "The data contains dates outside {{period}}. Use it anyway?",
+    "periodMismatchDetail": "{{outside}} of {{total}} dates in \"{{column}}\" are outside that month (the data runs from {{min}} to {{max}}).",
+    "periodConfirmFirst": "Confirm that you want to use data from another month first.",
+    "periodUseAnyway": "Yes, use this data anyway",
+    "confirmDesc": "Please check this before the data is applied. Nothing has been changed yet.",
+    "confirmApply": "Use this data anyway",
+    "confirmAddTitle": "Add data from another month?",
+    "confirmSaveTitle": "Save data from another month?",
+    "confirmReplaceTitle": "Replace the data of \"{{title}}\"?",
+    "chartsReplaced": "The new data has different columns. These {{count}} chart(s) will be removed:",
+    "chartsRemoved": "These {{count}} chart(s) use columns that are not in the new data and will be removed:",
+    "chartsRegenerated": "{{count}} new chart(s) will be created automatically from the new columns. Check them afterwards.",
+    "chartsKept": "{{count}} other chart(s) keep working.",
+    "chartsReplacedNote": "The new data has different columns, so the charts were re-created automatically. Removed: {{names}}. Please check them.",
+    "chartsRemovedNote": "Removed because their columns are not in the new data: {{names}}.",
+    "notes": "Please check",
+    "readFailed": "The file could not be read.",
+    "suggest": {
+      "content": "Top content"
+    },
+    "noRows": "Fill in at least one row of numbers first.",
+    "noMetrics": "Enter at least one number.",
+    "mode": {
+      "file": "Upload file",
+      "fileHint": "CSV or Excel export",
+      "manual": "Type in a table",
+      "manualHint": "Spreadsheet-style entry",
+      "metrics": "Headline numbers",
+      "metricsHint": "Just a few totals"
+    },
+    "addSectionOpen": "Add data section",
+    "addSectionTitle": "Add data section",
+    "addSectionHint": "A section is one table of numbers (for example Instagram daily) with its charts.",
+    "dropFile": "Choose a file or drop it here",
+    "previewSummary": "{{rows}} rows, {{cols}} columns read from {{name}}",
+    "startFrom": "Start from",
+    "tpl": {
+      "instagram": "Instagram daily",
+      "tiktok": "TikTok daily",
+      "content": "Top content"
+    },
+    "blank": "Blank table",
+    "choosePreset": "Pick a starting table above. Daily tables come with every date of the report month already filled in.",
+    "dataSaved": "Data saved.",
+    "dataSaveFailed": "Could not save the data.",
+    "editData": "Edit data",
+    "editDataHint": "Fix a wrong number or add rows, then save. Charts are kept.",
+    "fillDataHint": "Type this month's numbers (or paste them from Excel), then save. The charts are already set up.",
+    "saveData": "Save data",
+    "renamed": "Section updated.",
+    "renameFailed": "Could not update the section.",
+    "source": {
+      "metrics": "Headline numbers",
+      "manual": "Typed in",
+      "file": "File: {{name}}"
+    },
+    "rename": "Rename section",
+    "rowsCols": "{{rows}} rows, {{cols}} columns",
+    "typeData": "Type the data",
+    "tooBig": "Too large to edit here. Replace it with a file instead.",
+    "editNumbers": "Edit numbers",
+    "viewEdit": "View & edit data",
+    "hideRows": "Hide rows",
+    "showRows": "Show rows",
+    "dismiss": "Dismiss",
+    "kind": {
+      "date": "Date",
+      "number": "Number",
+      "percent": "Percent",
+      "currency": "Rupiah",
+      "text": "Text"
+    },
+    "column": "Column",
+    "pasteTable": "Paste from Excel",
+    "addRow": "Add row",
+    "addColumn": "Add column",
+    "gridCount": "{{rows}} rows, {{cols}} columns",
+    "pasteHelp": "Copy the table from Excel or Google Sheets (including the header row) and paste it here. This replaces the grid below.",
+    "usePasted": "Use pasted table",
+    "columnName": "Column name",
+    "removeColumn": "Remove column",
+    "removeRow": "Remove row {{n}}",
+    "gridHelp": "Type numbers the way they appear in the app (1.234 or 12,5 are both fine). Dates: 01/09/2026 or 1 Sep 2026. You can paste cells copied from Excel into any cell.",
+    "metricsHelp": "Enter the headline numbers for this month. Each one becomes a card in the report. No file needed.",
+    "metricName": "Metric name",
+    "metricValue": "Value",
+    "metricKind": "Type",
+    "removeMetric": "Remove metric",
+    "addMetric": "Add metric",
+    "previewMore": "Showing the first {{shown}} of {{total}} rows.",
+    "tplFailed": "Could not download the template. Try again.",
+    "tplTitle": "No file yet? Download a template with the right columns",
+    "formatHelp": "Accepted: .csv (comma or semicolon) and Excel .xlsx/.xls, max 5 MB. One row per day (or per post). Dates like 2026-09-01, 01/09/2026 or 1 Sep 2026; numbers like 1234, 1.234, 12,5 or 3,4%. The first row holds the column names.",
+    "tooLarge": "File too large (maximum 5 MB)."
+  },
+  "reportCopy": {
+    "title": "Copy report to another month",
+    "desc": "Copies \"{{title}}\" ({{period}}) as a new draft: same sections and charts, but no data.",
+    "loadFailed": "Could not check which months already have a report.",
+    "skipped": "{{skipped}} already has a report for this project, so the next free month is {{target}}. You can pick another month below.",
+    "exists": "already exists",
+    "clash": "{{period}} already has a report for this project. Pick another month.",
+    "target": "The copy will be created for {{period}}.",
+    "submit": "Copy to {{period}}"
+  },
+  "reportViz": {
+    "autoTrend": "Trend {{y}}",
+    "autoPer": "{{y}} per {{x}}",
+    "noPlottable": "No data for this chart. It is hidden from the client until the column has values.",
+    "agg": {
+      "sum": "Total (sum)",
+      "average": "Average",
+      "latest": "Latest value",
+      "max": "Highest",
+      "min": "Lowest",
+      "count": "Number of rows"
+    },
+    "noDataPreview": "The preview appears once this section has data.",
+    "pickColumn": "Choose a column to see the number.",
+    "remove": "Remove chart",
+    "missingColumns": "This chart uses a column that is not in the data: {{cols}}. Pick another column.",
+    "howToCombine": "How to combine the rows",
+    "yAxisMulti": "Values (tap to choose one or more)",
+    "noNumeric": "No numeric columns in this data yet.",
+    "preview": "Preview as the client sees it",
+    "newCard": "New number",
+    "unsaved": "Not saved yet",
+    "addCard": "Add number card",
+    "collapse": "Hide chart settings",
+    "expand": "Show chart settings ({{count}})",
+    "leaveConfirm": "You have chart changes that are not saved. Leave without saving?",
+    "type": {
+      "line": "Line",
+      "bar": "Bar",
+      "area": "Area",
+      "pie": "Pie",
+      "metric": "Number card",
+      "table": "Table"
+    }
+  },
+  "reportStatus": {
+    "completed": "Completed",
+    "sent": "Sent",
+    "draft": "Draft"
+  },
+  "reportPreview": {
+    "emptyHidden": "{{count}} section(s) have no data and are hidden from the client: {{names}}.",
+    "fillData": "Fill in data",
+    "noContent": "This report has no data yet, so the client would see an empty report.",
+    "banner": "Preview: this is what the client sees",
+    "draftNote": "Status: {{status}}. The client cannot open it yet.",
+    "liveNote": "Status: {{status}}. Already visible to the client.",
+    "pdf": "Preview PDF",
+    "button": "Preview as client"
   }
 }

@@ -452,8 +452,8 @@ function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
 
       {/* Body — name, then a single quiet meta line. */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="text-[15px] font-display font-semibold text-text-primary leading-tight truncate min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h3 className="text-[15px] font-display font-semibold text-text-primary leading-tight line-clamp-2 break-words min-w-0">
             {project.name}
           </h3>
           {project.isPublic && (

@@ -75,11 +75,11 @@ const leafClasses = (isActive: boolean, indented: boolean) =>
     // as <a>, so without !important it inherits that teal.
     isActive
       ? [
-          'text-white! bg-accent-navy-wash',
+          'text-white bg-accent-navy-wash',
           'before:absolute before:left-0 before:top-1.5 before:bottom-1.5',
           'before:w-[2px] before:rounded-full before:bg-brand-cream',
         ]
-      : 'text-white/85! hover:text-white! hover:bg-accent-navy-soft',
+      : 'text-white/85 hover:text-white hover:bg-accent-navy-soft',
   );
 
 /** A single navigable leaf (renders as <a> via NavLink). */
@@ -105,7 +105,7 @@ const NavLeaf = ({
           <span
             className={cn(
               'flex-shrink-0 transition-colors',
-              isActive ? 'text-white!' : 'text-white/70! group-hover:text-white!',
+              isActive ? 'text-white' : 'text-white/70 group-hover:text-white',
             )}
           >
             {item.icon}
@@ -170,14 +170,14 @@ const NavGroup = ({
           'group relative flex w-full items-center gap-3 mx-1 my-0.5 px-3 py-2 rounded-md text-sm',
           'transition-colors duration-150',
           childActive
-            ? 'text-white! bg-accent-navy-wash/60'
-            : 'text-white/85! hover:text-white! hover:bg-accent-navy-soft',
+            ? 'text-white bg-accent-navy-wash/60'
+            : 'text-white/85 hover:text-white hover:bg-accent-navy-soft',
         )}
       >
         <span
           className={cn(
             'flex-shrink-0 transition-colors',
-            childActive ? 'text-white!' : 'text-white/70! group-hover:text-white!',
+            childActive ? 'text-white' : 'text-white/70 group-hover:text-white',
           )}
         >
           {item.icon}

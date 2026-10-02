@@ -6,7 +6,7 @@
  * so anyone with the link can leave feedback.
  *
  * Usage:
- *   <GuestFeedbackPanel shareToken={token} asset={asset} />
+ *   <GuestFeedbackPanel source={publicMediaSource(token)} asset={asset} />
  *
  * The guest name is persisted to localStorage so returning visitors don't have
  * to type it again.
@@ -21,11 +21,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  mediaCollabService,
-  type MediaAsset,
-  type FrameComment,
-} from '@/services/media-collab';
+import type { MediaAsset, FrameComment } from '@/services/media-collab';
+import type { MediaShareSource } from '@/services/shareSources';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -68,7 +65,7 @@ function StarRatingInput({ value, onChange, disabled }: StarRatingInputProps) {
             onMouseEnter={() => !disabled && setHover(star)}
             onMouseLeave={() => setHover(0)}
             className={cn(
-              'rounded p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent/60',
+              'rounded p-1.5 sm:p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
               disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
             )}
           >
@@ -114,7 +111,7 @@ function CommentItem({ comment }: { comment: FrameComment }) {
     <div className="flex gap-2.5">
       {/* Avatar initials */}
       <div
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/20 text-[11px] font-semibold uppercase text-accent"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-glass-strong text-[11px] font-semibold uppercase text-text-primary"
         aria-hidden="true"
       >
         {authorDisplay.charAt(0)}
@@ -140,15 +137,20 @@ function CommentItem({ comment }: { comment: FrameComment }) {
 /* ------------------------------------------------------------------ */
 
 interface GuestFeedbackPanelProps {
-  shareToken: string;
+  source: MediaShareSource;
   asset: MediaAsset;
+  /** Portal permissions; both default to allowed (public links). */
+  canComment?: boolean;
+  canRate?: boolean;
   /** Called after a rating PUT succeeds so parent can refresh its asset list */
   onRatingChange?: (newRating: number) => void;
 }
 
 export function GuestFeedbackPanel({
-  shareToken,
+  source,
   asset,
+  canComment = true,
+  canRate = true,
   onRatingChange,
 }: GuestFeedbackPanelProps) {
   const { t } = useTranslation();
@@ -183,21 +185,24 @@ export function GuestFeedbackPanel({
   }, [asset.starRating, asset.id]);
 
   /* ---- fetch comments ---- */
-  const commentsQueryKey = ['public-asset-comments', shareToken, asset.id];
+  const commentsQueryKey = ['public-asset-comments', source.key, asset.id];
   const {
     data: comments = [],
     isLoading: commentsLoading,
   } = useQuery<FrameComment[]>({
     queryKey: commentsQueryKey,
-    queryFn: () => mediaCollabService.getPublicAssetComments(shareToken, asset.id),
+    queryFn: () => source.getComments(asset.id),
   });
 
   /* ---- post comment mutation ---- */
   const commentMutation = useMutation({
     mutationFn: (content: string) =>
-      mediaCollabService.createPublicComment(shareToken, asset.id, {
+      source.createComment(asset.id, {
         content,
-        guestName: guestName.trim() || t('guestReview.anonymous', 'Anonim'),
+        // Portal contacts are identified server-side; public guests supply a name.
+        guestName: source.askGuestName
+          ? guestName.trim() || t('guestReview.anonymous', 'Anonim')
+          : undefined,
       }),
     onSuccess: () => {
       setCommentText('');
@@ -208,11 +213,11 @@ export function GuestFeedbackPanel({
   /* ---- rating mutation ---- */
   const ratingMutation = useMutation({
     mutationFn: (rating: number) =>
-      mediaCollabService.updatePublicAssetRating(shareToken, asset.id, rating),
+      source.updateRating(asset.id, rating),
     onSuccess: (_, rating) => {
       onRatingChange?.(rating);
       // Also invalidate asset list so tile star badge updates
-      void queryClient.invalidateQueries({ queryKey: ['public-assets-v2', shareToken] });
+      void queryClient.invalidateQueries({ queryKey: ['public-assets-v2', source.key] });
     },
   });
 
@@ -252,6 +257,7 @@ export function GuestFeedbackPanel({
       </div>
 
       {/* Star rating section */}
+      {canRate ? (
       <div className="border-b border-border-subtle px-4 py-3">
         <Label className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-text-tertiary">
           {t('guestReview.ratingSection', 'Rating Aset')}
@@ -279,6 +285,12 @@ export function GuestFeedbackPanel({
           )}
         </div>
       </div>
+
+      ) : (localRating > 0 && (
+        <div className="border-b border-border-subtle px-4 py-3">
+          <StarRatingInput value={localRating} onChange={() => undefined} disabled />
+        </div>
+      ))}
 
       {/* Comment list */}
       <div className="px-4 py-3">
@@ -316,8 +328,10 @@ export function GuestFeedbackPanel({
       </div>
 
       {/* Comment form */}
+      {canComment && (
       <div className="border-t border-border-subtle px-4 pb-4 pt-3 space-y-2.5">
-        {/* Guest name */}
+        {/* Guest name (public links only) */}
+        {source.askGuestName && (
         <div>
           <Label
             htmlFor="guest-name-input"
@@ -337,6 +351,7 @@ export function GuestFeedbackPanel({
             />
           </div>
         </div>
+        )}
 
         {/* Comment textarea */}
         <div>
@@ -393,6 +408,7 @@ export function GuestFeedbackPanel({
           </p>
         )}
       </div>
+      )}
     </GlassPanel>
   );
 }

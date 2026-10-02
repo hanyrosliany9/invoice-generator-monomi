@@ -64,6 +64,16 @@ export class EnvironmentVariables {
   @IsOptional()
   MEDIA_URL?: string;
 
+  // Client portal (external client logins). PORTAL_JWT_SECRET is required in
+  // production — enforced at boot by PortalModule (portal.config.ts).
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  PORTAL_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  PORTAL_JWT_SECRET?: string;
+
   // Email (optional for development)
   @IsString()
   @IsOptional()

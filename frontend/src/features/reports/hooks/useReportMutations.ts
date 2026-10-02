@@ -67,8 +67,8 @@ export const useReportMutations = () => {
   });
 
   const generatePDF = useMutation({
-    mutationFn: ({ id, sectionId, snapshot }: { id: string; sectionId?: string; snapshot?: any }) =>
-      socialMediaReportsService.generatePDF(id, { sectionId, snapshot }),
+    mutationFn: ({ id, sectionId }: { id: string; sectionId?: string }) =>
+      socialMediaReportsService.generatePDF(id, { sectionId }),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['report', id] });
       message.success('PDF generated and downloaded successfully!');

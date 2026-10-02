@@ -23,7 +23,9 @@ export const queryClient = new QueryClient({
       refetchOnMount: 'always',
     },
     mutations: {
-      retry: 1,
+      // Never auto-retry writes: a failed save (even a 400) was being sent
+      // twice, and a retried non-idempotent create can duplicate records.
+      retry: 0,
     },
   },
 });

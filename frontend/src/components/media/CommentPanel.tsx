@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getInitials } from '@/utils/initials';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -182,7 +183,7 @@ function CommentItem({
       <div className="flex items-start gap-2">
         <Avatar className="h-6 w-6 shrink-0 mt-0.5">
           <AvatarFallback className="bg-white/10 text-white text-[9px] font-medium">
-            {initials(comment.author?.name)}
+            {getInitials(comment.author?.name)}
           </AvatarFallback>
         </Avatar>
 

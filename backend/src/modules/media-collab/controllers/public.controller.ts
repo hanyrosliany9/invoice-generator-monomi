@@ -7,8 +7,6 @@ import {
   Body,
   Query,
   BadRequestException,
-  ForbiddenException,
-  NotFoundException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -17,13 +15,9 @@ import {
   ApiBody,
   ApiQuery,
 } from "@nestjs/swagger";
-import { JwtService } from "@nestjs/jwt";
 import { MediaProjectsService } from "../services/media-projects.service";
-import { MediaAssetsService } from "../services/media-assets.service";
-import { MetadataService } from "../services/metadata.service";
-import { MediaCommentsService } from "../services/media-comments.service";
 import { BulkDownloadService } from "../services/bulk-download.service";
-import { MediaService } from "../../media/media.service";
+import { MediaShareService } from "../services/media-share.service";
 import { CreatePublicBulkDownloadJobDto } from "../dto/create-bulk-download-job.dto";
 
 /**
@@ -35,12 +29,10 @@ import { CreatePublicBulkDownloadJobDto } from "../dto/create-bulk-download-job.
 export class PublicController {
   constructor(
     private readonly projectsService: MediaProjectsService,
-    private readonly assetsService: MediaAssetsService,
-    private readonly metadataService: MetadataService,
-    private readonly jwtService: JwtService,
-    private readonly commentsService: MediaCommentsService,
     private readonly bulkDownloadService: BulkDownloadService,
-    private readonly mediaService: MediaService,
+    // Comment / status / rating / media-token rules live in MediaShareService
+    // so the client portal enforces exactly the same IDOR guards.
+    private readonly shareService: MediaShareService,
   ) {}
 
   /**
@@ -133,24 +125,11 @@ export class PublicController {
   @ApiResponse({ status: 200, description: "Media token returned" })
   @ApiResponse({ status: 404, description: "Share link not found or disabled" })
   async getPublicMediaToken(@Param("token") token: string) {
-    // Validates share token — throws 404 if not found/disabled; returns project with id
-    const project = await this.projectsService.getPublicProject(token);
-
-    // Derive the R2 key prefixes actually used by this project's assets so the
-    // Cloudflare Worker can enforce that this token only unlocks those keys.
-    // Falls back to an empty array if the project has no assets yet (new projects);
-    // the worker treats an empty keyPrefixes list as "allow all for this project"
-    // because there are no assets to scope against.
-    const keyPrefixes = await this.projectsService.getPublicProjectKeyPrefixes(token);
-
-    // Issue a scoped JWT via MediaService (wraps JwtService with scope logic)
-    const mediaToken = this.mediaService.generatePublicShareMediaToken(
-      project.id,
-      token,
-      keyPrefixes,
-    );
-
-    return { mediaToken };
+    // Validates share token — throws 404 if not found/disabled. The issued JWT
+    // is scoped to the R2 key prefixes actually used by this project's assets
+    // (see MediaShareService.getMediaToken).
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.getMediaToken(share);
   }
 
   /**
@@ -166,16 +145,9 @@ export class PublicController {
     @Param("token") token: string,
     @Param("assetId") assetId: string,
   ) {
-    // Validate public link is active
-    const project = await this.projectsService.getPublicProject(token);
-
-    // IDOR guard: confirm the asset belongs to the project resolved by this token
-    const asset = await this.assetsService.findOneRaw(assetId);
-    if (!asset || asset.projectId !== project.id) {
-      throw new NotFoundException("Asset not found");
-    }
-
-    return await this.commentsService.findByAsset(assetId);
+    // Validate public link is active, then IDOR-guard the asset to the project
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.listComments(share, assetId);
   }
 
   /**
@@ -209,43 +181,15 @@ export class PublicController {
     @Param("assetId") assetId: string,
     @Body() body: { content: string; guestName: string; timecode?: number; parentId?: string },
   ) {
-    // Validate public link and get project creator's userId
-    const project = await this.projectsService.getPublicProject(token);
-
-    if (project.publicAccessLevel === "VIEW_ONLY") {
-      throw new ForbiddenException("This share link is view-only");
-    }
-
-    // IDOR guard: confirm the asset belongs to the project resolved by this token
-    const asset = await this.assetsService.findOneRaw(assetId);
-    if (!asset || asset.projectId !== project.id) {
-      throw new NotFoundException("Asset not found");
-    }
-
-    // IDOR guard for replies: the parent comment must be on this same asset,
-    // otherwise a guest could attach a reply to a comment in another project.
-    if (body.parentId != null) {
-      if (typeof body.parentId !== "string") {
-        throw new BadRequestException("parentId must be a string");
-      }
-      const parentAssetId = await this.commentsService.getCommentAssetId(
-        body.parentId,
-      );
-      if (parentAssetId !== assetId) {
-        throw new NotFoundException("Parent comment not found");
-      }
-    }
-
-    const guestName = (body.guestName || "Anonymous").trim();
-    const prefixedContent = `[${guestName}]: ${body.content}`;
-
-    return await this.commentsService.create({
+    // Validate public link (VIEW_ONLY links may not comment); the asset and
+    // any parent comment must belong to the shared project (IDOR guards).
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.createComment(
+      share,
       assetId,
-      content: prefixedContent,
-      authorId: project.createdBy,
-      timestamp: body.timecode,
-      parentId: body.parentId,
-    });
+      { content: body.content, timecode: body.timecode, parentId: body.parentId },
+      body.guestName,
+    );
   }
 
   /**
@@ -278,25 +222,10 @@ export class PublicController {
     @Param("assetId") assetId: string,
     @Body("status") status: string,
   ) {
-    // Verify token is valid and get project
-    const project = await this.projectsService.getPublicProject(token);
-
-    if (project.publicAccessLevel === "VIEW_ONLY") {
-      throw new ForbiddenException("This share link is view-only");
-    }
-
-    // IDOR guard: confirm the asset belongs to the project resolved by this token
-    const asset = await this.assetsService.findOneRaw(assetId);
-    if (!asset || asset.projectId !== project.id) {
-      throw new NotFoundException("Asset not found");
-    }
-
-    // Update asset status (using guest user ID from project creator)
-    return await this.assetsService.updateStatus(
-      assetId,
-      project.createdBy,
-      status,
-    );
+    // Verify token, VIEW_ONLY rule and asset ownership, then update status
+    // (as the project creator, the guest's stand-in user).
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.updateStatus(share, assetId, status);
   }
 
   /**
@@ -330,21 +259,10 @@ export class PublicController {
     @Param("assetId") assetId: string,
     @Body("starRating") starRating: number,
   ) {
-    // Verify token is valid and get project
-    const project = await this.projectsService.getPublicProject(token);
-
-    // IDOR guard: confirm the asset belongs to the project resolved by this token
-    const asset = await this.assetsService.findOneRaw(assetId);
-    if (!asset || asset.projectId !== project.id) {
-      throw new NotFoundException("Asset not found");
-    }
-
-    // Update star rating (using guest user ID from project creator)
-    return await this.metadataService.updateStarRating(
-      assetId,
-      starRating,
-      project.createdBy,
-    );
+    // Verify token and asset ownership, then update the rating (as the
+    // project creator, the guest's stand-in user).
+    const share = await this.shareService.resolvePublic(token);
+    return this.shareService.updateRating(share, assetId, starRating);
   }
 
   /**

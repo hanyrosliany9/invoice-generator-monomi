@@ -1,43 +1,24 @@
 /**
- * ReportBuilderPage (v2) — Pragmatic, working report builder.
+ * ReportBuilderPage (v2) — fill in a monthly social media report.
  *
- * Scope note (read before extending):
- *   The classic ReportBuilderPage is a 1137-line drag-and-drop canvas
- *   (react-grid-layout + Zustand store + undo/redo + multi-section
- *   widget palette + PDF snapshot via html2canvas). For v2 we ship a
- *   *working subset* that covers the high-frequency path:
+ *   /reports/builder      → CREATE (title, project, period → save → edit)
+ *   /reports/:id/edit     → EDIT   (details + data sections + charts)
  *
- *     1. Identity (title, description, project, month, year)
- *     2. Sections (upload CSV → name → optional description → add)
- *     3. Per-section visualization configuration (form-driven, not D&D)
- *        — chart type, title, x-axis, y-axis, aggregation, valueKey
- *
- *   What is INTENTIONALLY deferred to "expand later":
- *     • Drag-and-drop grid layout (react-grid-layout integration)
- *     • Widget palette (Text/Metric/Image/Callout/Divider widgets)
- *     • Per-widget freeform positioning, multi-select, undo/redo
- *     • Live preview pane while editing
- *     • html2canvas snapshot-based PDF (we use server-side PDF instead)
- *
- *   The subset is *complete enough* to author a useful report end-to-end:
- *   create → seed with one or more CSV sections → configure at least one
- *   chart per section → save as DRAFT → mark COMPLETED → generate PDF.
- *   Each deferred capability is also reachable in the classic UI until
- *   the v2 canvas lands.
- *
- *   Two URL modes:
- *     /v2/reports/builder         → CREATE (identity step → save → redirect to edit)
- *     /v2/reports/:id/edit        → EDIT (identity panel + section editor)
+ * A non-technical staff member should be able to finish a month in minutes:
+ *   • new report: sensible defaults (last month, a ready title), "copy last
+ *     month's structure" when the project already has a report
+ *   • sections: upload an export (previewed first), type numbers in a grid
+ *     (pre-filled with the month's dates, paste from Excel), or enter a few
+ *     headline numbers; CSV/XLSX templates are one click away
+ *   • charts: suggested automatically, each with a live preview that matches
+ *     what the client sees; "Preview as client" opens the real client view
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Inbox, FileText, ReceiptText, Users, Folder, CreditCard, Settings, BarChart3,
-  ArrowLeft, Save, Plus, Upload, Trash2, ChevronUp, ChevronDown, X,
-  LineChart as LineChartIcon, BarChart2, PieChart as PieIcon,
-  Activity, Hash, Layers,
+  ArrowLeft, Save, AlertTriangle, Layers, Eye, Copy, Loader2, ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/monomi/AppShell';
@@ -51,14 +32,13 @@ import { UserChip } from '@/components/monomi/UserChip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { useReport } from '@/features/reports/hooks';
+import { ReportUtils } from '@/features/reports/services/reportUtils';
 import { useProjects } from '@/hooks/useProjects';
 import { socialMediaReportsService } from '@/services/social-media-reports';
 import type {
@@ -66,25 +46,9 @@ import type {
   VisualizationConfig,
   CreateReportDto,
 } from '@/features/reports/types/report.types';
-
-/* ------------------------------------------------------------------ */
-/*  Sidebar                                                            */
-/* ------------------------------------------------------------------ */
-
-const MONTHS_EN = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const CHART_TYPES: { value: VisualizationConfig['type']; label: string; Icon: typeof LineChartIcon }[] = [
-  { value: 'line',         label: 'Line',         Icon: LineChartIcon },
-  { value: 'bar',          label: 'Bar',          Icon: BarChart2 },
-  { value: 'area',         label: 'Area',         Icon: Activity },
-  { value: 'pie',          label: 'Pie',          Icon: PieIcon },
-  { value: 'metric_card',  label: 'Metric Card',  Icon: Hash },
-];
-
-const AGGREGATIONS: VisualizationConfig['aggregation'][] = ['sum', 'average', 'count', 'min', 'max'];
+import { AddSectionPanel } from './AddSectionPanel';
+import { SectionCard } from './SectionEditor';
+import { reportErrorText } from './ReportActionDialogs';
 
 /* ------------------------------------------------------------------ */
 /*  Shell — MUST be module-level. Defining it inside the page          */
@@ -111,6 +75,18 @@ const BuilderShell = ({
   </AppShell>
 );
 
+function projectLabel(p: any): string {
+  return `${p.description || p.number}${p.client?.name ? ` · ${p.client.name}` : ''}`;
+}
+
+/** The month people normally report on: the previous one. */
+function defaultPeriod(): { month: number; year: number } {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return { month: d.getMonth() + 1, year: d.getFullYear() };
+}
+
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
@@ -118,21 +94,46 @@ const BuilderShell = ({
 export default function ReportBuilderPageV2() {
   const { id } = useParams<{ id?: string }>();
   const isEditMode = !!id;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
+
+  const monthNames = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) =>
+        new Date(2000, i, 1).toLocaleDateString(i18n.language?.startsWith('id') ? 'id-ID' : 'en-US', { month: 'long' }),
+      ),
+    [i18n.language],
+  );
 
   const { data: projects = [] } = useProjects();
   const { data: report, isLoading: reportLoading } = useReport(isEditMode ? id : undefined);
 
   /* ---------- identity state ---------- */
-  const today = new Date();
+  const initial = useMemo(defaultPeriod, []);
   const [title, setTitle] = useState('');
+  const [titleTouched, setTitleTouched] = useState(false);
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState<string>('');
-  const [month, setMonth] = useState<number>(today.getMonth() + 1);
-  const [year, setYear] = useState<number>(today.getFullYear());
+  const [month, setMonth] = useState<number>(initial.month);
+  const [year, setYear] = useState<number>(initial.year);
+  const [submitted, setSubmitted] = useState(false);
+
+  const years = useMemo(() => {
+    const now = new Date().getFullYear();
+    return Array.from({ length: now + 1 - 2020 + 1 }, (_, i) => 2020 + i).reverse();
+  }, []);
+
+  const project = useMemo(() => projects.find((p: any) => p.id === projectId), [projects, projectId]);
+
+  // Pre-fill the title from client + period until the user types their own.
+  useEffect(() => {
+    if (isEditMode || titleTouched) return;
+    const client = project?.client?.name as string | undefined;
+    const period = ReportUtils.formatPeriod(month, year, 'id-ID');
+    setTitle(`Laporan Media Sosial${client ? ` ${client.replace(/^\[[^\]]*\]\s*/, '')}` : ''} ${period}`);
+  }, [isEditMode, titleTouched, project, month, year]);
 
   // Hydrate identity fields from server data on edit.
   useEffect(() => {
@@ -140,12 +141,46 @@ export default function ReportBuilderPageV2() {
     setTitle(report.title ?? '');
     setDescription(report.description ?? '');
     setProjectId(report.projectId ?? '');
-    setMonth(report.month ?? today.getMonth() + 1);
-    setYear(report.year ?? today.getFullYear());
+    setMonth(report.month ?? initial.month);
+    setYear(report.year ?? initial.year);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [report?.id]);
 
-  /* ---------- mutations (wrapped without AntD App.useApp) ---------- */
+  // Reports of the chosen project: offer "copy the last one" and catch duplicates early.
+  const { data: projectReports = [] } = useQuery({
+    queryKey: ['reports', { projectId }],
+    queryFn: () => socialMediaReportsService.getReports({ projectId }),
+    enabled: !isEditMode && projectId !== '',
+  });
+  const latest = projectReports[0];
+  const clash = projectReports.find((r) => r.month === month && r.year === year);
+
+  /* ---------- unsaved chart edits ---------- */
+  const [dirty, setDirty] = useState<Set<string>>(new Set());
+  const onDirtyChange = (sectionId: string, isDirty: boolean) =>
+    setDirty((prev) => {
+      if (prev.has(sectionId) === isDirty) return prev;
+      const next = new Set(prev);
+      if (isDirty) next.add(sectionId);
+      else next.delete(sectionId);
+      return next;
+    });
+  useEffect(() => {
+    if (dirty.size === 0) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty.size]);
+  const confirmLeave = (e: React.MouseEvent) => {
+    if (dirty.size > 0 && !confirm(t('reportViz.leaveConfirm', 'You have chart changes that are not saved. Leave without saving?'))) {
+      e.preventDefault();
+    }
+  };
+
+  /* ---------- mutations ---------- */
   const createMutation = useMutation({
     mutationFn: (data: CreateReportDto) => socialMediaReportsService.createReport(data),
     onSuccess: (newReport) => {
@@ -153,39 +188,41 @@ export default function ReportBuilderPageV2() {
       toast.success(t('reportBuilder.created', 'Report created successfully.'));
       navigate(`/reports/${newReport.id}/edit`);
     },
-    onError: (e: any) =>
-      toast.error(e?.response?.data?.message ?? t('reportBuilder.createFailed', 'Failed to create report.')),
+    onError: (e) => toast.error(reportErrorText(e, t('reportBuilder.createFailed', 'Failed to create report.'))),
+  });
+
+  const copyMutation = useMutation({
+    mutationFn: () => socialMediaReportsService.duplicateReport(latest!.id, { month, year }),
+    onSuccess: (copy) => {
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      toast.success(
+        t('reportActions.duplicate.done', 'Copied to {{period}} as a draft. Upload new data to each section.', {
+          period: ReportUtils.formatPeriod(copy.month, copy.year),
+        }),
+      );
+      navigate(`/reports/${copy.id}/edit`);
+    },
+    onError: (e) => toast.error(reportErrorText(e, t('reportActions.duplicate.failed', 'Failed to copy the report.'))),
   });
 
   const updateIdentityMutation = useMutation({
-    // The classic backend exposes status-change + section CRUD, but no
-    // generic "update identity" endpoint. We patch identity by removing
-    // and re-creating only when project/month/year change — for v2 we
-    // surface this as a soft no-op and inform the user. Title/desc are
-    // editable via add-section path. This is intentional: the wider
-    // identity edit flow is out of scope for the working subset.
-    mutationFn: async () => Promise.resolve(),
-    onSuccess: () => {
-      toast.info(
-        t('reportBuilder.identityReadOnly', 'Report identity cannot be changed after creation.'),
-      );
-    },
-  });
-
-  const addSectionMutation = useMutation({
-    mutationFn: ({ file, title, description: secDesc }: { file: File; title: string; description?: string }) =>
-      socialMediaReportsService.addSection(id!, file, { title, description: secDesc }),
+    mutationFn: () =>
+      socialMediaReportsService.updateReport(id!, {
+        title: title.trim(),
+        description: description.trim(),
+        month,
+        year,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report', id] });
-      toast.success(t('reportBuilder.sectionAdded', 'Section added successfully.'));
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      toast.success(t('reportBuilder.identitySaved', 'Report details saved.'));
     },
-    onError: (e: any) =>
-      toast.error(e?.response?.data?.message ?? t('reportBuilder.sectionAddFailed', 'Failed to add section.')),
+    onError: (e) => toast.error(reportErrorText(e, t('reportBuilder.identitySaveFailed', 'Failed to save report details.'))),
   });
 
   const removeSectionMutation = useMutation({
-    mutationFn: (sectionId: string) =>
-      socialMediaReportsService.removeSection(id!, sectionId),
+    mutationFn: (sectionId: string) => socialMediaReportsService.removeSection(id!, sectionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report', id] });
       toast.success(t('reportBuilder.sectionRemoved', 'Section removed.'));
@@ -194,8 +231,7 @@ export default function ReportBuilderPageV2() {
   });
 
   const reorderMutation = useMutation({
-    mutationFn: (sectionIds: string[]) =>
-      socialMediaReportsService.reorderSections(id!, sectionIds),
+    mutationFn: (sectionIds: string[]) => socialMediaReportsService.reorderSections(id!, sectionIds),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['report', id] }),
     onError: () => toast.error(t('reportBuilder.reorderFailed', 'Failed to reorder sections.')),
   });
@@ -207,25 +243,39 @@ export default function ReportBuilderPageV2() {
       queryClient.invalidateQueries({ queryKey: ['report', id] });
       toast.success(t('reportBuilder.vizSaved', 'Visualization saved.'));
     },
-    onError: (e: any) =>
-      toast.error(e?.response?.data?.message ?? t('reportBuilder.vizFailed', 'Failed to save visualization.')),
+    onError: (e) => toast.error(reportErrorText(e, t('reportBuilder.vizFailed', 'Failed to save visualization.'))),
   });
 
   /* ---------- handlers ---------- */
+  const titleError = submitted && title.trim() === '';
+  const projectError = submitted && !isEditMode && projectId === '';
+
   const handleSaveIdentity = () => {
-    if (!title.trim()) {
-      toast.error(t('reportBuilder.titleRequired', 'Title is required.'));
-      return;
-    }
-    if (!projectId) {
-      toast.error(t('reportBuilder.projectRequired', 'Please select a project.'));
+    setSubmitted(true);
+    if (!title.trim() || (!isEditMode && !projectId)) {
+      toast.error(!title.trim() ? t('reportBuilder.titleRequired', 'Title is required.') : t('reportBuilder.projectRequired', 'Please select a project.'));
       return;
     }
     if (!isEditMode) {
-      createMutation.mutate({ title, description, projectId, month, year });
-    } else {
-      updateIdentityMutation.mutate();
+      createMutation.mutate({ title: title.trim(), description: description.trim() || undefined, projectId, month, year });
+      return;
     }
+    if (
+      report && report.status !== 'DRAFT' &&
+      !confirm(
+        t(
+          'reportBuilder.liveEditConfirm',
+          'This report is live in the client portal. Your changes will be visible to the client immediately. Save anyway?',
+        ),
+      )
+    ) {
+      return;
+    }
+    updateIdentityMutation.mutate();
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    setTimeout(() => document.getElementById(`section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350);
   };
 
   /* ---------- loading edit ---------- */
@@ -259,13 +309,19 @@ export default function ReportBuilderPageV2() {
     );
   }
 
+  const sections = (report?.sections ?? []).slice().sort((a, b) => a.order - b.order);
+  const identityDirty = isEditMode && report
+    ? title.trim() !== report.title || description.trim() !== (report.description ?? '') || month !== report.month || year !== report.year
+    : false;
+
   /* ---------- render ---------- */
   return (
     <BuilderShell user={user}>
       <div className="mb-4">
         <Link
-          to={isEditMode && id ? `/reports/${id}` : '/reports'}
-          className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
+          to={isEditMode && id ? `/reports/${id}` : '/reports/social-media'}
+          onClick={confirmLeave}
+          className="inline-flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors max-sm:min-h-8"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           {isEditMode
@@ -275,52 +331,105 @@ export default function ReportBuilderPageV2() {
       </div>
 
       <PageHeader
-        title={
-          isEditMode
-            ? t('reportBuilder.editTitle', 'Edit Report')
-            : t('reportBuilder.createTitle', 'New Report')
-        }
+        title={isEditMode ? t('reportBuilder.editTitle', 'Edit Report') : t('reportBuilder.createTitle', 'New Report')}
         description={
           isEditMode
-            ? t('reportBuilder.editSubtitle', 'Add data sections and configure visualizations.')
+            ? t('reportBuilder.editSubtitle2', 'Add this month\'s data, check the charts, then preview as the client and send.')
             : t('reportBuilder.createSubtitle', 'Start by defining the report identity, then add sections.')
         }
         actions={
-          !isEditMode && (
-            <Button
-              size="sm"
-              onClick={handleSaveIdentity}
-              disabled={createMutation.isPending}
-            >
-              <Save className="h-4 w-4" />
-              {t('reportBuilder.saveAndContinue', 'Save & Continue')}
-            </Button>
-          )
+          isEditMode && report ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/reports/${report.id}/preview`} onClick={confirmLeave}>
+                  <Eye className="h-4 w-4" />
+                  {t('reportPreview.button', 'Preview as client')}
+                </Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link to={`/reports/${report.id}`} onClick={confirmLeave}>
+                  {t('reportBuilder.finish', 'Done: view report')}
+                </Link>
+              </Button>
+            </div>
+          ) : undefined
         }
       />
 
-      {/* Identity card — always visible. In edit mode it's read-only-ish:
-          the backend doesn't expose a generic identity-patch endpoint,
-          so we surface this as informational metadata. */}
-      <GlassPanel surface="glass" padding="lg" className="mb-8">
+      {/* Identity */}
+      <GlassPanel surface="glass" padding="lg" className="mb-6">
         <div className="mb-5">
           <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
             {t('reportBuilder.identity.title', 'Report Identity')}
           </h2>
           <p className="mt-0.5 text-xs text-text-tertiary">
             {isEditMode
-              ? t(
-                  'reportBuilder.identity.editSubtitle',
-                  'Identity is locked after the report is created. Contact admin for structural changes.',
-                )
-              : t(
-                  'reportBuilder.identity.createSubtitle',
-                  'Title, project, and reporting period. Locked after saving.',
-                )}
+              ? t('reportBuilder.identity.editSubtitle2', 'Title, description and period can be changed. The project is fixed.')
+              : t('reportBuilder.identity.createSubtitle2', 'Title, project, and reporting period.')}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        {isEditMode && report && report.status !== 'DRAFT' && (
+          <div role="alert" className="mb-5 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-text-secondary">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+            <span>
+              {t(
+                'reportBuilder.liveWarning',
+                'This report is live in the client portal. Every change you save (details, sections, charts) is visible to the client immediately. Move it back to draft from the report page to edit privately.',
+              )}
+            </span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="min-w-0">
+            <Label htmlFor="project">
+              {t('reportBuilder.field.project', 'Project')} {!isEditMode && <span className="text-danger">*</span>}
+            </Label>
+            <Select value={projectId} onValueChange={setProjectId} disabled={isEditMode}>
+              <SelectTrigger id="project" aria-invalid={projectError} title={project ? projectLabel(project) : undefined} className={`w-full min-w-0 bg-bg-sunken border-border-subtle text-text-secondary *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate ${projectError ? 'border-danger' : ''}`}>
+                <SelectValue placeholder={t('reportBuilder.field.projectPlaceholder', 'Select project')} />
+              </SelectTrigger>
+              <SelectContent className="max-w-[calc(100vw-1.5rem)]">
+                {projects.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id} title={projectLabel(p)} className="items-start break-words whitespace-normal">
+                    {projectLabel(p)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {projectError && <p className="mt-1 text-xs text-danger">{t('reportBuilder.projectRequired', 'Please select a project.')}</p>}
+          </div>
+
+          <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-3">
+            <div className="min-w-0">
+              <Label htmlFor="month">{t('reportBuilder.field.month', 'Month')}</Label>
+              <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
+                <SelectTrigger id="month" className="w-full min-w-0 bg-bg-sunken border-border-subtle text-text-secondary *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthNames.map((m, i) => (
+                    <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="year">{t('reportBuilder.field.year', 'Year')}</Label>
+              <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+                <SelectTrigger id="year" className="w-full min-w-0 bg-bg-sunken border-border-subtle text-text-secondary tabular-nums *:data-[slot=select-value]:block! *:data-[slot=select-value]:truncate">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="sm:col-span-2">
             <Label htmlFor="title">
               {t('reportBuilder.field.title', 'Report Title')} <span className="text-danger">*</span>
@@ -328,666 +437,181 @@ export default function ReportBuilderPageV2() {
             <Input
               id="title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); setTitleTouched(true); }}
+              aria-invalid={titleError}
               placeholder={t('reportBuilder.field.titlePlaceholder', 'e.g. Social Media Report July 2025')}
-              disabled={isEditMode}
-              className="bg-bg-sunken border-border-subtle text-text-primary"
+              className={`bg-bg-sunken border-border-subtle text-text-primary ${titleError ? 'border-danger' : ''}`}
             />
+            {titleError && <p className="mt-1 text-xs text-danger">{t('reportBuilder.titleRequired', 'Title is required.')}</p>}
           </div>
 
           <div className="sm:col-span-2">
-            <Label htmlFor="description">
-              {t('reportBuilder.field.description', 'Description')}
-            </Label>
+            <Label htmlFor="description">{t('reportBuilder.field.description', 'Description')}</Label>
             <Input
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('reportBuilder.field.descriptionPlaceholder', 'Optional')}
-              disabled={isEditMode}
               className="bg-bg-sunken border-border-subtle text-text-primary"
             />
           </div>
+        </div>
 
-          <div>
-            <Label htmlFor="project">
-              {t('reportBuilder.field.project', 'Project')} <span className="text-danger">*</span>
-            </Label>
-            <Select value={projectId} onValueChange={setProjectId} disabled={isEditMode}>
-              <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                <SelectValue placeholder={t('reportBuilder.field.projectPlaceholder', 'Select project')} />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.description || p.number}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* New report: catch duplicates and offer to copy the last month. */}
+        {!isEditMode && clash && (
+          <div role="alert" className="mt-5 flex flex-wrap items-center gap-3 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-text-secondary">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
+            <span className="min-w-0 flex-1">
+              {t('reportBuilder.clash', 'A report for this project in {{period}} already exists: {{title}}.', {
+                period: ReportUtils.formatPeriod(month, year), title: clash.title,
+              })}
+            </span>
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/reports/${clash.id}/edit`}><ExternalLink className="h-3.5 w-3.5" />{t('reportBuilder.openExisting', 'Open it')}</Link>
+            </Button>
           </div>
+        )}
+        {!isEditMode && latest && !clash && (
+          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-md border border-border-default bg-bg-sunken p-3 text-xs text-text-secondary">
+            <Copy className="h-4 w-4 shrink-0 text-text-tertiary" />
+            <span className="min-w-0 flex-1">
+              {t('reportBuilder.copyHint', 'Last report for this project: {{title}} ({{period}}). Copy its sections and charts to {{target}} and only fill in the new numbers.', {
+                title: latest.title,
+                period: ReportUtils.formatPeriod(latest.month, latest.year),
+                target: ReportUtils.formatPeriod(month, year),
+              })}
+            </span>
+            <Button size="sm" variant="outline" onClick={() => copyMutation.mutate()} disabled={copyMutation.isPending}>
+              {copyMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}
+              {t('reportBuilder.copyAction', 'Copy last report')}
+            </Button>
+          </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="month">{t('reportBuilder.field.month', 'Month')}</Label>
-              <Select
-                value={String(month)}
-                onValueChange={(v) => setMonth(Number(v))}
-                disabled={isEditMode}
-              >
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTHS_EN.map((m, i) => (
-                    <SelectItem key={i} value={String(i + 1)}>
-                      {m}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="year">{t('reportBuilder.field.year', 'Year')}</Label>
-              <Input
-                id="year"
-                type="number"
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
-                disabled={isEditMode}
-                className="bg-bg-sunken border-border-subtle text-text-primary tabular-nums"
-              />
-            </div>
-          </div>
+        <div className="mt-5 flex justify-end">
+          {isEditMode ? (
+            <Button size="sm" onClick={handleSaveIdentity} disabled={updateIdentityMutation.isPending || !report || !identityDirty}>
+              <Save className="h-4 w-4" />
+              {t('reportBuilder.saveDetails', 'Save details')}
+            </Button>
+          ) : (
+            <Button onClick={handleSaveIdentity} disabled={createMutation.isPending || !!clash}>
+              {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {t('reportBuilder.saveAndContinue', 'Save & Continue')}
+            </Button>
+          )}
         </div>
       </GlassPanel>
 
-      {/* Sections — only visible in edit mode (need a saved report first). */}
+      {/* Sections: only in edit mode (a saved report is needed first). */}
       {isEditMode && report && (
-        <SectionsEditor
-          sections={(report.sections ?? []).slice().sort((a, b) => a.order - b.order)}
-          onAdd={(file, secTitle, secDesc) =>
-            addSectionMutation.mutateAsync({ file, title: secTitle, description: secDesc })
-          }
-          isAdding={addSectionMutation.isPending}
-          onRemove={(secId) => removeSectionMutation.mutate(secId)}
-          onReorder={(secIds) => reorderMutation.mutate(secIds)}
-          onSaveViz={(secId, viz) =>
-            updateVizMutation.mutateAsync({ sectionId: secId, visualizations: viz })
-          }
-          isSavingViz={updateVizMutation.isPending}
-        />
+        <GlassPanel surface="glass" padding="lg">
+          <div className="mb-5">
+            <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
+              {t('reportBuilder.sections.title', 'Data Sections')}
+            </h2>
+            <p className="mt-0.5 text-xs text-text-tertiary">
+              {t('reportBuilder.sections.subtitle2', '{{count}} sections. Each section is one table of numbers with its charts.', { count: sections.length })}
+            </p>
+          </div>
+
+          {sections.length > 1 && (
+            <nav
+              aria-label={t('reportBuilder.jumpToSection', 'Jump to section')}
+              className="sticky top-0 z-20 -mx-4 mb-4 flex items-center gap-2 border-y border-border-default bg-bg-base/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6"
+            >
+              <span className="shrink-0 text-[11px] font-medium uppercase tracking-wider text-text-tertiary max-sm:sr-only">
+                {t('reportBuilder.jumpToSection', 'Jump to section')}
+              </span>
+              <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+                {sections.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    title={s.title}
+                    onClick={() => document.getElementById(`section-${s.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className="inline-flex min-h-8 max-w-[11rem] shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-sunken px-3 text-xs text-text-secondary hover:bg-bg-raised hover:text-text-primary sm:min-h-7"
+                  >
+                    <span className="font-semibold tabular-nums text-text-primary">{s.order}</span>
+                    <span className="truncate">{s.title}</span>
+                  </button>
+                ))}
+              </div>
+            </nav>
+          )}
+
+          <AddSectionPanel
+            reportId={report.id}
+            month={report.month}
+            year={report.year}
+            defaultOpen={sections.length === 0}
+            onAdded={(s) => {
+              queryClient.invalidateQueries({ queryKey: ['report', id] });
+              queryClient.invalidateQueries({ queryKey: ['reports'] });
+              scrollToSection(s.id);
+            }}
+          />
+
+          {sections.length === 0 ? (
+            <EmptyState
+              icon={<Layers className="h-12 w-12" />}
+              title={t('reportBuilder.noSections.title', 'No sections yet')}
+              description={t('reportBuilder.noSections.desc2', 'Upload a file, type the numbers in a table, or enter a few headline numbers above to create your first section.')}
+            />
+          ) : (
+            <div className="space-y-6">
+              {sections.map((s: ReportSection, i) => (
+                <SectionCard
+                  key={s.id}
+                  reportId={report.id}
+                  section={s}
+                  month={report.month}
+                  year={report.year}
+                  isFirst={i === 0}
+                  isLast={i === sections.length - 1}
+                  onRemove={() => removeSectionMutation.mutate(s.id)}
+                  onMoveUp={() => reorderMutation.mutate(move(sections, i, -1))}
+                  onMoveDown={() => reorderMutation.mutate(move(sections, i, 1))}
+                  onSaveViz={(viz) => updateVizMutation.mutateAsync({ sectionId: s.id, visualizations: viz })}
+                  isSavingViz={updateVizMutation.isPending && updateVizMutation.variables?.sectionId === s.id}
+                  onDirtyChange={onDirtyChange}
+                />
+              ))}
+            </div>
+          )}
+        </GlassPanel>
       )}
 
-      {/* Mobile hint — builder canvas works best on wider screens. */}
-      <p className="text-xs text-text-tertiary md:hidden mt-6 text-center">
-        {t('reportBuilder.desktopHint', 'Best experience on desktop.')}
-      </p>
-
-      {/* Deferred-features note — kept honest about what's in this v2 subset. */}
-      {isEditMode && (
-        <GlassPanel surface="subtle" padding="md" className="mt-8">
-          <div className="flex items-start gap-3 text-xs text-text-tertiary leading-relaxed">
-            <Layers className="h-4 w-4 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-text-secondary block mb-1">
-                {t('reportBuilder.advancedDeferred.title', 'Advanced features deferred')}
-              </strong>
-              <p>
-                {t(
-                  'reportBuilder.advancedDeferred.body',
-                  'Drag-and-drop canvas editor, widget palette (Text/Metric/Image/Callout), freeform grid layout, and live preview are available in the classic editor. The v2 version focuses on the identity + CSV sections + form-configured visualizations flow.',
-                )}
-              </p>
-            </div>
-          </div>
-        </GlassPanel>
+      {isEditMode && report && (
+        <div className="sticky bottom-0 z-20 -mx-4 mt-6 flex items-center gap-2 border-t border-border-default bg-bg-base/95 px-4 py-2.5 backdrop-blur sm:hidden">
+          {identityDirty && (
+            <Button size="sm" variant="outline" className="min-h-10 flex-1" onClick={handleSaveIdentity} disabled={updateIdentityMutation.isPending}>
+              <Save className="h-4 w-4" />
+              {t('reportBuilder.saveDetails', 'Save details')}
+            </Button>
+          )}
+          <Button asChild size="sm" variant="outline" className="min-h-10 flex-1">
+            <Link to={`/reports/${report.id}/preview`} onClick={confirmLeave}>
+              <Eye className="h-4 w-4" />
+              {t('reportPreview.button', 'Preview as client')}
+            </Link>
+          </Button>
+          <Button asChild size="sm" className="min-h-10 flex-1">
+            <Link to={`/reports/${report.id}`} onClick={confirmLeave}>
+              {t('reportBuilder.finishShort', 'Done')}
+            </Link>
+          </Button>
+        </div>
       )}
     </BuilderShell>
   );
 }
 
-/* ================================================================== */
-/*  SectionsEditor — add/remove/reorder + per-section viz config       */
-/* ================================================================== */
-
-interface SectionsEditorProps {
-  sections: ReportSection[];
-  onAdd: (file: File, title: string, description?: string) => Promise<unknown>;
-  isAdding: boolean;
-  onRemove: (sectionId: string) => void;
-  onReorder: (sectionIds: string[]) => void;
-  onSaveViz: (sectionId: string, viz: VisualizationConfig[]) => Promise<unknown>;
-  isSavingViz: boolean;
-}
-
-function SectionsEditor({
-  sections, onAdd, isAdding, onRemove, onReorder, onSaveViz, isSavingViz,
-}: SectionsEditorProps) {
-  const { t } = useTranslation();
-  const [draftFile, setDraftFile] = useState<File | null>(null);
-  const [draftTitle, setDraftTitle] = useState('');
-  const [draftDesc, setDraftDesc] = useState('');
-
-  const handleAddClick = async () => {
-    if (!draftFile) {
-      toast.error(t('reportBuilder.csvRequired', 'Please select a CSV file first.'));
-      return;
-    }
-    if (!draftTitle.trim()) {
-      toast.error(t('reportBuilder.sectionTitleRequired', 'Section title is required.'));
-      return;
-    }
-    try {
-      await onAdd(draftFile, draftTitle.trim(), draftDesc.trim() || undefined);
-      setDraftFile(null);
-      setDraftTitle('');
-      setDraftDesc('');
-    } catch {
-      /* toast handled in mutation */
-    }
-  };
-
-  const moveSection = (sectionId: string, dir: 'up' | 'down') => {
-    const ids = sections.map((s) => s.id);
-    const idx = ids.indexOf(sectionId);
-    if (idx === -1) return;
-    const targetIdx = dir === 'up' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= ids.length) return;
-    [ids[idx], ids[targetIdx]] = [ids[targetIdx], ids[idx]];
-    onReorder(ids);
-  };
-
-  return (
-    <GlassPanel surface="glass" padding="lg">
-      <div className="mb-5 flex items-baseline justify-between gap-4">
-        <div>
-          <h2 className="text-base font-display font-semibold text-text-primary tracking-tight">
-            {t('reportBuilder.sections.title', 'Data Sections')}
-          </h2>
-          <p className="mt-0.5 text-xs text-text-tertiary">
-            {t('reportBuilder.sections.subtitle', '{{count}} sections — one CSV file per section', {
-              count: sections.length,
-            })}
-          </p>
-        </div>
-      </div>
-
-      {/* Add-section row — inline form, keeps section creation in-place. */}
-      <div className="rounded-md border border-border-subtle bg-bg-sunken p-4 mb-5">
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
-          <div>
-            <Label htmlFor="sec-title" className="text-xs">
-              {t('reportBuilder.field.sectionTitle', 'Section Title')}
-            </Label>
-            <Input
-              id="sec-title"
-              value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value)}
-              placeholder={t('reportBuilder.field.sectionTitlePlaceholder', 'e.g. Instagram Performance')}
-              className="bg-bg-base border-border-subtle text-text-primary"
-            />
-          </div>
-          <div>
-            <Label htmlFor="sec-desc" className="text-xs">
-              {t('reportBuilder.field.sectionDesc', 'Description')}
-            </Label>
-            <Input
-              id="sec-desc"
-              value={draftDesc}
-              onChange={(e) => setDraftDesc(e.target.value)}
-              placeholder={t('reportBuilder.field.sectionDescPlaceholder', 'Optional')}
-              className="bg-bg-base border-border-subtle text-text-primary"
-            />
-          </div>
-          <div className="flex items-end">
-            <label
-              htmlFor="csv-upload"
-              className={cn(
-                'inline-flex items-center gap-2 rounded-md border border-border-subtle bg-bg-base px-3 py-2 text-xs text-text-secondary cursor-pointer hover:bg-accent-navy-soft transition-colors',
-                draftFile && 'text-text-primary border-border-default',
-              )}
-            >
-              <Upload className="h-3.5 w-3.5" />
-              {draftFile
-                ? draftFile.name.length > 24
-                  ? `${draftFile.name.slice(0, 22)}…`
-                  : draftFile.name
-                : t('reportBuilder.field.uploadCsv', 'Choose CSV')}
-              <input
-                id="csv-upload"
-                type="file"
-                accept=".csv,text/csv"
-                className="hidden"
-                onChange={(e) => setDraftFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-          </div>
-        </div>
-        <div className="mt-4 flex justify-end">
-          <Button size="sm" onClick={handleAddClick} disabled={isAdding}>
-            <Plus className="h-4 w-4" />
-            {t('reportBuilder.addSection', 'Add Section')}
-          </Button>
-        </div>
-      </div>
-
-      {sections.length === 0 ? (
-        <EmptyState
-          icon={<Layers className="h-12 w-12" />}
-          title={t('reportBuilder.noSections.title', 'No sections yet')}
-          description={t(
-            'reportBuilder.noSections.desc',
-            'Upload a CSV file above to create your first section.',
-          )}
-        />
-      ) : (
-        <div className="space-y-4">
-          {sections.map((s, i) => (
-            <SectionCard
-              key={s.id}
-              section={s}
-              isFirst={i === 0}
-              isLast={i === sections.length - 1}
-              onRemove={() => onRemove(s.id)}
-              onMoveUp={() => moveSection(s.id, 'up')}
-              onMoveDown={() => moveSection(s.id, 'down')}
-              onSaveViz={(viz) => onSaveViz(s.id, viz)}
-              isSavingViz={isSavingViz}
-            />
-          ))}
-        </div>
-      )}
-    </GlassPanel>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  SectionCard — per-section meta + viz editor                        */
-/* ------------------------------------------------------------------ */
-
-interface SectionCardProps {
-  section: ReportSection;
-  isFirst: boolean;
-  isLast: boolean;
-  onRemove: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onSaveViz: (viz: VisualizationConfig[]) => Promise<unknown>;
-  isSavingViz: boolean;
-}
-
-function SectionCard({
-  section, isFirst, isLast, onRemove, onMoveUp, onMoveDown, onSaveViz, isSavingViz,
-}: SectionCardProps) {
-  const { t } = useTranslation();
-  const [vizDrafts, setVizDrafts] = useState<VisualizationConfig[]>(
-    section.visualizations ?? [],
-  );
-
-  // Re-sync from server snapshot if the section changes (e.g. another tab).
-  useEffect(() => {
-    setVizDrafts(section.visualizations ?? []);
-  }, [section.id, section.updatedAt]);
-
-  const columns = useMemo(() => Object.keys(section.columnTypes ?? {}), [section.columnTypes]);
-  const numericColumns = useMemo(
-    () => columns.filter((c) => section.columnTypes[c] === 'NUMBER'),
-    [columns, section.columnTypes],
-  );
-
-  const addViz = () =>
-    setVizDrafts((d) => [
-      ...d,
-      {
-        type: 'line',
-        title: t('reportBuilder.viz.newTitle', 'New Chart'),
-        xAxis: columns[0],
-        yAxis: numericColumns[0] ? [numericColumns[0]] : [],
-        aggregation: 'sum',
-      },
-    ]);
-
-  const updateViz = (i: number, patch: Partial<VisualizationConfig>) =>
-    setVizDrafts((d) => d.map((v, idx) => (idx === i ? { ...v, ...patch } : v)));
-
-  const removeViz = (i: number) =>
-    setVizDrafts((d) => d.filter((_, idx) => idx !== i));
-
-  const dirty = JSON.stringify(vizDrafts) !== JSON.stringify(section.visualizations ?? []);
-
-  return (
-    <div className="rounded-md border border-border-subtle bg-bg-sunken p-5">
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="text-xs text-text-tertiary tabular-nums">#{section.order}</span>
-            <h3 className="text-sm font-display font-semibold text-text-primary truncate">
-              {section.title}
-            </h3>
-            <Badge variant="outline" className="border-border-subtle text-text-tertiary text-[10px]">
-              {section.rowCount} {t('reportBuilder.rows', 'rows')}
-            </Badge>
-          </div>
-          {section.description && (
-            <p className="mt-1 text-xs text-text-tertiary">{section.description}</p>
-          )}
-          <p className="mt-1 text-[11px] text-text-tertiary font-mono truncate">
-            {section.csvFileName}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-1">
-            {columns.map((c) => (
-              <span
-                key={c}
-                className={cn(
-                  'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono',
-                  section.columnTypes[c] === 'NUMBER'
-                    ? 'bg-info/10 text-info'
-                    : section.columnTypes[c] === 'DATE'
-                    ? 'bg-success/10 text-success'
-                    : 'bg-bg-base text-text-tertiary',
-                )}
-              >
-                {c}
-                <span className="opacity-60">{section.columnTypes[c]?.[0]}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={isFirst}
-            onClick={onMoveUp}
-            aria-label="Move up"
-            className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
-          >
-            <ChevronUp className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={isLast}
-            onClick={onMoveDown}
-            aria-label="Move down"
-            className="text-text-tertiary hover:text-text-primary disabled:opacity-30"
-          >
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => {
-              if (confirm(t('reportBuilder.confirmRemoveSection', 'Remove this section?'))) onRemove();
-            }}
-            aria-label="Remove section"
-            className="text-danger/70 hover:text-danger"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Viz editor */}
-      <div className="mt-2 border-t border-border-subtle pt-4">
-        <div className="flex items-baseline justify-between gap-4 mb-3">
-          <div>
-            <div className="text-xs font-medium text-text-secondary">
-              {t('reportBuilder.viz.title', 'Visualizations')}
-            </div>
-            <div className="text-[11px] text-text-tertiary">
-              {vizDrafts.length} {t('reportBuilder.viz.configured', 'charts configured')}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {dirty && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setVizDrafts(section.visualizations ?? [])}
-              >
-                <X className="h-3.5 w-3.5" />
-                {t('common.discard', 'Discard')}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant={dirty ? 'default' : 'outline'}
-              disabled={!dirty || isSavingViz}
-              onClick={() => onSaveViz(vizDrafts)}
-            >
-              <Save className="h-3.5 w-3.5" />
-              {t('reportBuilder.viz.save', 'Save')}
-            </Button>
-            <Button size="sm" variant="outline" onClick={addViz}>
-              <Plus className="h-3.5 w-3.5" />
-              {t('reportBuilder.viz.add', 'Add Chart')}
-            </Button>
-          </div>
-        </div>
-
-        {vizDrafts.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border-subtle p-4 text-center text-xs text-text-tertiary">
-            {t('reportBuilder.viz.empty', 'No charts yet. Add your first chart.')}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {vizDrafts.map((viz, i) => (
-              <VizConfigRow
-                key={i}
-                viz={viz}
-                columns={columns}
-                numericColumns={numericColumns}
-                onChange={(patch) => updateViz(i, patch)}
-                onRemove={() => removeViz(i)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  VizConfigRow — one chart's form config                             */
-/* ------------------------------------------------------------------ */
-
-interface VizConfigRowProps {
-  viz: VisualizationConfig;
-  columns: string[];
-  numericColumns: string[];
-  onChange: (patch: Partial<VisualizationConfig>) => void;
-  onRemove: () => void;
-}
-
-function VizConfigRow({ viz, columns, numericColumns, onChange, onRemove }: VizConfigRowProps) {
-  const { t } = useTranslation();
-  const isMetricCard = viz.type === 'metric_card';
-  const isPie = viz.type === 'pie';
-
-  return (
-    <div className="rounded-md border border-border-subtle bg-bg-base p-4">
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 mb-3">
-        <div>
-          <Label className="text-[11px]">{t('reportBuilder.viz.field.title', 'Title')}</Label>
-          <Input
-            value={viz.title}
-            onChange={(e) => onChange({ title: e.target.value })}
-            className="bg-bg-sunken border-border-subtle text-text-primary"
-          />
-        </div>
-        <div>
-          <Label className="text-[11px]">{t('reportBuilder.viz.field.type', 'Chart Type')}</Label>
-          <Select value={viz.type} onValueChange={(v) => onChange({ type: v as VisualizationConfig['type'] })}>
-            <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CHART_TYPES.map((ct) => {
-                const Icon = ct.Icon;
-                return (
-                  <SelectItem key={ct.value} value={ct.value}>
-                    <span className="inline-flex items-center gap-2">
-                      <Icon className="h-3.5 w-3.5" />
-                      {ct.label}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-end">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onRemove}
-            aria-label="Remove viz"
-            className="text-danger/70 hover:text-danger"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {isMetricCard ? (
-          <>
-            <div>
-              <Label className="text-[11px]">{t('reportBuilder.viz.field.valueKey', 'Value Column')}</Label>
-              <Select
-                value={viz.valueKey ?? ''}
-                onValueChange={(v) => onChange({ valueKey: v })}
-              >
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {numericColumns.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[11px]">{t('reportBuilder.viz.field.aggregation', 'Aggregation')}</Label>
-              <Select
-                value={viz.aggregation ?? 'sum'}
-                onValueChange={(v) => onChange({ aggregation: v as VisualizationConfig['aggregation'] })}
-              >
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {AGGREGATIONS.map((a) => (
-                    <SelectItem key={a} value={a!}>{a}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[11px]">{t('reportBuilder.viz.field.precision', 'Decimal Precision')}</Label>
-              <Input
-                type="number"
-                min={0}
-                max={6}
-                value={viz.precision ?? 0}
-                onChange={(e) => onChange({ precision: Number(e.target.value) })}
-                className="bg-bg-sunken border-border-subtle text-text-primary tabular-nums"
-              />
-            </div>
-          </>
-        ) : isPie ? (
-          <>
-            <div>
-              <Label className="text-[11px]">{t('reportBuilder.viz.field.nameKey', 'Label Column')}</Label>
-              <Select
-                value={viz.nameKey ?? viz.xAxis ?? ''}
-                onValueChange={(v) => onChange({ nameKey: v })}
-              >
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {columns.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[11px]">{t('reportBuilder.viz.field.valueKey', 'Value Column')}</Label>
-              <Select
-                value={viz.valueKey ?? viz.yAxis?.[0] ?? ''}
-                onValueChange={(v) => onChange({ valueKey: v })}
-              >
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {numericColumns.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div />
-          </>
-        ) : (
-          <>
-            <div>
-              <Label className="text-[11px]">{t('reportBuilder.viz.field.xAxis', 'X Axis')}</Label>
-              <Select
-                value={viz.xAxis ?? ''}
-                onValueChange={(v) => onChange({ xAxis: v })}
-              >
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {columns.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[11px]">{t('reportBuilder.viz.field.yAxis', 'Y Axis')}</Label>
-              <Select
-                value={viz.yAxis?.[0] ?? ''}
-                onValueChange={(v) => onChange({ yAxis: [v] })}
-              >
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue placeholder={t('reportBuilder.selectColumn', 'Select column')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {numericColumns.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[11px]">{t('reportBuilder.viz.field.aggregation', 'Aggregation')}</Label>
-              <Select
-                value={viz.aggregation ?? 'sum'}
-                onValueChange={(v) => onChange({ aggregation: v as VisualizationConfig['aggregation'] })}
-              >
-                <SelectTrigger className="bg-bg-sunken border-border-subtle text-text-secondary">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {AGGREGATIONS.map((a) => (
-                    <SelectItem key={a} value={a!}>{a}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+/** Section ids with the item at `i` swapped with its neighbour. */
+function move(sections: ReportSection[], i: number, dir: -1 | 1): string[] {
+  const ids = sections.map((s) => s.id);
+  const j = i + dir;
+  if (j < 0 || j >= ids.length) return ids;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  return ids;
 }

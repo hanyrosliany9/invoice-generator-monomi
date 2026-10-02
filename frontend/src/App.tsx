@@ -65,6 +65,7 @@ const V2AssetEditPage = lazy(() => import('./pages/v2/assets/AssetEditPage'))
 const V2ReportsPage = lazy(() => import('./pages/v2/reports/ReportsPage'))
 const V2ReportDetailPage = lazy(() => import('./pages/v2/reports/ReportDetailPage'))
 const V2ReportBuilderPage = lazy(() => import('./pages/v2/reports/ReportBuilderPage'))
+const V2ReportPreviewPage = lazy(() => import('./pages/v2/reports/ReportPreviewPage'))
 const V2SocialMediaReportsPage = lazy(() => import('./pages/v2/reports/SocialMediaReportsPage'))
 const V2SystemReportPage = lazy(() => import('./pages/v2/reports/SystemReportPage'))
 const V2MonthlyBusinessReportPage = lazy(() => import('./pages/v2/reports/MonthlyBusinessReportPage'))
@@ -346,6 +347,7 @@ function App() {
                       <Route path='/reports/monthly' element={<AdminRoute><V2MonthlyBusinessReportPage /></AdminRoute>} />
                       <Route path='/reports/system/:slug' element={<AdminRoute><V2SystemReportPage /></AdminRoute>} />
                       <Route path='/reports/:id/edit' element={<AdminRoute><V2ReportBuilderPage /></AdminRoute>} />
+                      <Route path='/reports/:id/preview' element={<AdminRoute><V2ReportPreviewPage /></AdminRoute>} />
                       <Route path='/reports/:id' element={<AdminRoute><V2ReportDetailPage /></AdminRoute>} />
 
                       {/* ── All-roles routes (VIDEOGRAPHER allowed) ──────────────────────

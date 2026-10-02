@@ -12,6 +12,7 @@ import { MetadataService } from "../services/metadata.service";
 import { MediaCommentsService } from "../services/media-comments.service";
 import { BulkDownloadService } from "../services/bulk-download.service";
 import { MediaService } from "../../media/media.service";
+import { MediaShareService } from "../services/media-share.service";
 
 /**
  * IDOR guards on the public (share-link) asset routes: a live share token for
@@ -67,6 +68,9 @@ describe("PublicController (share-link asset scoping)", () => {
         { provide: JwtService, useValue: {} },
         { provide: BulkDownloadService, useValue: {} },
         { provide: MediaService, useValue: {} },
+        // Real shared service (the public routes delegate their IDOR guards
+        // to it), wired to the mocks above.
+        MediaShareService,
       ],
     }).compile();
 
