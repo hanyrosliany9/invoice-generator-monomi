@@ -241,6 +241,7 @@ model Client {
   decks                 Deck[]
   calendarEvents        CalendarEvent[]
   portalContacts        ClientPortalContact[] // External client-portal logins
+  instagramConnection   InstagramConnection? // Instagram API (Instagram Login) link for insights sync
 
   @@index([name])
   @@index([email])
@@ -6055,4 +6056,131 @@ model NotificationLog {
 enum NotificationLogStatus {
   SENT
   FAILED
+}
+
+// ============================================
+// Instagram API with Instagram Login (Business / Creator accounts)
+// Connect a client's Instagram account, sync insights daily, and auto-fill
+// monthly social media reports. Access tokens are NEVER stored in plaintext:
+// accessTokenEnc is AES-256-GCM (TOKEN_ENCRYPTION_KEY) bound to clientId.
+// ============================================
+
+enum InstagramConnectionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  ERROR
+}
+
+model InstagramConnection {
+  id                String                    @id @default(cuid())
+  clientId          String                    @unique
+  igUserId          String // Instagram professional account id (/me user_id), used for insights calls
+  igScopedUserId    String? // App-scoped user id (/me id) - what Meta sends in signed_request
+  username          String
+  accountType       String? // BUSINESS | MEDIA_CREATOR
+  profilePictureUrl String?                   @db.Text
+  followersCount    Int?
+  mediaCount        Int?
+  accessTokenEnc    String?                   @db.Text // "v1:<iv>:<tag>:<ciphertext>" (base64url); null once revoked/expired
+  tokenExpiresAt    DateTime?
+  tokenRefreshedAt  DateTime? // when the current long-lived token was issued/refreshed
+  scopes            String[]
+  status            InstagramConnectionStatus @default(ACTIVE)
+  lastSyncAt        DateTime?
+  lastError         String?                   @db.Text
+  connectedBy       String // staff user email, or "portal:<contact email>"
+  // = igUserId while this connection holds a token, null once the token is
+  // gone (revoked/expired/purged). The unique index makes one Instagram
+  // account attachable to at most one client at a time.
+  activeIgUserId    String?                   @unique
+  // Fingerprint of the TOKEN_ENCRYPTION_KEY that encrypted accessTokenEnc
+  // (truncated HMAC of a constant; reveals nothing about the key). Lets the
+  // sync job tell "wrong key configured" apart from a broken token.
+  tokenKeyId        String?
+  // Provenance: the exact values this connection last wrote to the client's
+  // instagramHandle / instagramAvatarUrl / instagramBio. Deletion clears a
+  // client field only while it still equals the value written from Instagram,
+  // so manually entered values survive.
+  syncedHandle      String?
+  syncedAvatarUrl   String?                   @db.Text
+  syncedBio         String?                   @db.Text
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  client         Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  dailyMetrics   InstagramDailyMetric[]
+  mediaSnapshots InstagramMediaSnapshot[]
+
+  @@index([igUserId])
+  @@index([igScopedUserId])
+  @@index([status])
+  @@map("instagram_connections")
+}
+
+model InstagramDailyMetric {
+  id             String   @id @default(cuid())
+  connectionId   String
+  date           DateTime @db.Date // WIB calendar date
+  followersCount Int?
+  metrics        Json     @default("{}") // { reach, views, total_interactions, likes, ... } - only what the API returned
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  connection InstagramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, date])
+  @@map("instagram_daily_metrics")
+}
+
+model InstagramMediaSnapshot {
+  id               String    @id @default(cuid())
+  connectionId     String
+  mediaId          String
+  mediaType        String? // IMAGE | VIDEO | CAROUSEL_ALBUM
+  mediaProductType String? // FEED | REELS | STORY | AD
+  permalink        String?   @db.Text
+  caption          String?   @db.Text // trimmed
+  timestamp        DateTime?
+  thumbnailUrl     String?   @db.Text
+  metrics          Json      @default("{}")
+  fetchedAt        DateTime  @default(now())
+
+  connection InstagramConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, mediaId])
+  @@index([connectionId, timestamp])
+  @@map("instagram_media_snapshots")
+}
+
+// Single-use OAuth "state" nonces (10 min). The state sent to Instagram only
+// carries the nonce + expiry + HMAC; everything it binds lives here.
+model InstagramOAuthState {
+  id             String    @id @default(cuid())
+  nonceHash      String    @unique // sha256(nonce), hex
+  clientId       String
+  initiatorType  String // "staff" | "portal"
+  initiatorId    String // staff user id or portal contact id
+  initiatorEmail String
+  browserHash    String // sha256 of the browser-binding cookie value
+  redirectUri    String
+  returnTo       String
+  syncProfile    Boolean   @default(false)
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([expiresAt])
+  @@map("instagram_oauth_states")
+}
+
+// Meta "Data Deletion Request" callbacks - status page lookup by code only.
+model InstagramDataDeletionRequest {
+  id               String    @id @default(cuid())
+  confirmationCode String    @unique
+  status           String    @default("COMPLETED")
+  requestedAt      DateTime  @default(now())
+  completedAt      DateTime?
+
+  @@map("instagram_data_deletion_requests")
 }

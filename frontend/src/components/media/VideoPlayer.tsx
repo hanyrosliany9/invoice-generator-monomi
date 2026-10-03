@@ -3,6 +3,7 @@ import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { ShortcutTip } from '@/components/ui/kbd';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -203,38 +204,42 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1">
               {/* Play/Pause */}
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-white hover:bg-white/10"
-                onClick={() => {
-                  const vid = videoRef.current;
-                  if (!vid) return;
-                  vid.paused ? vid.play() : vid.pause();
-                }}
-                aria-label={isPlaying ? t('videoReview.pause', 'Pause') : t('videoReview.play', 'Play')}
-              >
-                {isPlaying
-                  ? <Pause className="h-4 w-4 fill-white text-white" />
-                  : <Play className="h-4 w-4 fill-white text-white" />}
-              </Button>
+              <ShortcutTip label={isPlaying ? t('videoReview.pause', 'Pause') : t('videoReview.play', 'Play')} shortcut="videoPlay" side="top" contentClassName="z-[200]">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-white hover:bg-white/10"
+                  onClick={() => {
+                    const vid = videoRef.current;
+                    if (!vid) return;
+                    vid.paused ? vid.play() : vid.pause();
+                  }}
+                  aria-label={isPlaying ? t('videoReview.pause', 'Pause') : t('videoReview.play', 'Play')}
+                >
+                  {isPlaying
+                    ? <Pause className="h-4 w-4 fill-white text-white" />
+                    : <Play className="h-4 w-4 fill-white text-white" />}
+                </Button>
+              </ShortcutTip>
 
               {/* Mute */}
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-white hover:bg-white/10"
-                onClick={() => {
-                  if (!videoRef.current) return;
-                  videoRef.current.muted = !videoRef.current.muted;
-                  setMuted(videoRef.current.muted);
-                }}
-                aria-label={muted ? t('videoReview.unmute', 'Unmute') : t('videoReview.mute', 'Mute')}
-              >
-                {muted
-                  ? <VolumeX className="h-4 w-4" />
-                  : <Volume2 className="h-4 w-4" />}
-              </Button>
+              <ShortcutTip label={muted ? t('videoReview.unmute', 'Unmute') : t('videoReview.mute', 'Mute')} shortcut="videoMute" side="top" contentClassName="z-[200]">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-white hover:bg-white/10"
+                  onClick={() => {
+                    if (!videoRef.current) return;
+                    videoRef.current.muted = !videoRef.current.muted;
+                    setMuted(videoRef.current.muted);
+                  }}
+                  aria-label={muted ? t('videoReview.unmute', 'Unmute') : t('videoReview.mute', 'Mute')}
+                >
+                  {muted
+                    ? <VolumeX className="h-4 w-4" />
+                    : <Volume2 className="h-4 w-4" />}
+                </Button>
+              </ShortcutTip>
 
               {/* Time display */}
               <span className="text-xs text-white/70 font-mono tabular-nums">
@@ -245,7 +250,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(
             <div className="flex items-center gap-1">
               {/* Keyboard hint */}
               <span className="text-[10px] text-white/40 hidden sm:block select-none">
-                {t('videoReview.keyboardHint', 'Space/K  J  L  ←/→')}
+                {t('videoReview.keyboardHint', 'Space/K  J  L  ←/→  ?')}
               </span>
 
               {/* Fullscreen */}

@@ -7,6 +7,25 @@ import {
   Logger,
 } from "@nestjs/common";
 import { Request, Response } from "express";
+import { redactUrl } from "../utils/log-redaction.util";
+
+/**
+ * Client errors raised by Express middleware (body-parser / raw-body use the
+ * `http-errors` shape: numeric `status`, `expose: true`), e.g. 413 "request
+ * entity too large" or 400 "invalid JSON". Without this they surfaced as 500.
+ */
+function middlewareClientError(exception: unknown): { status: number; message: string } | null {
+  if (!exception || typeof exception !== "object") return null;
+  const e = exception as { status?: unknown; statusCode?: unknown; expose?: unknown; type?: unknown };
+  const status = typeof e.status === "number" ? e.status : typeof e.statusCode === "number" ? e.statusCode : NaN;
+  if (!Number.isInteger(status) || status < 400 || status > 499 || e.expose !== true) return null;
+  const messages: Record<number, string> = {
+    400: "Permintaan tidak valid",
+    413: "Ukuran permintaan terlalu besar",
+    415: "Jenis konten tidak didukung",
+  };
+  return { status, message: messages[status] ?? "Permintaan tidak valid" };
+}
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -58,6 +77,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
           message = String(ro.message[0]);
         }
       }
+    } else if (middlewareClientError(exception)) {
+      ({ status, message } = middlewareClientError(exception)!);
     } else if (exception instanceof Error) {
       // Handle specific database/Prisma errors
       if (exception.message.includes("ECONNREFUSED")) {
@@ -72,10 +93,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     }
 
+    // Never log or echo credentials carried in the query string (OAuth
+    // code/state, access_token, signed_request, ...).
+    const safeUrl = redactUrl(String(request.url ?? ""));
+
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: safeUrl,
       method: request.method,
       message,
       ...(details !== undefined && { details }),
@@ -88,7 +113,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Log the error with more detail
     this.logger.error(
-      `${request.method} ${request.url} - ${status} - ${message}`,
+      `${request.method} ${safeUrl} - ${status} - ${message}`,
       exception instanceof Error ? exception.stack : JSON.stringify(exception),
     );
 

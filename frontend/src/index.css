@@ -299,3 +299,28 @@ h4 {
     border-color: #d4d4d4 !important;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────
+   Keyboard-shortcut cheat sheet (CheatSheet.tsx). Lives in <body>,
+   invisible on screen; printCheatSheet() sets html[data-print] so
+   only this sheet prints, in two compact columns.
+   ────────────────────────────────────────────────────────────── */
+.cheatsheet-root { display: none; }
+@media print {
+  html[data-print='cheatsheet'] body > *:not(.cheatsheet-root) { display: none !important; }
+  html[data-print='cheatsheet'] .cheatsheet-root { display: block !important; position: static !important; padding: 0 !important; }
+  .cheatsheet-root .cheatsheet-title { font-size: 20pt; font-weight: 600; margin: 0 0 2pt; }
+  .cheatsheet-root .cheatsheet-sub { font-size: 9pt; margin: 0 0 10pt; }
+  .cheatsheet-root .cheatsheet-cols { column-count: 2; column-gap: 18pt; }
+  .cheatsheet-root .cheatsheet-area { break-inside: avoid; margin: 0 0 10pt; }
+  .cheatsheet-root .cheatsheet-area h2 { font-size: 11pt; font-weight: 600; margin: 0 0 3pt; border-bottom: 1.5pt solid #000; }
+  .cheatsheet-root .shortcut-group { break-inside: avoid; }
+  .cheatsheet-root table { width: 100%; }
+  .cheatsheet-root .shortcut-row { break-inside: avoid; }
+  .cheatsheet-root td { font-size: 8pt; line-height: 1.25; padding-top: 1pt !important; padding-bottom: 1pt !important; }
+  .cheatsheet-root td span { font-size: 6.5pt; line-height: 1.2; }
+  .cheatsheet-root h4 { font-size: 6.5pt; margin: 3pt 0 1pt !important; }
+  .cheatsheet-root .shortcut-group { margin: 0 !important; }
+  .cheatsheet-root .space-y-3 > * + * { margin-top: 2pt !important; }
+  .cheatsheet-root kbd { border: 0.6pt solid #666 !important; border-radius: 3pt; font-size: 8pt !important; height: auto !important; padding: 0 3pt !important; }
+}

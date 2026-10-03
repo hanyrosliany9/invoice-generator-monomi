@@ -76,6 +76,14 @@ services:
       # app refuses to boot without it) and the portal origin for CORS/emails.
       - PORTAL_JWT_SECRET=${PORTAL_JWT_SECRET:?PORTAL_JWT_SECRET must be set in .env}
       - PORTAL_URL=https://portal.monomiagency.com
+      # Instagram API with Instagram Login (optional — app boots without it).
+      # TOKEN_ENCRYPTION_KEY is required once META_APP_ID/SECRET are set.
+      - META_APP_ID=${META_APP_ID:-}
+      - META_APP_SECRET=${META_APP_SECRET:-}
+      - META_GRAPH_VERSION=${META_GRAPH_VERSION:-v26.0}
+      - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
+      - INSTAGRAM_REDIRECT_URI=${INSTAGRAM_REDIRECT_URI:-https://admin.monomiagency.com/api/v1/instagram/oauth/callback}
+      - INSTAGRAM_PORTAL_REDIRECT_URI=${INSTAGRAM_PORTAL_REDIRECT_URI:-https://portal.monomiagency.com/api/v1/instagram/oauth/callback}
       - PUBLIC_URL=https://share.monomiagency.com
       - MEDIA_URL=https://media.monomiagency.com
       # MCP custom connector — Claude.ai users connect via the admin hostname

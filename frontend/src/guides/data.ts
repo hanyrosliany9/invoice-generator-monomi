@@ -1,10 +1,10 @@
-import { FileText, Film, KeyRound, LayoutTemplate, Presentation } from 'lucide-react';
+import { FileText, Film, Keyboard, KeyRound, LayoutTemplate, Presentation } from 'lucide-react';
 import { adminGuides } from './staff/admin';
 import { financeGuides } from './staff/finance';
 import { marketingGuides } from './staff/marketing';
 import { productionGuides } from './staff/production';
 import { salesGuides } from './staff/sales';
-import { type GuideAudience, type GuideDef, steps } from './types';
+import { type GuideAudience, type GuideDef, shortcutSteps, steps } from './types';
 
 /**
  * In-app guides. Text lives in i18n under `guides.items.<slug>` (title, purpose,
@@ -37,6 +37,16 @@ const clientGuides: GuideDef[] = [
   {
     slug: 'rencana-konten-klien', audience: 'client', topic: 'content', icon: LayoutTemplate, minutes: 2,
     steps: steps('rencana-konten-klien', ['rencana', 'ponsel']),
+  },
+  {
+    slug: 'pintasan-klien', audience: 'client', topic: 'general', icon: Keyboard, minutes: 2,
+    cheatSheet: true,
+    steps: shortcutSteps('pintasan-klien', [
+      { id: 'bantuan', image: true, areas: ['global'] },
+      { id: 'foto', image: true, areas: ['lightbox'] },
+      { id: 'video', areas: ['videoPlayer', 'comments'] },
+      { id: 'deck', areas: ['deckViewer'] },
+    ]),
   },
 ];
 

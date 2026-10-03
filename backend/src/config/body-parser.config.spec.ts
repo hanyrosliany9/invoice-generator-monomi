@@ -1,7 +1,8 @@
 import { Body, Controller, INestApplication, Param, Post } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { registerLargeJsonBodyRoutes } from "./body-parser.config";
+import { registerLargeJsonBodyRoutes, registerSmallBodyRoutes } from "./body-parser.config";
+import { AllExceptionsFilter } from "../common/filters/all-exceptions.filter";
 
 /**
  * Boots a real Nest/Express app (same bootstrap order as main.ts: middleware
@@ -109,5 +110,72 @@ describe("registerLargeJsonBodyRoutes", () => {
 
     // Not a matched route: default parser applies first and rejects the size.
     expect(res.status).toBe(413);
+  });
+});
+
+@Controller("instagram")
+class MetaCallbackTestController {
+  @Post("deauthorize")
+  deauthorize(@Body("signed_request") sr: unknown) {
+    return { length: typeof sr === "string" ? sr.length : null };
+  }
+
+  @Post("data-deletion")
+  dataDeletion(@Body("signed_request") sr: unknown) {
+    return { length: typeof sr === "string" ? sr.length : null };
+  }
+
+  @Post("other")
+  other(@Body("signed_request") sr: unknown) {
+    return { length: typeof sr === "string" ? sr.length : null };
+  }
+}
+
+describe("registerSmallBodyRoutes (Meta deauthorize / data-deletion)", () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ controllers: [MetaCallbackTestController] }).compile();
+    app = moduleRef.createNestApplication();
+    registerLargeJsonBodyRoutes(app, "api/v1");
+    registerSmallBodyRoutes(app, "api/v1");
+    app.setGlobalPrefix("api/v1");
+    // Same global filter as production: it used to turn the 413 into a 500.
+    const filter = new AllExceptionsFilter();
+    jest.spyOn((filter as any).logger, "error").mockImplementation(() => undefined);
+    app.useGlobalFilters(filter);
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  const form = (n: number) => `signed_request=${"a".repeat(n)}`;
+
+  it("parses a normal form-encoded signed_request", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/api/v1/instagram/deauthorize")
+      .type("form")
+      .send(form(600));
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ length: 600 });
+  });
+
+  it.each(["deauthorize", "data-deletion"])("answers 413 (not 500) above 16kb on /instagram/%s", async (route) => {
+    const big = await request(app.getHttpServer()).post(`/api/v1/instagram/${route}`).type("form").send(form(200_000));
+    expect(big.status).toBe(413);
+    expect(big.body.statusCode).toBe(413);
+    const justOver = await request(app.getHttpServer()).post(`/api/v1/instagram/${route}`).type("form").send(form(17 * 1024));
+    expect(justOver.status).toBe(413);
+    const json = await request(app.getHttpServer())
+      .post(`/api/v1/instagram/${route}`)
+      .send({ signed_request: "a".repeat(20_000) });
+    expect(json.status).toBe(413);
+  });
+
+  it("other routes keep the default limit", async () => {
+    const res = await request(app.getHttpServer()).post("/api/v1/instagram/other").type("form").send(form(50_000));
+    expect(res.status).toBe(201);
   });
 });

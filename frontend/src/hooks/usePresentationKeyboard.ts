@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { usePresentationStore } from '../stores/presentationStore';
+import { isEditableTarget, SHORTCUTS_OPEN_ATTR } from '../shortcuts/helpKey';
 
 export const usePresentationKeyboard = () => {
   const {
@@ -37,6 +38,11 @@ export const usePresentationKeyboard = () => {
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!isPresenting) return;
+
+    // The "?" shortcuts overlay (and any field the presenter types into) owns the keyboard.
+    if (document.documentElement.hasAttribute(SHORTCUTS_OPEN_ATTR) || isEditableTarget(e.target)) return;
+    // Leave browser/OS combos (Ctrl+L, Cmd+S, ...) alone.
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     // FIX 4: intercept digit keys (0-9) for buffered slide navigation.
     // Use e.key so that numpad digits ('0'–'9') are also handled.

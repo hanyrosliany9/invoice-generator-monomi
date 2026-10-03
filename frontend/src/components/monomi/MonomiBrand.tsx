@@ -32,8 +32,8 @@ export const MonomiBrand = ({ className, iconOnly }: MonomiBrandProps) => (
         maskRepeat: 'no-repeat',
         WebkitMaskPosition: 'left center',
         maskPosition: 'left center',
-        WebkitMaskSize: 'contain',
-        maskSize: 'contain',
+        WebkitMaskSize: iconOnly ? 'auto 100%' : 'contain',
+        maskSize: iconOnly ? 'auto 100%' : 'contain',
       }}
     />
   </div>

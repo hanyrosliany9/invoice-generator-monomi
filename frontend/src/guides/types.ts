@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import type { ShortcutArea } from '@/shortcuts/registry';
 
 /**
  * In-app guides. Text lives in i18n under `guides.items.<slug>` (title, purpose,
@@ -14,12 +15,14 @@ export type GuideAudience = 'staff' | 'client';
  */
 export type GuideTopic =
   | 'sales' | 'production' | 'marketing' | 'finance' | 'admin'
-  | 'report' | 'content' | 'client' | 'media' | 'login' | 'deck';
+  | 'report' | 'content' | 'client' | 'media' | 'login' | 'deck' | 'general';
 
 export interface GuideStep {
   id: string;
-  /** "<folder>/<name>" under public/guides, without extension. */
-  image: string;
+  /** "<folder>/<name>" under public/guides, without extension. Shortcut steps may have none. */
+  image?: string;
+  /** Registry areas whose shortcut tables are rendered under the step text (see src/shortcuts/registry.ts). */
+  shortcuts?: ShortcutArea[];
   /** Real app page this step is about (staff guides only). */
   href?: string;
 }
@@ -35,6 +38,8 @@ export interface GuideDef {
   /** Short guide that belongs to another one. */
   partOf?: string;
   openHref?: string;
+  /** Offer a printable cheat sheet of every shortcut for this audience. */
+  cheatSheet?: boolean;
   steps: GuideStep[];
 }
 
@@ -44,3 +49,15 @@ export const steps = (slug: string, items: Array<string | [string, string]>): Gu
     const [id, href] = Array.isArray(it) ? it : [it, undefined];
     return { id, image: `${slug}/${id}`, ...(href !== undefined ? { href } : {}) };
   });
+
+/** Step list for a shortcut guide: tables come from the registry, so only the areas are listed. */
+export const shortcutSteps = (
+  slug: string,
+  items: Array<{ id: string; areas?: ShortcutArea[]; image?: boolean; href?: string }>,
+): GuideStep[] =>
+  items.map((it) => ({
+    id: it.id,
+    ...(it.image === true ? { image: `${slug}/${it.id}` } : {}),
+    ...(it.areas !== undefined ? { shortcuts: it.areas } : {}),
+    ...(it.href !== undefined ? { href: it.href } : {}),
+  }));

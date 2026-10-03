@@ -70,6 +70,8 @@
     "other": "Lainnya"
   },
   "nav": {
+    "hideSidebar": "Sembunyikan sidebar",
+    "showSidebar": "Tampilkan sidebar",
     "dashboard": "Dashboard",
     "projects": "Proyek",
     "calendar": "Kalender",
@@ -7753,18 +7755,18 @@
     "lightbox": {
       "downloadFailed": "Unduhan gagal. Silakan coba lagi.",
       "open": "Buka lightbox",
-      "zoomOut": "Perkecil (−)",
-      "resetZoom": "Reset zoom (0)",
-      "zoomIn": "Perbesar (+)",
-      "rotate": "Putar searah jarum jam (R)",
+      "zoomOut": "Perkecil",
+      "resetZoom": "Reset zoom",
+      "zoomIn": "Perbesar",
+      "rotate": "Putar searah jarum jam",
       "download": "Unduh",
-      "close": "Tutup (Esc)",
-      "hint": "+/− zoom · R putar · 0 reset · Esc tutup",
+      "close": "Tutup",
+      "hint": "Tekan ? untuk semua pintasan keyboard",
       "hideDetails": "Sembunyikan detail",
       "showDetails": "Tampilkan detail: rating & komentar",
-      "prev": "Sebelumnya (←)",
+      "prev": "Sebelumnya",
       "details": "Detail",
-      "next": "Berikutnya (→)"
+      "next": "Berikutnya"
     },
     "shiftClickHint": "Shift-klik untuk memilih rentang",
     "prevAsset": "Aset sebelumnya",
@@ -8005,16 +8007,16 @@
     "transitionSlideLeft": "Geser Kiri",
     "transitionSlideRight": "Geser Kanan",
     "transitionZoom": "Perbesar",
-    "prevSlide": "Slide sebelumnya (←)",
-    "nextSlide": "Slide berikutnya (→)",
-    "overview": "Ikhtisar slide (G)",
-    "laserPointer": "Penunjuk laser (P)",
+    "prevSlide": "Slide sebelumnya",
+    "nextSlide": "Slide berikutnya",
+    "overview": "Ikhtisar slide",
+    "laserPointer": "Penunjuk laser",
     "startAutoPlay": "Mulai putar otomatis",
     "pauseAutoPlay": "Jeda putar otomatis",
-    "exit": "Keluar presentasi (Esc)",
-    "notesCaption": "Teks catatan pembicara (N)",
+    "exit": "Keluar presentasi",
+    "notesCaption": "Teks catatan pembicara",
     "audienceView": "Tampilan audiens",
-    "presenterView": "Tampilan presenter (S)"
+    "presenterView": "Tampilan presenter"
   },
   "schedules": {
     "title": "Jadwal Syuting",
@@ -8403,6 +8405,19 @@
       "namePlaceholder": "Nama kontak",
       "emailPlaceholder": "Email kontak",
       "add": "Tambah kontak"
+    },
+    "instagram": {
+      "connectedToast": "Instagram berhasil dihubungkan. Terima kasih!",
+      "followers": "{{n}} pengikut",
+      "connectedNote": "Terhubung — laporan diisi otomatis",
+      "noInsights": "Izin statistik belum diberikan. Hubungkan ulang dan izinkan akses insights.",
+      "reconnectTitle": "Hubungkan ulang Instagram @{{username}}",
+      "title": "Hubungkan Instagram Anda",
+      "explain": "Dengan menghubungkan akun Instagram Bisnis atau Kreator Anda, Monomi dapat membaca profil dasar dan statistik (insights) untuk menyusun laporan bulanan secara otomatis.",
+      "permRead": "Hanya membaca: profil, jumlah pengikut, jangkauan, tayangan, dan interaksi konten.",
+      "permNoPost": "Monomi tidak bisa memposting, mengirim pesan, atau mengubah akun Anda.",
+      "permRevoke": "Anda bisa memutuskan kapan saja di sini atau di pengaturan Instagram.",
+      "privacy": "Kebijakan privasi"
     }
   },
   "reportActions": {
@@ -8484,7 +8499,9 @@
       "manual": "Ketik di tabel",
       "manualHint": "Isi seperti spreadsheet",
       "metrics": "Angka utama",
-      "metricsHint": "Cukup beberapa total"
+      "metricsHint": "Cukup beberapa total",
+      "instagram": "Ambil dari Instagram",
+      "instagramHint": "Data tersinkron otomatis"
     },
     "addSectionOpen": "Tambah bagian data",
     "addSectionTitle": "Tambah bagian data",
@@ -8510,7 +8527,8 @@
     "source": {
       "metrics": "Angka utama",
       "manual": "Diketik manual",
-      "file": "File: {{name}}"
+      "file": "File: {{name}}",
+      "instagram": "Instagram (otomatis)"
     },
     "rename": "Ubah nama bagian",
     "rowsCols": "{{rows}} baris, {{cols}} kolom",
@@ -8549,7 +8567,22 @@
     "tplFailed": "Template tidak dapat diunduh. Coba lagi.",
     "tplTitle": "Belum punya file? Unduh template dengan kolom yang benar",
     "formatHelp": "Didukung: .csv (pemisah koma atau titik koma) dan Excel .xlsx/.xls, maksimal 5 MB. Satu baris per hari (atau per postingan). Tanggal seperti 2026-09-01, 01/09/2026 atau 1 Sep 2026; angka seperti 1234, 1.234, 12,5 atau 3,4%. Baris pertama berisi nama kolom.",
-    "tooLarge": "File terlalu besar (maksimal 5 MB)."
+    "tooLarge": "File terlalu besar (maksimal 5 MB).",
+    "instagram": {
+      "added": "{{count}} bagian Instagram ditambahkan.",
+      "lastSync": "Sinkronisasi terakhir",
+      "inactive": "Koneksi tidak aktif — memakai data yang sudah tersimpan.",
+      "noData": "Belum ada data Instagram untuk bulan laporan ini. Jalankan \"Sync sekarang\" di halaman klien, atau pilih bulan lain.",
+      "sectionEmpty": "Tidak ada data bulan ini",
+      "sectionSummary": "{{rows}} baris, {{charts}} grafik",
+      "add": "Tambahkan bagian Instagram",
+      "includePartial": "Sertakan metrik dengan data tidak lengkap",
+      "includePartialHint": "Metrik yang datanya kurang dari 80% hari bulan ini disembunyikan secara bawaan. Centang untuk tetap menampilkannya (ditandai di deskripsi bagian).",
+      "replaceTitle": "Ganti bagian Instagram yang sudah ada?",
+      "replaceBody": "Laporan ini sudah memiliki bagian Instagram: {{titles}}. Bagian tersebut akan diperbarui dengan data terbaru (grafik yang Anda ubah dikembalikan ke bawaan).",
+      "replaceConfirm": "Ganti dengan data terbaru",
+      "replaced": "{{count}} bagian Instagram diperbarui."
+    }
   },
   "reportCopy": {
     "title": "Salin laporan ke bulan lain",
@@ -8645,6 +8678,10 @@
       "demoNote": "Gambar memakai data contoh (Demo), bukan data klien sebenarnya.",
       "subGuide": "Sub-panduan",
       "adminOnly": "Khusus admin",
+      "watchVideo": "Tonton video",
+      "playFromStep": "Putar video dari langkah ini",
+      "videoNote": "Video tanpa suara. Nyalakan teks (CC) di pemutar, atau ikuti langkah tertulis di bawah.",
+      "nowPlaying": "Sedang diputar",
       "topic": {
         "report": "Laporan",
         "content": "Konten",
@@ -8656,7 +8693,8 @@
         "production": "Produksi",
         "marketing": "Marketing",
         "finance": "Keuangan & Akuntansi",
-        "admin": "Administrasi"
+        "admin": "Administrasi",
+        "general": "Umum"
       }
     },
     "items": {
@@ -9600,6 +9638,65 @@
             "body": "Akun baru muncul (1) dengan perannya. Saklar Aktif pada barisnya membuka atau menutup akses login, dan kartu di atas menghitung pengguna menurut peran."
           }
         }
+      },
+      "pintasan-keyboard": {
+        "title": "Pintasan Keyboard",
+        "purpose": "Bekerja lebih cepat tanpa mouse. Semua pintasan di Monomi dalam satu tempat, untuk Windows dan Mac.",
+        "steps": {
+          "bantuan": {
+            "title": "Tekan ? di mana saja",
+            "body": "Tekan ? (Shift + /) di halaman mana pun untuk melihat pintasan halaman itu lebih dulu, lalu pintasan yang berlaku di mana saja. Ketik di kotak pencarian untuk mencari berdasarkan fungsi atau tombolnya, dan tekan Esc untuk menutup.",
+            "tip": "Di Mac, tombol tampil sebagai ⌘ (Command), ⌥ (Option) dan ⇧ (Shift). Ctrl+K (⌘K) membuka halaman mana pun dan Ctrl+B (⌘B) menciutkan sidebar."
+          },
+          "media": {
+            "title": "Foto dan video",
+            "body": "Arahkan kursor ke tombol di penampil foto untuk melihat tombol pintasannya. ← → pindah antar foto, + dan − memperbesar atau memperkecil, 0 me-reset zoom, R memutar dan Esc menutup. Di galeri media, 1 sampai 5 memberi rating foto yang terbuka. Di pemutar video, Space atau K memutar dan menjeda, J dan L melompat 10 detik, dan ← → maju atau mundur satu frame.",
+            "tip": "Shift+klik kotak centang kedua di galeri untuk memilih semua foto di antaranya."
+          },
+          "deck": {
+            "title": "Editor deck",
+            "body": "Editor deck bekerja seperti aplikasi desain. Ctrl+S menyimpan, Ctrl+Z mengurungkan, R, C, T dan L menambah persegi, lingkaran, teks atau garis, dan tombol panah menggeser elemen terpilih (tahan Shift untuk langkah lebih besar). Tombol ? di toolbar menampilkan daftarnya di dalam editor.",
+            "tip": "Tombol satu huruf seperti R, C, T dan L hanya bekerja saat Anda tidak sedang mengetik di kotak teks."
+          },
+          "presentasi": {
+            "title": "Mempresentasikan deck",
+            "body": "Klik Presentasi, lalu pakai → atau Space untuk slide berikutnya dan ← untuk sebelumnya. Ketik nomor slide lalu Enter untuk melompat. G membuka ikhtisar, P penunjuk laser, S tampilan presenter, N teks catatan, dan Esc keluar. Petunjuk singkat \"Tekan ? untuk pintasan\" muncul saat presentasi dimulai.",
+            "tip": "Orang yang melihat deck lewat tautan bagikan juga bisa memakai tombol panah."
+          },
+          "formulir": {
+            "title": "Tabel dan formulir",
+            "body": "Di tabel data laporan, Enter atau ↓ pindah ke sel di bawahnya (Enter di baris terakhir menambah baris) dan ↑ pindah ke atas. Di jadwal syuting, isi baris tambah cepat lalu tekan Enter untuk menambahkan adegan."
+          },
+          "cetak": {
+            "title": "Cetak lembar pintasan",
+            "body": "Pakai tombol Cetak lembar pintasan di bagian atas panduan ini untuk mencetak semua pintasan dalam satu halaman, dua kolom. Taruh di dekat meja sampai tombol-tombolnya terbiasa.",
+            "tip": "Di Mac, hasil cetak otomatis memakai ⌘, ⌥ dan ⇧."
+          }
+        }
+      },
+      "pintasan-klien": {
+        "title": "Pintasan Keyboard",
+        "purpose": "Buka foto, putar video, dan baca deck lebih cepat dengan keyboard.",
+        "steps": {
+          "bantuan": {
+            "title": "Tekan ? untuk melihat pintasan",
+            "body": "Di komputer, tekan ? (Shift + /) di mana saja di portal untuk melihat pintasan halaman yang sedang Anda buka. Tekan Esc untuk menutup daftar.",
+            "tip": "Pintasan membutuhkan keyboard fisik, jadi tidak tersedia di ponsel."
+          },
+          "foto": {
+            "title": "Penampil foto",
+            "body": "Buka sebuah foto, lalu pakai ← dan → untuk pindah antar foto, + dan − untuk memperbesar atau memperkecil, 0 untuk me-reset zoom, R untuk memutar dan Esc untuk menutup. Arahkan kursor ke tombol untuk melihat tombol pintasannya.",
+            "tip": "Saat foto diperbesar, tombol panah tidak lagi berpindah foto."
+          },
+          "video": {
+            "title": "Video dan komentar",
+            "body": "Space atau K memutar dan menjeda, J dan L melompat 10 detik, ← dan → maju atau mundur satu frame, dan M membisukan suara. Tulis komentar lalu tekan Ctrl+Enter (⌘+Enter di Mac) untuk mengirimnya."
+          },
+          "deck": {
+            "title": "Membaca deck",
+            "body": "Pakai → atau ↓ untuk slide berikutnya dan ← atau ↑ untuk slide sebelumnya."
+          }
+        }
       }
     }
   },
@@ -9658,5 +9755,207 @@
     "unpaid": "Belum Dibayar",
     "partiallyPaid": "Dibayar Sebagian",
     "paid": "Lunas"
+  },
+  "shortcuts": {
+    "ui": {
+      "title": "Pintasan keyboard",
+      "subtitleWin": "Ctrl adalah tombol Control. Pintasan tidak berlaku saat Anda mengetik di kolom isian.",
+      "subtitleMac": "⌘ adalah Command, ⌥ adalah Option, ⇧ adalah Shift. Pintasan tidak berlaku saat Anda mengetik di kolom isian.",
+      "close": "Tutup",
+      "searchLabel": "Cari pintasan",
+      "searchPlaceholder": "Cari berdasarkan aksi atau tombol…",
+      "noResults": "Tidak ada pintasan yang cocok dengan pencarian Anda.",
+      "thisPage": "Halaman ini",
+      "toggleHint": "membuka atau menutup jendela ini",
+      "seeAll": "Lihat semua pintasan",
+      "or": "atau",
+      "helpButton": "Pintasan keyboard",
+      "presentHintPre": "Tekan",
+      "presentHintPost": "untuk pintasan",
+      "print": "Cetak lembar pintasan",
+      "cheatTitle": "Pintasan keyboard Monomi",
+      "openOverlay": "Tampilkan pintasan seluruh aplikasi"
+    },
+    "keys": {
+      "Click": "Klik",
+      "Scroll": "Gulir",
+      "Drag": "Seret"
+    },
+    "areas": {
+      "global": "Di mana saja",
+      "deckEditor": "Editor deck",
+      "presentation": "Mode presentasi",
+      "mediaGallery": "Galeri media",
+      "lightbox": "Penampil foto (lightbox)",
+      "videoPlayer": "Pemutar video",
+      "comments": "Komentar",
+      "deckViewer": "Penampil deck",
+      "reportGrid": "Tabel data laporan",
+      "schedule": "Jadwal syuting"
+    },
+    "groups": {
+      "general": "Umum",
+      "edit": "Pengeditan",
+      "shapes": "Bentuk cepat",
+      "move": "Geser dan balik",
+      "layers": "Lapisan dan grup",
+      "find": "Cari dan ganti",
+      "view": "Tampilan kanvas",
+      "comments": "Komentar"
+    },
+    "desc": {
+      "helpOpen": "Tampilkan pintasan keyboard untuk halaman ini",
+      "paletteOpen": "Buka atau tutup palet perintah (cari halaman dan aksi)",
+      "sidebarToggle": "Ciutkan atau lebarkan sidebar",
+      "paletteMove": "Pindah antar hasil di palet",
+      "paletteGo": "Buka hasil yang dipilih",
+      "paletteClose": "Tutup palet",
+      "deckSave": "Simpan",
+      "deckUndo": "Urungkan",
+      "deckRedo": "Ulangi",
+      "deckDeselect": "Batalkan pilihan",
+      "deckCopy": "Salin",
+      "deckCut": "Potong",
+      "deckPaste": "Tempel",
+      "deckDuplicate": "Duplikat",
+      "deckSelectAll": "Pilih semua elemen",
+      "deckDelete": "Hapus elemen terpilih",
+      "deckRect": "Tambah persegi",
+      "deckCircle": "Tambah lingkaran",
+      "deckText": "Tambah kotak teks",
+      "deckLine": "Tambah garis",
+      "deckNudge": "Geser pilihan 1 px",
+      "deckNudge10": "Geser pilihan 10 px",
+      "deckFlipH": "Balik horizontal",
+      "deckFlipV": "Balik vertikal",
+      "deckGroup": "Gabungkan elemen terpilih menjadi grup",
+      "deckUngroup": "Pisahkan grup",
+      "deckFront": "Bawa ke paling depan",
+      "deckBack": "Kirim ke paling belakang",
+      "deckForward": "Maju satu lapis",
+      "deckBackward": "Mundur satu lapis",
+      "deckFind": "Cari teks di deck",
+      "deckReplace": "Cari dan ganti",
+      "deckFindNext": "Hasil berikutnya",
+      "deckFindPrev": "Hasil sebelumnya",
+      "deckFindClose": "Tutup cari dan ganti",
+      "deckZoom": "Perbesar atau perkecil kanvas",
+      "deckPan": "Geser tampilan kanvas",
+      "deckReplySend": "Kirim balasan",
+      "deckReplyNewline": "Baris baru di balasan",
+      "deckReplyCancel": "Batalkan balasan",
+      "presNext": "Slide berikutnya",
+      "presPrev": "Slide sebelumnya",
+      "presFirst": "Slide pertama",
+      "presLast": "Slide terakhir",
+      "presGoto": "Lompat ke nomor slide",
+      "presOverview": "Ikhtisar slide",
+      "presLaser": "Penunjuk laser hidup atau mati",
+      "presPresenter": "Tampilan presenter hidup atau mati",
+      "presNotes": "Teks catatan pembicara hidup atau mati",
+      "presExit": "Keluar dari presentasi",
+      "galleryRate": "Beri rating foto yang terbuka (1 sampai 5 bintang)",
+      "galleryRateClear": "Hapus rating",
+      "galleryDetailNav": "Foto sebelumnya atau berikutnya",
+      "gallerySelectRange": "Pilih beberapa foto sekaligus",
+      "lightboxPrev": "Foto sebelumnya",
+      "lightboxNext": "Foto berikutnya",
+      "lightboxZoomIn": "Perbesar",
+      "lightboxZoomOut": "Perkecil",
+      "lightboxZoomReset": "Reset zoom",
+      "lightboxRotate": "Putar searah jarum jam",
+      "lightboxClose": "Tutup penampil",
+      "videoPlay": "Putar atau jeda",
+      "videoBack10": "Mundur 10 detik",
+      "videoFwd10": "Maju 10 detik",
+      "videoFrameBack": "Mundur satu frame",
+      "videoFrameFwd": "Maju satu frame",
+      "videoMute": "Bisukan atau bunyikan",
+      "videoReviewClose": "Tutup jendela review video",
+      "commentSend": "Kirim komentar yang sedang Anda tulis",
+      "viewerNext": "Slide berikutnya",
+      "viewerPrev": "Slide sebelumnya",
+      "gridNext": "Pindah ke sel di bawahnya",
+      "gridPrev": "Pindah ke sel di atasnya",
+      "scheduleAdd": "Tambahkan adegan dari baris tambah cepat"
+    },
+    "note": {
+      "helpOpen": "Tidak berlaku saat mengetik di kolom isian",
+      "sidebarToggle": "Hanya di desktop",
+      "paletteMove": "Saat palet terbuka",
+      "paletteGo": "Saat palet terbuka",
+      "paletteClose": "Saat palet terbuka",
+      "deckRect": "Bentuk muncul di tengah slide",
+      "deckFindNext": "Saat panel cari terbuka",
+      "deckFindPrev": "Saat panel cari terbuka",
+      "deckFindClose": "Saat panel cari terbuka",
+      "deckReplySend": "Di kotak balasan komentar",
+      "deckReplyNewline": "Di kotak balasan komentar",
+      "deckReplyCancel": "Di kotak balasan komentar",
+      "presGoto": "Ketik nomornya, lalu Enter (atau tunggu satu detik)",
+      "galleryRate": "Saat penampil foto atau panel detail terbuka",
+      "galleryRateClear": "Hanya di panel detail; di penampil, 0 me-reset zoom",
+      "galleryDetailNav": "Di panel detail",
+      "gallerySelectRange": "Klik satu kotak centang, lalu Shift+klik yang lain",
+      "lightboxPrev": "Tidak saat gambar diperbesar",
+      "lightboxNext": "Tidak saat gambar diperbesar",
+      "videoFrameBack": "1/30 detik",
+      "videoFrameFwd": "1/30 detik",
+      "gridNext": "Enter di baris terakhir menambah baris baru",
+      "scheduleAdd": "Di baris tambah cepat"
+    }
+  },
+  "instagram": {
+    "reason": {
+      "denied": "Izin ditolak di Instagram. Akun tidak dihubungkan.",
+      "session": "Sesi penghubungan kedaluwarsa, sudah dipakai, atau dibuka di browser lain. Silakan coba lagi dari halaman ini.",
+      "forbidden": "Anda tidak lagi memiliki akses untuk menghubungkan akun ini.",
+      "notBusiness": "Akun ini bukan akun Bisnis atau Kreator. Ubah ke akun profesional di aplikasi Instagram, lalu coba lagi.",
+      "access": "Meta belum mengizinkan akun ini. Selama aplikasi Monomi masih Standard Access, hanya akun yang terdaftar di App Roles yang bisa dihubungkan (perlu App Review untuk akun klien).",
+      "exchange": "Gagal menghubungkan Instagram. Silakan coba lagi.",
+      "inUse": "Akun Instagram ini sudah terhubung ke klien lain. Putuskan dari klien tersebut terlebih dahulu, atau masuk dengan akun Instagram milik klien ini.",
+      "otherAccount": "Akun Instagram yang dipakai masuk berbeda dengan akun yang sudah tersimpan untuk klien ini. Putuskan akun lama dan centang \"hapus data\" terlebih dahulu, lalu hubungkan lagi."
+    },
+    "disconnect": {
+      "title": "Putuskan Instagram?",
+      "body": "Akses Monomi ke @{{username}} dihapus dan sinkronisasi berhenti. Data yang sudah disinkronkan tetap disimpan untuk laporan sebelumnya, kecuali Anda memilih untuk menghapusnya.",
+      "purge": "Hapus juga semua data Instagram yang sudah disinkronkan",
+      "purgeHint": "Handle, foto, dan bio yang diambil dari Instagram juga dihapus dari profil klien (nilai yang diisi manual tetap). Bagian laporan yang sudah dibuat tidak ikut terhapus.",
+      "confirmPurge": "Putuskan & hapus data",
+      "confirm": "Putuskan",
+      "button": "Putuskan",
+      "removeData": "Putuskan / hapus data"
+    },
+    "connectedToast": "Instagram terhubung. Data sedang disinkronkan.",
+    "connectFailed": "Gagal memulai penghubungan Instagram.",
+    "syncStarted": "Sinkronisasi dimulai.",
+    "syncFailed": "Gagal memulai sinkronisasi.",
+    "disconnected": "Instagram diputuskan.",
+    "disconnectFailed": "Gagal memutuskan Instagram.",
+    "status": {
+      "active": "Terhubung",
+      "expired": "Token kedaluwarsa",
+      "revoked": "Diputuskan",
+      "error": "Bermasalah"
+    },
+    "cardHint": "Hubungkan akun Bisnis/Kreator untuk menyinkronkan insights setiap hari dan mengisi laporan bulanan otomatis.",
+    "loadFailed": "Status Instagram tidak dapat dimuat.",
+    "notConfigured": "Integrasi Instagram belum dikonfigurasi di server (META_APP_ID / META_APP_SECRET).",
+    "notConnected": "Belum terhubung.",
+    "syncProfile": "Perbarui handle, foto, dan bio Instagram klien dari akun ini",
+    "connect": "Hubungkan Instagram",
+    "portalHint": "Klien juga bisa menghubungkan akunnya sendiri: kirim tautan Portal Klien, lalu klien membuka tab Laporan dan memilih \"Hubungkan Instagram\".",
+    "staffLoginHint": "Anda akan diminta masuk ke akun Instagram klien. Pastikan Anda memakai akun milik klien ini, bukan akun pribadi atau akun Monomi.",
+    "creator": "Kreator",
+    "business": "Bisnis",
+    "followers": "{{n}} pengikut",
+    "lastSync": "Sinkronisasi terakhir",
+    "syncing": "Sedang berjalan…",
+    "tokenExpiry": "Token berlaku sampai",
+    "dataRange": "Data tersimpan",
+    "dataRangeValue": "{{days}} hari, {{media}} konten",
+    "syncNow": "Sync sekarang",
+    "reconnect": "Hubungkan ulang",
+    "reconnectExpired": "Hubungkan ulang Instagram"
   }
 }

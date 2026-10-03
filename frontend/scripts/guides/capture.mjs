@@ -5,6 +5,7 @@
  *   node capture.mjs report planner   only the named flows (see ./flows)
  *   node capture.mjs --clean-only     just remove leftover demo data
  *   node capture.mjs --keep           do not clean up at the end (debugging)
+ *   node capture.mjs --record sales   record videos instead of screenshots (then: node build-videos.mjs)
  *
  * Needs a running local stack; see README.md for the environment variables.
  * Seeds "(Demo)" data through the staff API, drives the real UI with
@@ -15,18 +16,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 import {
-  api, cfg, installMediaStub, loadManifest, saveManifest, shot, sleep, PUBLIC_GUIDES, login,
+  api, cfg, installMediaStub, loadManifest, saveManifest, shot, sleep, PUBLIC_GUIDES, login, mode,
 } from './lib.mjs';
+import {
+  cursorInitScript, flushTimeline, markGo, markReady, patchPlaywright, recShot, registerPage, OUT as VIDEO_OUT, RAW_DIR,
+} from './lib-record.mjs';
 import { seed } from './seed.mjs';
 import { cleanup, countRemaining, STATE_FILE } from './cleanup.mjs';
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith('--')));
 const only = args.filter((a) => !a.startsWith('--'));
+// --record: same flows, but recorded to video at human pace (README: "Videos"). No images are written.
+const RECORD = flags.has('--record');
+mode.record = RECORD;
 
 const FLOWS = [
   'report', 'planner', 'client-portal', 'media', 'portal',
-  'sales', 'finance', 'production', 'tools',
+  'sales', 'finance', 'production', 'tools', 'shortcuts',
 ];
 
 // Login is rate-limited (5 per minute), so sign in through the UI once and
@@ -36,6 +43,7 @@ let staffSession = null;
 async function newBrowserContext(browser, { w, h, dsf = 1, mobile = false, storageState }) {
   const context = await browser.newContext({
     storageState,
+    ...(RECORD ? { recordVideo: { dir: RAW_DIR, size: { width: w, height: h } } } : {}),
     viewport: { width: w, height: h },
     deviceScaleFactor: dsf,
     hasTouch: mobile,
@@ -49,6 +57,7 @@ async function newBrowserContext(browser, { w, h, dsf = 1, mobile = false, stora
     try { localStorage.setItem('monomi.lang', 'id'); localStorage.setItem('monomi.portal.lang', 'id'); } catch { /* ignore */ }
   });
   await installMediaStub(context);
+  if (RECORD) await context.addInitScript(cursorInitScript, { mobile });
   return context;
 }
 
@@ -73,22 +82,29 @@ async function main() {
     ids = reuse ? JSON.parse(fs.readFileSync(process.env.GUIDE_IDS_OUT, 'utf8')) : await seed();
     if (process.env.GUIDE_IDS_OUT && !reuse) fs.writeFileSync(process.env.GUIDE_IDS_OUT, JSON.stringify(ids, null, 1));
     const openPages = [];
+    const track = (page, { w, h, mobile }) => {
+      if (!RECORD) return;
+      patchPlaywright(page);
+      registerPage(page, { w, h, mobile });
+    };
     const ctx = {
       ids,
       browser,
       cfg,
       api,
       sleep,
-      shot,
+      shot: RECORD ? recShot : shot,
       go: async (page, p, wait = 800) => {
         await page.goto(cfg.appUrl + p, { waitUntil: 'networkidle' }).catch(() => {});
         await sleep(wait);
+        if (RECORD) markGo(page);
       },
       /** Signed-in staff browser context. Desktop 1280 wide by default. */
       async staff({ w = 1280, h = 760, dsf = 1, mobile = false } = {}) {
         const context = await newBrowserContext(browser, { w, h, dsf, mobile, storageState: staffSession ?? undefined });
         const page = await context.newPage();
         openPages.push(page);
+        track(page, { w, h, mobile });
         if (staffSession === null) {
           await page.goto(`${cfg.appUrl}/login`);
           await page.fill('#email', cfg.email);
@@ -100,6 +116,7 @@ async function main() {
         } else {
           await page.goto(`${cfg.appUrl}/`, { waitUntil: 'domcontentloaded' });
         }
+        if (RECORD) markReady(page);
         return { context, page };
       },
       /** Anonymous browser context (portal, public links). */
@@ -113,6 +130,7 @@ async function main() {
           console.log('  [console]', m.text().slice(0, 300), extra.join(' ').slice(0, 900));
         });
         openPages.push(page);
+        track(page, { w, h, mobile });
         return { context, page };
       },
     };
@@ -133,9 +151,13 @@ async function main() {
         throw e;
       } finally {
         for (const pg of openPages.splice(0)) await pg.context().close().catch(() => {});
+        if (RECORD) {
+          const t = await flushTimeline(name);
+          console.log(`  timeline: ${t.steps.length} steps, ${t.pages.length} page recording(s)`);
+        }
       }
     }
-    saveManifest();
+    if (!RECORD) saveManifest();
   } finally {
     await browser.close().catch(() => {});
     if (!flags.has('--keep')) {
@@ -145,6 +167,11 @@ async function main() {
     if (fs.existsSync(STATE_FILE) && !flags.has('--keep')) fs.unlinkSync(STATE_FILE);
   }
 
+  if (RECORD) {
+    console.log(`
+raw recordings + timelines in ${path.relative(process.cwd(), VIDEO_OUT)}; next: node build-videos.mjs`);
+    return;
+  }
   const total = dirSize(PUBLIC_GUIDES);
   console.log(`\nimages: ${(total / 1024).toFixed(0)} KB in ${path.relative(process.cwd(), PUBLIC_GUIDES)}`);
 }

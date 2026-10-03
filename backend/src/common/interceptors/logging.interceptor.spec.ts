@@ -51,6 +51,19 @@ describe("LoggingInterceptor redaction", () => {
     expect(redactUrl("/api/v1/x")).toBe("/api/v1/x");
   });
 
+  it("masks OAuth / Meta callback parameters in any spelling, and drops fragments", () => {
+    const out = redactUrl(
+      "/api/v1/instagram/oauth/callback?code=AQBsecret&state=nonce.123.sig&error_reason=x&access_token=IGAA&client_secret=s&signed_request=a.b&%63ode=enc&code[]=arr&Access-Token=t#_",
+    );
+    for (const secret of ["AQBsecret", "nonce.123.sig", "IGAA", "=s&", "a.b", "enc", "arr", "=t"]) {
+      expect(out).not.toContain(secret);
+    }
+    expect(out).toContain("error_reason=x");
+    expect(out).not.toContain("#");
+    // Bodies: signed_request redacted, an ordinary "state" field is not.
+    expect(redactSensitive({ signed_request: "a.b", state: "Jawa Barat" })).toEqual({ signed_request: "***", state: "Jawa Barat" });
+  });
+
   it("never writes a verify-code body's code to the debug log", () => {
     const interceptor = new LoggingInterceptor();
     const logger = (interceptor as any).logger;

@@ -26,6 +26,8 @@ export const cfg = {
 /** Every row created by the capture carries this marker, so cleanup can find it. */
 export const DEMO = '(Demo)';
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/** Set by capture.mjs --record: slower smooth scrolling (see lib-record.mjs). */
+export const mode = { record: false };
 
 /* ------------------------------------------------------------------ */
 /*  API                                                                */
@@ -180,6 +182,7 @@ export async function highlight(page, targets) {
     }
     document.body.append(root);
   }, boxes);
+  return boxes;
 }
 
 /** Put `locator` `offset` px below the top of the viewport (window scroll). */
@@ -190,9 +193,10 @@ export async function scrollTo(locator, offset = 110) {
     while (p && !(p.scrollHeight > p.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(p).overflowY))) p = p.parentElement;
     const base = p ? p.getBoundingClientRect().top : 0;
     const delta = el.getBoundingClientRect().top - base - off;
-    if (p) p.scrollBy(0, delta); else window.scrollBy(0, delta);
+    const behavior = window.__guideSmooth ? 'smooth' : 'auto';
+    if (p) p.scrollBy({ top: delta, behavior }); else window.scrollBy({ top: delta, behavior });
   }, offset);
-  await sleep(300);
+  await sleep(mode.record ? 900 : 300);
 }
 
 export async function clearHighlight(page) {

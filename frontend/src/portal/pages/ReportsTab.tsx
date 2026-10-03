@@ -9,6 +9,7 @@ import { ReportUtils } from '@/features/reports/services/reportUtils';
 import { locale } from '../reports/reportData';
 import { portalApi, type PortalReportSummary } from '../portalApi';
 import { hasText, PortalError, PortalSpinner } from '../ui';
+import { PortalInstagramCard } from './PortalInstagramCard';
 
 export const reportStatusChip = (status?: string) => {
   switch (status) {
@@ -99,11 +100,14 @@ export default function ReportsTab() {
   if (isError || data === undefined) return <PortalError onRetry={() => void refetch()} />;
   if (data.length === 0) {
     return (
+      <>
+      <PortalInstagramCard clientId={clientId} />
       <EmptyState
         icon={<BarChart3 />}
         title={t('portal.reports.emptyTitle', 'Belum ada laporan')}
         description={t('portal.reports.emptyDesc', 'Laporan media sosial bulanan Anda akan muncul di sini.')}
       />
+      </>
     );
   }
 
@@ -113,6 +117,7 @@ export default function ReportsTab() {
 
   return (
     <div>
+      <PortalInstagramCard clientId={clientId} />
       <p className="mb-5 text-sm text-text-secondary">
         {t('portal.reports.subtitle', 'Ringkasan kinerja media sosial Anda, bulan demi bulan.')}
       </p>

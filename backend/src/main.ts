@@ -10,7 +10,7 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
 import { ValidationInterceptor } from "./common/interceptors/validation.interceptor";
 import { getErrorMessage } from "./common/utils/error-handling.util";
 import { validateUrls } from "./config/url.config";
-import { registerLargeJsonBodyRoutes } from "./config/body-parser.config";
+import { registerLargeJsonBodyRoutes, registerSmallBodyRoutes } from "./config/body-parser.config";
 
 const logger = new Logger("Bootstrap");
 
@@ -165,6 +165,8 @@ async function bootstrap() {
     // disallowed origins are rejected before any large body is parsed, and
     // before listen() so it runs ahead of Nest's default JSON parser.
     registerLargeJsonBodyRoutes(app, API_GLOBAL_PREFIX);
+    // Meta webhook-style callbacks: 16kb cap, 413 above it.
+    registerSmallBodyRoutes(app, API_GLOBAL_PREFIX);
 
     // Global validation pipe
     app.useGlobalPipes(

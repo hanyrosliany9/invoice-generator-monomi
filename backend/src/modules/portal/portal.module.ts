@@ -44,6 +44,8 @@ import { assertPortalConfig } from "./portal.config";
     PortalContactsService,
     PortalSessionGuard,
   ],
+  // Used by other modules' portal routes (e.g. Instagram connect).
+  exports: [PortalAuthService, PortalScopeService, PortalSessionGuard],
 })
 export class PortalModule {
   constructor() {

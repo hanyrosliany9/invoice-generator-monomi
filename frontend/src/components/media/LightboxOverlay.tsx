@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { downloadFile } from '@/utils/downloadFile';
+import { ShortcutTip } from '@/components/ui/kbd';
 
 interface LightboxOverlayProps {
   src: string;
@@ -28,6 +29,8 @@ interface LightboxOverlayProps {
   hideDownload?: boolean;
 }
 
+/** Tooltips must sit above the lightbox itself (z-100). */
+const TIP_Z = 'z-[200]';
 const ZOOM_STEP = 0.25;
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 4;
@@ -165,47 +168,55 @@ export function LightboxOverlay({
           <span className="hidden sm:block h-4 w-px bg-white/15 mx-0.5" />
 
           {/* Zoom controls */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
-            onClick={zoomOut}
-            disabled={zoom <= ZOOM_MIN}
-            title={t('mediaReview.lightbox.zoomOut', 'Zoom out (−)')}
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
+          <ShortcutTip label={t('mediaReview.lightbox.zoomOut', 'Zoom out')} shortcut="lightboxZoomOut" side="bottom" contentClassName={TIP_Z}>
+            <Button
+              aria-label={t('mediaReview.lightbox.zoomOut', 'Zoom out')}
+              variant="ghost"
+              size="icon-sm"
+              className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
+              onClick={zoomOut}
+              disabled={zoom <= ZOOM_MIN}
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+          </ShortcutTip>
 
-          <button
-            type="button"
-            onClick={resetZoom}
-            className="hidden sm:block text-xs text-white/60 hover:text-white tabular-nums min-w-[3.5rem] text-center px-1 py-1 rounded hover:bg-white/10 transition-colors"
-            title={t('mediaReview.lightbox.resetZoom', 'Reset zoom (0)')}
-          >
-            {Math.round(zoom * 100)}%
-          </button>
+          <ShortcutTip label={t('mediaReview.lightbox.resetZoom', 'Reset zoom')} shortcut="lightboxZoomReset" side="bottom" contentClassName={TIP_Z}>
+            <button
+              aria-label={t('mediaReview.lightbox.resetZoom', 'Reset zoom')}
+              type="button"
+              onClick={resetZoom}
+              className="hidden sm:block text-xs text-white/60 hover:text-white tabular-nums min-w-[3.5rem] text-center px-1 py-1 rounded hover:bg-white/10 transition-colors"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+          </ShortcutTip>
 
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
-            onClick={zoomIn}
-            disabled={zoom >= ZOOM_MAX}
-            title={t('mediaReview.lightbox.zoomIn', 'Zoom in (+)')}
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
+          <ShortcutTip label={t('mediaReview.lightbox.zoomIn', 'Zoom in')} shortcut="lightboxZoomIn" side="bottom" contentClassName={TIP_Z}>
+            <Button
+              aria-label={t('mediaReview.lightbox.zoomIn', 'Zoom in')}
+              variant="ghost"
+              size="icon-sm"
+              className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
+              onClick={zoomIn}
+              disabled={zoom >= ZOOM_MAX}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </ShortcutTip>
 
           {/* Rotate */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
-            onClick={rotateCw}
-            title={t('mediaReview.lightbox.rotate', 'Rotate clockwise (R)')}
-          >
-            <RotateCw className="h-4 w-4" />
-          </Button>
+          <ShortcutTip label={t('mediaReview.lightbox.rotate', 'Rotate clockwise')} shortcut="lightboxRotate" side="bottom" contentClassName={TIP_Z}>
+            <Button
+              aria-label={t('mediaReview.lightbox.rotate', 'Rotate clockwise')}
+              variant="ghost"
+              size="icon-sm"
+              className="hidden sm:inline-flex text-white/70 hover:text-white hover:bg-white/10"
+              onClick={rotateCw}
+            >
+              <RotateCw className="h-4 w-4" />
+            </Button>
+          </ShortcutTip>
 
           {/* Download */}
           {!hideDownload && (
@@ -222,16 +233,17 @@ export function LightboxOverlay({
           )}
 
           {/* Close */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-white/70 hover:text-white hover:bg-white/10 ml-1"
-            onClick={onClose}
-            aria-label={t('mediaReview.lightbox.close', 'Close (Esc)')}
-            title={t('mediaReview.lightbox.close', 'Close (Esc)')}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <ShortcutTip label={t('mediaReview.lightbox.close', 'Close')} shortcut="lightboxClose" side="bottom" contentClassName={TIP_Z}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-white/70 hover:text-white hover:bg-white/10 ml-1"
+              onClick={onClose}
+              aria-label={t('mediaReview.lightbox.close', 'Close')}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </ShortcutTip>
         </div>
       </div>
 
@@ -239,18 +251,20 @@ export function LightboxOverlay({
       <div className="flex-1 flex items-stretch min-h-0">
         {/* Prev arrow */}
         <div className="flex items-center shrink-0 px-2">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className={cn(
-              'h-10 w-10 rounded-full text-white/50 hover:text-white hover:bg-white/10',
-              !hasPrev && 'invisible',
-            )}
-            onClick={onPrev}
-            title={t('mediaReview.lightbox.prev', 'Previous (←)')}
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
+          <ShortcutTip label={t('mediaReview.lightbox.prev', 'Previous')} shortcut="lightboxPrev" side="right" contentClassName={TIP_Z}>
+            <Button
+              aria-label={t('mediaReview.lightbox.prev', 'Previous')}
+              variant="ghost"
+              size="icon-sm"
+              className={cn(
+                'h-10 w-10 rounded-full text-white/50 hover:text-white hover:bg-white/10',
+                !hasPrev && 'invisible',
+              )}
+              onClick={onPrev}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+          </ShortcutTip>
         </div>
 
         {/* Image + right panel side-by-side (desktop) / stacked (mobile) */}
@@ -324,24 +338,26 @@ export function LightboxOverlay({
 
         {/* Next arrow */}
         <div className="flex items-center shrink-0 px-2">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className={cn(
-              'h-10 w-10 rounded-full text-white/50 hover:text-white hover:bg-white/10',
-              !hasNext && 'invisible',
-            )}
-            onClick={onNext}
-            title={t('mediaReview.lightbox.next', 'Next (→)')}
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
+          <ShortcutTip label={t('mediaReview.lightbox.next', 'Next')} shortcut="lightboxNext" side="left" contentClassName={TIP_Z}>
+            <Button
+              aria-label={t('mediaReview.lightbox.next', 'Next')}
+              variant="ghost"
+              size="icon-sm"
+              className={cn(
+                'h-10 w-10 rounded-full text-white/50 hover:text-white hover:bg-white/10',
+                !hasNext && 'invisible',
+              )}
+              onClick={onNext}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          </ShortcutTip>
         </div>
       </div>
 
       {/* Keyboard hint */}
-      <div className="hidden sm:block px-4 py-1.5 text-center text-[10px] text-white/25 shrink-0">
-        {t('mediaReview.lightbox.hint', '← → navigate · +/− zoom · R rotate · 0 reset · Esc close')}
+      <div className="hidden sm:block px-4 py-1.5 text-center text-[11px] text-white/45 shrink-0">
+        {t('mediaReview.lightbox.hint', 'Press ? for all keyboard shortcuts')}
       </div>
     </div>
   );

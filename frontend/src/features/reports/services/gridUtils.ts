@@ -24,6 +24,8 @@ export function orderedColumns(section: Pick<ReportSection, 'columnTypes' | 'lay
 export function sectionSource(section: Pick<ReportSection, 'layout' | 'csvFileName'>): SectionSource {
   const s = section.layout?.source;
   if (s === 'file' || s === 'manual' || s === 'metrics') return s;
+  // Instagram auto-fill: edits behave like the matching manual entry kind.
+  if (s === 'instagram') return section.layout?.instagramKind === 'metrics' ? 'metrics' : 'manual';
   return section.csvFileName === 'Input manual' ? 'manual' : section.csvFileName === 'Ringkasan angka' ? 'metrics' : 'file';
 }
 

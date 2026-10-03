@@ -200,6 +200,35 @@ export class EnvironmentVariables {
   @IsNumber()
   @IsOptional()
   MAX_FILE_SIZE_MB?: number;
+
+  // Instagram API with Instagram Login (optional). The feature is off unless
+  // META_APP_ID + META_APP_SECRET are set; then TOKEN_ENCRYPTION_KEY (32 random
+  // bytes, base64) is required in production. Values are validated in depth
+  // by modules/instagram/instagram.config.ts (empty strings = unset, so
+  // docker-compose "${VAR:-}" passthroughs are fine).
+  @IsString()
+  @IsOptional()
+  META_APP_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  META_APP_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  META_GRAPH_VERSION?: string;
+
+  @IsString()
+  @IsOptional()
+  INSTAGRAM_REDIRECT_URI?: string;
+
+  @IsString()
+  @IsOptional()
+  INSTAGRAM_PORTAL_REDIRECT_URI?: string;
+
+  @IsString()
+  @IsOptional()
+  TOKEN_ENCRYPTION_KEY?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

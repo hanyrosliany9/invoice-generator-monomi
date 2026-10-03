@@ -8,6 +8,7 @@ import { AuthGuard } from "@nestjs/passport";
 import { Reflector } from "@nestjs/core";
 import { IS_PUBLIC_KEY } from "../../../common/decorators/public.decorator";
 import { getErrorMessage } from "../../../common/utils/error-handling.util";
+import { redactUrl } from "../../../common/utils/log-redaction.util";
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard("jwt") {
@@ -31,7 +32,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
     const authHeader = request.headers.authorization;
 
     // Log authentication attempts for debugging
-    this.logger.debug(`Auth attempt for ${request.method} ${request.url}`, {
+    this.logger.debug(`Auth attempt for ${request.method} ${redactUrl(String(request.url ?? ""))}`, {
       hasAuthHeader: !!authHeader,
       authHeaderType: authHeader?.split(" ")[0],
     });
@@ -40,7 +41,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
       return super.canActivate(context);
     } catch (error) {
       this.logger.error(
-        `Authentication failed for ${request.method} ${request.url}:`,
+        `Authentication failed for ${request.method} ${redactUrl(String(request.url ?? ""))}:`,
         getErrorMessage(error),
       );
       throw error;
@@ -57,7 +58,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
 
     if (err) {
       this.logger.error(
-        `JWT Auth Error for ${request.method} ${request.url}:`,
+        `JWT Auth Error for ${request.method} ${redactUrl(String(request.url ?? ""))}:`,
         getErrorMessage(err),
       );
       throw new UnauthorizedException(
@@ -81,7 +82,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
       }
 
       this.logger.warn(
-        `Authentication failed for ${request.method} ${request.url}: ${message}`,
+        `Authentication failed for ${request.method} ${redactUrl(String(request.url ?? ""))}: ${message}`,
         {
           info: info?.name || "Unknown",
           userAgent: request.headers["user-agent"],

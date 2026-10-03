@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Toaster } from 'sonner';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { ShortcutsHelpHost } from '@/components/shortcuts/ShortcutsHelpHost';
 import i18n from '@/i18n/config';
 import { PortalSessionProvider, usePortalSession } from './PortalSession';
 import { PortalError, PortalSpinner } from './ui';
@@ -85,6 +86,7 @@ export default function PortalApp() {
     <ErrorBoundary level="page">
       <PortalSessionProvider>
         <Toaster theme="dark" position="bottom-center" richColors />
+        <ShortcutsHelpHost audience="portal" />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<RequireSession><ClientPickerPage /></RequireSession>} />

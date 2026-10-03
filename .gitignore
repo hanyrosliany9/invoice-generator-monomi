@@ -216,6 +216,8 @@ frontend/public/*
 !frontend/public/logo.png
 !frontend/public/downloads/
 !frontend/public/downloads/monomi.apk
+!frontend/public/guides/
+!frontend/public/guides/**/*.webp
 !backend/src/modules/pdf/assets/company-logo.png
 .aider*
 backups/

@@ -1,5 +1,5 @@
-import { LayoutDashboard, UserCog } from 'lucide-react';
-import { type GuideDef, steps } from '../types';
+import { Keyboard, LayoutDashboard, UserCog } from 'lucide-react';
+import { type GuideDef, shortcutSteps, steps } from '../types';
 
 /** Administrasi: getting around the app, and users and roles. */
 export const adminGuides: GuideDef[] = [
@@ -12,5 +12,18 @@ export const adminGuides: GuideDef[] = [
     slug: 'pengguna-peran', audience: 'staff', topic: 'admin', icon: UserCog, minutes: 5, adminOnly: true,
     openHref: '/users',
     steps: steps('pengguna-peran', [['daftar', '/users'], ['peran', '/users/new'], 'sandi', 'hasil']),
+  },
+  {
+    // Every table is rendered from src/shortcuts/registry.ts, so it cannot drift from the app.
+    slug: 'pintasan-keyboard', audience: 'staff', topic: 'admin', icon: Keyboard, minutes: 4,
+    cheatSheet: true,
+    steps: shortcutSteps('pintasan-keyboard', [
+      { id: 'bantuan', image: true, areas: ['global'] },
+      { id: 'media', image: true, areas: ['mediaGallery', 'lightbox', 'videoPlayer', 'comments'] },
+      { id: 'deck', image: true, areas: ['deckEditor'] },
+      { id: 'presentasi', image: true, areas: ['presentation', 'deckViewer'] },
+      { id: 'formulir', areas: ['reportGrid', 'schedule'] },
+      { id: 'cetak' },
+    ]),
   },
 ];

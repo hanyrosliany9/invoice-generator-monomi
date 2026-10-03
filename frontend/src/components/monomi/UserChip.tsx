@@ -27,6 +27,8 @@ export interface UserChipProps {
    * (e.g. inside a list row).
    */
   interactive?: boolean;
+  /** Avatar-only rendering (collapsed sidebar). */
+  collapsed?: boolean;
 }
 
 const ChipInner = ({
@@ -36,6 +38,7 @@ const ChipInner = ({
   avatarUrl,
   size = 'md',
   className,
+  collapsed,
 }: Omit<UserChipProps, 'interactive'>) => {
   const initials = getInitials(name);
   const avatarSize = size === 'sm' ? 'h-7 w-7' : 'h-9 w-9';
@@ -47,7 +50,7 @@ const ChipInner = ({
           {initials}
         </AvatarFallback>
       </Avatar>
-      <div className="min-w-0">
+      {!collapsed && <div className="min-w-0">
         <div className="text-sm font-medium text-text-primary truncate">{name}</div>
         {(email || role) && (
           <div className="text-xs text-text-tertiary truncate">
@@ -56,7 +59,7 @@ const ChipInner = ({
             {email}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 };
@@ -69,6 +72,7 @@ export const UserChip = ({
   size = 'md',
   className,
   interactive = true,
+  collapsed,
 }: UserChipProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -83,6 +87,7 @@ export const UserChip = ({
         avatarUrl={avatarUrl}
         size={size}
         className={className}
+        collapsed={collapsed}
       />
     );
   }
@@ -106,7 +111,7 @@ export const UserChip = ({
             'transition-colors hover:bg-bg-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-navy-ring/60',
             className,
           )}
-          aria-label={t('auth.userMenu', 'User menu')}
+          aria-label={collapsed ? `${name} - ${t('auth.userMenu', 'User menu')}` : t('auth.userMenu', 'User menu')}
         >
           <ChipInner
             name={name}
@@ -114,6 +119,7 @@ export const UserChip = ({
             role={role}
             avatarUrl={avatarUrl}
             size={size}
+            collapsed={collapsed}
           />
         </button>
       </DropdownMenuTrigger>

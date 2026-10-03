@@ -5,6 +5,7 @@ import { ParallaxGlassBackground } from './ParallaxGlassBackground';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useViewport } from '@/hooks/useIsMobile';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
+import { useSidebarCollapsed } from '@/hooks/useSidebarCollapsed';
 
 export interface AppShellProps {
   sidebar: SidebarProps;
@@ -25,6 +26,7 @@ export const AppShell = ({ sidebar, topbar, children, disableSmoothScroll = fals
 
   const isMobile = viewport === 'mobile';
   const isTablet = viewport === 'tablet';
+  const [desktopCollapsed, toggleDesktopCollapsed] = useSidebarCollapsed(!isMobile && !isTablet);
 
   return (
     // `isolate` creates a stacking context so the parallax (z-index 0) is
@@ -40,7 +42,7 @@ export const AppShell = ({ sidebar, topbar, children, disableSmoothScroll = fals
       {/* All content sits above the parallax via z-10 wrapper */}
       {/* Desktop: inline sidebar */}
       {!isMobile && !isTablet && (
-        <div className="relative z-10"><Sidebar {...sidebar} /></div>
+        <div className="relative z-10"><Sidebar {...sidebar} collapsed={desktopCollapsed} onToggleCollapse={toggleDesktopCollapsed} /></div>
       )}
 
       {/* Tablet: icon-only collapsed sidebar */}

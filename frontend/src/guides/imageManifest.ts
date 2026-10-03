@@ -516,6 +516,30 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1280,
     "h": 900
   },
+  "pintasan-keyboard/bantuan": {
+    "w": 1280,
+    "h": 800
+  },
+  "pintasan-keyboard/deck": {
+    "w": 1600,
+    "h": 900
+  },
+  "pintasan-keyboard/media": {
+    "w": 1280,
+    "h": 800
+  },
+  "pintasan-keyboard/presentasi": {
+    "w": 1600,
+    "h": 900
+  },
+  "pintasan-klien/bantuan": {
+    "w": 1280,
+    "h": 800
+  },
+  "pintasan-klien/foto": {
+    "w": 1280,
+    "h": 800
+  },
   "piutang-pembayaran/form": {
     "w": 1280,
     "h": 820

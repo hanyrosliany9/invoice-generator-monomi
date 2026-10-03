@@ -109,6 +109,8 @@
     "other": "Other"
   },
   "nav": {
+    "hideSidebar": "Hide sidebar",
+    "showSidebar": "Show sidebar",
     "dashboard": "Dashboard",
     "projects": "Projects",
     "calendar": "Calendar",
@@ -7754,18 +7756,18 @@
     "lightbox": {
       "downloadFailed": "Download failed. Please try again.",
       "open": "Open lightbox",
-      "zoomOut": "Zoom out (−)",
-      "resetZoom": "Reset zoom (0)",
-      "zoomIn": "Zoom in (+)",
-      "rotate": "Rotate clockwise (R)",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom",
+      "zoomIn": "Zoom in",
+      "rotate": "Rotate clockwise",
       "download": "Download",
-      "close": "Close (Esc)",
-      "hint": "+/− zoom · R rotate · 0 reset · Esc close",
+      "close": "Close",
+      "hint": "Press ? for all keyboard shortcuts",
       "hideDetails": "Hide details",
       "showDetails": "Show details — rating & comments",
-      "prev": "Previous (←)",
+      "prev": "Previous",
       "details": "Details",
-      "next": "Next (→)"
+      "next": "Next"
     },
     "shiftClickHint": "Shift-click to select a range",
     "prevAsset": "Previous asset",
@@ -8006,16 +8008,16 @@
     "transitionSlideLeft": "Slide Left",
     "transitionSlideRight": "Slide Right",
     "transitionZoom": "Zoom",
-    "prevSlide": "Previous slide (←)",
-    "nextSlide": "Next slide (→)",
-    "overview": "Slide overview (G)",
-    "laserPointer": "Laser pointer (P)",
+    "prevSlide": "Previous slide",
+    "nextSlide": "Next slide",
+    "overview": "Slide overview",
+    "laserPointer": "Laser pointer",
     "startAutoPlay": "Start auto-play",
     "pauseAutoPlay": "Pause auto-play",
-    "exit": "Exit presentation (Esc)",
-    "notesCaption": "Speaker notes caption (N)",
+    "exit": "Exit presentation",
+    "notesCaption": "Speaker notes caption",
     "audienceView": "Audience view",
-    "presenterView": "Presenter view (S)"
+    "presenterView": "Presenter view"
   },
   "schedules": {
     "title": "Shooting Schedules",
@@ -8404,6 +8406,19 @@
       "namePlaceholder": "Contact name",
       "emailPlaceholder": "Contact email",
       "add": "Add contact"
+    },
+    "instagram": {
+      "connectedToast": "Instagram connected. Thank you!",
+      "followers": "{{n}} followers",
+      "connectedNote": "Connected — reports are filled automatically",
+      "noInsights": "Insights permission was not granted. Reconnect and allow insights access.",
+      "reconnectTitle": "Reconnect Instagram @{{username}}",
+      "title": "Connect your Instagram",
+      "explain": "By connecting your Instagram Business or Creator account, Monomi can read your basic profile and insights to build your monthly reports automatically.",
+      "permRead": "Read-only: profile, follower count, reach, views and post interactions.",
+      "permNoPost": "Monomi cannot post, send messages or change your account.",
+      "permRevoke": "You can disconnect at any time here or in your Instagram settings.",
+      "privacy": "Privacy policy"
     }
   },
   "reportActions": {
@@ -8485,7 +8500,9 @@
       "manual": "Type in a table",
       "manualHint": "Spreadsheet-style entry",
       "metrics": "Headline numbers",
-      "metricsHint": "Just a few totals"
+      "metricsHint": "Just a few totals",
+      "instagram": "Pull from Instagram",
+      "instagramHint": "Automatically synced data"
     },
     "addSectionOpen": "Add data section",
     "addSectionTitle": "Add data section",
@@ -8511,7 +8528,8 @@
     "source": {
       "metrics": "Headline numbers",
       "manual": "Typed in",
-      "file": "File: {{name}}"
+      "file": "File: {{name}}",
+      "instagram": "Instagram (automatic)"
     },
     "rename": "Rename section",
     "rowsCols": "{{rows}} rows, {{cols}} columns",
@@ -8550,7 +8568,22 @@
     "tplFailed": "Could not download the template. Try again.",
     "tplTitle": "No file yet? Download a template with the right columns",
     "formatHelp": "Accepted: .csv (comma or semicolon) and Excel .xlsx/.xls, max 5 MB. One row per day (or per post). Dates like 2026-09-01, 01/09/2026 or 1 Sep 2026; numbers like 1234, 1.234, 12,5 or 3,4%. The first row holds the column names.",
-    "tooLarge": "File too large (maximum 5 MB)."
+    "tooLarge": "File too large (maximum 5 MB).",
+    "instagram": {
+      "added": "{{count}} Instagram sections added.",
+      "lastSync": "Last sync",
+      "inactive": "Connection inactive — using the data already stored.",
+      "noData": "No Instagram data for this report's month yet. Run \"Sync now\" on the client page, or pick another month.",
+      "sectionEmpty": "No data this month",
+      "sectionSummary": "{{rows}} rows, {{charts}} charts",
+      "add": "Add Instagram sections",
+      "includePartial": "Include metrics with incomplete data",
+      "includePartialHint": "Metrics with data for less than 80% of the month's days are hidden by default. Tick to show them anyway (noted in the section description).",
+      "replaceTitle": "Replace existing Instagram sections?",
+      "replaceBody": "This report already has Instagram sections: {{titles}}. They will be updated with the latest data (charts you edited are reset to the defaults).",
+      "replaceConfirm": "Replace with latest data",
+      "replaced": "{{count}} Instagram sections updated."
+    }
   },
   "reportCopy": {
     "title": "Copy report to another month",
@@ -8646,6 +8679,10 @@
       "demoNote": "Pictures use sample (Demo) data, not real client data.",
       "subGuide": "Sub-guide",
       "adminOnly": "Admins only",
+      "watchVideo": "Watch the video",
+      "playFromStep": "Play the video from this step",
+      "videoNote": "The video has no sound. Turn on captions (CC) in the player, or follow the written steps below.",
+      "nowPlaying": "Now playing",
       "topic": {
         "report": "Reports",
         "content": "Content",
@@ -8657,7 +8694,8 @@
         "production": "Production",
         "marketing": "Marketing",
         "finance": "Finance & Accounting",
-        "admin": "Administration"
+        "admin": "Administration",
+        "general": "General"
       }
     },
     "items": {
@@ -9601,6 +9639,65 @@
             "body": "The new account appears (1) with its role. The Aktif switch on its row opens or closes login access, and the cards on top count users by role."
           }
         }
+      },
+      "pintasan-keyboard": {
+        "title": "Keyboard shortcuts",
+        "purpose": "Work faster without the mouse. Every shortcut in Monomi in one place, for Windows and Mac.",
+        "steps": {
+          "bantuan": {
+            "title": "Press ? anywhere",
+            "body": "Press ? (Shift + /) on any page to see that page's shortcuts first, then the ones that work everywhere. Type in the search box to find one by what it does or by its keys, and press Esc to close.",
+            "tip": "On a Mac the keys appear as ⌘ (Command), ⌥ (Option) and ⇧ (Shift). Ctrl+K (⌘K) jumps to any page and Ctrl+B (⌘B) collapses the sidebar."
+          },
+          "media": {
+            "title": "Photos and videos",
+            "body": "Hover a button in the photo viewer to see its key. ← → move between photos, + and − zoom, 0 resets the zoom, R rotates and Esc closes. In the media gallery 1 to 5 rate the open photo. In the video player Space or K plays and pauses, J and L jump 10 seconds, and ← → step one frame.",
+            "tip": "Shift+click a second checkbox in the gallery to select every photo in between."
+          },
+          "deck": {
+            "title": "Deck editor",
+            "body": "The deck editor works like a design tool. Ctrl+S saves, Ctrl+Z undoes, R, C, T and L add a rectangle, circle, text or line, and the arrow keys nudge the selected element (hold Shift for bigger steps). The ? button in the toolbar lists them inside the editor.",
+            "tip": "Single-letter keys such as R, C, T and L only work when you are not typing in a text box."
+          },
+          "presentasi": {
+            "title": "Presenting a deck",
+            "body": "Click Present, then use → or Space for the next slide and ← for the previous one. Type a slide number and press Enter to jump there. G opens the overview, P the laser pointer, S the presenter view, N the notes caption and Esc exits. A short \"Press ? for shortcuts\" hint appears when the presentation starts.",
+            "tip": "People viewing a shared deck can use the arrow keys too."
+          },
+          "formulir": {
+            "title": "Tables and forms",
+            "body": "In a report's data table, Enter or ↓ moves to the cell below (Enter on the last row adds a row) and ↑ moves up. In the shooting schedule, fill in the quick-add row and press Enter to add the scene."
+          },
+          "cetak": {
+            "title": "Print the cheat sheet",
+            "body": "Use the Print cheat sheet button at the top of this guide to print every shortcut on one page, in two columns. Keep it near your desk until the keys become habit.",
+            "tip": "On a Mac the printout shows ⌘, ⌥ and ⇧ automatically."
+          }
+        }
+      },
+      "pintasan-klien": {
+        "title": "Keyboard shortcuts",
+        "purpose": "Open photos, play videos and read decks faster with a keyboard.",
+        "steps": {
+          "bantuan": {
+            "title": "Press ? to see shortcuts",
+            "body": "On a computer, press ? (Shift + /) anywhere in the portal to see the shortcuts for the page you are on. Press Esc to close the list.",
+            "tip": "Shortcuts need a physical keyboard, so they do not show on a phone."
+          },
+          "foto": {
+            "title": "Photo viewer",
+            "body": "Open a photo, then use ← and → to move between photos, + and − to zoom, 0 to reset the zoom, R to rotate and Esc to close. Hover a button to see its key.",
+            "tip": "While the photo is zoomed in, the arrow keys no longer change photos."
+          },
+          "video": {
+            "title": "Videos and comments",
+            "body": "Space or K plays and pauses, J and L jump 10 seconds, ← and → step one frame and M mutes. Write a comment and press Ctrl+Enter (⌘+Enter on a Mac) to send it."
+          },
+          "deck": {
+            "title": "Reading a deck",
+            "body": "Use → or ↓ for the next slide and ← or ↑ for the previous one."
+          }
+        }
       }
     }
   },
@@ -9659,5 +9756,207 @@
     "unpaid": "Unpaid",
     "partiallyPaid": "Partially Paid",
     "paid": "Paid"
+  },
+  "shortcuts": {
+    "ui": {
+      "title": "Keyboard shortcuts",
+      "subtitleWin": "Ctrl is the Control key. Shortcuts do not apply while you type in a field.",
+      "subtitleMac": "⌘ is Command, ⌥ is Option, ⇧ is Shift. Shortcuts do not apply while you type in a field.",
+      "close": "Close",
+      "searchLabel": "Search shortcuts",
+      "searchPlaceholder": "Search by action or key…",
+      "noResults": "No shortcut matches your search.",
+      "thisPage": "This page",
+      "toggleHint": "opens or closes this window",
+      "seeAll": "See all shortcuts",
+      "or": "or",
+      "helpButton": "Keyboard shortcuts",
+      "presentHintPre": "Press",
+      "presentHintPost": "for shortcuts",
+      "print": "Print cheat sheet",
+      "cheatTitle": "Monomi keyboard shortcuts",
+      "openOverlay": "Show shortcuts for the whole app"
+    },
+    "keys": {
+      "Click": "Click",
+      "Scroll": "Scroll",
+      "Drag": "Drag"
+    },
+    "areas": {
+      "global": "Everywhere",
+      "deckEditor": "Deck editor",
+      "presentation": "Presentation mode",
+      "mediaGallery": "Media gallery",
+      "lightbox": "Photo viewer (lightbox)",
+      "videoPlayer": "Video player",
+      "comments": "Comments",
+      "deckViewer": "Deck viewer",
+      "reportGrid": "Report data table",
+      "schedule": "Shooting schedule"
+    },
+    "groups": {
+      "general": "General",
+      "edit": "Editing",
+      "shapes": "Quick shapes",
+      "move": "Move and flip",
+      "layers": "Layers and groups",
+      "find": "Find and replace",
+      "view": "Canvas view",
+      "comments": "Comments"
+    },
+    "desc": {
+      "helpOpen": "Show the keyboard shortcuts for this page",
+      "paletteOpen": "Open or close the command palette (search pages and actions)",
+      "sidebarToggle": "Collapse or expand the sidebar",
+      "paletteMove": "Move through the palette results",
+      "paletteGo": "Open the selected result",
+      "paletteClose": "Close the palette",
+      "deckSave": "Save",
+      "deckUndo": "Undo",
+      "deckRedo": "Redo",
+      "deckDeselect": "Deselect",
+      "deckCopy": "Copy",
+      "deckCut": "Cut",
+      "deckPaste": "Paste",
+      "deckDuplicate": "Duplicate",
+      "deckSelectAll": "Select all elements",
+      "deckDelete": "Delete the selected elements",
+      "deckRect": "Add a rectangle",
+      "deckCircle": "Add a circle",
+      "deckText": "Add a text box",
+      "deckLine": "Add a line",
+      "deckNudge": "Move the selection 1 px",
+      "deckNudge10": "Move the selection 10 px",
+      "deckFlipH": "Flip horizontally",
+      "deckFlipV": "Flip vertically",
+      "deckGroup": "Group the selected elements",
+      "deckUngroup": "Ungroup",
+      "deckFront": "Bring to front",
+      "deckBack": "Send to back",
+      "deckForward": "Bring forward one step",
+      "deckBackward": "Send backward one step",
+      "deckFind": "Find text in the deck",
+      "deckReplace": "Find and replace",
+      "deckFindNext": "Next match",
+      "deckFindPrev": "Previous match",
+      "deckFindClose": "Close find and replace",
+      "deckZoom": "Zoom the canvas",
+      "deckPan": "Pan the canvas",
+      "deckReplySend": "Send the reply",
+      "deckReplyNewline": "New line in the reply",
+      "deckReplyCancel": "Cancel the reply",
+      "presNext": "Next slide",
+      "presPrev": "Previous slide",
+      "presFirst": "First slide",
+      "presLast": "Last slide",
+      "presGoto": "Jump to a slide number",
+      "presOverview": "Slide overview",
+      "presLaser": "Laser pointer on or off",
+      "presPresenter": "Presenter view on or off",
+      "presNotes": "Speaker notes caption on or off",
+      "presExit": "Exit the presentation",
+      "galleryRate": "Rate the open photo (1 to 5 stars)",
+      "galleryRateClear": "Clear the rating",
+      "galleryDetailNav": "Previous or next photo",
+      "gallerySelectRange": "Select a range of photos",
+      "lightboxPrev": "Previous photo",
+      "lightboxNext": "Next photo",
+      "lightboxZoomIn": "Zoom in",
+      "lightboxZoomOut": "Zoom out",
+      "lightboxZoomReset": "Reset zoom",
+      "lightboxRotate": "Rotate clockwise",
+      "lightboxClose": "Close the viewer",
+      "videoPlay": "Play or pause",
+      "videoBack10": "Back 10 seconds",
+      "videoFwd10": "Forward 10 seconds",
+      "videoFrameBack": "Back one frame",
+      "videoFrameFwd": "Forward one frame",
+      "videoMute": "Mute or unmute",
+      "videoReviewClose": "Close the video review window",
+      "commentSend": "Send the comment you are writing",
+      "viewerNext": "Next slide",
+      "viewerPrev": "Previous slide",
+      "gridNext": "Move to the cell below",
+      "gridPrev": "Move to the cell above",
+      "scheduleAdd": "Add the scene from the quick-add row"
+    },
+    "note": {
+      "helpOpen": "Not while typing in a field",
+      "sidebarToggle": "Desktop only",
+      "paletteMove": "While the palette is open",
+      "paletteGo": "While the palette is open",
+      "paletteClose": "While the palette is open",
+      "deckRect": "Adds the shape in the middle of the slide",
+      "deckFindNext": "While the find panel is open",
+      "deckFindPrev": "While the find panel is open",
+      "deckFindClose": "While the find panel is open",
+      "deckReplySend": "In a comment reply box",
+      "deckReplyNewline": "In a comment reply box",
+      "deckReplyCancel": "In a comment reply box",
+      "presGoto": "Type the number, then Enter (or wait a second)",
+      "galleryRate": "With the photo viewer or the detail panel open",
+      "galleryRateClear": "Detail panel only; in the viewer 0 resets the zoom",
+      "galleryDetailNav": "In the detail panel",
+      "gallerySelectRange": "Click one checkbox, then Shift+click another",
+      "lightboxPrev": "Not while zoomed in",
+      "lightboxNext": "Not while zoomed in",
+      "videoFrameBack": "1/30 second",
+      "videoFrameFwd": "1/30 second",
+      "gridNext": "Enter on the last row adds a new row",
+      "scheduleAdd": "In the quick-add row"
+    }
+  },
+  "instagram": {
+    "reason": {
+      "denied": "Permission was declined on Instagram. The account was not connected.",
+      "session": "The connection session expired, was already used, or was opened in another browser. Please try again from this page.",
+      "forbidden": "You no longer have access to connect this account.",
+      "notBusiness": "This is not a Business or Creator account. Switch to a professional account in the Instagram app, then try again.",
+      "access": "Meta has not allowed this account yet. While the Monomi app has Standard Access, only accounts listed in App Roles can connect (client accounts need App Review).",
+      "exchange": "Instagram could not be connected. Please try again.",
+      "inUse": "This Instagram account is already connected to another client. Disconnect it from that client first, or sign in with this client's own Instagram account.",
+      "otherAccount": "The Instagram account you signed in with is different from the one already stored for this client. Disconnect the old account and tick \"delete data\" first, then connect again."
+    },
+    "disconnect": {
+      "title": "Disconnect Instagram?",
+      "body": "Monomi's access to @{{username}} is removed and syncing stops. Data already synced is kept for past reports unless you choose to delete it.",
+      "purge": "Also delete all synced Instagram data",
+      "purgeHint": "The handle, photo and bio taken from Instagram are also removed from the client profile (values entered manually are kept). Report sections that were already created are not deleted.",
+      "confirmPurge": "Disconnect & delete data",
+      "confirm": "Disconnect",
+      "button": "Disconnect",
+      "removeData": "Disconnect / delete data"
+    },
+    "connectedToast": "Instagram connected. Data is being synced.",
+    "connectFailed": "Could not start connecting Instagram.",
+    "syncStarted": "Sync started.",
+    "syncFailed": "Could not start the sync.",
+    "disconnected": "Instagram disconnected.",
+    "disconnectFailed": "Could not disconnect Instagram.",
+    "status": {
+      "active": "Connected",
+      "expired": "Token expired",
+      "revoked": "Disconnected",
+      "error": "Needs attention"
+    },
+    "cardHint": "Connect a Business/Creator account to sync insights daily and fill monthly reports automatically.",
+    "loadFailed": "The Instagram status could not be loaded.",
+    "notConfigured": "The Instagram integration is not configured on the server (META_APP_ID / META_APP_SECRET).",
+    "notConnected": "Not connected.",
+    "syncProfile": "Update the client's Instagram handle, photo and bio from this account",
+    "connect": "Connect Instagram",
+    "portalHint": "Clients can also connect their own account: send them the Client Portal link, then they open the Reports tab and choose \"Connect Instagram\".",
+    "staffLoginHint": "You will be asked to sign in to the client's Instagram account. Make sure you use this client's account, not a personal or Monomi account.",
+    "creator": "Creator",
+    "business": "Business",
+    "followers": "{{n}} followers",
+    "lastSync": "Last sync",
+    "syncing": "Running…",
+    "tokenExpiry": "Token valid until",
+    "dataRange": "Stored data",
+    "dataRangeValue": "{{days}} days, {{media}} posts",
+    "syncNow": "Sync now",
+    "reconnect": "Reconnect",
+    "reconnectExpired": "Reconnect Instagram"
   }
 }

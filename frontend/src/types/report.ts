@@ -40,7 +40,10 @@ export interface ReportSection {
   /** `columnOrder`/`source` are written by the importer (JSON storage loses key order). */
   layout?: {
     columnOrder?: string[];
-    source?: SectionSource;
+    /** "instagram" = auto-filled from synced Instagram insights. */
+    source?: SectionSource | 'instagram';
+    /** Instagram sections: grid kind (headline numbers vs table). */
+    instagramKind?: 'table' | 'metrics';
     widgets?: any[];
     cols?: number;
     rowHeight?: number;

@@ -13,6 +13,8 @@
  * URL format: https://media.monomiagency.com/view/TOKEN/path/to/file.ext
  */
 
+import { isPublicGuidePath, servePublicGuide } from './public-guides.js';
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -27,6 +29,13 @@ export default {
         status: 405,
         headers: corsHeaders(),
       });
+    }
+
+    // Public tutorial videos: GET/HEAD of public-guides/* is served without a JWT
+    // (read-only, that prefix only; see public-guides.js). Everything else below
+    // stays authenticated.
+    if (isPublicGuidePath(url.pathname)) {
+      return servePublicGuide(request, env, corsHeaders());
     }
 
     // Parse /view/TOKEN/path/to/file.ext

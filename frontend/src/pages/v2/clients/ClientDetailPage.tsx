@@ -53,6 +53,7 @@ import { projectService, type Project } from '@/services/projects';
 import { invoiceService, type Invoice } from '@/services/invoices';
 import { quotationService, type Quotation } from '@/services/quotations';
 import { PortalContactsCard } from './PortalContactsCard';
+import { InstagramCard } from './InstagramCard';
 import { getInitials } from '@/utils/initials';
 import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
@@ -733,6 +734,9 @@ export default function ClientDetailPageV2() {
 
         {/* Client portal access — external contacts; n/a for the internal client */}
         {!client.isInternal && <PortalContactsCard clientId={client.id} />}
+
+        {/* Instagram insights sync (also for the internal Monomi client) */}
+        <InstagramCard clientId={client.id} isInternal={!!client.isInternal} />
 
         {/* ───────────────────────────────────────────────────────
             KPI band — financial first (revenue, outstanding),

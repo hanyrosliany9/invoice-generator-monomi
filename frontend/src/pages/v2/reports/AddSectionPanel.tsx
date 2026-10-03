@@ -26,8 +26,9 @@ import { DataPreviewTable, KindChip, TemplateLinks } from './ReportDataPreview';
 import { reportErrorText } from './ReportActionDialogs';
 import { DataConfirmDialog, PeriodMismatchText } from './DataConfirmDialog';
 import { gridPeriodMismatch } from './reportPeriod';
+import { InstagramImportPanel, useInstagramReportPreview } from './InstagramImportPanel';
 
-type Mode = 'file' | 'manual' | 'metrics';
+type Mode = 'file' | 'manual' | 'metrics' | 'instagram';
 
 /** "ig-semicolon_id.csv" -> "Ig semicolon id" (a starting point the user can edit). */
 export function titleFromFileName(name: string): string {
@@ -85,6 +86,9 @@ export function AddSectionPanel({ reportId, month, year, onAdded, defaultOpen = 
   const [periodOk, setPeriodOk] = useState(false);
   const [pendingManual, setPendingManual] = useState<{ dto: ManualSectionDto; mismatch: NonNullable<ReturnType<typeof gridPeriodMismatch>> } | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  // 4th option when the report's client has synced Instagram data.
+  const igPreview = useInstagramReportPreview(reportId, open);
+  const igAvailable = igPreview.data?.available === true;
 
   const reset = () => {
     setTitle('');
@@ -196,6 +200,9 @@ export function AddSectionPanel({ reportId, month, year, onAdded, defaultOpen = 
     { id: 'file', label: t('reportData.mode.file', 'Upload file'), hint: t('reportData.mode.fileHint', 'CSV or Excel export') },
     { id: 'manual', label: t('reportData.mode.manual', 'Type in a table'), hint: t('reportData.mode.manualHint', 'Spreadsheet-style entry') },
     { id: 'metrics', label: t('reportData.mode.metrics', 'Headline numbers'), hint: t('reportData.mode.metricsHint', 'Just a few totals') },
+    ...(igAvailable
+      ? [{ id: 'instagram' as const, label: t('reportData.mode.instagram', 'Ambil dari Instagram'), hint: t('reportData.mode.instagramHint', 'Data tersinkron otomatis') }]
+      : []),
   ];
 
   if (!open) {
@@ -223,7 +230,7 @@ export function AddSectionPanel({ reportId, month, year, onAdded, defaultOpen = 
         </Button>
       </div>
 
-      <div role="tablist" aria-label={t('reportData.addSectionTitle', 'Add data section')} className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div role="tablist" aria-label={t('reportData.addSectionTitle', 'Add data section')} className={cn('mb-4 grid grid-cols-1 gap-2', igAvailable ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3')}>
         {modes.map((m) => (
           <button
             key={m.id}
@@ -244,7 +251,7 @@ export function AddSectionPanel({ reportId, month, year, onAdded, defaultOpen = 
         ))}
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {mode !== 'instagram' && <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="sec-title" className="text-xs">{t('reportBuilder.field.sectionTitle', 'Section Title')} <span className="text-danger">*</span></Label>
           <Input
@@ -265,7 +272,19 @@ export function AddSectionPanel({ reportId, month, year, onAdded, defaultOpen = 
             className="bg-bg-base border-border-subtle text-text-primary"
           />
         </div>
-      </div>
+      </div>}
+
+      {mode === 'instagram' && igPreview.data && (
+        <InstagramImportPanel
+          reportId={reportId}
+          preview={igPreview.data}
+          onAdded={(created) => {
+            reset();
+            void igPreview.refetch();
+            if (created[0]) onAdded(created[0]);
+          }}
+        />
+      )}
 
       {mode === 'file' && (
         <div className="space-y-3">
@@ -368,7 +387,7 @@ export function AddSectionPanel({ reportId, month, year, onAdded, defaultOpen = 
 
       {mode === 'metrics' && <MetricsEditor items={metrics} onChange={setMetrics} />}
 
-      <div className="mt-4 flex justify-end">
+      {mode !== 'instagram' && <div className="mt-4 flex justify-end">
         <Button
           type="button"
           onClick={submit}
@@ -377,7 +396,7 @@ export function AddSectionPanel({ reportId, month, year, onAdded, defaultOpen = 
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           {t('reportBuilder.addSection', 'Add Section')}
         </Button>
-      </div>
+      </div>}
       <DataConfirmDialog
         open={pendingManual !== null}
         title={t('reportData.confirmAddTitle', 'Add data from another month?')}

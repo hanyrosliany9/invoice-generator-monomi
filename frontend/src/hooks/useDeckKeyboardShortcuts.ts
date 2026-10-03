@@ -295,6 +295,10 @@ export function useDeckKeyboardShortcuts({
       const key = e.key.toLowerCase();
       const ctrl = e.ctrlKey || e.metaKey;
       const shift = e.shiftKey;
+      // Shift+] reports "}" (and Shift+[ "{") on US layouts, so Ctrl+Shift+]/[ would
+      // never match on `key` alone. Match the physical bracket keys as well.
+      const rightBracket = key === ']' || key === '}' || e.code === 'BracketRight';
+      const leftBracket = key === '[' || key === '{' || e.code === 'BracketLeft';
 
       // Ctrl+C - Copy
       if (ctrl && key === 'c') {
@@ -390,7 +394,7 @@ export function useDeckKeyboardShortcuts({
       }
 
       // Ctrl+Shift+] - Bring to front / Ctrl+] - Bring forward one step
-      if (ctrl && key === ']') {
+      if (ctrl && rightBracket) {
         e.preventDefault();
         if (shift) handleBringToFront();
         else handleBringForward();
@@ -398,7 +402,7 @@ export function useDeckKeyboardShortcuts({
       }
 
       // Ctrl+Shift+[ - Send to back / Ctrl+[ - Send backward one step
-      if (ctrl && key === '[') {
+      if (ctrl && leftBracket) {
         e.preventDefault();
         if (shift) handleSendToBack();
         else handleSendBackward();
@@ -406,14 +410,14 @@ export function useDeckKeyboardShortcuts({
       }
 
       // ] - Bring to front (bare, legacy)
-      if (key === ']') {
+      if (rightBracket && !shift) {
         e.preventDefault();
         handleBringToFront();
         return;
       }
 
       // [ - Send to back (bare, legacy)
-      if (key === '[') {
+      if (leftBracket && !shift) {
         e.preventDefault();
         handleSendToBack();
         return;

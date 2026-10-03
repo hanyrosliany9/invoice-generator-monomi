@@ -2,7 +2,7 @@ import type { INestApplication } from "@nestjs/common";
 import type { NextFunction, Request, Response } from "express";
 // body-parser is the parser Nest itself registers by default; it is a pinned
 // dependency of @nestjs/platform-express (same situation as `cors` in main.ts).
-import { json } from "body-parser";
+import { json, urlencoded } from "body-parser";
 
 /**
  * JSON body limit for the few routes that legitimately take large bodies.
@@ -33,9 +33,9 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function buildLargeJsonBodyRouteMatchers(globalPrefix: string): RegExp[] {
+function buildRouteMatchers(patterns: readonly string[], globalPrefix: string): RegExp[] {
   const prefix = globalPrefix.replace(/^\/+|\/+$/g, "");
-  return LARGE_JSON_BODY_ROUTE_PATTERNS.map((pattern) => {
+  return patterns.map((pattern) => {
     const segments = pattern.split("/").map((segment) =>
       segment.startsWith(":") ? "[^/]+" : escapeRegExp(segment),
     );
@@ -47,6 +47,10 @@ export function buildLargeJsonBodyRouteMatchers(globalPrefix: string): RegExp[] 
     // spelling Nest would route to the handler.
     return new RegExp(`^/${path}/?$`, "i");
   });
+}
+
+export function buildLargeJsonBodyRouteMatchers(globalPrefix: string): RegExp[] {
+  return buildRouteMatchers(LARGE_JSON_BODY_ROUTE_PATTERNS, globalPrefix);
 }
 
 /**
@@ -75,5 +79,39 @@ export function registerLargeJsonBodyRoutes(
       return largeJsonParser(req, res, next);
     }
     return next();
+  });
+}
+
+/**
+ * Small body limit for unauthenticated webhook-style routes that only ever
+ * receive a tiny form post (Meta's deauthorize / data-deletion callbacks send
+ * one `signed_request` field of a few hundred bytes). A bigger body is
+ * answered with 413 by the parser instead of being buffered up to the
+ * default 100kb (or surfacing as a 500).
+ */
+export const SMALL_BODY_LIMIT = "16kb";
+
+const SMALL_BODY_ROUTE_PATTERNS: readonly string[] = [
+  "instagram/deauthorize",
+  "instagram/data-deletion",
+];
+
+export function buildSmallBodyRouteMatchers(globalPrefix: string): RegExp[] {
+  return buildRouteMatchers(SMALL_BODY_ROUTE_PATTERNS, globalPrefix);
+}
+
+/**
+ * Register JSON + urlencoded parsers limited to SMALL_BODY_LIMIT on the routes
+ * above. Same ordering rules as registerLargeJsonBodyRoutes (before init; the
+ * wrapper is not named `jsonParser`/`urlencodedParser`).
+ */
+export function registerSmallBodyRoutes(app: INestApplication, globalPrefix: string): void {
+  const matchers = buildSmallBodyRouteMatchers(globalPrefix);
+  const smallJson = json({ limit: SMALL_BODY_LIMIT });
+  const smallForm = urlencoded({ limit: SMALL_BODY_LIMIT, extended: false, parameterLimit: 20 });
+
+  app.use(function webhookSmallBody(req: Request, res: Response, next: NextFunction) {
+    if (req.method !== "POST" || !matchers.some((re) => re.test(req.path))) return next();
+    return smallJson(req, res, (err?: unknown) => (err ? next(err) : smallForm(req, res, next)));
   });
 }

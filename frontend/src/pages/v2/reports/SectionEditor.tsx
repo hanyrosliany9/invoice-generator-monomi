@@ -519,7 +519,8 @@ export function SectionCard({
   };
 
   const sourceLabel =
-    source === 'metrics' ? t('reportData.source.metrics', 'Headline numbers')
+    section.layout?.source === 'instagram' ? t('reportData.source.instagram', 'Instagram (otomatis)')
+    : source === 'metrics' ? t('reportData.source.metrics', 'Headline numbers')
     : source === 'manual' ? t('reportData.source.manual', 'Typed in')
     : t('reportData.source.file', 'File: {{name}}', { name: section.csvFileName });
 

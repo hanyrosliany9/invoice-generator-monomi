@@ -1,4 +1,7 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Kbd } from '@/components/ui/kbd';
+import { openShortcutsHelp } from '@/shortcuts/helpKey';
 import { usePresentationStore } from '../../../stores/presentationStore';
 import { usePresentationKeyboard } from '../../../hooks/usePresentationKeyboard';
 import PresentSlideRenderer from './PresentSlideRenderer';
@@ -30,6 +33,16 @@ export const PresentationView: React.FC<PresentationViewProps> = ({ slides, onEx
     endPresentation,
     transition: globalTransition,
   } = usePresentationStore();
+
+  const { t } = useTranslation();
+  // "Press ? for shortcuts" pill, shown for a few seconds when a presentation starts.
+  const [showHint, setShowHint] = useState(false);
+  useEffect(() => {
+    if (!isPresenting) return undefined;
+    setShowHint(true);
+    const timer = setTimeout(() => setShowHint(false), 6000);
+    return () => clearTimeout(timer);
+  }, [isPresenting]);
 
   const [dimensions, setDimensions] = useState({ width: 1920, height: 1080 });
   const [showControls, setShowControls] = useState(false);
@@ -221,6 +234,19 @@ export const PresentationView: React.FC<PresentationViewProps> = ({ slides, onEx
 
       {/* Controls overlay */}
       <PresentationControls visible={showControls} />
+
+      {/* Shortcut hint on start; the controls bar has a "?" button afterwards */}
+      {showHint && (
+        <button
+          type="button"
+          onClick={openShortcutsHelp}
+          className="absolute left-1/2 top-6 -translate-x-1/2 cursor-pointer inline-flex items-center gap-2 rounded-full bg-black/75 px-4 py-2 text-sm text-white/90 shadow-lg backdrop-blur"
+        >
+          {t('shortcuts.ui.presentHintPre')}
+          <Kbd tone="dark">?</Kbd>
+          {t('shortcuts.ui.presentHintPost')}
+        </button>
+      )}
 
       {/* Slide overview modal */}
       {showOverview && (

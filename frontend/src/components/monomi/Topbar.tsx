@@ -1,5 +1,8 @@
 import { type ReactNode } from 'react';
-import { Menu, Search } from 'lucide-react';
+import { Keyboard, Menu, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ShortcutKeys } from '@/components/ui/kbd';
+import { openShortcutsHelp } from '@/shortcuts/helpKey';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -14,7 +17,9 @@ export interface TopbarProps {
   onMenuClick?: () => void;
 }
 
-export const Topbar = ({ left, center, right, className, onMenuClick }: TopbarProps) => (
+export const Topbar = ({ left, center, right, className, onMenuClick }: TopbarProps) => {
+  const { t } = useTranslation();
+  return (
   <header className={cn(
     'sticky top-0 z-20 h-14 px-5 sm:px-8',
     'flex items-center justify-between gap-6',
@@ -46,12 +51,24 @@ export const Topbar = ({ left, center, right, className, onMenuClick }: TopbarPr
       <button
         type="button"
         onClick={() => window.dispatchEvent(new CustomEvent(COMMAND_PALETTE_EVENT))}
-        aria-label="Open command palette (Ctrl+K)"
+        aria-label="Open command palette"
+        aria-keyshortcuts="Control+K Meta+K"
         className="hidden sm:flex items-center gap-1.5 rounded-md border border-border-subtle bg-bg-raised/60 px-2.5 py-1 text-xs text-text-tertiary hover:text-text-secondary hover:bg-bg-raised transition-colors"
       >
         <Search className="h-3 w-3" />
         <span className="hidden md:inline">Search…</span>
-        <kbd className="ml-1 font-mono opacity-60">⌘K</kbd>
+        <ShortcutKeys id="paletteOpen" className="ml-1" />
+      </button>
+      {/* Keyboard shortcuts overlay (also opens with "?") */}
+      <button
+        type="button"
+        onClick={openShortcutsHelp}
+        aria-label={t('shortcuts.ui.helpButton')}
+        aria-keyshortcuts="Shift+/"
+        title={`${t('shortcuts.ui.helpButton')} (?)`}
+        className="hidden md:inline-flex h-8 w-8 items-center justify-center rounded-md border border-border-subtle bg-bg-raised/60 text-text-tertiary hover:text-text-secondary hover:bg-bg-raised transition-colors"
+      >
+        <Keyboard className="h-4 w-4" aria-hidden />
       </button>
       {/* Global LanguageSwitcher — appears on every v2 page automatically so
        * we don't have to wire it into 88 page-level topbar props. Persists
@@ -61,3 +78,4 @@ export const Topbar = ({ left, center, right, className, onMenuClick }: TopbarPr
     </div>
   </header>
 );
+};

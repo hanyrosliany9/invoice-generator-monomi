@@ -1,11 +1,16 @@
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactElement, type ReactNode, cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SheetClose } from '@/components/ui/sheet';
 import { makePrefetchHandlers } from '@/lib/routePrefetch';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ShortcutHint } from '@/components/ui/kbd';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MonomiBrand } from './MonomiBrand';
+import { UserChip } from './UserChip';
 
 export interface SidebarItem {
   label: string;
@@ -45,6 +50,10 @@ export interface SidebarProps {
   sections?: SidebarSection[];
   footer?: ReactNode;
   collapsed?: boolean;
+  /** Desktop only. When provided, a collapse/expand toggle is rendered and
+   *  collapsed group rows open a flyout with their children (tablet's forced
+   *  icon rail leaves this undefined and keeps its original behaviour). */
+  onToggleCollapse?: () => void;
   /** 'static' (default) — renders as a positioned aside with h-screen.
    *  'drawer' — renders as a plain flex column (no h-screen, no border-r)
    *  intended to live inside SheetContent. */
@@ -87,16 +96,19 @@ const NavLeaf = ({
   item,
   collapsed,
   indented = false,
+  tooltip = false,
 }: {
   item: SidebarItem;
   collapsed?: boolean;
   indented?: boolean;
+  tooltip?: boolean;
 }) => {
   const { t } = useTranslation();
-  return (
+  const link = (
     <NavLink
       to={item.href}
       end={item.href === '/'}
+      aria-label={collapsed ? t(item.label) : undefined}
       {...makePrefetchHandlers(item.href)}
       className={({ isActive }) => leafClasses(isActive, indented && !collapsed)}
     >
@@ -115,6 +127,16 @@ const NavLeaf = ({
       )}
     </NavLink>
   );
+  if (!(collapsed && tooltip)) return link;
+  return (
+    <Tooltip>
+      {/* Wrapper element: NavLink's className is a function, which Radix's Slot cannot merge. */}
+      <TooltipTrigger asChild>
+        <div>{link}</div>
+      </TooltipTrigger>
+      <TooltipContent side="right">{t(item.label)}</TooltipContent>
+    </Tooltip>
+  );
 };
 
 /** A collapsible parent: header toggles the group; children are NavLeaf rows.
@@ -123,10 +145,12 @@ const NavGroup = ({
   item,
   collapsed,
   isDrawer,
+  flyout = false,
 }: {
   item: SidebarItem;
   collapsed?: boolean;
   isDrawer?: boolean;
+  flyout?: boolean;
 }) => {
   const { t } = useTranslation();
   const location = useLocation();
@@ -145,6 +169,64 @@ const NavGroup = ({
 
   // Collapsed (icon-only) rail has no room to expand — fall back to a single
   // leaf that points at the first child so the section stays reachable.
+  if (collapsed && flyout) {
+    return (
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label={t(item.label)}
+                className={cn(
+                  'group relative flex w-[calc(100%-0.5rem)] items-center gap-3 mx-1 my-0.5 px-3 py-2 rounded-md text-sm',
+                  'transition-colors duration-150',
+                  childActive
+                    ? [
+                        'text-white bg-accent-navy-wash',
+                        'before:absolute before:left-0 before:top-1.5 before:bottom-1.5',
+                        'before:w-[2px] before:rounded-full before:bg-brand-cream',
+                      ]
+                    : 'text-white/85 hover:text-white hover:bg-accent-navy-soft',
+                )}
+              >
+                <span className={cn('flex-shrink-0', childActive ? 'text-white' : 'text-white/70 group-hover:text-white')}>
+                  {item.icon}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right">{t(item.label)}</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent
+          side="right"
+          align="start"
+          sideOffset={8}
+          className="min-w-48 bg-bg-raised border-border-subtle text-text-primary"
+        >
+          <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.18em] text-text-tertiary">
+            {t(item.label)}
+          </div>
+          {children.map((child) => {
+            const base = pathOf(child.href);
+            const active = location.pathname === base || location.pathname.startsWith(base + '/');
+            return (
+              <DropdownMenuItem
+                key={child.href}
+                asChild
+                className={cn('cursor-pointer gap-2 focus:bg-bg-sunken focus:text-text-primary', active && 'bg-bg-sunken font-medium')}
+              >
+                <NavLink to={child.href} {...makePrefetchHandlers(child.href)}>
+                  <span className="text-text-tertiary">{child.icon}</span>
+                  <span className="truncate">{t(child.label)}</span>
+                </NavLink>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
   if (collapsed) {
     return <NavLeaf item={{ ...item, href: children[0]?.href ?? item.href }} collapsed />;
   }
@@ -195,7 +277,9 @@ const NavGroup = ({
   );
 };
 
-export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = 'static' }: SidebarProps) => {
+export const Sidebar = ({ brand, items, sections, footer, collapsed, onToggleCollapse, variant = 'static' }: SidebarProps) => {
+  const { t } = useTranslation();
+  const rich = !!onToggleCollapse;
   const isDrawer = variant === 'drawer';
 
   // Preserve the nav scroll position across the per-page remount (see note on
@@ -243,10 +327,10 @@ export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = '
   const renderItem = (item: SidebarItem) => {
     if (item.children && item.children.length > 0) {
       return (
-        <NavGroup key={item.href} item={item} collapsed={collapsed} isDrawer={isDrawer} />
+        <NavGroup key={item.href} item={item} collapsed={collapsed} isDrawer={isDrawer} flyout={rich} />
       );
     }
-    const leaf = <NavLeaf key={item.href} item={item} collapsed={collapsed} />;
+    const leaf = <NavLeaf key={item.href} item={item} collapsed={collapsed} tooltip={rich} />;
     return isDrawer ? (
       <SheetClose key={item.href} asChild>
         {leaf}
@@ -257,6 +341,7 @@ export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = '
   };
 
   return (
+    <TooltipProvider>
     <aside className={cn(
       'relative z-10 flex flex-col',
       // Glassmorphism — semi-transparent over the ParallaxGlassBackground.
@@ -266,14 +351,16 @@ export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = '
       !isDrawer && 'h-screen border-r border-border-subtle',
       isDrawer && 'h-full',
       collapsed ? 'w-16' : 'w-60',
-      'transition-all duration-200',
+      'shrink-0 overflow-hidden transition-[width] duration-200 motion-reduce:transition-none',
     )}>
       {/* Brand block */}
-      <div className="px-5 h-14 flex items-center border-b border-border-subtle shrink-0">
-        {brand}
+      <div className={cn('h-14 flex items-center border-b border-border-subtle shrink-0', collapsed ? 'justify-center px-0' : 'px-5')}>
+        {collapsed && isValidElement(brand) && brand.type === MonomiBrand
+          ? cloneElement(brand as ReactElement<{ iconOnly?: boolean }>, { iconOnly: true })
+          : brand}
       </div>
 
-      <nav ref={navRef} onScroll={handleNavScroll} className="aside-nav-v2 flex-1 overflow-y-auto px-2 pb-4 pt-3">
+      <nav ref={navRef} onScroll={handleNavScroll} className="aside-nav-v2 flex-1 overflow-y-auto overflow-x-hidden px-2 pb-4 pt-3">
         {resolvedSections.map((section, sectionIdx) => (
           <div key={section.label ?? `section-${sectionIdx}`} className={sectionIdx > 0 ? 'mt-4' : undefined}>
             {!collapsed && section.label && (
@@ -287,10 +374,35 @@ export const Sidebar = ({ brand, items, sections, footer, collapsed, variant = '
         ))}
       </nav>
 
+      {onToggleCollapse && (
+        <div className="px-2 pb-2 shrink-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                aria-label={collapsed ? t('nav.showSidebar') : t('nav.hideSidebar')}
+                aria-keyshortcuts="Control+B Meta+B"
+                className="group flex w-[calc(100%-0.5rem)] items-center gap-3 mx-1 px-3 py-2 rounded-md text-sm text-white/70 hover:text-white hover:bg-accent-navy-soft transition-colors duration-150"
+              >
+                {collapsed ? <PanelLeftOpen className="h-4 w-4 flex-shrink-0" /> : <PanelLeftClose className="h-4 w-4 flex-shrink-0" />}
+                {!collapsed && <span className="truncate">{t('nav.hideSidebar')}</span>}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right"><ShortcutHint label={collapsed ? t('nav.showSidebar') : t('nav.hideSidebar')} id="sidebarToggle" /></TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
       {footer && (
-        <div className="px-3 py-3 border-t border-border-subtle shrink-0">{footer}</div>
+        <div className={cn('py-3 border-t border-border-subtle shrink-0', collapsed ? 'px-0 flex justify-center' : 'px-3')}>
+          {collapsed && isValidElement(footer) && footer.type === UserChip
+            ? cloneElement(footer as ReactElement<{ collapsed?: boolean }>, { collapsed: true })
+            : footer}
+        </div>
       )}
     </aside>
+    </TooltipProvider>
   );
 };
 

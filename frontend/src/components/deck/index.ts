@@ -49,7 +49,6 @@ export type { FindReplacePanelProps } from './FindReplacePanel';
 
 // Help & Info
 export { default as KeyboardShortcutsModal } from './KeyboardShortcutsModal';
-export { default as KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 
 // Editor shell
 export { default as SlideThumbnail } from './SlideThumbnail';

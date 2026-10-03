@@ -429,6 +429,17 @@ async function penjualan(ctx, page) {
   const { go, shot, sleep } = ctx;
   const id = (n) => `penjualan/${n}`;
 
+  // A direct sale on credit, so the report shows an open receivable ("Tandai Lunas").
+  const day = 864e5;
+  await ctx.api('POST', '/accounting/sales', {
+    clientId: ctx.ids.client,
+    issuedDate: new Date(Date.now() - 3 * day).toISOString(), // the report's range ends today at 00:00
+    dueDate: new Date(Date.now() + 14 * day).toISOString(),
+    reference: `Penjualan contoh ${DEMO}`,
+    paymentMethod: 'PIUTANG',
+    lineItems: [{ itemName: `Jasa foto produk ${DEMO}`, accountCode: '4-1010', quantity: 1, unitPrice: 2500000 }],
+  });
+
   // 1. Sales report
   await go(page, '/accounting/sales', 2200);
   await shot(page, id('laporan'), {

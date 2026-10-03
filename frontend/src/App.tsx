@@ -10,6 +10,7 @@ import { tokenRefreshService } from './services/token-refresh.service'
 import ErrorBoundary from './components/ErrorBoundary'
 import { scheduleIdlePrefetch } from './lib/routePrefetch'
 import { CommandPalette, useCommandPaletteShortcut } from './components/monomi/CommandPalette'
+import { ShortcutsHelpHost } from './components/shortcuts/ShortcutsHelpHost'
 
 // v2 is now the entire app. Pages are lazy-loaded for performance.
 const StyleGuidePage = lazy(() =>
@@ -125,6 +126,8 @@ const V2DeckAcceptInvitePage = lazy(() => import('./pages/v2/guest/DeckAcceptInv
 const V2GuidesIndexPage = lazy(() => import('./pages/v2/guides/GuidesPage').then((m) => ({ default: m.GuidesIndexPage })))
 const V2GuidePage = lazy(() => import('./pages/v2/guides/GuidesPage').then((m) => ({ default: m.GuidePage })))
 const V2ProjectTypesPage = lazy(() => import('./pages/v2/settings/ProjectTypesPage'))
+const PrivacyPolicyPage = lazy(() => import('./pages/public/InstagramLegalPages').then((m) => ({ default: m.PrivacyPolicyPage })))
+const DataDeletionPage = lazy(() => import('./pages/public/InstagramLegalPages').then((m) => ({ default: m.DataDeletionPage })))
 
 import './styles/relationships.css'
 
@@ -243,6 +246,8 @@ function App() {
   return (
     <AntApp>
       <Toaster theme="dark" position="bottom-right" richColors />
+      {/* "?" opens the keyboard-shortcuts overlay on every page */}
+      <ShortcutsHelpHost audience='staff' />
       <Layout style={{ minHeight: '100vh' }}>
         <Routes>
           {/* Public / anonymous routes (no auth) */}
@@ -253,6 +258,9 @@ function App() {
           <Route path='/deck/shared/:token' element={<Suspense fallback={<PageLoader />}><V2PublicDeckViewPage /></Suspense>} />
           <Route path='/deck/invite/:token' element={<Suspense fallback={<PageLoader />}><V2DeckAcceptInvitePage /></Suspense>} />
           <Route path='/guest/hub/:token' element={<Suspense fallback={<PageLoader />}><GuestProductionHubPage /></Suspense>} />
+          {/* Meta-required public pages for the Instagram integration */}
+          <Route path='/privacy' element={<Suspense fallback={<PageLoader />}><PrivacyPolicyPage /></Suspense>} />
+          <Route path='/data-deletion' element={<Suspense fallback={<PageLoader />}><DataDeletionPage /></Suspense>} />
 
           {/* Login — anonymous only */}
           <Route

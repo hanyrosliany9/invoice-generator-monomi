@@ -1,11 +1,16 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, ChevronDown, Clock, ExternalLink, Lightbulb, ListChecks, X, ZoomIn } from 'lucide-react';
+import { ArrowRight, ChevronDown, Clock, ExternalLink, Lightbulb, ListChecks, Play, X, ZoomIn } from 'lucide-react';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { cn } from '@/lib/utils';
 import { guideImageManifest } from '@/guides/imageManifest';
 import { type GuideDef, guideKey, type GuideStep } from '@/guides/data';
+import { guideVideoManifest } from '@/guides/videoManifest';
+import { GuideVideo, type GuideVideoHandle } from './GuideVideo';
+import { CheatSheet, PrintCheatSheetButton } from '@/components/shortcuts/CheatSheet';
+import { ShortcutTable } from '@/components/shortcuts/ShortcutTable';
+import { getArea, shortcutsInArea, type ShortcutAudience } from '@/shortcuts/registry';
 
 const imgSrc = (image: string): string => `${import.meta.env.BASE_URL}guides/${image}.webp`;
 
@@ -29,7 +34,14 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState<ZoomState | null>(null);
   const sectionRefs = useRef<Array<HTMLElement | null>>([]);
+  const videoRef = useRef<GuideVideoHandle>(null);
+  const video = guideVideoManifest[guide.slug];
+  // Step the video is currently showing (null when it is not playing or has no chapter).
+  const [playing, setPlaying] = useState<string | null>(null);
+  const hasChapter = (id: string): boolean => video?.chapters.some((c) => c.step === id) === true;
+  useEffect(() => setPlaying(null), [guide.slug]);
   const total = guide.steps.length;
+  const shortcutAudience: ShortcutAudience = guide.audience === 'client' ? 'portal' : 'staff';
 
   // Scroll to the step named in the URL hash (deep links from the "?" buttons).
   useEffect(() => {
@@ -79,6 +91,7 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
             className={cn(
               'flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] leading-snug transition-colors',
               i === active ? 'bg-bg-sunken text-text-primary' : 'text-text-tertiary hover:bg-bg-sunken/60 hover:text-text-secondary',
+              playing === s.id && 'ring-1 ring-warning',
             )}
           >
             <span
@@ -89,7 +102,8 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
             >
               {i + 1}
             </span>
-            <span className="min-w-0">{stepTitle(s)}</span>
+            <span className="min-w-0 flex-1">{stepTitle(s)}</span>
+            {playing === s.id && <Play className="mt-0.5 h-3.5 w-3.5 shrink-0 fill-current text-warning" aria-label={t('guides.ui.nowPlaying')} />}
           </button>
         </li>
       ))}
@@ -118,6 +132,7 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">
           {t(guideKey(guide.slug, 'purpose'))}
         </p>
+        {guide.cheatSheet === true && <PrintCheatSheetButton />}
         {guide.openHref !== undefined && (
           <Link
             to={guide.openHref}
@@ -128,6 +143,8 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
           </Link>
         )}
       </header>
+
+      {video !== undefined && <GuideVideo ref={videoRef} entry={video} onStepChange={setPlaying} />}
 
       {/* Progress + collapsible contents on small screens */}
       <div
@@ -171,7 +188,7 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
             {t('guides.ui.badgeNote')} {t('guides.ui.demoNote')}
           </p>
           {guide.steps.map((s, i) => {
-            const dims = guideImageManifest[s.image];
+            const dims = s.image !== undefined ? guideImageManifest[s.image] : undefined;
             const portrait = dims !== undefined && dims.h > dims.w;
             const title = stepTitle(s);
             const body = t(guideKey(guide.slug, `steps.${s.id}.body`), { defaultValue: '' });
@@ -188,7 +205,12 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
                 <div className={cn(portrait && 'md:grid md:grid-cols-[minmax(0,1fr)_300px] md:items-start md:gap-8')}>
                   <div>
                     <div className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-sm font-semibold tabular-nums text-bg-base">
+                      <span
+                        className={cn(
+                          'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-sm font-semibold tabular-nums text-bg-base',
+                          playing === s.id && 'ring-2 ring-warning ring-offset-2 ring-offset-bg-base',
+                        )}
+                      >
                         {i + 1}
                       </span>
                       <h2 className="min-w-0 break-words font-display text-xl font-semibold leading-snug tracking-tight text-text-primary sm:text-2xl">
@@ -207,6 +229,26 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
                         </p>
                       </div>
                     )}
+                    {s.shortcuts !== undefined && (
+                      <div className="mt-4 space-y-5 sm:pl-11">
+                        {s.shortcuts.map((area) => (
+                          <div key={area}>
+                            <h3 className="mb-1 text-sm font-semibold text-text-primary">{t(getArea(area).labelKey)}</h3>
+                            <ShortcutTable shortcuts={shortcutsInArea(area, shortcutAudience)} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {hasChapter(s.id) && (
+                      <button
+                        type="button"
+                        onClick={() => videoRef.current?.seekToStep(s.id)}
+                        className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border-default px-3 text-sm text-text-primary transition-colors hover:bg-bg-sunken sm:ml-11"
+                      >
+                        <Play className="h-3.5 w-3.5" aria-hidden />
+                        {t('guides.ui.playFromStep')}
+                      </button>
+                    )}
                     {s.href !== undefined && (
                       <Link
                         to={s.href}
@@ -217,15 +259,16 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
                       </Link>
                     )}
                   </div>
+                  {s.image !== undefined && (
                   <figure className={cn('mt-4', portrait && 'mx-auto w-full max-w-[300px] md:mt-0')}>
                     <button
                       type="button"
-                      onClick={() => setZoom({ src: imgSrc(s.image), alt, w: dims?.w ?? 1280, h: dims?.h ?? 800 })}
+                      onClick={() => setZoom({ src: imgSrc(s.image ?? ''), alt, w: dims?.w ?? 1280, h: dims?.h ?? 800 })}
                       aria-label={`${t('guides.ui.zoom')}: ${title}`}
                       className="group relative block w-full overflow-hidden rounded-lg border border-border-default bg-bg-sunken shadow-[var(--shadow-glow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-cream"
                     >
                       <img
-                        src={imgSrc(s.image)}
+                        src={imgSrc(s.image ?? '')}
                         alt={alt}
                         width={dims?.w ?? 1280}
                         height={dims?.h ?? 800}
@@ -238,6 +281,7 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
                       </span>
                     </button>
                   </figure>
+                  )}
                 </div>
               </section>
             );
@@ -247,6 +291,7 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
         </div>
       </div>
 
+      {guide.cheatSheet === true && <CheatSheet audience={shortcutAudience} />}
       {zoom !== null && <ImageZoom zoom={zoom} onClose={closeZoom} />}
     </div>
   );
