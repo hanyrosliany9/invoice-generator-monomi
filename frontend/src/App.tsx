@@ -126,8 +126,8 @@ const V2DeckAcceptInvitePage = lazy(() => import('./pages/v2/guest/DeckAcceptInv
 const V2GuidesIndexPage = lazy(() => import('./pages/v2/guides/GuidesPage').then((m) => ({ default: m.GuidesIndexPage })))
 const V2GuidePage = lazy(() => import('./pages/v2/guides/GuidesPage').then((m) => ({ default: m.GuidePage })))
 const V2ProjectTypesPage = lazy(() => import('./pages/v2/settings/ProjectTypesPage'))
-const PrivacyPolicyPage = lazy(() => import('./pages/public/InstagramLegalPages').then((m) => ({ default: m.PrivacyPolicyPage })))
-const DataDeletionPage = lazy(() => import('./pages/public/InstagramLegalPages').then((m) => ({ default: m.DataDeletionPage })))
+const PrivacyPolicyPage = lazy(() => import('./pages/legal/InstagramLegalPages').then((m) => ({ default: m.PrivacyPolicyPage })))
+const DataDeletionPage = lazy(() => import('./pages/legal/InstagramLegalPages').then((m) => ({ default: m.DataDeletionPage })))
 
 import './styles/relationships.css'
 
