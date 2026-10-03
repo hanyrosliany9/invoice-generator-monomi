@@ -38,7 +38,9 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
   const video = guideVideoManifest[guide.slug];
   // Step the video is currently showing (null when it is not playing or has no chapter).
   const [playing, setPlaying] = useState<string | null>(null);
-  const hasChapter = (id: string): boolean => video?.chapters.some((c) => c.step === id) === true;
+  const [videoReady, setVideoReady] = useState(false);
+  const markVideoReady = useCallback(() => setVideoReady(true), []);
+  const hasChapter = (id: string): boolean => videoReady && video?.chapters.some((c) => c.step === id) === true;
   useEffect(() => setPlaying(null), [guide.slug]);
   const total = guide.steps.length;
   const shortcutAudience: ShortcutAudience = guide.audience === 'client' ? 'portal' : 'staff';
@@ -144,7 +146,7 @@ export function GuideView({ guide, stickyTop = 0, footer }: GuideViewProps): Rea
         )}
       </header>
 
-      {video !== undefined && <GuideVideo ref={videoRef} entry={video} onStepChange={setPlaying} />}
+      {video !== undefined && <GuideVideo ref={videoRef} entry={video} onStepChange={setPlaying} onAvailable={markVideoReady} />}
 
       {/* Progress + collapsible contents on small screens */}
       <div

@@ -21,6 +21,8 @@ export interface GuideVideoProps {
   entry: GuideVideoEntry;
   /** Called while playing/seeking with the step id under the playhead (null: none). */
   onStepChange?: (stepId: string | null) => void;
+  /** Called once the video is confirmed available (poster loaded). */
+  onAvailable?: () => void;
 }
 
 /**
@@ -29,7 +31,7 @@ export interface GuideVideoProps {
  * captions follow the UI language, and the step list can seek it through the
  * handle. If the file cannot be loaded the whole section disappears.
  */
-export const GuideVideo = forwardRef<GuideVideoHandle, GuideVideoProps>(function GuideVideo({ entry, onStepChange }, ref) {
+export const GuideVideo = forwardRef<GuideVideoHandle, GuideVideoProps>(function GuideVideo({ entry, onStepChange, onAvailable }, ref) {
   const { t, i18n } = useTranslation();
   const lang: 'id' | 'en' = i18n.language?.toLowerCase().startsWith('en') ? 'en' : 'id';
   const base = guideVideoBase();
@@ -37,6 +39,9 @@ export const GuideVideo = forwardRef<GuideVideoHandle, GuideVideoProps>(function
   const video = useRef<HTMLVideoElement>(null);
   const [mounted, setMounted] = useState(false);
   const [failed, setFailed] = useState(false);
+  // The section stays invisible until the poster has actually loaded, so a
+  // guide whose video isn't uploaded yet never shows an empty black player.
+  const [available, setAvailable] = useState(false);
   const pending = useRef<number | null>(null);
   const lastStep = useRef<string | null>(null);
   const portrait = entry.h > entry.w;
@@ -52,6 +57,17 @@ export const GuideVideo = forwardRef<GuideVideoHandle, GuideVideoProps>(function
     io.observe(el);
     return () => io.disconnect();
   }, [mounted]);
+
+  // Probe availability via the poster once the player is near the viewport.
+  useEffect(() => {
+    if (!mounted || available || failed) return undefined;
+    let cancelled = false;
+    const probe = new Image();
+    probe.onload = () => { if (!cancelled) { setAvailable(true); onAvailable?.(); } };
+    probe.onerror = () => { if (!cancelled) setFailed(true); };
+    probe.src = `${base}/${entry.poster}`;
+    return () => { cancelled = true; };
+  }, [mounted, available, failed, base, entry.poster, onAvailable]);
 
   // Captions follow the UI language (the viewer can still pick another in the player menu).
   useEffect(() => {
@@ -84,7 +100,7 @@ export const GuideVideo = forwardRef<GuideVideoHandle, GuideVideoProps>(function
   useImperativeHandle(ref, () => ({
     seekToStep: (stepId: string): boolean => {
       const ch = entry.chapters.find((c) => c.step === stepId);
-      if (ch === undefined) return false;
+      if (ch === undefined || failed || !available) return false;
       const start = ch.start + 0.05;
       box.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       const v = video.current;
@@ -97,7 +113,7 @@ export const GuideVideo = forwardRef<GuideVideoHandle, GuideVideoProps>(function
       void v.play().catch(() => {});
       return true;
     },
-  }), [entry.chapters]);
+  }), [entry.chapters, failed, available]);
 
   const onMount = (v: HTMLVideoElement | null): void => {
     video.current = v;
@@ -109,6 +125,9 @@ export const GuideVideo = forwardRef<GuideVideoHandle, GuideVideoProps>(function
   };
 
   if (failed) return null;
+  // Invisible sentinel until the poster probe succeeds (keeps the
+  // IntersectionObserver target without showing an empty player).
+  if (!available) return <div ref={box} aria-hidden className="h-px" />;
   const url = (name: string): string => `${base}/${name}`;
   const minutes = Math.max(1, Math.round(entry.durationSec / 60));
 
