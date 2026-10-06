@@ -268,6 +268,16 @@ export class CreateCampaignDto {
 
   @IsOptional() @IsString() @MaxLength(1000)
   prefillMessage?: string;
+
+  /** Meta ad ids (Click-to-WhatsApp referral.source_id) attributed to this campaign. */
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === "string"
+      ? value.split(/[\s,;]+/).map((s: string) => s.trim()).filter(Boolean)
+      : value,
+  )
+  @IsArray() @ArrayMaxSize(50) @IsString({ each: true }) @Matches(/^\d{5,25}$/, { each: true, message: "ID iklan Meta harus berupa angka" })
+  metaAdIds?: string[];
 }
 
 export class UpdateCampaignDto {
@@ -296,6 +306,16 @@ export class UpdateCampaignDto {
 
   @IsOptional() @IsString() @MaxLength(1000)
   prefillMessage?: string | null;
+
+  /** Meta ad ids (Click-to-WhatsApp referral.source_id) attributed to this campaign. */
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === "string"
+      ? value.split(/[\s,;]+/).map((s: string) => s.trim()).filter(Boolean)
+      : value,
+  )
+  @IsArray() @ArrayMaxSize(50) @IsString({ each: true }) @Matches(/^\d{5,25}$/, { each: true, message: "ID iklan Meta harus berupa angka" })
+  metaAdIds?: string[];
 }
 
 export class CreateSpendDto {

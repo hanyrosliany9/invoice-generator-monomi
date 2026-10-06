@@ -31,6 +31,8 @@ model User {
   leadsAssigned         Lead[]                 @relation("LeadAssignee")
   leadsCreated          Lead[]                 @relation("LeadCreator")
   leadActivities        LeadActivity[]         @relation("LeadActivityActor")
+  waAssignedChats       WhatsAppConversation[] @relation("WaConversationAssignee")
+  waMessagesSent        WhatsAppMessage[]      @relation("WaMessageSender")
   auditLogs             AuditLog[]
   preferences           UserPreferences?
   businessJourneyEvents BusinessJourneyEvent[] @relation("BusinessJourneyEventCreator")
@@ -818,6 +820,7 @@ model Campaign {
   budget         Decimal?         @db.Decimal(14, 2)
   status         CampaignStatus   @default(ACTIVE)
   prefillMessage String?          @db.Text
+  metaAdIds      String[]         @default([]) // Meta ad ids (CTWA referral.source_id) mapped to this campaign
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -884,6 +887,7 @@ model Lead {
 
   activities LeadActivity[]
   metaEvents MetaEventOutbox[]
+  waContacts WhatsAppContact[]
 
   @@index([phone])
   @@index([waId])
@@ -934,6 +938,7 @@ model MetaEventOutbox {
   lastError String?
   sentAt    DateTime?
   dedupeKey String?         @unique // "<leadId>:Purchase" keeps Purchase idempotent
+  nextTryAt DateTime? // CAPI sender backoff (phase B)
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
@@ -945,9 +950,164 @@ model MetaEventOutbox {
 model CrmSettings {
   id                       String   @id @default("default")
   responseThresholdMinutes Int      @default(15)
+  whatsappQuickReplies     Json? // [{ title, text }] shown in the WhatsApp inbox composer
   updatedAt                DateTime @updatedAt
 
   @@map("crm_settings")
+}
+
+// ============================================================================
+// CRM phase B — WhatsApp Business Platform (Cloud API) inbox with
+// coexistence mirroring (the business keeps using the WhatsApp Business app;
+// messages sent from the phone arrive as smb_message_echoes = PHONE_APP).
+// ============================================================================
+
+enum WhatsAppDirection {
+  IN
+  OUT
+}
+
+enum WhatsAppOrigin {
+  CUSTOMER // inbound from the customer (live webhook)
+  MONOMI // sent by staff from the Monomi inbox (Cloud API)
+  PHONE_APP // sent from the WhatsApp Business app / companion device (echo)
+  HISTORY // imported by the coexistence history sync
+}
+
+enum WhatsAppMessageStatus {
+  RECEIVED
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum WhatsAppConversationStatus {
+  OPEN
+  ARCHIVED
+}
+
+enum WhatsAppConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+}
+
+model WhatsAppContact {
+  id            String   @id @default(cuid())
+  waId          String   @unique // digits only, no +
+  phone         String? // E.164 when it parses
+  profileName   String? // WhatsApp profile name (webhook contacts[].profile.name)
+  phoneBookName String? // name saved in the WhatsApp Business app (smb_app_state_sync)
+  leadId        String?
+  lead          Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conversation WhatsAppConversation?
+
+  @@index([leadId])
+  @@map("whatsapp_contacts")
+}
+
+model WhatsAppConversation {
+  id                 String                     @id @default(cuid())
+  contactId          String                     @unique
+  contact            WhatsAppContact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  lastMessageAt      DateTime?
+  lastMessagePreview String?
+  lastInboundAt      DateTime? // last CUSTOMER message: 24h customer service window
+  freeEntryUntil     DateTime? // Click-to-WhatsApp free entry point (72h)
+  unreadCount        Int                        @default(0)
+  lastReadReceiptFor String? // wamid of the last inbound message we marked as read at Meta
+  assignedToId       String?
+  assignedTo         User?                      @relation("WaConversationAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  status             WhatsAppConversationStatus @default(OPEN)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  messages WhatsAppMessage[]
+
+  @@index([lastMessageAt])
+  @@index([assignedToId])
+  @@index([status, lastMessageAt])
+  @@map("whatsapp_conversations")
+}
+
+model WhatsAppMessage {
+  id                 String                @id @default(cuid())
+  waMessageId        String?               @unique // wamid.* (idempotency key)
+  conversationId     String
+  conversation       WhatsAppConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction          WhatsAppDirection
+  origin             WhatsAppOrigin
+  type               String // text | image | document | audio | video | sticker | location | template | ...
+  text               String?               @db.Text
+  mediaId            String? // Graph media id (downloaded lazily, staff-only proxy)
+  mediaMime          String?
+  mediaCaption       String?               @db.Text
+  mediaFilename      String?
+  templateName       String?
+  contextWaMessageId String? // reply-to
+  status             WhatsAppMessageStatus @default(RECEIVED)
+  errorCode          String?
+  errorTitle         String?
+  sentById           String?
+  sentBy             User?                 @relation("WaMessageSender", fields: [sentById], references: [id], onDelete: SetNull)
+  timestamp          DateTime
+  referral           Json? // Click-to-WhatsApp referral (sanitised)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@index([conversationId, timestamp])
+  @@map("whatsapp_messages")
+}
+
+// Raw webhook deliveries: stored before we answer 200, processed async with
+// retries. payloadHash makes an identical redelivery a no-op; message ids
+// make re-processing idempotent. Payloads are purged after a retention period.
+model WhatsAppWebhookEvent {
+  id            String    @id @default(cuid())
+  payloadHash   String    @unique
+  fields        String? // comma list of change fields in the payload
+  payload       Json?
+  receivedAt    DateTime  @default(now())
+  processedAt   DateTime?
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime?
+  lockedUntil   DateTime?
+  lastError     String?
+  failedAt      DateTime?
+
+  @@index([processedAt, nextAttemptAt])
+  @@index([receivedAt])
+  @@map("whatsapp_webhook_events")
+}
+
+// Singleton ("default"): state of the WhatsApp Business Account connection.
+// Env credentials (system user token) take precedence; the Embedded Signup
+// (coexistence) flow stores an encrypted business token here instead.
+model WhatsAppConnection {
+  id                      String                   @id @default("default")
+  wabaId                  String?
+  phoneNumberId           String?
+  displayPhoneNumber      String?
+  status                  WhatsAppConnectionStatus @default(DISCONNECTED)
+  accessTokenEnc          String? // AES-256-GCM (TOKEN_ENCRYPTION_KEY), never returned
+  tokenKeyId              String?
+  connectedAt             DateTime?
+  connectedById           String?
+  disconnectedAt          DateTime?
+  disconnectReason        String?
+  lastWebhookAt           DateTime?
+  historySyncRequestedAt  DateTime?
+  contactsSyncRequestedAt DateTime?
+  historyPhase            Int?
+  historyProgress         Int?
+  historyError            String?
+  updatedAt               DateTime                 @updatedAt
+
+  @@map("whatsapp_connection")
 }
 
 // Dynamic Project Type Configuration

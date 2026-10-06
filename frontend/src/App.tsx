@@ -131,6 +131,7 @@ const V2CrmLeadDetailPage = lazy(() => import('./pages/v2/crm/LeadDetailPage'))
 const V2CrmCampaignsPage = lazy(() => import('./pages/v2/crm/CampaignsPage'))
 const V2CrmDashboardPage = lazy(() => import('./pages/v2/crm/CrmDashboardPage'))
 const V2CrmSettingsPage = lazy(() => import('./pages/v2/crm/CrmSettingsPage'))
+const V2CrmInboxPage = lazy(() => import('./pages/v2/crm/InboxPage'))
 const PrivacyPolicyPage = lazy(() => import('./pages/legal/InstagramLegalPages').then((m) => ({ default: m.PrivacyPolicyPage })))
 const DataDeletionPage = lazy(() => import('./pages/legal/InstagramLegalPages').then((m) => ({ default: m.DataDeletionPage })))
 
@@ -327,6 +328,8 @@ function App() {
                       <Route path='/crm/campaigns' element={<AdminRoute><V2CrmCampaignsPage /></AdminRoute>} />
                       <Route path='/crm/dashboard' element={<AdminRoute><V2CrmDashboardPage /></AdminRoute>} />
                       <Route path='/crm/settings' element={<AdminRoute><V2CrmSettingsPage /></AdminRoute>} />
+                      <Route path='/crm/inbox' element={<AdminRoute><V2CrmInboxPage /></AdminRoute>} />
+                      <Route path='/crm/inbox/:id' element={<AdminRoute><V2CrmInboxPage /></AdminRoute>} />
                       <Route path='/expenses' element={<AdminRoute><V2ExpensesPage /></AdminRoute>} />
                       <Route path='/expenses/new' element={<AdminRoute><V2ExpenseCreatePage /></AdminRoute>} />
                       <Route path='/expenses/categories' element={<AdminRoute><V2ExpenseCategoriesPage /></AdminRoute>} />

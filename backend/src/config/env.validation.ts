@@ -229,6 +229,66 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   TOKEN_ENCRYPTION_KEY?: string;
+
+  // WhatsApp Business Platform inbox + Conversions API (optional; all unset =
+  // feature off). Validated in depth by modules/whatsapp/whatsapp.config.ts
+  // (production refuses placeholder verify tokens / a missing app secret once
+  // WHATSAPP_* is set). Empty strings = unset; flags are "true"/"false".
+  @IsString()
+  @IsOptional()
+  WHATSAPP_ACCESS_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_WABA_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_PHONE_NUMBER_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_APP_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_APP_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_COEXISTENCE_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_HISTORY_SYNC_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_HISTORY_LEAD_MAX_AGE_DAYS?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_SMB_SYNC_EDGE?: string;
+
+  @IsString()
+  @IsOptional()
+  META_DATASET_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  META_CAPI_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  META_CAPI_TEST_EVENT_CODE?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

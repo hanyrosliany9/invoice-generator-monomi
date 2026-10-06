@@ -329,6 +329,51 @@ export class CrmLeadsService {
     return this.get(lead.id);
   }
 
+  /**
+   * Phase B: lead auto-created from the first WhatsApp message of a number
+   * that has no lead yet (the caller checked waId + phone). System action:
+   * no actor, unassigned. Goes through create() so the stage history and the
+   * LeadSubmitted outbox row are recorded exactly like a manual lead.
+   */
+  async createFromWhatsApp(input: {
+    waId: string;
+    name: string | null;
+    firstMessage: string | null;
+    firstContactAt: Date;
+    source: "WHATSAPP_CTWA" | "WHATSAPP_ORGANIC";
+    campaignId: string | null;
+    campaignCode: string | null;
+    adId: string | null;
+    ctwaClid: string | null;
+    referral: Prisma.InputJsonValue | null;
+  }): Promise<string> {
+    const phone = normalizePhone(`+${input.waId}`);
+    const lead = await this.create(
+      {
+        name: (input.name?.trim() || (phone ? undefined : `+${input.waId}`))?.slice(0, 120),
+        phone: phone ?? undefined,
+        source: input.source,
+        campaignId: input.campaignId ?? undefined,
+        campaignCode: input.campaignId ? undefined : (input.campaignCode ?? undefined),
+        adId: input.adId ?? undefined,
+        ctwaClid: input.ctwaClid ?? undefined,
+        firstMessage: input.firstMessage?.slice(0, 2000) ?? undefined,
+        firstContactAt: input.firstContactAt.toISOString(),
+        allowDuplicate: true,
+      } as CreateLeadDto,
+      null,
+    );
+    await this.prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        waId: input.waId,
+        lastContactAt: input.firstContactAt,
+        ...(input.referral ? { referral: input.referral } : {}),
+      },
+    });
+    return lead.id;
+  }
+
   async update(id: string, dto: UpdateLeadDto, actorId: string | null) {
     const lead = await this.prisma.lead.findUnique({ where: { id } });
     if (!lead) throw new NotFoundException("Lead tidak ditemukan");

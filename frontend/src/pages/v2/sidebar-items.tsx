@@ -34,6 +34,7 @@ import {
   Target,
   UserPlus,
   Flag,
+  MessageCircle,
 } from 'lucide-react';
 import type { SidebarSection } from '@/components/monomi/Sidebar';
 
@@ -91,6 +92,7 @@ export const v2SidebarSections: SidebarSection[] = [
         requiresAdmin: true,
         badge: 'crm',
         children: [
+          { label: 'nav.crmInbox', icon: i(MessageCircle), href: '/crm/inbox', badge: 'whatsapp' },
           { label: 'nav.crmLeads', icon: i(UserPlus), href: '/crm/leads', badge: 'crm' },
           { label: 'nav.crmCampaigns', icon: i(Flag), href: '/crm/campaigns' },
           { label: 'nav.crmDashboard', icon: i(BarChart3), href: '/crm/dashboard' },

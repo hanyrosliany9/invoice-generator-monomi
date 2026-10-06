@@ -2,7 +2,7 @@ import type { INestApplication } from "@nestjs/common";
 import type { NextFunction, Request, Response } from "express";
 // body-parser is the parser Nest itself registers by default; it is a pinned
 // dependency of @nestjs/platform-express (same situation as `cors` in main.ts).
-import { json, urlencoded } from "body-parser";
+import { json, raw, urlencoded } from "body-parser";
 
 /**
  * JSON body limit for the few routes that legitimately take large bodies.
@@ -113,5 +113,31 @@ export function registerSmallBodyRoutes(app: INestApplication, globalPrefix: str
   app.use(function webhookSmallBody(req: Request, res: Response, next: NextFunction) {
     if (req.method !== "POST" || !matchers.some((re) => re.test(req.path))) return next();
     return smallJson(req, res, (err?: unknown) => (err ? next(err) : smallForm(req, res, next)));
+  });
+}
+
+/**
+ * Raw (Buffer) body for webhooks whose signature is computed over the exact
+ * request bytes: Meta's X-Hub-Signature-256 = HMAC-SHA256(app secret, raw
+ * body). Re-serialised JSON would not match, so these routes must never go
+ * through the JSON parser. 3mb cap (history-sync chunks), 413 above it. Any
+ * content type is accepted as bytes; the controller parses JSON itself only
+ * after the signature check.
+ */
+export const RAW_BODY_LIMIT = "3mb";
+
+const RAW_BODY_ROUTE_PATTERNS: readonly string[] = ["whatsapp/webhook"];
+
+export function buildRawBodyRouteMatchers(globalPrefix: string): RegExp[] {
+  return buildRouteMatchers(RAW_BODY_ROUTE_PATTERNS, globalPrefix);
+}
+
+/** Same ordering rules as registerLargeJsonBodyRoutes (before init; not named jsonParser). */
+export function registerRawBodyRoutes(app: INestApplication, globalPrefix: string): void {
+  const matchers = buildRawBodyRouteMatchers(globalPrefix);
+  const rawParser = raw({ type: () => true, limit: RAW_BODY_LIMIT });
+  app.use(function webhookRawBody(req: Request, res: Response, next: NextFunction) {
+    if (req.method !== "POST" || !matchers.some((re) => re.test(req.path))) return next();
+    return rawParser(req, res, next);
   });
 }

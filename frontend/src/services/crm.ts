@@ -169,6 +169,8 @@ export interface Campaign {
   budget: number | null;
   status: CampaignStatus;
   prefillMessage: string | null;
+  /** Meta ad ids (Click-to-WhatsApp referral source_id) mapped to this campaign. */
+  metaAdIds?: string[];
   leads: number;
   won: number;
   spend: number;
@@ -185,6 +187,7 @@ export interface CampaignInput {
   budget?: number;
   status?: CampaignStatus;
   prefillMessage?: string;
+  metaAdIds?: string[];
 }
 
 export interface CampaignSpend {

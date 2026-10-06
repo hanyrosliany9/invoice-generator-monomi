@@ -28,7 +28,7 @@ export interface SidebarItem {
    */
   requiresSuperAdmin?: boolean;
   /** Live count pill next to the label (see NavBadge). */
-  badge?: 'crm';
+  badge?: 'crm' | 'whatsapp';
 }
 
 export interface SidebarSection {
