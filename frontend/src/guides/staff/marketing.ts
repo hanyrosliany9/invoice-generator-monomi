@@ -1,5 +1,5 @@
 import {
-  BarChart3, CalendarRange, Download, Grid3x3, Image as ImageIcon, Presentation,
+  BarChart3, CalendarRange, Download, Grid3x3, Image as ImageIcon, Presentation, Target,
 } from 'lucide-react';
 import { type GuideDef, steps } from '../types';
 
@@ -44,5 +44,19 @@ export const marketingGuides: GuideDef[] = [
     slug: 'media-downloader', audience: 'staff', topic: 'marketing', icon: Download, minutes: 3,
     openHref: '/media-downloader',
     steps: steps('media-downloader', [['tautan', '/media-downloader'], 'kualitas', 'unduh']),
+  },
+  {
+    // Text-only guide (no screenshots yet): the steps carry just an id and the page they describe.
+    slug: 'crm-leads-whatsapp', audience: 'staff', topic: 'marketing', icon: Target, minutes: 8, adminOnly: true,
+    openHref: '/crm/leads',
+    steps: [
+      { id: 'kampanye', href: '/crm/campaigns' },
+      { id: 'pesan-iklan', href: '/crm/campaigns' },
+      { id: 'tambah-lead', href: '/crm/leads' },
+      { id: 'papan', href: '/crm/leads' },
+      { id: 'tindak-lanjut', href: '/crm/leads' },
+      { id: 'konversi', href: '/crm/leads' },
+      { id: 'dasbor', href: '/crm/dashboard' },
+    ],
   },
 ];

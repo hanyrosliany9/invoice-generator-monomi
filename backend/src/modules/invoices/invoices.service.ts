@@ -6,7 +6,9 @@ import {
   Logger,
   Inject,
   forwardRef,
+  Optional,
 } from "@nestjs/common";
+import { CrmFlowService } from "../crm/crm-flow.service";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "../prisma/prisma.service";
 import { QuotationsService } from "../quotations/quotations.service";
@@ -51,6 +53,7 @@ export class InvoicesService {
     private invoiceCounterService: InvoiceCounterService,
     private documentsService: DocumentsService,
     private profitCalculationService: ProfitCalculationService,
+    @Optional() private crmFlow?: CrmFlowService,
   ) {}
 
   async create(
@@ -1127,6 +1130,9 @@ export class InvoicesService {
 
     // We won the claim — re-read with full includes for downstream logic.
     const invoice = await this.findOne(id);
+
+    // CRM: a lead linked to this invoice's quotation records its Purchase event (best-effort).
+    await this.crmFlow?.onInvoicePaid(id);
 
     // Reimbursable portion (cost recovery, lives in 1-2040) vs services portion
     // (revenue/AR). Only the services portion is ever booked to AR/Revenue.

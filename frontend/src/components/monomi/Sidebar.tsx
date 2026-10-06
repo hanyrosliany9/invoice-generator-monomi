@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ShortcutHint } from '@/components/ui/kbd';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MonomiBrand } from './MonomiBrand';
+import { NavBadge } from './NavBadge';
 import { UserChip } from './UserChip';
 
 export interface SidebarItem {
@@ -26,6 +27,8 @@ export interface SidebarItem {
    * otherwise a plain ADMIN sees the menu entry but every API call 403s.
    */
   requiresSuperAdmin?: boolean;
+  /** Live count pill next to the label (see NavBadge). */
+  badge?: 'crm';
 }
 
 export interface SidebarSection {
@@ -122,7 +125,8 @@ const NavLeaf = ({
           >
             {item.icon}
           </span>
-          {!collapsed && <span className="truncate">{t(item.label)}</span>}
+          {!collapsed && <span className="truncate flex-1">{t(item.label)}</span>}
+          {item.badge && <NavBadge kind={item.badge} dot={!!collapsed} />}
         </>
       )}
     </NavLink>
@@ -265,6 +269,7 @@ const NavGroup = ({
           {item.icon}
         </span>
         <span className="truncate flex-1 text-left">{t(item.label)}</span>
+        {item.badge && !open && <NavBadge kind={item.badge} />}
         <ChevronDown
           className={cn(
             'h-3.5 w-3.5 flex-shrink-0 text-white/60 transition-transform duration-200',

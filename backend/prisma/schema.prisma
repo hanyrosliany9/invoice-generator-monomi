@@ -28,6 +28,9 @@ model User {
   quotationsRejected    Quotation[]            @relation("QuotationRejector")
   invoices              Invoice[]              @relation("InvoiceCreator")
   invoicesPaidMarked    Invoice[]              @relation("InvoicePaidMarker")
+  leadsAssigned         Lead[]                 @relation("LeadAssignee")
+  leadsCreated          Lead[]                 @relation("LeadCreator")
+  leadActivities        LeadActivity[]         @relation("LeadActivityActor")
   auditLogs             AuditLog[]
   preferences           UserPreferences?
   businessJourneyEvents BusinessJourneyEvent[] @relation("BusinessJourneyEventCreator")
@@ -241,6 +244,7 @@ model Client {
   decks                 Deck[]
   calendarEvents        CalendarEvent[]
   portalContacts        ClientPortalContact[] // External client-portal logins
+  leads                 Lead[]
   instagramConnection   InstagramConnection? // Instagram API (Instagram Login) link for insights sync
 
   @@index([name])
@@ -319,6 +323,7 @@ model Project {
 
   // Relations
   quotations            Quotation[]
+  leads                 Lead[]
   invoices              Invoice[]
   businessJourneyEvents BusinessJourneyEvent[]
   documents             Document[]
@@ -439,6 +444,7 @@ model Quotation {
   paymentMilestones     PaymentMilestone[] // Phase 1 Enhancement: Payment milestones for quotations
   businessJourneyEvents BusinessJourneyEvent[]
   documents             Document[]
+  leads                 Lead[]
 
   @@index([quotationNumber])
   @@index([validUntil])
@@ -722,6 +728,226 @@ enum UserRole {
   SUPER_ADMIN // Owner/IT Admin - Full system access
   ADMIN // Content management - invoices, projects, clients, accounting, media
   VIDEOGRAPHER // Media-collab only - upload and edit assets
+}
+
+// ============================================================================
+// CRM — leads from WhatsApp ads (Click-to-WhatsApp) and other sources.
+// Phase A: pipeline, campaigns, spend, stats. Phase B (later) adds the
+// WhatsApp inbox and sends MetaEventOutbox rows to the Conversions API.
+// ============================================================================
+
+enum LeadSource {
+  WHATSAPP_CTWA
+  WHATSAPP_ORGANIC
+  INSTAGRAM_DM
+  REFERRAL
+  WEBSITE
+  OTHER
+}
+
+enum LeadStageType {
+  OPEN
+  WON
+  LOST
+}
+
+enum LeadActivityType {
+  NOTE
+  CALL
+  WHATSAPP
+  MEETING
+  STAGE_CHANGE
+  FOLLOW_UP_SET
+  FOLLOW_UP_DONE
+  CONVERTED
+  ASSIGNED
+}
+
+enum CampaignPlatform {
+  FACEBOOK
+  INSTAGRAM
+  BOTH
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum CampaignSpendSource {
+  MANUAL
+  META
+}
+
+enum MetaEventStatus {
+  PENDING_CONFIG
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model LeadStage {
+  id        String        @id @default(cuid())
+  key       String?       @unique // system stage key (NEW, QUALIFIED...) -> translated label; null for custom stages
+  name      String // display label (custom stages / fallback)
+  order     Int
+  color     String        @default("#8d8b93")
+  type      LeadStageType @default(OPEN)
+  metaEvent String? // null | LeadSubmitted | QualifiedLead | Purchase
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  leads          Lead[]
+  activitiesFrom LeadActivity[] @relation("LeadActivityFromStage")
+  activitiesTo   LeadActivity[] @relation("LeadActivityToStage")
+
+  @@index([order])
+  @@map("lead_stages")
+}
+
+model Campaign {
+  id             String           @id @default(cuid())
+  name           String
+  code           String           @unique // e.g. FB-OKT1 — typed into the WhatsApp prefill message
+  platform       CampaignPlatform @default(FACEBOOK)
+  startDate      DateTime?
+  endDate        DateTime?
+  budget         Decimal?         @db.Decimal(14, 2)
+  status         CampaignStatus   @default(ACTIVE)
+  prefillMessage String?          @db.Text
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  leads  Lead[]
+  spends CampaignSpend[]
+
+  @@index([status])
+  @@map("crm_campaigns")
+}
+
+model CampaignSpend {
+  id          String              @id @default(cuid())
+  campaignId  String
+  campaign    Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  dateFrom    DateTime            @db.Date
+  dateTo      DateTime            @db.Date
+  amount      Decimal             @db.Decimal(14, 2)
+  note        String?
+  source      CampaignSpendSource @default(MANUAL)
+  createdById String?
+  createdAt   DateTime            @default(now())
+
+  @@index([campaignId])
+  @@index([dateFrom, dateTo])
+  @@map("crm_campaign_spends")
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  name            String
+  phone           String? // normalised E.164 (+62...)
+  waId            String? // WhatsApp id (digits, no +) — phase B inbox key
+  email           String?
+  company         String?
+  source          LeadSource @default(OTHER)
+  campaignId      String?
+  campaign        Campaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  campaignCode    String?
+  adId            String?
+  ctwaClid        String? // Click-to-WhatsApp click id (Meta CAPI attribution)
+  referral        Json? // raw CTWA referral object
+  firstMessage    String?    @db.Text
+  stageId         String
+  stage           LeadStage  @relation(fields: [stageId], references: [id])
+  estimatedValue  Decimal    @default(0) @db.Decimal(14, 2)
+  assignedToId    String?
+  assignedTo      User?      @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  followUpAt      DateTime?
+  followUpNote    String?
+  lostReason      String?
+  clientId        String?
+  client          Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId       String?
+  project         Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  quotationId     String?
+  quotation       Quotation? @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  firstContactAt  DateTime   @default(now())
+  firstResponseAt DateTime?
+  lastContactAt   DateTime   @default(now())
+  createdById     String?
+  createdBy       User?      @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  activities LeadActivity[]
+  metaEvents MetaEventOutbox[]
+
+  @@index([phone])
+  @@index([waId])
+  @@index([stageId])
+  @@index([assignedToId])
+  @@index([campaignId])
+  @@index([followUpAt])
+  @@index([createdAt])
+  @@index([quotationId])
+  @@index([projectId])
+  @@map("leads")
+}
+
+// Append-only activity + stage history.
+model LeadActivity {
+  id          String           @id @default(cuid())
+  leadId      String
+  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type        LeadActivityType
+  body        String?          @db.Text
+  fromStageId String?
+  fromStage   LeadStage?       @relation("LeadActivityFromStage", fields: [fromStageId], references: [id], onDelete: SetNull)
+  toStageId   String?
+  toStage     LeadStage?       @relation("LeadActivityToStage", fields: [toStageId], references: [id], onDelete: SetNull)
+  metaEvent   String? // Meta event queued as a consequence of this activity
+  actorId     String?
+  actor       User?            @relation("LeadActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+
+  @@index([leadId, createdAt])
+  @@map("lead_activities")
+}
+
+// Conversions API for Business Messaging events. Phase A only records rows
+// (PENDING_CONFIG); phase B sends them.
+model MetaEventOutbox {
+  id        String          @id @default(cuid())
+  leadId    String
+  lead      Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  eventName String // LeadSubmitted | QualifiedLead | Purchase
+  eventTime DateTime        @default(now())
+  value     Decimal?        @db.Decimal(14, 2)
+  currency  String          @default("IDR")
+  status    MetaEventStatus @default(PENDING_CONFIG)
+  payload   Json
+  response  Json?
+  attempts  Int             @default(0)
+  lastError String?
+  sentAt    DateTime?
+  dedupeKey String?         @unique // "<leadId>:Purchase" keeps Purchase idempotent
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+  @@map("meta_event_outbox")
+}
+
+model CrmSettings {
+  id                       String   @id @default("default")
+  responseThresholdMinutes Int      @default(15)
+  updatedAt                DateTime @updatedAt
+
+  @@map("crm_settings")
 }
 
 // Dynamic Project Type Configuration

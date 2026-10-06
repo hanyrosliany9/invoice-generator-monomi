@@ -51,6 +51,7 @@ import { McpModule } from "./modules/mcp/mcp.module";
 import { SalariesModule } from "./modules/salaries/salaries.module";
 import { PortalModule } from "./modules/portal/portal.module";
 import { InstagramModule } from "./modules/instagram/instagram.module";
+import { CrmModule } from "./modules/crm/crm.module";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
@@ -124,6 +125,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     SalariesModule,
     PortalModule,
     InstagramModule,
+    CrmModule,
   ],
   providers: [
     {

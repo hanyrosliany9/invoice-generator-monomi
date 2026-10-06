@@ -6,6 +6,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useViewport } from '@/hooks/useIsMobile';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
 import { useSidebarCollapsed } from '@/hooks/useSidebarCollapsed';
+import { CrmQuickAddHost } from '@/pages/v2/crm/QuickAddHost';
 
 export interface AppShellProps {
   sidebar: SidebarProps;
@@ -38,6 +39,7 @@ export const AppShell = ({ sidebar, topbar, children, disableSmoothScroll = fals
     // <main> → wheel scrolling was dead on any page taller than the viewport.
     <div className="h-dvh flex bg-bg-base text-text-primary font-body relative isolate overflow-hidden">
       <ParallaxGlassBackground />
+      <CrmQuickAddHost />
 
       {/* All content sits above the parallax via z-10 wrapper */}
       {/* Desktop: inline sidebar */}

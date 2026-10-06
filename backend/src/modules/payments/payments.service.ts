@@ -6,7 +6,9 @@ import {
   Inject,
   forwardRef,
   Logger,
+  Optional,
 } from "@nestjs/common";
+import { CrmFlowService } from "../crm/crm-flow.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { InvoicesService } from "../invoices/invoices.service";
 import { JournalService } from "../accounting/services/journal.service";
@@ -24,6 +26,7 @@ export class PaymentsService {
     private invoicesService: InvoicesService,
     private journalService: JournalService,
     private notificationsService: NotificationsService,
+    @Optional() private crmFlow?: CrmFlowService,
   ) {}
 
   async create(
@@ -518,6 +521,9 @@ export class PaymentsService {
         where: { id: invoiceId },
         data: { status: newStatus as any },
       });
+      if (newStatus === "PAID") {
+        await this.crmFlow?.onInvoicePaid(invoiceId);
+      }
     }
   }
 

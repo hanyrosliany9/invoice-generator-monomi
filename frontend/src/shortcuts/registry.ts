@@ -132,6 +132,8 @@ export const SHORTCUTS: Shortcut[] = [
   make('paletteMove', 'global', 'Up | Down', { note: true, audiences: STAFF }),
   make('paletteGo', 'global', 'Enter', { note: true, audiences: STAFF }),
   make('paletteClose', 'global', 'Esc', { note: true, audiences: STAFF }),
+  make('crmQuickAdd', 'global', 'Mod Shift L', { audiences: STAFF }),
+  make('crmQuickAddSave', 'global', 'Mod Enter', { note: true, audiences: STAFF }),
 
   // Deck editor
   make('deckSave', 'deckEditor', 'Mod S', { group: 'general' }),

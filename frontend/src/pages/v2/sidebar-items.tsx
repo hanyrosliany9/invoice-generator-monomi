@@ -31,6 +31,9 @@ import {
   Settings,
   Layers,
   LifeBuoy,
+  Target,
+  UserPlus,
+  Flag,
 } from 'lucide-react';
 import type { SidebarSection } from '@/components/monomi/Sidebar';
 
@@ -79,6 +82,20 @@ export const v2SidebarSections: SidebarSection[] = [
     items: [
       { label: 'nav.socialMediaReports', icon: i(Megaphone), href: '/reports/social-media', requiresAdmin: true },
       { label: 'nav.contentCalendar', icon: i(CalendarRange), href: '/calendar/content' },
+      // CRM: leads from WhatsApp ads. Admin-only (the API is). The pill on the
+      // group (and on Leads) counts unanswered leads + follow-ups due.
+      {
+        label: 'nav.crm',
+        icon: i(Target),
+        href: '#crm',
+        requiresAdmin: true,
+        badge: 'crm',
+        children: [
+          { label: 'nav.crmLeads', icon: i(UserPlus), href: '/crm/leads', badge: 'crm' },
+          { label: 'nav.crmCampaigns', icon: i(Flag), href: '/crm/campaigns' },
+          { label: 'nav.crmDashboard', icon: i(BarChart3), href: '/crm/dashboard' },
+        ],
+      },
       { label: 'nav.mediaCollaboration', icon: i(ImageIcon), href: '/media-collab' },
       { label: 'nav.presentationDecks', icon: i(Presentation), href: '/decks' },
       { label: 'nav.mediaDownloader', icon: i(Download), href: '/media-downloader' },

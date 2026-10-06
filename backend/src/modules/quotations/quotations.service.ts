@@ -6,7 +6,9 @@ import {
   Logger,
   Inject,
   forwardRef,
+  Optional,
 } from "@nestjs/common";
+import { CrmFlowService } from "../crm/crm-flow.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { SettingsService } from "../settings/settings.service";
@@ -38,6 +40,7 @@ export class QuotationsService {
     private documentsService: DocumentsService,
     @Inject(forwardRef(() => InvoicesService))
     private invoicesService: InvoicesService,
+    @Optional() private crmFlow?: CrmFlowService,
   ) {}
 
   async create(
@@ -411,6 +414,11 @@ export class QuotationsService {
 
       return updated;
     });
+
+    // CRM: a lead linked to this quotation records its Purchase event (best-effort).
+    if (status === QuotationStatus.APPROVED) {
+      await this.crmFlow?.onQuotationApproved(id);
+    }
 
     // Send notification about status change (outside transaction)
     try {

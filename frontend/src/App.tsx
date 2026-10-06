@@ -126,6 +126,11 @@ const V2DeckAcceptInvitePage = lazy(() => import('./pages/v2/guest/DeckAcceptInv
 const V2GuidesIndexPage = lazy(() => import('./pages/v2/guides/GuidesPage').then((m) => ({ default: m.GuidesIndexPage })))
 const V2GuidePage = lazy(() => import('./pages/v2/guides/GuidesPage').then((m) => ({ default: m.GuidePage })))
 const V2ProjectTypesPage = lazy(() => import('./pages/v2/settings/ProjectTypesPage'))
+const V2CrmLeadsPage = lazy(() => import('./pages/v2/crm/LeadsPage'))
+const V2CrmLeadDetailPage = lazy(() => import('./pages/v2/crm/LeadDetailPage'))
+const V2CrmCampaignsPage = lazy(() => import('./pages/v2/crm/CampaignsPage'))
+const V2CrmDashboardPage = lazy(() => import('./pages/v2/crm/CrmDashboardPage'))
+const V2CrmSettingsPage = lazy(() => import('./pages/v2/crm/CrmSettingsPage'))
 const PrivacyPolicyPage = lazy(() => import('./pages/legal/InstagramLegalPages').then((m) => ({ default: m.PrivacyPolicyPage })))
 const DataDeletionPage = lazy(() => import('./pages/legal/InstagramLegalPages').then((m) => ({ default: m.DataDeletionPage })))
 
@@ -316,6 +321,12 @@ function App() {
                       <Route path='/projects/:id/production' element={<AdminRoute><V2ProductionHubPage /></AdminRoute>} />
                       <Route path='/projects/:projectId/calendar' element={<AdminRoute><V2ProjectCalendarPage /></AdminRoute>} />
                       <Route path='/projects/:projectId/content-calendar' element={<AdminRoute><V2ProjectContentCalendarPage /></AdminRoute>} />
+                      <Route path='/crm' element={<Navigate to='/crm/leads' replace />} />
+                      <Route path='/crm/leads' element={<AdminRoute><V2CrmLeadsPage /></AdminRoute>} />
+                      <Route path='/crm/leads/:id' element={<AdminRoute><V2CrmLeadDetailPage /></AdminRoute>} />
+                      <Route path='/crm/campaigns' element={<AdminRoute><V2CrmCampaignsPage /></AdminRoute>} />
+                      <Route path='/crm/dashboard' element={<AdminRoute><V2CrmDashboardPage /></AdminRoute>} />
+                      <Route path='/crm/settings' element={<AdminRoute><V2CrmSettingsPage /></AdminRoute>} />
                       <Route path='/expenses' element={<AdminRoute><V2ExpensesPage /></AdminRoute>} />
                       <Route path='/expenses/new' element={<AdminRoute><V2ExpenseCreatePage /></AdminRoute>} />
                       <Route path='/expenses/categories' element={<AdminRoute><V2ExpenseCategoriesPage /></AdminRoute>} />
