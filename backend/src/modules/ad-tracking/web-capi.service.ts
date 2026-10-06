@@ -63,15 +63,15 @@ export interface VisitFlushResult {
 }
 
 /**
- * Sender lanes. Click-time Leads (leadId null) can arrive in bulk from the
- * public endpoint; CRM stage events (QualifiedLead, Purchase) must never wait
- * behind them, so each run serves the stage lane first and never sends more
- * than one Lead batch before looking at the stage lane again.
+ * Sender lanes. Click-time Leads can arrive in bulk from the public endpoint;
+ * CRM stage events (QualifiedLead, Purchase) must never wait behind them, so
+ * each run serves the stage lane first and never sends more than one Lead
+ * batch before looking at the stage lane again. On the website route "Lead"
+ * is only ever the click-time event (the CRM queues LeadSubmitted /
+ * QualifiedLead / Purchase), whether or not its click was linked since.
  */
-export const CLICK_LEAD_LANE: Prisma.MetaEventOutboxWhereInput = { eventName: "Lead", leadId: null };
-export const STAGE_LANE: Prisma.MetaEventOutboxWhereInput = {
-  OR: [{ eventName: { not: "Lead" } }, { leadId: { not: null } }],
-};
+export const CLICK_LEAD_LANE: Prisma.MetaEventOutboxWhereInput = { eventName: "Lead" };
+export const STAGE_LANE: Prisma.MetaEventOutboxWhereInput = { eventName: { not: "Lead" } };
 
 /** Blocked by the shared Graph denylist: deterministic, so never retried. */
 const isForbidden = (error: unknown) => error instanceof ForbiddenGraphEndpointError;

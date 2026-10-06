@@ -267,6 +267,44 @@ describe("retention", () => {
     expect(t.metaEventOutbox.map((r: any) => r.id).sort()).toEqual(["bm", "crm", "fresh"]);
   });
 
+  it("regression: the click-time Lead row of a LINKED click survives the 7-day purge (linking ties it to the lead)", async () => {
+    const now = new Date();
+    const { adClicks, t } = setup({ leads: [{ id: "L1", ctwaClid: null }] });
+    t.metaEventOutbox.push({ id: "lead-row", route: "WEBSITE", leadId: null, adClickId: "c1", eventName: "Lead", status: "SENT", createdAt: now });
+    expect(await adClicks.linkLead("L1", REF, null)).toBe("linked");
+    expect(t.metaEventOutbox.find((r: any) => r.id === "lead-row")).toMatchObject({ leadId: "L1", route: "WEBSITE", status: "SENT" });
+    await adClicks.purgeUnlinked(new Date(now.getTime() + 8 * DAY));
+    expect(t.metaEventOutbox.map((r: any) => r.id)).toEqual(["lead-row"]);
+    expect(t.adClick.map((c: any) => c.id)).toEqual(["c1"]);
+  });
+
+  it("a click-time Lead row linked before leadId was set on it (leadId still null) is kept while its click is linked", async () => {
+    const now = new Date();
+    const { adClicks, t } = setup({
+      clicks: [
+        { id: "linked", ref: "EEEE22", eventId: "e1", createdAt: now, leadId: "L1" },
+        { id: "unlinked", ref: "FFFF22", eventId: "e2", createdAt: now, leadId: null },
+      ],
+    });
+    t.metaEventOutbox.push(
+      { id: "legacy", route: "WEBSITE", leadId: null, adClickId: "linked", eventName: "Lead", createdAt: now },
+      { id: "stale", route: "WEBSITE", leadId: null, adClickId: "unlinked", eventName: "Lead", createdAt: now },
+    );
+    await adClicks.purgeUnlinked(new Date(now.getTime() + 8 * DAY));
+    expect(t.metaEventOutbox.map((r: any) => r.id)).toEqual(["legacy"]);
+  });
+
+  it("linking does not touch other outbox rows of the click or rows that already have a lead", async () => {
+    const { adClicks, t } = setup({ leads: [{ id: "L1", ctwaClid: null }] });
+    t.metaEventOutbox.push(
+      { id: "click-lead", route: "WEBSITE", leadId: null, adClickId: "c1", eventName: "Lead", createdAt: new Date() },
+      { id: "other-lead", route: "WEBSITE", leadId: "L9", adClickId: "c1", eventName: "Lead", createdAt: new Date() },
+    );
+    await adClicks.linkLead("L1", REF, null);
+    expect(t.metaEventOutbox.find((r: any) => r.id === "click-lead")!.leadId).toBe("L1");
+    expect(t.metaEventOutbox.find((r: any) => r.id === "other-lead")!.leadId).toBe("L9");
+  });
+
   it("a purged tap takes its click-time Lead row with it in the same run", async () => {
     const now = new Date();
     const { adClicks, t } = setup({
@@ -294,6 +332,7 @@ describe("retention", () => {
       fbc: "fb.1.1759900000000.IwAR1",
       fbp: "fb.1.1759900000000.1234567890",
       pageUrl: "https://link.monomiagency.com/?utm_campaign=FB-OKT1&fbclid=IwAR1",
+      referrer: "https://l.facebook.com/l.php?u=x&fbclid=IwAR1",
       campaignCode: "FB-OKT1",
     };
     const { adClicks, t } = setup({
@@ -305,7 +344,7 @@ describe("retention", () => {
     });
     expect(await adClicks.scrubLinkedClickPii(now)).toBe(1);
     const by = (id: string): any => t.adClick.find((c: any) => c.id === id);
-    expect(by("old")).toMatchObject({ clientIp: null, userAgent: null, fbclid: null, fbc: null, fbp: null, ref: "AAAA22", leadId: "L1", campaignCode: "FB-OKT1" });
+    expect(by("old")).toMatchObject({ clientIp: null, userAgent: null, fbclid: null, fbc: null, fbp: null, referrer: null, ref: "AAAA22", leadId: "L1", campaignCode: "FB-OKT1" });
     expect(by("old").pageUrl).toBe("https://link.monomiagency.com/?utm_campaign=FB-OKT1");
     expect(by("young")).toMatchObject(pii);
     expect(by("unlinked")).toMatchObject(pii); // unlinked rows are deleted by purgeUnlinked instead
@@ -319,6 +358,33 @@ describe("retention", () => {
     } finally {
       restore();
     }
+  });
+
+  it("rewrites every pageUrl past one batch (keyset batches), and nulls a URL it cannot clean instead of looping", async () => {
+    const now = new Date();
+    const old = new Date(now.getTime() - 100 * DAY);
+    const clicks: any[] = [];
+    for (let i = 0; i < 1205; i += 1) {
+      clicks.push({ id: `k${String(i).padStart(5, "0")}`, ref: null, createdAt: old, leadId: `L${i}`, pageUrl: `https://link.monomiagency.com/?a=${i}&fbclid=IwAR${i}` });
+    }
+    clicks.push({ id: "weird", ref: null, createdAt: old, leadId: "LW", pageUrl: "https://link.monomiagency.com/?xfbclid=1" });
+    const { adClicks, t } = setup({ clicks });
+    await adClicks.scrubLinkedClickPii(now);
+    expect(t.adClick.filter((c: any) => c.pageUrl && c.pageUrl.includes("fbclid="))).toHaveLength(0);
+    expect(t.adClick.find((c: any) => c.id === "k01204")!.pageUrl).toBe("https://link.monomiagency.com/?a=1204");
+    expect(t.adClick.find((c: any) => c.id === "weird")!.pageUrl).toBeNull();
+  });
+
+  it("stops the pageUrl rewrite when its time budget is spent (the next run continues)", async () => {
+    const now = new Date();
+    const old = new Date(now.getTime() - 100 * DAY);
+    const { adClicks, t } = setup({
+      clicks: [{ id: "k1", ref: null, createdAt: old, leadId: "L1", pageUrl: "https://link.monomiagency.com/?fbclid=IwAR1" }],
+    });
+    await adClicks.scrubLinkedClickPii(now, undefined, 0);
+    expect(t.adClick[0].pageUrl).toContain("fbclid=");
+    await adClicks.scrubLinkedClickPii(now);
+    expect(t.adClick[0].pageUrl).toBe("https://link.monomiagency.com/");
   });
 
   it("the nightly cron runs the purge and the PII scrub", async () => {

@@ -142,7 +142,9 @@ export function webSkipReason(
   now: Date,
 ): string | null {
   if (row.eventName === "LeadSubmitted") return SKIP_WEB_LEAD_AT_CLICK;
-  if (row.lead?.ctwaClid) return SKIP_WEB_HAS_CTWA;
+  // The click-time Lead is the website tap itself; linking its click to a
+  // CTWA lead later does not move it to the WhatsApp route.
+  if (row.eventName !== "Lead" && row.lead?.ctwaClid) return SKIP_WEB_HAS_CTWA;
   if (!row.adClick) return SKIP_WEB_NO_CLICK;
   if (now.getTime() - row.eventTime.getTime() > WEB_CAPI_MAX_AGE_MS) return SKIP_WEB_TOO_OLD;
   return null;

@@ -674,6 +674,8 @@ describe("WebCapiService lanes and the stale-before-enable rule", () => {
     const { svc, graph, prisma } = build(
       [
         outbox("oldLead", { status: "PENDING_CONFIG", eventTime: DAYS(2), createdAt: DAYS(2) }),
+        // a click-time Lead whose click was linked since (leadId set) is still a click-time Lead
+        outbox("oldLinkedLead", { leadId: "L1", status: "PENDING_CONFIG", eventTime: DAYS(2), createdAt: DAYS(2) }),
         outbox("freshLead", { status: "PENDING_CONFIG", eventTime: DAYS(0.5), createdAt: DAYS(0.5) }),
         outbox("oldStage", { leadId: "L1", eventName: "QualifiedLead", status: "PENDING_CONFIG", eventTime: DAYS(2), createdAt: DAYS(2) }),
       ],
@@ -686,6 +688,7 @@ describe("WebCapiService lanes and the stale-before-enable rule", () => {
     await svc.run(); // OFF -> READY
     const by = (id: string): any => prisma.tables.metaEventOutbox.find((x: any) => x.id === id);
     expect(by("oldLead")).toMatchObject({ status: "SKIPPED", lastError: SKIP_STALE_BEFORE_ENABLE });
+    expect(by("oldLinkedLead")).toMatchObject({ status: "SKIPPED", lastError: SKIP_STALE_BEFORE_ENABLE });
     expect(by("freshLead").status).toBe("SENT");
     expect(by("oldStage").status).toBe("SENT");
     expect(graph.calls.map((c) => c.body.data[0].event_name).sort()).toEqual(["Lead", "QualifiedLead"]);
@@ -693,6 +696,25 @@ describe("WebCapiService lanes and the stale-before-enable rule", () => {
     prisma.tables.metaEventOutbox.push(outbox("laterOld", { status: "PENDING_CONFIG", eventTime: DAYS(2), createdAt: DAYS(2) }));
     await svc.run();
     expect(by("laterOld").status).toBe("SENT");
+  });
+
+  it("a click-time Lead linked to a lead stays in the Lead lane, carries no lead PII, and is sent even if the lead has a ctwa_clid", async () => {
+    env(true);
+    const prisma = new FakePrisma({
+      lead: [{ id: "L1", name: "Budi", phone: "+6281234567890", ctwaClid: "ARAclid" }],
+      adClick: [{ id: "c0", ref: "K7QM2X", eventId: "evt-c0", ...click, createdAt: new Date(), leadId: "L1" }],
+      metaEventOutbox: [outbox("linkedLead", { leadId: "L1", status: "PENDING_CONFIG" })],
+    });
+    const graph = new FakeGraph().on("POST", new RegExp(`/${PIXEL}/events$`), (c: any) => ({ json: { events_received: c.body.data.length } }));
+    const svc = new WebCapiService(prisma as any, new WhatsAppGraphClient(graph.fetch as any));
+    const r = await svc.run();
+    expect(r.sent).toBe(1);
+    const e = graph.calls[0].body.data[0];
+    expect(e).toMatchObject({ event_name: "Lead", event_id: "evt-c0" });
+    expect(e.user_data.ph).toBeUndefined();
+    expect(e.user_data.external_id).toEqual([sha(VISIT)]);
+    // but a CTWA lead's stage events still never use the website route
+    expect(webSkipReason({ eventName: "QualifiedLead", eventTime: new Date(), adClick: {}, lead: { ctwaClid: "ARA" } }, new Date())).toBe(SKIP_WEB_HAS_CTWA);
   });
 
   it("a fresh service that boots READY applies the rule on its first run", async () => {

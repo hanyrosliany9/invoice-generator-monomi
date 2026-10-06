@@ -21,8 +21,11 @@ import { extractRefCode, normalizeRefCode } from "./ref-code";
 export const AD_CLICK_RETENTION_DAYS = 30;
 /** Visit rows without a WhatsApp tap can never be linked: kept only briefly. */
 export const AD_CLICK_NO_REF_RETENTION_HOURS = 48;
-/** Click-time website Lead rows (never linked to a CRM lead) are dropped after this. */
+/** Click-time website Lead rows whose click is still unlinked are dropped after this. */
 export const ORPHAN_WEB_EVENT_RETENTION_DAYS = 7;
+/** Time budget of one PII scrub run for the per-row pageUrl rewrite. */
+export const PII_SCRUB_BUDGET_MS = 20_000;
+const PII_SCRUB_BATCH = 500;
 /** A click-time Lead is forwarded only after a PageView this much earlier. */
 export const LEAD_MIN_PAGEVIEW_AGE_MS = 3000;
 /** Forwarded click-time Leads per network (IPv4 address / IPv6 /64) per hour. */
@@ -456,7 +459,8 @@ export class AdClickService {
   /**
    * Atomically attaches a click to a lead. Returns the click, or null when
    * the code is unknown, already linked to another lead, or the lead already
-   * has a click. Website events the lead had already earned while it was
+   * has a click. The click's own website Lead event row is tied to the lead
+   * (leadId), and website events the lead had already earned while it was
    * unlinked (skipped as "no click") are re-routed to the website route.
    */
   async linkInTx(tx: Tx, rawRef: string, leadId: string) {
@@ -475,6 +479,13 @@ export class AdClickService {
       data: { leadId, linkedAt: new Date() },
     });
     if (claimed.count === 0) return null;
+
+    // The click-time Lead row now belongs to the lead too (lead page, and the
+    // retention purge only drops click-time rows of unlinked clicks).
+    await tx.metaEventOutbox.updateMany({
+      where: { adClickId: click.id, route: "WEBSITE", eventName: "Lead", leadId: null },
+      data: { leadId },
+    });
 
     if (click.instagramHandle) {
       await tx.lead.updateMany({
@@ -575,8 +586,10 @@ export class AdClickService {
    * Unlinked clicks are only useful for linking:
    *  - visit rows without a WhatsApp tap (ref null) go after 48 hours;
    *  - unlinked taps (ref set) after AD_CLICK_RETENTION_DAYS;
-   *  - click-time website Lead rows (never tied to a CRM lead) after 7 days,
-   *    or as soon as their click is gone.
+   *  - click-time website Lead rows of a click that is still unlinked after
+   *    7 days, or as soon as their click is gone. Rows of a linked click are
+   *    kept (linkInTx sets their leadId; rows linked before that existed are
+   *    protected by the adClick.leadId check).
    * Returns the number of ad_clicks rows deleted.
    */
   async purgeUnlinked(now: Date = new Date()): Promise<number> {
@@ -597,21 +610,35 @@ export class AdClickService {
         leadId: null,
         OR: [
           { adClickId: null },
-          { createdAt: { lt: new Date(t - ORPHAN_WEB_EVENT_RETENTION_DAYS * DAY_MS) } },
+          {
+            adClick: { leadId: null },
+            createdAt: { lt: new Date(t - ORPHAN_WEB_EVENT_RETENTION_DAYS * DAY_MS) },
+          },
         ],
       },
     });
-    if (orphans.count) this.logger.log(`Purged ${orphans.count} unlinked website Lead event row(s)`);
+    if (orphans.count) {
+      this.logger.log(
+        `Purged ${orphans.count} website Lead event row(s) of unlinked or deleted ad clicks`,
+      );
+    }
     return res.count;
   }
 
   /**
    * Linked clicks older than AD_CLICK_PII_RETENTION_DAYS (default 90) lose the
-   * device identifiers: clientIp, userAgent, fbclid, fbc, fbp, and the fbclid
-   * parameter of pageUrl. Later website stage events for such a lead go out
-   * with the hashed lead data and external_id only. Returns the rows changed.
+   * device identifiers: clientIp, userAgent, fbclid, fbc, fbp, referrer, and
+   * the fbclid parameter of pageUrl (rewritten in batches until done or
+   * PII_SCRUB_BUDGET_MS is spent; the next night continues). Later website
+   * stage events for such a lead go out with the hashed lead data and
+   * external_id only. Returns the rows whose identifiers were nulled.
    */
-  async scrubLinkedClickPii(now: Date = new Date(), days?: number): Promise<number> {
+  async scrubLinkedClickPii(
+    now: Date = new Date(),
+    days?: number,
+    budgetMs: number = PII_SCRUB_BUDGET_MS,
+  ): Promise<number> {
+    const started = Date.now();
     const retention = days ?? this.config().piiRetentionDays;
     const cutoff = new Date(now.getTime() - retention * DAY_MS);
     const res = await this.prisma.adClick.updateMany({
@@ -624,20 +651,35 @@ export class AdClickService {
           { fbclid: { not: null } },
           { fbc: { not: null } },
           { fbp: { not: null } },
+          { referrer: { not: null } },
         ],
       },
-      data: { clientIp: null, userAgent: null, fbclid: null, fbc: null, fbp: null },
+      data: { clientIp: null, userAgent: null, fbclid: null, fbc: null, fbp: null, referrer: null },
     });
-    const withClickId = await this.prisma.adClick.findMany({
-      where: { leadId: { not: null }, createdAt: { lt: cutoff }, pageUrl: { contains: "fbclid=" } },
-      select: { id: true, pageUrl: true },
-      take: 1000,
-    });
-    for (const row of withClickId) {
-      await this.prisma.adClick.update({
-        where: { id: row.id },
-        data: { pageUrl: row.pageUrl ? stripClickIdFromUrl(row.pageUrl) : null },
+    // Keyset pagination by id: every row is visited at most once per run, so
+    // the loop ends even when a URL cannot be cleaned (it is nulled instead).
+    let afterId: string | null = null;
+    while (Date.now() - started < budgetMs) {
+      const batch: Array<{ id: string; pageUrl: string | null }> = await this.prisma.adClick.findMany({
+        where: {
+          leadId: { not: null },
+          createdAt: { lt: cutoff },
+          pageUrl: { contains: "fbclid=" },
+          ...(afterId ? { id: { gt: afterId } } : {}),
+        },
+        select: { id: true, pageUrl: true },
+        orderBy: { id: "asc" },
+        take: PII_SCRUB_BATCH,
       });
+      for (const row of batch) {
+        const cleaned = row.pageUrl ? stripClickIdFromUrl(row.pageUrl) : null;
+        await this.prisma.adClick.update({
+          where: { id: row.id },
+          data: { pageUrl: cleaned && !cleaned.includes("fbclid=") ? cleaned : null },
+        });
+      }
+      if (batch.length < PII_SCRUB_BATCH) break;
+      afterId = batch[batch.length - 1].id;
     }
     return res.count;
   }
