@@ -3,7 +3,8 @@ import { chooseRoute, CrmOutboxService } from "../crm/crm-outbox.service";
 import { CrmFlowService } from "../crm/crm-flow.service";
 import { CrmLeadsService } from "../crm/crm-leads.service";
 import { AdClickService, AD_CLICK_RETENTION_DAYS } from "./ad-click.service";
-import { FakePrisma } from "../whatsapp/testing/whatsapp-fakes.helper-spec";
+import { FakePrisma, withEnv } from "../whatsapp/testing/whatsapp-fakes.helper-spec";
+import { DEFAULT_PII_RETENTION_DAYS } from "./ad-tracking.config";
 import { webSkipReason } from "./web-capi.payload";
 import { skipReason as bmSkipReason, SKIP_NO_CLID } from "../whatsapp/meta-capi.service";
 
@@ -232,6 +233,101 @@ describe("retention", () => {
     });
     expect(await adClicks.purgeUnlinked(now)).toBe(1);
     expect(t.adClick.map((c: any) => c.id).sort()).toEqual(["fresh", "oldLinked"]);
+  });
+
+  it("visit rows without a WhatsApp tap (ref null) go after 48 h; taps keep the 30 days; linked rows stay", async () => {
+    const now = new Date();
+    const ago = (h: number) => new Date(now.getTime() - h * 3600_000);
+    const { adClicks, t } = setup({
+      clicks: [
+        { id: "visitOld", ref: null, visitId: "v1", createdAt: ago(49), leadId: null },
+        { id: "visitNew", ref: null, visitId: "v2", createdAt: ago(47), leadId: null },
+        { id: "tap3d", ref: "DDDD22", eventId: "d", createdAt: ago(72), leadId: null },
+        { id: "visitLinked", ref: null, visitId: "v3", createdAt: ago(24 * 60), leadId: "L1" },
+      ],
+    });
+    expect(await adClicks.purgeUnlinked(now)).toBe(1);
+    expect(t.adClick.map((c: any) => c.id).sort()).toEqual(["tap3d", "visitLinked", "visitNew"]);
+  });
+
+  it("drops click-time website Lead rows that are orphaned (no click) or older than 7 days; keeps CRM and fresh ones", async () => {
+    const now = new Date();
+    const ago = (d: number) => new Date(now.getTime() - d * DAY);
+    const { adClicks, t } = setup({
+      clicks: [{ id: "c1", ref: REF, eventId: "e1", createdAt: ago(1), leadId: null }],
+    });
+    t.metaEventOutbox.push(
+      { id: "fresh", route: "WEBSITE", leadId: null, adClickId: "c1", eventName: "Lead", createdAt: ago(1) },
+      { id: "old", route: "WEBSITE", leadId: null, adClickId: "c1", eventName: "Lead", createdAt: ago(8) },
+      { id: "orphan", route: "WEBSITE", leadId: null, adClickId: null, eventName: "Lead", createdAt: ago(0) },
+      { id: "crm", route: "WEBSITE", leadId: "L1", adClickId: null, eventName: "Purchase", createdAt: ago(30) },
+      { id: "bm", route: "BUSINESS_MESSAGING", leadId: null, adClickId: null, eventName: "LeadSubmitted", createdAt: ago(30) },
+    );
+    await adClicks.purgeUnlinked(now);
+    expect(t.metaEventOutbox.map((r: any) => r.id).sort()).toEqual(["bm", "crm", "fresh"]);
+  });
+
+  it("a purged tap takes its click-time Lead row with it in the same run", async () => {
+    const now = new Date();
+    const { adClicks, t } = setup({
+      clicks: [{ id: "c1", ref: REF, eventId: "e1", createdAt: new Date(now.getTime() - 31 * DAY), leadId: null }],
+    });
+    t.metaEventOutbox.push({ id: "o1", route: "WEBSITE", leadId: null, adClickId: "c1", eventName: "Lead", createdAt: new Date(now.getTime() - DAY) });
+    // the real DB nulls adClickId (onDelete: SetNull); emulate it in the fake
+    const origDeleteMany = (adClicks as any).prisma.adClick.deleteMany;
+    (adClicks as any).prisma.adClick.deleteMany = async (args: any) => {
+      const r = await origDeleteMany(args);
+      const kept = new Set((adClicks as any).prisma.tables.adClick.map((c: any) => c.id));
+      for (const o of (adClicks as any).prisma.tables.metaEventOutbox) if (o.adClickId && !kept.has(o.adClickId)) o.adClickId = null;
+      return r;
+    };
+    expect(await adClicks.purgeUnlinked(now)).toBe(1);
+    expect(t.metaEventOutbox).toHaveLength(0);
+  });
+
+  it(`nulls ip / user agent / fbclid / fbc / fbp on linked clicks after ${DEFAULT_PII_RETENTION_DAYS} days (and fbclid in pageUrl); leaves the rest`, async () => {
+    const now = new Date();
+    const pii = {
+      clientIp: "203.0.113.9",
+      userAgent: "Mozilla/5.0 (Linux; Android 14)",
+      fbclid: "IwAR1",
+      fbc: "fb.1.1759900000000.IwAR1",
+      fbp: "fb.1.1759900000000.1234567890",
+      pageUrl: "https://link.monomiagency.com/?utm_campaign=FB-OKT1&fbclid=IwAR1",
+      campaignCode: "FB-OKT1",
+    };
+    const { adClicks, t } = setup({
+      clicks: [
+        { id: "old", ref: "AAAA22", eventId: "a", createdAt: new Date(now.getTime() - 91 * DAY), leadId: "L1", ...pii },
+        { id: "young", ref: "BBBB22", eventId: "b", createdAt: new Date(now.getTime() - 89 * DAY), leadId: "L2", ...pii },
+        { id: "unlinked", ref: "CCCC22", eventId: "c", createdAt: new Date(now.getTime() - 91 * DAY), leadId: null, ...pii },
+      ],
+    });
+    expect(await adClicks.scrubLinkedClickPii(now)).toBe(1);
+    const by = (id: string): any => t.adClick.find((c: any) => c.id === id);
+    expect(by("old")).toMatchObject({ clientIp: null, userAgent: null, fbclid: null, fbc: null, fbp: null, ref: "AAAA22", leadId: "L1", campaignCode: "FB-OKT1" });
+    expect(by("old").pageUrl).toBe("https://link.monomiagency.com/?utm_campaign=FB-OKT1");
+    expect(by("young")).toMatchObject(pii);
+    expect(by("unlinked")).toMatchObject(pii); // unlinked rows are deleted by purgeUnlinked instead
+    // idempotent
+    expect(await adClicks.scrubLinkedClickPii(now)).toBe(0);
+    // AD_CLICK_PII_RETENTION_DAYS shortens it
+    const restore = withEnv({ AD_CLICK_PII_RETENTION_DAYS: "30" });
+    try {
+      expect(await adClicks.scrubLinkedClickPii(now)).toBe(1);
+      expect(by("young").clientIp).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("the nightly cron runs the purge and the PII scrub", async () => {
+    const { adClicks } = setup({ clicks: [] });
+    const purge = jest.spyOn(adClicks, "purgeUnlinked");
+    const scrub = jest.spyOn(adClicks, "scrubLinkedClickPii");
+    await adClicks.purgeCron();
+    expect(purge).toHaveBeenCalledTimes(1);
+    expect(scrub).toHaveBeenCalledTimes(1);
   });
 });
 

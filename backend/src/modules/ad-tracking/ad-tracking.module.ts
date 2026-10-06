@@ -1,10 +1,12 @@
 import { Logger, Module, OnModuleInit } from "@nestjs/common";
+import { RedisThrottlerStorageModule } from "../../common/throttler/redis-throttler.module";
 import { PrismaModule } from "../prisma/prisma.module";
 import { WhatsAppGraphClient } from "../whatsapp/whatsapp-graph.client";
 import { AdClickService } from "./ad-click.service";
 import { AdTrackingAdminController } from "./ad-tracking-admin.controller";
 import { reportAdTrackingConfig } from "./ad-tracking.config";
 import { PublicTrackController } from "./public-track.controller";
+import { RedisTrackCounters, TrackCounters } from "./track-limits";
 import { WebCapiService } from "./web-capi.service";
 
 /**
@@ -15,9 +17,15 @@ import { WebCapiService } from "./web-capi.service";
  * and linked, and events wait as PENDING_CONFIG.
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, RedisThrottlerStorageModule],
   controllers: [PublicTrackController, AdTrackingAdminController],
-  providers: [AdClickService, WebCapiService, WhatsAppGraphClient],
+  providers: [
+    AdClickService,
+    WebCapiService,
+    WhatsAppGraphClient,
+    // abuse counters (global new-row cap, Lead gating) on the app's Redis
+    { provide: TrackCounters, useClass: RedisTrackCounters },
+  ],
   exports: [AdClickService],
 })
 export class AdTrackingModule implements OnModuleInit {

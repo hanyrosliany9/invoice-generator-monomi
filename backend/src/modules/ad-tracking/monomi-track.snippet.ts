@@ -11,7 +11,7 @@
  * no backticks / template literals (this file wraps it in one), never throw,
  * never delay opening WhatsApp, and never put anything secret in it.
  */
-export const MONOMI_TRACK_VERSION = "2.0.0";
+export const MONOMI_TRACK_VERSION = "2.1.0";
 
 export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSION} - first-party tracker, events are sent server-side */
 (function () {
@@ -72,22 +72,13 @@ export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSIO
       return m ? decodeURIComponent(m[1]) : "";
     } catch (e) { return ""; }
   }
-  // Sets a cookie on the registrable domain (so link.example.com and example.com
-  // share it): the shortest parent domain the browser accepts wins (public
-  // suffixes such as co.id are refused by the browser), else host-only.
+  // Host-only first-party cookie (no Domain attribute): it stays on the
+  // landing page host and is never sent to sibling subdomains.
   function setCookie(name, value, days) {
     try {
       var exp = new Date(Date.now() + days * 86400000).toUTCString();
-      var base = name + "=" + encodeURIComponent(value) + "; expires=" + exp + "; path=/; SameSite=Lax" +
+      document.cookie = name + "=" + encodeURIComponent(value) + "; expires=" + exp + "; path=/; SameSite=Lax" +
         (location.protocol === "https:" ? "; Secure" : "");
-      var parts = location.hostname.split(".");
-      if (parts.length > 1 && !/^[\d.]+$/.test(location.hostname)) {
-        for (var i = parts.length - 2; i >= 0; i--) {
-          document.cookie = base + "; domain=" + parts.slice(i).join(".");
-          if (getCookie(name) === value) return;
-        }
-      }
-      document.cookie = base;
     } catch (e) {}
   }
   function store(area, key, value) {
@@ -136,8 +127,9 @@ export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSIO
   if (!utm.campaign && defaultCampaign) utm.campaign = defaultCampaign;
 
   // ---- sending ----
+  // https only: an http:// link to a WhatsApp host is left alone (no code).
   function isWhatsappUrl(u) {
-    return WA_HOSTS.indexOf(u.hostname.toLowerCase()) !== -1;
+    return u.protocol === "https:" && WA_HOSTS.indexOf(u.hostname.toLowerCase()) !== -1;
   }
   function clip(v, n) {
     return typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, n) : "";

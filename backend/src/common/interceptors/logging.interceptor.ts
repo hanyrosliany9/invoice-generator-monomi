@@ -19,10 +19,10 @@ export class LoggingInterceptor implements NestInterceptor {
     const { method, headers, body } = request;
     const url = redactUrl(String(request.url ?? ""));
     const userAgent = headers["user-agent"] || "";
-    const ip =
-      headers["x-forwarded-for"] ||
-      headers["x-real-ip"] ||
-      request.connection.remoteAddress;
+    // req.ip honours the app's trust-proxy setting; the raw X-Forwarded-For /
+    // X-Real-IP headers are client-controlled and would let anyone forge or
+    // inject the logged address.
+    const ip = request.ip ?? request.socket?.remoteAddress ?? "-";
 
     const now = Date.now();
 

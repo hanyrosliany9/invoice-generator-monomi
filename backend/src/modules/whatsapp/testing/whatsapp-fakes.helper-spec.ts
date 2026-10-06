@@ -61,7 +61,7 @@ const UNIQUE: Record<string, string[]> = {
   whatsAppConversation: ["contactId"],
   whatsAppWebhookEvent: ["payloadHash"],
   metaEventOutbox: ["dedupeKey"],
-  adClick: ["ref", "eventId", "leadId"],
+  adClick: ["ref", "eventId", "leadId", "visitKey"],
   campaign: ["code"],
 };
 
@@ -125,6 +125,13 @@ const DEFAULTS: Record<string, () => Row> = {
   campaign: () => ({ metaAdIds: [] }),
   adClick: () => ({
     visitId: null,
+    visitKey: null,
+    leadForwardedAt: null,
+    clientIp: null,
+    userAgent: null,
+    fbclid: null,
+    fbc: null,
+    fbp: null,
     ref: null,
     eventId: null,
     instagramHandle: null,

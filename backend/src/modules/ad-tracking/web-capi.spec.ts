@@ -8,8 +8,10 @@ import {
   SKIP_WEB_HAS_CTWA,
   SKIP_WEB_LEAD_AT_CLICK,
   SKIP_WEB_NO_CLICK,
+  SKIP_STALE_BEFORE_ENABLE,
   SKIP_WEB_TOO_OLD,
   splitName,
+  USER_AGENT_MAX,
   webSkipReason,
 } from "./web-capi.payload";
 import { VISIT_QUEUE_MAX, WEB_CAPI_MAX_BATCH, WebCapiService } from "./web-capi.service";
@@ -475,5 +477,230 @@ describe("WebCapiService visit-event batches", () => {
     const svc = build(okGraph());
     for (let i = 0; i < VISIT_QUEUE_MAX; i += 1) svc.enqueueVisitEvent(visit(i));
     expect(svc.enqueueVisitEvent(visit(99999))).toBe(false);
+  });
+});
+
+// A user agent that IS a Graph path: the shared denylist refuses any request
+// carrying it ("register" segment), so it must never poison other events.
+const POISON_UA = "123456789/register";
+
+describe("Graph denylist + page URL hardening (website sender)", () => {
+  const restore: Array<() => void> = [];
+  afterEach(() => restore.splice(0).forEach((r) => r()));
+  const enable = (extra: Record<string, string | undefined> = {}) =>
+    restore.push(
+      withEnv({
+        NODE_ENV: "test",
+        META_WEB_CAPI_ENABLED: "true",
+        META_PIXEL_ID: PIXEL,
+        META_WEB_CAPI_TOKEN: TOKEN,
+        META_WEB_CAPI_TEST_EVENT_CODE: undefined,
+        META_WEB_CAPI_GRAPH_BASE_URL: undefined,
+        LANDING_PAGE_URL: undefined,
+        PUBLIC_TRACK_ALLOWED_ORIGINS: undefined,
+        ...extra,
+      }),
+    );
+  const okGraph = () =>
+    new FakeGraph().on("POST", new RegExp(`/${PIXEL}/events$`), (c: any) => ({ json: { events_received: c.body.data.length, fbtrace_id: "T" } }));
+  const visit = (i: number, over: Record<string, unknown> = {}) => ({
+    name: "PageView" as const,
+    eventId: `evt-${i}-0000`,
+    eventTime: new Date(),
+    click: { ...click, visitId: `visit-${i}-00000000`, ...over },
+  });
+
+  it("a visit event that fails the denylist is dropped at enqueue; the batch with the others is still sent", async () => {
+    enable();
+    const graph = okGraph();
+    const svc = new WebCapiService(new FakePrisma() as any, new WhatsAppGraphClient(graph.fetch as any));
+    expect(svc.enqueueVisitEvent(visit(1))).toBe(true);
+    expect(svc.enqueueVisitEvent(visit(2, { userAgent: POISON_UA }))).toBe(false);
+    expect(svc.enqueueVisitEvent(visit(3))).toBe(true);
+    const r = await svc.flushVisitEvents();
+    expect(r).toMatchObject({ sent: 2, requests: 1, retrying: 0 });
+    expect(graph.calls[0].body.data.map((e: any) => e.event_id)).toEqual(["evt-1-0000", "evt-3-0000"]);
+  });
+
+  it("if a poisoned event reaches a batch anyway, ForbiddenGraphEndpointError is permanent: it is dropped (never retried) and the rest go out in the same flush", async () => {
+    enable();
+    const graph = okGraph();
+    const svc = new WebCapiService(new FakePrisma() as any, new WhatsAppGraphClient(graph.fetch as any));
+    svc.enqueueVisitEvent(visit(1));
+    svc.enqueueVisitEvent(visit(3));
+    const poisoned = buildWebEvent({ eventName: "PageView", eventTime: new Date(), eventId: "evt-2-0000" }, { ...click, userAgent: POISON_UA }, null);
+    (svc as any).visitQueue.splice(1, 0, { event: poisoned, eventTime: new Date(), attempts: 0 });
+    const r = await svc.flushVisitEvents();
+    expect(r).toMatchObject({ sent: 2, dropped: 1, retrying: 0 });
+    expect(svc.queuedVisitEvents).toBe(0);
+    expect(graph.calls).toHaveLength(1); // the refused request never left the process
+    expect(graph.calls[0].body.data.map((e: any) => e.event_id)).toEqual(["evt-1-0000", "evt-3-0000"]);
+  });
+
+  it("outbox path: a denylisted event is FAILED at once (no retry, no request); other rows are sent", async () => {
+    enable();
+    const graph = okGraph();
+    const now = Date.now();
+    const prisma = new FakePrisma({
+      lead: [{ id: "L1", name: "Budi", phone: "+6281234567890", ctwaClid: null }],
+      adClick: [
+        { id: "bad", ref: "K7QM2X", eventId: "evt-bad-1", ...click, userAgent: POISON_UA, createdAt: new Date(now - MIN), leadId: null },
+        { id: "good", ref: "ABCD23", eventId: "evt-good-1", ...click, createdAt: new Date(now - MIN), leadId: "L1" },
+      ],
+      metaEventOutbox: [
+        { id: "o1", leadId: null, route: "WEBSITE", adClickId: "bad", eventName: "Lead", eventTime: new Date(now - MIN), status: "QUEUED", payload: {}, attempts: 0, nextTryAt: null, createdAt: new Date(now - MIN) },
+        { id: "o2", leadId: "L1", route: "WEBSITE", adClickId: "good", eventName: "QualifiedLead", eventTime: new Date(now - MIN), status: "QUEUED", payload: {}, attempts: 0, nextTryAt: null, createdAt: new Date(now - MIN) },
+      ],
+    });
+    const svc = new WebCapiService(prisma as any, new WhatsAppGraphClient(graph.fetch as any));
+    const r = await svc.run();
+    expect(r).toMatchObject({ failed: 1, sent: 1, retrying: 0 });
+    const o1: any = prisma.tables.metaEventOutbox.find((x: any) => x.id === "o1");
+    expect(o1).toMatchObject({ status: "FAILED", attempts: 1, nextTryAt: null, inFlightAt: null });
+    expect(o1.lastError).toMatch(/Blocked Graph API call/);
+    expect(graph.calls).toHaveLength(1);
+    expect(graph.calls[0].body.data[0].event_name).toBe("QualifiedLead");
+  });
+
+  it("a stored page URL from another origin is never forwarded: Meta gets LANDING_PAGE_URL", async () => {
+    enable({ LANDING_PAGE_URL: "https://lp.monomiagency.com/promo" });
+    const graph = okGraph();
+    const now = Date.now();
+    const prisma = new FakePrisma({
+      adClick: [{ id: "c1", ref: "K7QM2X", eventId: "evt-click-1", ...click, pageUrl: "https://evil.example.com/x", createdAt: new Date(now - MIN), leadId: null }],
+      metaEventOutbox: [
+        { id: "o1", leadId: null, route: "WEBSITE", adClickId: "c1", eventName: "Lead", eventTime: new Date(now - MIN), status: "PENDING_CONFIG", payload: {}, attempts: 0, nextTryAt: null, createdAt: new Date(now - MIN) },
+      ],
+    });
+    const svc = new WebCapiService(prisma as any, new WhatsAppGraphClient(graph.fetch as any));
+    await svc.run();
+    expect(graph.calls[0].body.data[0].event_source_url).toBe("https://lp.monomiagency.com");
+    // and on the visit path
+    svc.enqueueVisitEvent(visit(1, { pageUrl: "https://evil.example.com/y" }));
+    svc.enqueueVisitEvent(visit(2));
+    await svc.flushVisitEvents();
+    expect(graph.calls[1].body.data.map((e: any) => e.event_source_url)).toEqual(["https://lp.monomiagency.com", click.pageUrl]);
+  });
+
+  it("clamps the user agent sent to Meta", () => {
+    const ev: any = buildWebEvent({ eventName: "PageView", eventTime: new Date(), eventId: "e" }, { ...click, userAgent: "Mozilla/5.0 " + "x".repeat(2000) }, null);
+    expect(ev.user_data.client_user_agent.length).toBe(USER_AGENT_MAX);
+  });
+});
+
+describe("WebCapiService lanes and the stale-before-enable rule", () => {
+  const restore: Array<() => void> = [];
+  afterEach(() => restore.splice(0).forEach((r) => r()));
+  const env = (enabled: boolean) =>
+    restore.push(
+      withEnv({
+        NODE_ENV: "test",
+        META_WEB_CAPI_ENABLED: enabled ? "true" : undefined,
+        META_PIXEL_ID: PIXEL,
+        META_WEB_CAPI_TOKEN: TOKEN,
+        META_WEB_CAPI_TEST_EVENT_CODE: undefined,
+        META_WEB_CAPI_GRAPH_BASE_URL: undefined,
+      }),
+    );
+
+  function build(rows: any[], clicks: any[]) {
+    const prisma = new FakePrisma({
+      lead: [{ id: "L1", name: "Budi", phone: "+6281234567890", ctwaClid: null }],
+      adClick: clicks,
+      metaEventOutbox: rows,
+    });
+    const graph = new FakeGraph().on("POST", new RegExp(`/${PIXEL}/events$`), (c: any) => ({ json: { events_received: c.body.data.length, fbtrace_id: "T" } }));
+    return { prisma, graph, svc: new WebCapiService(prisma as any, new WhatsAppGraphClient(graph.fetch as any)) };
+  }
+  const outbox = (id: string, over: Record<string, any>) => ({
+    id,
+    leadId: null,
+    route: "WEBSITE",
+    adClickId: "c0",
+    eventName: "Lead",
+    eventTime: new Date(Date.now() - 30 * MIN),
+    status: "QUEUED",
+    payload: {},
+    attempts: 0,
+    nextTryAt: null,
+    createdAt: new Date(Date.now() - 30 * MIN),
+    ...over,
+  });
+
+  it("CRM stage events never wait behind a click-time Lead backlog (stage lane first, Leads interleaved one batch at a time)", async () => {
+    env(true);
+    const clicks = [{ id: "c0", ref: "K7QM2X", eventId: "evt-c0", ...click, createdAt: new Date(), leadId: "L1" }];
+    // 1,200 older Leads: more than one run sends (20 rounds x 50)
+    const rows: any[] = [];
+    for (let i = 0; i < 1200; i += 1) {
+      rows.push(outbox(`lead${i}`, { eventTime: new Date(Date.now() - 60 * MIN + i), createdAt: new Date(Date.now() - 60 * MIN + i) }));
+    }
+    rows.push(outbox("qual", { leadId: "L1", eventName: "QualifiedLead", eventTime: new Date(Date.now() - MIN), createdAt: new Date(Date.now() - MIN) }));
+    rows.push(outbox("buy", { leadId: "L1", eventName: "Purchase", value: 5, status: "PENDING_CONFIG", eventTime: new Date(Date.now() - MIN), createdAt: new Date(Date.now() - MIN) }));
+    const { svc, graph, prisma } = build(rows, clicks);
+    const r = await svc.run();
+    const names = graph.calls.map((c) => c.body.data[0].event_name);
+    expect(names.slice(0, 2).sort()).toEqual(["Purchase", "QualifiedLead"]);
+    expect(prisma.tables.metaEventOutbox.find((x: any) => x.id === "qual")!.status).toBe("SENT");
+    expect(prisma.tables.metaEventOutbox.find((x: any) => x.id === "buy")!.status).toBe("SENT");
+    expect(r.sent).toBe(1002); // 2 stage + 20 rounds x 50 Leads; the rest wait for the next run
+    expect(prisma.tables.metaEventOutbox.filter((x: any) => x.status === "QUEUED")).toHaveLength(200);
+  });
+
+  it("a stage event created during a Lead backlog goes out before the remaining Leads", async () => {
+    env(true);
+    const clicks = [{ id: "c0", ref: "K7QM2X", eventId: "evt-c0", ...click, createdAt: new Date(), leadId: "L1" }];
+    const rows: any[] = [];
+    for (let i = 0; i < 120; i += 1) rows.push(outbox(`lead${i}`, { eventTime: new Date(Date.now() - 60 * MIN + i) }));
+    const { svc, graph, prisma } = build(rows, clicks);
+    let injected = false;
+    graph.on("POST", new RegExp(`/${PIXEL}/events$`), (c: any) => {
+      if (!injected && graph.calls.length === 10) {
+        injected = true;
+        prisma.tables.metaEventOutbox.push(outbox("late-qual", { leadId: "L1", eventName: "QualifiedLead", eventTime: new Date() }));
+      }
+      return { json: { events_received: c.body.data.length } };
+    });
+    await svc.run();
+    const order = graph.calls.map((c) => c.body.data[0].event_name);
+    // sent right after the current Lead batch (50), not after all 120 Leads
+    expect(order.indexOf("QualifiedLead")).toBe(50);
+  });
+
+  it("first READY run skips click-time Leads that waited > 24 h as SKIP_STALE_BEFORE_ENABLE; fresh ones and stage events are sent; later READY runs do not skip", async () => {
+    env(false);
+    const DAYS = (d: number) => new Date(Date.now() - d * DAY);
+    const clicks = [{ id: "c0", ref: "K7QM2X", eventId: "evt-c0", ...click, createdAt: DAYS(3), leadId: "L1" }];
+    const { svc, graph, prisma } = build(
+      [
+        outbox("oldLead", { status: "PENDING_CONFIG", eventTime: DAYS(2), createdAt: DAYS(2) }),
+        outbox("freshLead", { status: "PENDING_CONFIG", eventTime: DAYS(0.5), createdAt: DAYS(0.5) }),
+        outbox("oldStage", { leadId: "L1", eventName: "QualifiedLead", status: "PENDING_CONFIG", eventTime: DAYS(2), createdAt: DAYS(2) }),
+      ],
+      clicks,
+    );
+    expect((await svc.run()).enabled).toBe(false); // OFF: nothing touched
+    expect(prisma.tables.metaEventOutbox.every((x: any) => x.status === "PENDING_CONFIG")).toBe(true);
+    restore.splice(0).forEach((r) => r());
+    env(true);
+    await svc.run(); // OFF -> READY
+    const by = (id: string): any => prisma.tables.metaEventOutbox.find((x: any) => x.id === id);
+    expect(by("oldLead")).toMatchObject({ status: "SKIPPED", lastError: SKIP_STALE_BEFORE_ENABLE });
+    expect(by("freshLead").status).toBe("SENT");
+    expect(by("oldStage").status).toBe("SENT");
+    expect(graph.calls.map((c) => c.body.data[0].event_name).sort()).toEqual(["Lead", "QualifiedLead"]);
+    // READY -> READY: no further stale skipping
+    prisma.tables.metaEventOutbox.push(outbox("laterOld", { status: "PENDING_CONFIG", eventTime: DAYS(2), createdAt: DAYS(2) }));
+    await svc.run();
+    expect(by("laterOld").status).toBe("SENT");
+  });
+
+  it("a fresh service that boots READY applies the rule on its first run", async () => {
+    env(true);
+    const clicks = [{ id: "c0", ref: "K7QM2X", eventId: "evt-c0", ...click, createdAt: new Date(), leadId: null }];
+    const { svc, prisma } = build([outbox("old", { status: "PENDING_CONFIG", eventTime: new Date(Date.now() - 2 * DAY), createdAt: new Date(Date.now() - 2 * DAY) })], clicks);
+    const r = await svc.run();
+    expect(r.skipped).toBe(1);
+    expect(prisma.tables.metaEventOutbox[0]).toMatchObject({ status: "SKIPPED", lastError: SKIP_STALE_BEFORE_ENABLE });
   });
 });

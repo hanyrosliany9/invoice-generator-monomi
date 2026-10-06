@@ -23,6 +23,12 @@ import { looksLikePlaceholder } from "../whatsapp/whatsapp.config";
  *                                  localhost is also accepted outside production)
  *  - LANDING_PAGE_URL              base of "Copy ad link" (default
  *                                  https://link.monomiagency.com)
+ *  - PUBLIC_TRACK_MAX_NEW_PER_MIN   global cap on NEW ad_clicks rows per minute
+ *                                  (all instances, Redis); above it events are
+ *                                  acknowledged and dropped. Default 600.
+ *  - AD_CLICK_PII_RETENTION_DAYS   days after which clientIp / userAgent /
+ *                                  fbclid / fbc / fbp are nulled on linked
+ *                                  ad_clicks rows. Default 90.
  *  - META_GRAPH_VERSION            shared, default v26.0
  *  - META_WEB_CAPI_GRAPH_BASE_URL  DEV ONLY fake Graph server (ignored in production)
  */
@@ -30,6 +36,8 @@ import { looksLikePlaceholder } from "../whatsapp/whatsapp.config";
 export const DEFAULT_LANDING_PAGE_URL = "https://link.monomiagency.com";
 export const DEFAULT_TRACK_ORIGINS = ["https://link.monomiagency.com"];
 export const PIXEL_ID_RE = /^\d{5,25}$/;
+export const DEFAULT_MAX_NEW_CLICKS_PER_MIN = 600;
+export const DEFAULT_PII_RETENTION_DAYS = 90;
 
 export type WebCapiState = "OFF" | "INCOMPLETE" | "INVALID" | "READY";
 
@@ -44,6 +52,10 @@ export interface AdTrackingConfig {
   allowedOrigins: string[];
   allowLocalhost: boolean;
   landingPageUrl: string;
+  /** Global cap on new ad_clicks rows per minute (PUBLIC_TRACK_MAX_NEW_PER_MIN). */
+  maxNewClicksPerMin: number;
+  /** Linked clicks lose ip / user agent / Meta ids after this many days. */
+  piiRetentionDays: number;
   isProduction: boolean;
   /** Env var names + what is wrong; never values. */
   problems: string[];
@@ -67,6 +79,25 @@ export function toHttpOrigin(value: string | null | undefined): string | null {
   } catch {
     return null;
   }
+}
+
+/** Whole number within [min, max] from an env value; else the default (+ a problem when set but bad). */
+function intSetting(
+  raw: string | undefined,
+  name: string,
+  def: number,
+  min: number,
+  max: number,
+  problems: string[],
+): number {
+  const v = clean(raw);
+  if (v === null) return def;
+  if (/^\d{1,9}$/.test(v)) {
+    const n = Number(v);
+    if (n >= min && n <= max) return n;
+  }
+  problems.push(`${name} must be a whole number from ${min} to ${max}`);
+  return def;
 }
 
 const LOCAL_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/;
@@ -137,6 +168,23 @@ export function resolveAdTrackingConfig(
   const landingPageUrl =
     toHttpOrigin(clean(env.LANDING_PAGE_URL)) ?? DEFAULT_LANDING_PAGE_URL;
 
+  const maxNewClicksPerMin = intSetting(
+    env.PUBLIC_TRACK_MAX_NEW_PER_MIN,
+    "PUBLIC_TRACK_MAX_NEW_PER_MIN",
+    DEFAULT_MAX_NEW_CLICKS_PER_MIN,
+    1,
+    1_000_000,
+    problems,
+  );
+  const piiRetentionDays = intSetting(
+    env.AD_CLICK_PII_RETENTION_DAYS,
+    "AD_CLICK_PII_RETENTION_DAYS",
+    DEFAULT_PII_RETENTION_DAYS,
+    1,
+    3650,
+    problems,
+  );
+
   const state: WebCapiState = !enabled
     ? "OFF"
     : invalid
@@ -156,6 +204,8 @@ export function resolveAdTrackingConfig(
     allowedOrigins,
     allowLocalhost: !isProduction,
     landingPageUrl,
+    maxNewClicksPerMin,
+    piiRetentionDays,
     isProduction,
     problems,
   };
@@ -183,4 +233,17 @@ export function reportAdTrackingConfig(): AdTrackingConfig | null {
 export function isOriginAllowed(origin: string, cfg: AdTrackingConfig): boolean {
   if (cfg.allowedOrigins.includes(origin)) return true;
   return cfg.allowLocalhost && isLocalOrigin(origin);
+}
+
+/**
+ * The page URL reported by the browser, kept only when its origin is one of
+ * the allowed landing-page origins (the same list as CORS). Anything else is
+ * attacker-chosen text and is neither stored nor forwarded to Meta.
+ */
+export function allowedPageUrl(
+  pageUrl: string | null | undefined,
+  cfg: AdTrackingConfig,
+): string | null {
+  const origin = toHttpOrigin(pageUrl);
+  return origin && isOriginAllowed(origin, cfg) ? (pageUrl as string) : null;
 }

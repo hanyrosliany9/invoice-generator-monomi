@@ -10,6 +10,7 @@ function makeBrowser(opts: { url: string; cookies?: Record<string, string>; sess
   const jar = new Map<string, Cookie>();
   for (const [k, v] of Object.entries(opts.cookies ?? {})) jar.set(k, { value: v, domain: null });
   const sent: Array<{ via: string; url: string; body: any }> = [];
+  const cookieWrites: string[] = [];
   const listeners: Record<string, Function[]> = {};
   const PUBLIC_SUFFIXES = new Set(["id", "co.id", "com", "net"]);
   const doc: any = {
@@ -21,6 +22,7 @@ function makeBrowser(opts: { url: string; cookies?: Record<string, string>; sess
     addEventListener: (t: string, f: Function) => { (listeners[t] ??= []).push(f); },
     get cookie() { return [...jar.entries()].map(([k, c]) => `${k}=${c.value}`).join("; "); },
     set cookie(raw: string) {
+      cookieWrites.push(raw);
       const parts = raw.split(";").map((s) => s.trim());
       const [k, v] = parts[0].split("=");
       const dom = parts.find((p) => /^domain=/i.test(p))?.split("=")[1] ?? null;
@@ -59,23 +61,25 @@ function makeBrowser(opts: { url: string; cookies?: Record<string, string>; sess
   sandbox.fbq = () => { throw new Error("fbq must not be called"); };
   vm.createContext(sandbox);
   vm.runInContext(MONOMI_TRACK_JS, sandbox);
-  return { sandbox, jar, sent, listeners, session, local, doc };
+  return { sandbox, jar, sent, listeners, session, local, doc, cookieWrites };
 }
 
 const LANDING = "https://link.monomiagency.com/?utm_source=meta&utm_medium=paid&utm_campaign=FB-OKT1&utm_content=ad1&fbclid=IwAR_Test123";
 
 describe("monomi-track.js (runs without a Meta Pixel)", () => {
-  it("generates _fbp in Meta's format, on the registrable domain, mirrored to localStorage", () => {
+  it("generates _fbp in Meta's format as a host-only cookie (no Domain attribute), mirrored to localStorage", () => {
     const b = makeBrowser({ url: LANDING });
     const fbp = b.jar.get("_fbp");
     expect(fbp?.value).toMatch(/^fb\.1\.\d{13}\.\d{10}$/);
-    expect(fbp?.domain).toBe("monomiagency.com");
+    expect(fbp?.domain).toBeNull();
     expect(b.local.get("monomi_fbp")).toBe(fbp?.value);
   });
 
-  it("uses the 3-label registrable domain under a public suffix such as co.id", () => {
-    const b = makeBrowser({ url: "https://link.monomi.co.id/" });
-    expect(b.jar.get("_fbp")?.domain).toBe("monomi.co.id");
+  it("sets _fbp and _fbc host-only on any host (never on the parent domain)", () => {
+    const b = makeBrowser({ url: "https://link.monomi.co.id/?fbclid=IwAR_Host1" });
+    expect(b.jar.get("_fbp")?.domain).toBeNull();
+    expect(b.jar.get("_fbc")?.domain).toBeNull();
+    expect(b.cookieWrites.every((c) => !/;\s*domain=/i.test(c))).toBe(true);
   });
 
   it("keeps an existing _fbp and restores a lost cookie from localStorage", () => {
@@ -165,6 +169,13 @@ describe("monomi-track.js (runs without a Meta Pixel)", () => {
     // other links are left alone
     const other = { getAttribute: () => "https://example.com/x", setAttribute: () => { throw new Error("must not touch"); }, hasAttribute: () => false };
     expect(() => b.listeners.click[0]({ target: { closest: () => other } })).not.toThrow();
+  });
+
+  it("only https WhatsApp links get the code (http:// is left alone, no Lead)", () => {
+    const b = makeBrowser({ url: LANDING });
+    const plain = { getAttribute: () => "http://wa.me/6285126203934?text=Halo", setAttribute: () => { throw new Error("must not touch"); }, hasAttribute: () => false };
+    b.listeners.click[0]({ target: { closest: () => plain } });
+    expect(b.sent.filter((s) => s.body.name === "Lead")).toHaveLength(0);
   });
 
   it("never throws, whatever the environment (no storage, no crypto)", () => {

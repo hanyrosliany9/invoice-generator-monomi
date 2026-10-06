@@ -1,19 +1,41 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
-import { Prisma } from "@prisma/client";
+import { AdClick, Prisma } from "@prisma/client";
+import { createHash } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
+import { AdTrackingConfig, allowedPageUrl, resolveAdTrackingConfig } from "./ad-tracking.config";
 import { ParsedTrackEvent } from "./track-event.payload";
-import { WebClick } from "./web-capi.payload";
+import { InMemoryTrackCounters, ipBucket, TrackCounters } from "./track-limits";
+import {
+  SKIP_DUPLICATE_CLICK_ID,
+  SKIP_DUPLICATE_VISIT_LEAD,
+  SKIP_IP_LEAD_CAP,
+  SKIP_LIMITER_UNAVAILABLE,
+  SKIP_UNVERIFIED_VISIT,
+  USER_AGENT_MAX,
+  WebClick,
+} from "./web-capi.payload";
 import { extractRefCode, normalizeRefCode } from "./ref-code";
 
+/** Unlinked WhatsApp taps (rows with a ref) are kept this long for linking. */
 export const AD_CLICK_RETENTION_DAYS = 30;
+/** Visit rows without a WhatsApp tap can never be linked: kept only briefly. */
+export const AD_CLICK_NO_REF_RETENTION_HOURS = 48;
+/** Click-time website Lead rows (never linked to a CRM lead) are dropped after this. */
+export const ORPHAN_WEB_EVENT_RETENTION_DAYS = 7;
+/** A click-time Lead is forwarded only after a PageView this much earlier. */
+export const LEAD_MIN_PAGEVIEW_AGE_MS = 3000;
+/** Forwarded click-time Leads per network (IPv4 address / IPv6 /64) per hour. */
+export const LEAD_IP_CAP_PER_HOUR = 10;
+const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 /** Outbox events that exist for the website route when a lead is linked later. */
 const RELINKABLE_EVENTS = ["QualifiedLead", "Purchase"];
 
 type Tx = Prisma.TransactionClient;
 
-export type RecordOutcome = "ok" | "duplicate" | "conflict";
+/** "dropped": acknowledged but not stored (global new-row cap reached). */
+export type RecordOutcome = "ok" | "duplicate" | "conflict" | "dropped";
 
 export interface ClickContext {
   ip: string | null;
@@ -50,6 +72,56 @@ const VISIT_FLAG = {
   EngagedVisit: "engagedAt",
 } as const;
 
+interface ClickFields {
+  pageUrl: string | null;
+  referrer: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmTerm: string | null;
+  fbclid: string | null;
+  fbc: string | null;
+  fbp: string | null;
+  clientIp: string | null;
+  userAgent: string | null;
+  campaignCode: string | null;
+}
+
+const isUniqueViolation = (error: unknown) =>
+  (error as { code?: string })?.code === "P2002";
+
+/** Fields the event knows that the row does not have yet. */
+function missingFields(row: AdClick, fields: ClickFields): Record<string, unknown> {
+  const fill: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(fields)) {
+    if (v !== null && (row as unknown as Record<string, unknown>)[k] == null) fill[k] = v;
+  }
+  return fill;
+}
+
+/** The Meta click id: fbclid, else the last part of _fbc ("fb.1.<ms>.<fbclid>"). */
+export function metaClickId(
+  fbclid: string | null | undefined,
+  fbc: string | null | undefined,
+): string | null {
+  if (fbclid) return fbclid;
+  if (!fbc) return null;
+  const parts = fbc.split(".");
+  return parts.length >= 4 ? parts.slice(3).join(".") || null : null;
+}
+
+/** pageUrl without its fbclid query parameter (used when PII retention ends). */
+export function stripClickIdFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    u.searchParams.delete("fbclid");
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Landing-page visits and WhatsApp taps: storage, the tap's website Lead
  * event, and linking a tap to the CRM lead created from the matching chat.
@@ -57,8 +129,18 @@ const VISIT_FLAG = {
 @Injectable()
 export class AdClickService {
   private readonly logger = new Logger(AdClickService.name);
+  private readonly counters: TrackCounters;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() @Inject(TrackCounters) counters?: TrackCounters,
+  ) {
+    this.counters = counters ?? new InMemoryTrackCounters();
+  }
+
+  config(): AdTrackingConfig {
+    return resolveAdTrackingConfig();
+  }
 
   // ---------------------------------------------------------------------
   // public event endpoint
@@ -74,23 +156,80 @@ export class AdClickService {
   }
 
   /**
+   * Global cap on NEW ad_clicks rows (all instances: a fixed 1-minute window
+   * in Redis). Over the cap the event is acknowledged and dropped. If the
+   * counter store fails the row is allowed: the per-network throttler, which
+   * uses the same store, guards the endpoint first.
+   */
+  private async allowNewRow(cfg: AdTrackingConfig): Promise<boolean> {
+    try {
+      const n = await this.counters.increment("new-clicks", 60_000);
+      if (n <= cfg.maxNewClicksPerMin) return true;
+      if (n === cfg.maxNewClicksPerMin + 1) {
+        this.logger.warn(
+          `New ad click cap reached (${cfg.maxNewClicksPerMin}/min): new visits are dropped until the window resets`,
+        );
+      }
+      return false;
+    } catch (error) {
+      this.logger.warn(`Ad click cap counter unavailable: ${(error as Error).message}`);
+      return true;
+    }
+  }
+
+  /**
+   * The visit's row (its first row), created by the first event of the visit.
+   * Race-safe: the creating insert carries visitKey = visitId (unique), so two
+   * concurrent first events make one row and the loser reads the winner's.
+   * Returns null when a new row would exceed the global cap.
+   */
+  private async ensureVisitRow(
+    visitId: string,
+    fields: ClickFields,
+    now: Date,
+    cfg: AdTrackingConfig,
+  ): Promise<AdClick | null> {
+    const existing = await this.prisma.adClick.findFirst({
+      where: { visitId },
+      orderBy: { createdAt: "asc" },
+    });
+    if (existing) return existing;
+    if (!(await this.allowNewRow(cfg))) return null;
+    try {
+      return await this.prisma.adClick.create({
+        data: { visitId, visitKey: visitId, createdAt: now, ...fields },
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        const row = await this.prisma.adClick.findUnique({ where: { visitKey: visitId } });
+        if (row) return row;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Records one landing-page event.
    *  - PageView / ViewContent / EngagedVisit: the visit row is created by the
    *    visit's first event; each of these is accepted ONCE per visit (the
    *    result carries `visitEvent` only for the first), the rest are duplicates.
    *  - Lead (WhatsApp tap): fills ref/eventId (+ Instagram/brand/category) on
    *    the visit row, or on a new row for a second tap in the same visit, and
-   *    queues the website Lead event. Idempotent on eventId; a different
-   *    eventId for an existing ref (or the reverse) is a conflict.
+   *    stores the website Lead event: PENDING_CONFIG when it may be forwarded
+   *    to Meta, SKIPPED (+ reason) otherwise (see leadSkipReason). Idempotent
+   *    on eventId; a different eventId for an existing ref (or the reverse)
+   *    is a conflict.
+   * The page URL is kept only when its origin is an allowed landing page.
    */
   async recordEvent(ev: ParsedTrackEvent, ctx: ClickContext): Promise<RecordResult> {
     const now = new Date();
+    const cfg = this.config();
     const campaignCode = await this.resolveCampaignCode(ev.utmCampaign);
     // The browser normally sends _fbc; rebuild it from fbclid when only the
     // raw click id reached us (format: fb.<subdomain index>.<ms>.<fbclid>).
     const fbc = ev.fbc ?? (ev.fbclid ? `fb.1.${now.getTime()}.${ev.fbclid}` : null);
-    const fields = {
-      pageUrl: ev.pageUrl,
+    const fields: ClickFields = {
+      pageUrl: allowedPageUrl(ev.pageUrl, cfg),
       referrer: ev.referrer,
       utmSource: ev.utmSource,
       utmMedium: ev.utmMedium,
@@ -101,87 +240,94 @@ export class AdClickService {
       fbc,
       fbp: ev.fbp,
       clientIp: ctx.ip,
-      userAgent: ctx.userAgent,
+      userAgent: ctx.userAgent ? ctx.userAgent.slice(0, USER_AGENT_MAX) : null,
       campaignCode,
     };
+    if (ev.name === "Lead") return this.recordLead(ev, ctx, fields, now, cfg);
 
-    if (ev.name !== "Lead") {
-      let row = await this.prisma.adClick.findFirst({
-        where: { visitId: ev.visitId },
-        orderBy: { createdAt: "asc" },
-      });
-      if (!row) {
-        row = await this.prisma.adClick.create({ data: { visitId: ev.visitId, ...fields } });
-      } else {
-        // later events may carry identifiers the first one lacked
-        const fill: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(fields)) {
-          if (v !== null && (row as Record<string, unknown>)[k] == null) fill[k] = v;
-        }
-        if (Object.keys(fill).length) {
-          row = await this.prisma.adClick.update({ where: { id: row.id }, data: fill });
-        }
-      }
-      const flag = VISIT_FLAG[ev.name];
-      const claimed = await this.prisma.adClick.updateMany({
-        where: { id: row.id, [flag]: null },
-        data: { [flag]: now },
-      });
-      if (claimed.count === 0) return { outcome: "duplicate" };
-      return {
-        outcome: "ok",
-        visitEvent: {
-          name: ev.name,
-          eventId: ev.eventId,
-          eventTime: now,
-          click: {
-            visitId: ev.visitId,
-            pageUrl: ev.pageUrl ?? row.pageUrl,
-            fbc: fbc ?? row.fbc,
-            fbp: ev.fbp ?? row.fbp,
-            clientIp: ctx.ip ?? row.clientIp,
-            userAgent: ctx.userAgent ?? row.userAgent,
-            campaignCode: row.campaignCode ?? campaignCode,
-          },
-        },
-      };
+    let row = await this.ensureVisitRow(ev.visitId, fields, now, cfg);
+    if (!row) return { outcome: "dropped" };
+    // later events may carry identifiers the first one lacked
+    const fill = missingFields(row, fields);
+    if (Object.keys(fill).length) {
+      row = await this.prisma.adClick.update({ where: { id: row.id }, data: fill });
     }
+    const flag = VISIT_FLAG[ev.name];
+    const claimed = await this.prisma.adClick.updateMany({
+      where: { id: row.id, [flag]: null },
+      data: { [flag]: now },
+    });
+    if (claimed.count === 0) return { outcome: "duplicate" };
+    return {
+      outcome: "ok",
+      visitEvent: {
+        name: ev.name,
+        eventId: ev.eventId,
+        eventTime: now,
+        click: {
+          visitId: ev.visitId,
+          pageUrl: fields.pageUrl ?? row.pageUrl,
+          fbc: fbc ?? row.fbc,
+          fbp: ev.fbp ?? row.fbp,
+          clientIp: ctx.ip ?? row.clientIp,
+          userAgent: fields.userAgent ?? row.userAgent,
+          campaignCode: row.campaignCode ?? campaignCode,
+        },
+      },
+    };
+  }
 
-    // ---- Lead (WhatsApp tap) ----
+  /** duplicate (same tap again) / conflict (ref or eventId used by another tap) / null (new). */
+  private async tapOutcome(ref: string, eventId: string): Promise<RecordOutcome | null> {
     const existing = await this.prisma.adClick.findFirst({
-      where: { OR: [{ ref: ev.ref as string }, { eventId: ev.eventId }] },
+      where: { OR: [{ ref }, { eventId }] },
       select: { ref: true, eventId: true },
     });
-    if (existing) {
-      return {
-        outcome: existing.ref === ev.ref && existing.eventId === ev.eventId ? "duplicate" : "conflict",
-      };
-    }
+    if (!existing) return null;
+    return existing.ref === ref && existing.eventId === eventId ? "duplicate" : "conflict";
+  }
+
+  private async recordLead(
+    ev: ParsedTrackEvent,
+    ctx: ClickContext,
+    fields: ClickFields,
+    now: Date,
+    cfg: AdTrackingConfig,
+  ): Promise<RecordResult> {
+    const ref = ev.ref as string;
+    const known = await this.tapOutcome(ref, ev.eventId);
+    if (known) return { outcome: known };
+
+    const visitRow = await this.ensureVisitRow(ev.visitId, fields, now, cfg);
+    if (!visitRow) return { outcome: "dropped" };
     const tap = {
-      ref: ev.ref,
+      ref,
       eventId: ev.eventId,
       instagramHandle: ev.instagramHandle,
       brandName: ev.brandName,
       category: ev.category,
     };
     try {
-      await this.prisma.$transaction(async (tx) => {
-        const visitRow = await tx.adClick.findFirst({
-          where: { visitId: ev.visitId, ref: null },
-          orderBy: { createdAt: "asc" },
+      const outcome = await this.prisma.$transaction(async (tx) => {
+        // Atomic: only a visit row that holds no tap yet takes this one; a
+        // concurrent (or later) tap of the same visit gets a row of its own.
+        const took = await tx.adClick.updateMany({
+          where: { id: visitRow.id, ref: null },
+          data: tap,
         });
-        let click;
-        if (visitRow) {
-          const fill: Record<string, unknown> = { ...tap };
-          for (const [k, v] of Object.entries(fields)) {
-            if (v !== null && (visitRow as Record<string, unknown>)[k] == null) fill[k] = v;
-          }
-          click = await tx.adClick.update({ where: { id: visitRow.id }, data: fill });
+        let click: AdClick;
+        if (took.count === 1) {
+          const fill = missingFields(visitRow, fields);
+          click = Object.keys(fill).length
+            ? await tx.adClick.update({ where: { id: visitRow.id }, data: fill })
+            : ({ ...visitRow, ...tap } as AdClick);
         } else {
+          if (!(await this.allowNewRow(cfg))) return "dropped" as const;
           click = await tx.adClick.create({
             data: { visitId: ev.visitId, createdAt: now, ...fields, ...tap },
           });
         }
+        const skip = await this.leadSkipReason(tx, visitRow, click, ctx, now);
         await tx.metaEventOutbox.create({
           data: {
             leadId: null,
@@ -189,25 +335,87 @@ export class AdClickService {
             route: "WEBSITE",
             eventName: "Lead",
             eventTime: now,
-            status: "PENDING_CONFIG",
+            status: skip ? "SKIPPED" : "PENDING_CONFIG",
+            lastError: skip,
             payload: { event_name: "Lead" },
             dedupeKey: `click:${ev.eventId}`,
           },
         });
+        return "ok" as const;
       });
-      return { outcome: "ok" };
+      return { outcome };
     } catch (error) {
-      if ((error as { code?: string })?.code === "P2002") {
-        const again = await this.prisma.adClick.findFirst({
-          where: { OR: [{ ref: ev.ref as string }, { eventId: ev.eventId }] },
-          select: { ref: true, eventId: true },
-        });
-        return {
-          outcome: again?.ref === ev.ref && again?.eventId === ev.eventId ? "duplicate" : "conflict",
-        };
+      if (isUniqueViolation(error)) {
+        return { outcome: (await this.tapOutcome(ref, ev.eventId)) ?? "conflict" };
       }
       throw error;
     }
+  }
+
+  /**
+   * Whether a click-time Lead may be forwarded to Meta (null) or is only
+   * stored (the SKIPPED reason). Every Lead is stored and stays linkable in
+   * the CRM; forwarding needs ALL of:
+   *  1. a PageView of the same visit, from the same network (IPv4 address /
+   *     IPv6 /64), at least LEAD_MIN_PAGEVIEW_AGE_MS earlier;
+   *  2. no Lead of this visit forwarded yet (atomic claim on the visit row);
+   *  3. when the visit carries a Meta click id (fbclid / _fbc): no Lead
+   *     forwarded for that click id in the last 24 h (organic visits have
+   *     none and are not refused for it);
+   *  4. at most LEAD_IP_CAP_PER_HOUR forwarded Leads per network per hour.
+   * The counters for 3 and 4 live in Redis; when it cannot be reached the
+   * Lead is not forwarded. A refusal after the visit claim releases it.
+   */
+  private async leadSkipReason(
+    tx: Tx,
+    visitRow: AdClick,
+    click: AdClick,
+    ctx: ClickContext,
+    now: Date,
+  ): Promise<string | null> {
+    const network = ipBucket(ctx.ip);
+    const pageViewAt = visitRow.pageViewAt;
+    if (
+      !network ||
+      !pageViewAt ||
+      ipBucket(visitRow.clientIp) !== network ||
+      now.getTime() - pageViewAt.getTime() < LEAD_MIN_PAGEVIEW_AGE_MS
+    ) {
+      return SKIP_UNVERIFIED_VISIT;
+    }
+
+    const first = await tx.adClick.updateMany({
+      where: { id: visitRow.id, leadForwardedAt: null },
+      data: { leadForwardedAt: now },
+    });
+    if (first.count === 0) return SKIP_DUPLICATE_VISIT_LEAD;
+
+    let reason: string | null = null;
+    try {
+      const clickId = metaClickId(click.fbclid ?? visitRow.fbclid, click.fbc ?? visitRow.fbc);
+      if (clickId) {
+        const key = createHash("sha256").update(clickId).digest("hex").slice(0, 32);
+        if ((await this.counters.increment(`lead-click:${key}`, DAY_MS)) > 1) {
+          reason = SKIP_DUPLICATE_CLICK_ID;
+        }
+      }
+      if (
+        !reason &&
+        (await this.counters.increment(`lead-ip:${network}`, HOUR_MS)) > LEAD_IP_CAP_PER_HOUR
+      ) {
+        reason = SKIP_IP_LEAD_CAP;
+      }
+    } catch (error) {
+      this.logger.warn(`Lead rate-limit store unavailable: ${(error as Error).message}`);
+      reason = SKIP_LIMITER_UNAVAILABLE;
+    }
+    if (reason) {
+      await tx.adClick.updateMany({
+        where: { id: visitRow.id, leadForwardedAt: now },
+        data: { leadForwardedAt: null },
+      });
+    }
+    return reason;
   }
 
   // ---------------------------------------------------------------------
@@ -345,35 +553,101 @@ export class AdClickService {
     });
   }
 
+
   // ---------------------------------------------------------------------
   // retention + stats
   // ---------------------------------------------------------------------
 
-  /** Unlinked clicks are only useful for linking; drop them after 30 days. */
+  /** Nightly: drop what can no longer be linked, then end PII retention on linked clicks. */
   @Cron("20 3 * * *", { name: "ad-click-retention" })
   async purgeCron(): Promise<void> {
     try {
       const n = await this.purgeUnlinked();
-      if (n) this.logger.log(`Purged ${n} unlinked ad click(s) older than ${AD_CLICK_RETENTION_DAYS} days`);
+      if (n) this.logger.log(`Purged ${n} unlinked ad click(s)`);
+      const scrubbed = await this.scrubLinkedClickPii();
+      if (scrubbed) this.logger.log(`Removed device identifiers from ${scrubbed} linked ad click(s)`);
     } catch (error) {
       this.logger.warn(`Ad click purge failed: ${(error as Error).message}`);
     }
   }
 
+  /**
+   * Unlinked clicks are only useful for linking:
+   *  - visit rows without a WhatsApp tap (ref null) go after 48 hours;
+   *  - unlinked taps (ref set) after AD_CLICK_RETENTION_DAYS;
+   *  - click-time website Lead rows (never tied to a CRM lead) after 7 days,
+   *    or as soon as their click is gone.
+   * Returns the number of ad_clicks rows deleted.
+   */
   async purgeUnlinked(now: Date = new Date()): Promise<number> {
+    const t = now.getTime();
     const res = await this.prisma.adClick.deleteMany({
       where: {
         leadId: null,
-        createdAt: { lt: new Date(now.getTime() - AD_CLICK_RETENTION_DAYS * DAY_MS) },
+        OR: [
+          { ref: null, createdAt: { lt: new Date(t - AD_CLICK_NO_REF_RETENTION_HOURS * HOUR_MS) } },
+          { createdAt: { lt: new Date(t - AD_CLICK_RETENTION_DAYS * DAY_MS) } },
+        ],
       },
     });
+    // after the clicks: deleting a click nulls adClickId on its outbox rows
+    const orphans = await this.prisma.metaEventOutbox.deleteMany({
+      where: {
+        route: "WEBSITE",
+        leadId: null,
+        OR: [
+          { adClickId: null },
+          { createdAt: { lt: new Date(t - ORPHAN_WEB_EVENT_RETENTION_DAYS * DAY_MS) } },
+        ],
+      },
+    });
+    if (orphans.count) this.logger.log(`Purged ${orphans.count} unlinked website Lead event row(s)`);
+    return res.count;
+  }
+
+  /**
+   * Linked clicks older than AD_CLICK_PII_RETENTION_DAYS (default 90) lose the
+   * device identifiers: clientIp, userAgent, fbclid, fbc, fbp, and the fbclid
+   * parameter of pageUrl. Later website stage events for such a lead go out
+   * with the hashed lead data and external_id only. Returns the rows changed.
+   */
+  async scrubLinkedClickPii(now: Date = new Date(), days?: number): Promise<number> {
+    const retention = days ?? this.config().piiRetentionDays;
+    const cutoff = new Date(now.getTime() - retention * DAY_MS);
+    const res = await this.prisma.adClick.updateMany({
+      where: {
+        leadId: { not: null },
+        createdAt: { lt: cutoff },
+        OR: [
+          { clientIp: { not: null } },
+          { userAgent: { not: null } },
+          { fbclid: { not: null } },
+          { fbc: { not: null } },
+          { fbp: { not: null } },
+        ],
+      },
+      data: { clientIp: null, userAgent: null, fbclid: null, fbc: null, fbp: null },
+    });
+    const withClickId = await this.prisma.adClick.findMany({
+      where: { leadId: { not: null }, createdAt: { lt: cutoff }, pageUrl: { contains: "fbclid=" } },
+      select: { id: true, pageUrl: true },
+      take: 1000,
+    });
+    for (const row of withClickId) {
+      await this.prisma.adClick.update({
+        where: { id: row.id },
+        data: { pageUrl: row.pageUrl ? stripClickIdFromUrl(row.pageUrl) : null },
+      });
+    }
     return res.count;
   }
 
   async stats(now: Date = new Date()) {
     const since = new Date(now.getTime() - 7 * DAY_MS);
-    const [pageViews7d, clicks7d, linked7d, linkedTotal, qualifiedSent, groups] = await Promise.all([
-      this.prisma.adClick.count({ where: { pageViewAt: { gte: since } } }),
+    // visit rows without a tap are kept 48 h, so page views are counted over that window
+    const since48h = new Date(now.getTime() - AD_CLICK_NO_REF_RETENTION_HOURS * HOUR_MS);
+    const [pageViews48h, clicks7d, linked7d, linkedTotal, qualifiedSent, groups] = await Promise.all([
+      this.prisma.adClick.count({ where: { pageViewAt: { gte: since48h } } }),
       this.prisma.adClick.count({ where: { createdAt: { gte: since }, ref: { not: null } } }),
       this.prisma.adClick.count({ where: { createdAt: { gte: since }, leadId: { not: null } } }),
       this.prisma.adClick.count({ where: { leadId: { not: null } } }),
@@ -405,7 +679,7 @@ export class AdClickService {
       select: { updatedAt: true, eventName: true, lastError: true },
     });
     return {
-      pageViews7d,
+      pageViews48h,
       clicks7d,
       qualifiedSent,
       linked7d,

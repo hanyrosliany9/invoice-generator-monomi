@@ -1,9 +1,9 @@
 import {
   BadRequestException,
   Controller,
-  ConflictException,
   Get,
   HttpCode,
+  Logger,
   Post,
   Req,
   Res,
@@ -17,7 +17,9 @@ import { AdClickService } from "./ad-click.service";
 import { headerString } from "./public-track.http";
 import { MONOMI_TRACK_JS } from "./monomi-track.snippet";
 import { parseTrackEvent } from "./track-event.payload";
+import { publicTrackTracker } from "./track-limits";
 import { isBotUserAgent } from "./track-utils";
+import { USER_AGENT_MAX } from "./web-capi.payload";
 import { WebCapiService } from "./web-capi.service";
 
 const SCRIPT_ETAG = `"${createHash("sha256").update(MONOMI_TRACK_JS).digest("hex").slice(0, 24)}"`;
@@ -38,6 +40,8 @@ function cleanIp(ip: string | undefined): string | null {
 @ApiExcludeController()
 @Controller("public/track")
 export class PublicTrackController {
+  private readonly logger = new Logger(PublicTrackController.name);
+
   constructor(
     private readonly clicks: AdClickService,
     private readonly sender: WebCapiService,
@@ -61,24 +65,31 @@ export class PublicTrackController {
   /**
    * One landing-page event (PageView, ViewContent, EngagedVisit, Lead).
    * Obvious bots are acknowledged and dropped: nothing stored, nothing sent
-   * to Meta. The limit is per IP and generous because one visit sends several
-   * events and mobile carriers put many visitors behind one address.
+   * to Meta. The limit is per network (IPv4 address, IPv6 /64) and generous
+   * because one visit sends several events and mobile carriers put many
+   * visitors behind one address; a global cap on new rows sits behind it.
+   * Every accepted body answers the same 200 {ok:true}, whether it was stored,
+   * a duplicate, dropped by the cap, or clashed with another tap's code (so
+   * codes cannot be probed).
    */
   @Public()
-  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @Throttle({ default: { limit: 120, ttl: 60_000, getTracker: publicTrackTracker } })
   @Post("event")
   @HttpCode(200)
   async event(@Req() req: Request) {
     const parsed = parseTrackEvent(req.body);
     if (!parsed) throw new BadRequestException("Invalid request");
-    const userAgent = headerString(req.headers["user-agent"], 400);
+    const userAgent = headerString(req.headers["user-agent"], USER_AGENT_MAX);
     if (isBotUserAgent(userAgent)) return { ok: true };
     const result = await this.clicks.recordEvent(parsed, {
       // req.ip honours the app's trust-proxy setting (Cloudflare -> nginx -> app).
       ip: cleanIp(req.ip),
       userAgent,
     });
-    if (result.outcome === "conflict") throw new ConflictException("Conflict");
+    if (result.outcome === "conflict") {
+      // never log the submitted code / ids
+      this.logger.warn("Landing-page Lead ignored: its code or event id belongs to another tap");
+    }
     if (result.visitEvent) this.sender.enqueueVisitEvent(result.visitEvent);
     return { ok: true };
   }

@@ -9,6 +9,24 @@ export const SKIP_WEB_LEAD_AT_CLICK =
 export const SKIP_WEB_HAS_CTWA =
   "lead has a Click-to-WhatsApp id — sent through the WhatsApp route instead";
 
+// Click-time Leads that are stored (and linkable in the CRM) but not forwarded
+// to Meta. The code comes first so the reason is easy to filter on.
+export const SKIP_UNVERIFIED_VISIT =
+  "SKIP_UNVERIFIED_VISIT: no PageView from the same network at least 3 s before the WhatsApp tap";
+export const SKIP_DUPLICATE_VISIT_LEAD =
+  "SKIP_DUPLICATE_VISIT_LEAD: a Lead was already forwarded for this visit";
+export const SKIP_DUPLICATE_CLICK_ID =
+  "SKIP_DUPLICATE_CLICK_ID: a Lead was already forwarded for this Meta click id in the last 24 h";
+export const SKIP_IP_LEAD_CAP =
+  "SKIP_IP_LEAD_CAP: too many forwarded Leads from this network in the last hour";
+export const SKIP_LIMITER_UNAVAILABLE =
+  "SKIP_LIMITER_UNAVAILABLE: the rate-limit store could not be reached";
+export const SKIP_STALE_BEFORE_ENABLE =
+  "SKIP_STALE_BEFORE_ENABLE: click-time Lead older than 24 h when the sender was enabled";
+
+/** User agents longer than this are cut (stored and sent). */
+export const USER_AGENT_MAX = 512;
+
 export const sha256 = (value: string): string =>
   createHash("sha256").update(value, "utf8").digest("hex");
 
@@ -78,7 +96,7 @@ export function buildWebEvent(
 ): Record<string, unknown> {
   const userData: Record<string, unknown> = {};
   if (click.clientIp) userData.client_ip_address = click.clientIp;
-  if (click.userAgent) userData.client_user_agent = click.userAgent;
+  if (click.userAgent) userData.client_user_agent = click.userAgent.slice(0, USER_AGENT_MAX);
   if (click.fbc) userData.fbc = click.fbc;
   if (click.fbp) userData.fbp = click.fbp;
   // external_id: ties the visit's events (PageView ... Lead) and the later CRM

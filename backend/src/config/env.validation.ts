@@ -355,6 +355,17 @@ export class EnvironmentVariables {
   @IsOptional()
   LANDING_PAGE_URL?: string;
 
+  // Global cap on new ad_clicks rows per minute (default 600); a bad value
+  // falls back to the default and is reported in CRM settings.
+  @IsString()
+  @IsOptional()
+  PUBLIC_TRACK_MAX_NEW_PER_MIN?: string;
+
+  // Days before ip / user agent / Meta ids are nulled on linked ad clicks (default 90).
+  @IsString()
+  @IsOptional()
+  AD_CLICK_PII_RETENTION_DAYS?: string;
+
   @IsString()
   @IsOptional()
   META_WEB_CAPI_GRAPH_BASE_URL?: string;

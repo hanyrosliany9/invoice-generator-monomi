@@ -965,13 +965,24 @@ model MetaEventOutbox {
 // recorded by the monomi-track.js snippet. The `ref` is also written into the
 // WhatsApp pre-filled text ("Kode: K7QM2X") so staff can link the chat that
 // arrives on the WhatsApp Business app back to the website ad click.
-// No personal data is stored here; unlinked rows are purged after 30 days.
+// PERSONAL DATA: clientIp, userAgent and the Meta identifiers fbclid/fbc/fbp
+// (plus pageUrl/referrer, which can carry fbclid in the query) identify a
+// visitor's device. Retention: visit rows without a WhatsApp tap (ref null) are
+// purged after 48 h, unlinked taps after 30 days; on linked rows clientIp,
+// userAgent, fbclid, fbc and fbp are nulled after AD_CLICK_PII_RETENTION_DAYS
+// (default 90). The qualifier answers below stay in Monomi.
 model AdClick {
   id           String    @id @default(cuid())
   // Landing-page visit this row belongs to (first-party id from the snippet).
   // The row is created by the visit's first event; a WhatsApp tap fills in
   // ref/eventId on it (a second tap in the same visit gets its own row).
   visitId      String?
+  // = visitId on the visit's FIRST row only (null on extra tap rows): the
+  // unique key that makes concurrent first events create one visit row.
+  visitKey     String?   @unique
+  // Set (atomically) on the visit row when a click-time Lead of this visit is
+  // forwarded to Meta: at most one forwarded Lead per visit.
+  leadForwardedAt DateTime?
   ref          String?   @unique // "Kode: XXXXXX" written into the WhatsApp text (WhatsApp tap only)
   eventId      String?   @unique // CAPI event_id of the tap's Lead event
   createdAt    DateTime  @default(now())

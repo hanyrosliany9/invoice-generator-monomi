@@ -37,6 +37,8 @@ export class AdTrackingAdminController {
         "META_WEB_CAPI_TEST_EVENT_CODE",
         "PUBLIC_TRACK_ALLOWED_ORIGINS",
         "LANDING_PAGE_URL",
+        "PUBLIC_TRACK_MAX_NEW_PER_MIN",
+        "AD_CLICK_PII_RETENTION_DAYS",
       ],
       ...stats,
     };
