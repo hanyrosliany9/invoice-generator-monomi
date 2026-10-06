@@ -10368,5 +10368,63 @@
     "badge": {
       "aria": "{{n}} leads need attention"
     }
+  },
+  "socialPublish": {
+    "adminOnly": "Only admins can configure auto-publishing.",
+    "cardTitle": "Instagram & Facebook auto-publishing",
+    "checkConnection": "Check connection",
+    "checkFailed": "Could not check the connection.",
+    "chip": {
+      "failed": "Failed",
+      "processing": "Meta is processing the video",
+      "published": "Published",
+      "publishing": "Publishing…",
+      "retrying": "Will retry",
+      "scheduled": "Scheduled for auto-publish",
+      "verifying": "Verifying result",
+      "waiting": "Queued"
+    },
+    "chooseTarget": "Choose at least one platform.",
+    "configured": "Configured (Graph API {{v}}). Posts with \"Publish automatically\" go live on schedule.",
+    "confirmRetry": "Not there yet, retry",
+    "confirmUncertain": "Make sure the post is NOT already on the account/Page before retrying, so it is not published twice.",
+    "facebookPage": "Facebook Page",
+    "hint": {
+      "fbMultiVideo": "Facebook: multi-photo posts cannot contain videos.",
+      "fbReelDuration": "Facebook: reel/story videos can be at most 90 seconds.",
+      "fbReelRatio": "Facebook: reels must be vertical 9:16.",
+      "fbSingle": "Facebook: reels/stories need exactly one media file.",
+      "fbTextNeedsCaption": "Facebook: a text post needs a caption.",
+      "igCaption": "Instagram captions are limited to 2,200 characters.",
+      "igCarouselMax": "Instagram carousels via the API take at most 10 items (now {{n}}).",
+      "igHashtags": "Instagram allows at most 30 hashtags (now {{n}}).",
+      "igImageSize": "Instagram images must be 8 MB or smaller.",
+      "igJpegOnly": "Instagram only accepts JPEG images — re-export PNG/WebP as JPG.",
+      "igNeedsMedia": "Instagram: add at least one photo or video.",
+      "igRatio": "Instagram feed images must be between 4:5 and 1.91:1.",
+      "igStoryDuration": "Instagram story videos can be at most 60 seconds.",
+      "needsSchedule": "Set a date & time to publish automatically (or use \"Publish now\").",
+      "reelVideo": "A reel must be a video."
+    },
+    "invalidConfig": "Meta configuration is invalid: {{reason}}",
+    "missingPerms": "Missing permissions: {{list}}",
+    "nextAttempt": "Next attempt: {{when}}",
+    "noLink": "Link not available",
+    "noTargets": "Not set up. Turn on \"Publish automatically\" when editing to publish to Instagram / Facebook.",
+    "notConfigured": "Not configured. A server admin needs to set META_SYSTEM_USER_TOKEN, META_PAGE_ID and META_IG_USER_ID (Meta system user token).",
+    "notConfiguredShort": "Meta connection is not configured — auto-publishing is off.",
+    "panelTitle": "Auto-publishing",
+    "publishFailed": "Could not start publishing.",
+    "publishNow": "Publish now",
+    "publishStarted": "Publishing to social media…",
+    "quota": "24-hour publishing quota: {{used}}/{{total}}",
+    "retry": "Retry",
+    "retryStarted": "Retrying…",
+    "schedulerOff": "The scheduler is switched off (META_AUTOPUBLISH_ENABLED=false).",
+    "toggle": "Publish automatically",
+    "toggleHint": "Published to Monomi's accounts at the scheduled time (WIB). TikTok stays manual.",
+    "token": "System user token",
+    "tokenInvalid": "Invalid",
+    "viewPost": "View post"
   }
 }

@@ -10367,5 +10367,63 @@
     "badge": {
       "aria": "{{n}} lead perlu perhatian"
     }
+  },
+  "socialPublish": {
+    "adminOnly": "Hanya admin yang dapat mengatur publikasi otomatis.",
+    "cardTitle": "Publikasi otomatis Instagram & Facebook",
+    "checkConnection": "Periksa koneksi",
+    "checkFailed": "Gagal memeriksa koneksi.",
+    "chip": {
+      "failed": "Gagal",
+      "processing": "Meta memproses video",
+      "published": "Terbit",
+      "publishing": "Menerbitkan…",
+      "retrying": "Akan dicoba lagi",
+      "scheduled": "Terjadwal auto-publish",
+      "verifying": "Memeriksa hasil",
+      "waiting": "Menunggu giliran"
+    },
+    "chooseTarget": "Pilih minimal satu platform.",
+    "configured": "Terkonfigurasi (Graph API {{v}}). Postingan dengan \"Terbitkan otomatis\" terbit sesuai jadwal.",
+    "confirmRetry": "Belum ada, coba lagi",
+    "confirmUncertain": "Pastikan postingan BELUM ada di akun/Halaman sebelum mencoba lagi, agar tidak terbit dua kali.",
+    "facebookPage": "Halaman Facebook",
+    "hint": {
+      "fbMultiVideo": "Facebook: postingan multi-foto tidak bisa berisi video.",
+      "fbReelDuration": "Facebook: reel/story video maksimal 90 detik.",
+      "fbReelRatio": "Facebook: reel harus vertikal 9:16.",
+      "fbSingle": "Facebook: reel/story butuh tepat satu media.",
+      "fbTextNeedsCaption": "Facebook: postingan teks butuh caption.",
+      "igCaption": "Caption Instagram maksimal 2.200 karakter.",
+      "igCarouselMax": "Carousel Instagram via API maksimal 10 media (sekarang {{n}}).",
+      "igHashtags": "Instagram maksimal 30 hashtag (sekarang {{n}}).",
+      "igImageSize": "Gambar Instagram maksimal 8 MB.",
+      "igJpegOnly": "Instagram hanya menerima gambar JPEG — ekspor ulang PNG/WebP sebagai JPG.",
+      "igNeedsMedia": "Instagram: tambahkan minimal satu foto atau video.",
+      "igRatio": "Rasio gambar feed Instagram harus antara 4:5 dan 1.91:1.",
+      "igStoryDuration": "Video story Instagram maksimal 60 detik.",
+      "needsSchedule": "Atur tanggal & jam agar terbit otomatis (atau pakai \"Terbitkan sekarang\").",
+      "reelVideo": "Reel harus berupa video."
+    },
+    "invalidConfig": "Konfigurasi Meta tidak valid: {{reason}}",
+    "missingPerms": "Izin kurang: {{list}}",
+    "nextAttempt": "Percobaan berikutnya: {{when}}",
+    "noLink": "Tautan tidak tersedia",
+    "noTargets": "Belum diatur. Aktifkan \"Terbitkan otomatis\" saat mengedit konten untuk menerbitkan ke Instagram / Facebook.",
+    "notConfigured": "Belum dikonfigurasi. Admin server perlu mengisi META_SYSTEM_USER_TOKEN, META_PAGE_ID dan META_IG_USER_ID (token system user Meta).",
+    "notConfiguredShort": "Koneksi Meta belum dikonfigurasi — publikasi otomatis tidak aktif.",
+    "panelTitle": "Publikasi otomatis",
+    "publishFailed": "Gagal memulai publikasi.",
+    "publishNow": "Terbitkan sekarang",
+    "publishStarted": "Sedang diterbitkan ke media sosial…",
+    "quota": "Kuota publikasi 24 jam: {{used}}/{{total}}",
+    "retry": "Coba lagi",
+    "retryStarted": "Mencoba menerbitkan ulang…",
+    "schedulerOff": "Penjadwal sedang dimatikan (META_AUTOPUBLISH_ENABLED=false).",
+    "toggle": "Terbitkan otomatis",
+    "toggleHint": "Diterbitkan ke akun Monomi pada jadwal (WIB). TikTok tetap manual.",
+    "token": "Token system user",
+    "tokenInvalid": "Tidak valid",
+    "viewPost": "Lihat postingan"
   }
 }
