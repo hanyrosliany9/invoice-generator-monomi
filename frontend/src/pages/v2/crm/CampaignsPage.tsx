@@ -278,6 +278,7 @@ function CampaignDialog({
     endDate: campaign?.endDate?.slice(0, 10) ?? '',
     budget: campaign?.budget ? String(campaign.budget) : '',
     prefillMessage: campaign?.prefillMessage ?? defaultPrefill,
+    metaAdIds: (campaign?.metaAdIds ?? []).join(', '),
   });
   const mut = useMutation({
     mutationFn: () => {
@@ -290,6 +291,7 @@ function CampaignDialog({
         endDate: f.endDate || undefined,
         budget: f.budget ? Number(f.budget) : undefined,
         prefillMessage: f.prefillMessage.trim() || undefined,
+        metaAdIds: adIds,
       };
       return campaign ? crmApi.updateCampaign(campaign.id, body) : crmApi.createCampaign(body);
     },
@@ -298,6 +300,8 @@ function CampaignDialog({
   });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF((p) => ({ ...p, [k]: e.target.value }));
   const codeOk = /^[A-Za-z0-9][A-Za-z0-9_-]{1,23}$/.test(f.code.trim());
+  const adIds = f.metaAdIds.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
+  const adIdsOk = adIds.every((s) => /^\d{5,25}$/.test(s));
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-h-[92dvh] max-w-lg overflow-y-auto" srTitle={t('crm.campaigns.dialogTitle', 'Campaign')}>
@@ -334,10 +338,15 @@ function CampaignDialog({
             <Label htmlFor="cp-msg">{t('crm.campaigns.prefillLabel', 'Pre-filled message')}</Label>
             <textarea id="cp-msg" rows={3} className={textareaClass} value={f.prefillMessage} onChange={set('prefillMessage')} maxLength={1000} />
           </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="cp-adids">{t('crm.campaigns.metaAdIds', 'Meta ad IDs (optional)')}</Label>
+            <Input id="cp-adids" value={f.metaAdIds} onChange={set('metaAdIds')} placeholder="120211234567890, 120219876543210" className="font-mono" aria-invalid={!adIdsOk} />
+            <p className="text-xs text-text-tertiary">{t('crm.campaigns.metaAdIdsHint', 'Chats from these Click-to-WhatsApp ads are linked to this campaign automatically, even without the code in the message. Find the ID in Ads Manager.')}</p>
+          </div>
         </div>
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onClose}>{t('crm.common.cancel', 'Cancel')}</Button>
-          <Button type="button" disabled={!f.name.trim() || !codeOk || mut.isPending} onClick={() => mut.mutate()}>{t('crm.common.save', 'Save')}</Button>
+          <Button type="button" disabled={!f.name.trim() || !codeOk || !adIdsOk || mut.isPending} onClick={() => mut.mutate()}>{t('crm.common.save', 'Save')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

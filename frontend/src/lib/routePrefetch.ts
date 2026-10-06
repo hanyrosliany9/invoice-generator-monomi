@@ -53,6 +53,7 @@ export const ROUTE_IMPORT_MAP: Record<string, ImportFn> = {
   '/calendar': () => import('../pages/v2/calendar/CalendarPage'),
   '/calendar/content': () => import('../pages/v2/calendar/ContentCalendarPage'),
   '/crm/leads': () => import('../pages/v2/crm/LeadsPage'),
+  '/crm/inbox': () => import('../pages/v2/crm/InboxPage'),
   '/crm/campaigns': () => import('../pages/v2/crm/CampaignsPage'),
   '/crm/dashboard': () => import('../pages/v2/crm/CrmDashboardPage'),
   '/call-sheets': () => import('../pages/v2/call-sheets/CallSheetsListPage'),

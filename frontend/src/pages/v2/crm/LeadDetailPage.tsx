@@ -24,6 +24,7 @@ import { useCrmAssignees, useCrmCampaigns, useCrmStages } from './crmHooks';
 import { displayPhone, idr, toNumber, useCrmLabels, waLink } from './crmUtils';
 import { CodeBadge, LostDialog, MoveStageMenu, SourceBadge, StageBadge } from './LeadParts';
 import { ConvertDialog } from './ConvertDialog';
+import { LeadWhatsAppPanel } from './whatsapp/LeadWhatsAppPanel';
 
 const META_EVENTS: MetaEventName[] = ['LeadSubmitted', 'QualifiedLead', 'Purchase'];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -124,6 +125,7 @@ export default function LeadDetailPage() {
   const [followAt, setFollowAt] = useState('');
   const [followNote, setFollowNote] = useState('');
   const [followOpen, setFollowOpen] = useState(false);
+  const [mainTab, setMainTab] = useState<'activity' | 'whatsapp'>('activity');
 
   const onData = (d: LeadDetail) => {
     qc.setQueryData(['crm', 'lead', id], d);
@@ -257,6 +259,17 @@ export default function LeadDetailPage() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-5">
+          <div role="tablist" aria-label={t('crm.lead.tabs', 'Lead sections')} className="flex gap-2">
+            {([['activity', t('crm.lead.tabActivity', 'Activity')], ['whatsapp', t('crm.lead.tabWhatsApp', 'WhatsApp')]] as Array<['activity' | 'whatsapp', string]>).map(([k, label]) => (
+              <button
+                key={k} type="button" role="tab" aria-selected={mainTab === k} onClick={() => setMainTab(k)}
+                className={cn('inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm', mainTab === k ? 'border-ring/60 bg-bg-raised font-medium text-text-primary' : 'border-border-subtle text-text-secondary hover:text-text-primary')}
+              >
+                {k === 'whatsapp' && <MessageCircle className="h-4 w-4" />}{label}
+              </button>
+            ))}
+          </div>
+          {mainTab === 'whatsapp' ? <LeadWhatsAppPanel leadId={lead.id} /> : (<>
           <Section title={t('crm.composer.title', 'Add activity')}>
             <div role="tablist" className="mb-3 flex flex-wrap gap-2">
               {composerTabs.map(([k, label]) => (
@@ -304,6 +317,7 @@ export default function LeadDetailPage() {
                 .map((it) => <Fragment key={it.key}>{it.node}</Fragment>)}
             </ol>
           </Section>
+          </>)}
         </div>
 
         <aside className="space-y-5">

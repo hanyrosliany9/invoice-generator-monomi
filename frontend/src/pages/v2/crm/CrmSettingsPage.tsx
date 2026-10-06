@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { apiErrorMessage, crmApi, type LeadStage, type StageType } from '@/services/crm';
 import { CrmShell, nativeSelectClass } from './CrmShell';
 import { useCrmLabels } from './crmUtils';
+import { WhatsAppSettingsCard } from './whatsapp/WhatsAppSettingsCard';
 
 function StageRow({
   stage, index, last, onMove,
@@ -162,6 +163,8 @@ export default function CrmSettingsPage() {
             <Button type="submit" variant="outline" className="gap-2" disabled={!newName.trim() || addStage.isPending}><Plus /> {t('crm.settings.addStage', 'Add stage')}</Button>
           </form>
         </GlassPanel>
+
+        <WhatsAppSettingsCard />
       </div>
     </CrmShell>
   );

@@ -66,6 +66,7 @@ export class CrmCampaignsService {
           budget: dto.budget !== undefined ? new Prisma.Decimal(dto.budget) : null,
           status: dto.status ?? "ACTIVE",
           prefillMessage: dto.prefillMessage ?? null,
+          metaAdIds: Array.from(new Set(dto.metaAdIds ?? [])),
         },
       });
     } catch (error) {
@@ -87,6 +88,7 @@ export class CrmCampaignsService {
           ...(dto.budget !== undefined ? { budget: new Prisma.Decimal(dto.budget) } : {}),
           ...(dto.status !== undefined ? { status: dto.status } : {}),
           ...(dto.prefillMessage !== undefined ? { prefillMessage: dto.prefillMessage } : {}),
+          ...(dto.metaAdIds !== undefined ? { metaAdIds: Array.from(new Set(dto.metaAdIds)) } : {}),
         },
       });
     } catch (error) {

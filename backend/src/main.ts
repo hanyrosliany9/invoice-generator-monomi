@@ -10,7 +10,11 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
 import { ValidationInterceptor } from "./common/interceptors/validation.interceptor";
 import { getErrorMessage } from "./common/utils/error-handling.util";
 import { validateUrls } from "./config/url.config";
-import { registerLargeJsonBodyRoutes, registerSmallBodyRoutes } from "./config/body-parser.config";
+import {
+  registerLargeJsonBodyRoutes,
+  registerRawBodyRoutes,
+  registerSmallBodyRoutes,
+} from "./config/body-parser.config";
 
 const logger = new Logger("Bootstrap");
 
@@ -167,6 +171,8 @@ async function bootstrap() {
     registerLargeJsonBodyRoutes(app, API_GLOBAL_PREFIX);
     // Meta webhook-style callbacks: 16kb cap, 413 above it.
     registerSmallBodyRoutes(app, API_GLOBAL_PREFIX);
+    // WhatsApp webhook: raw bytes (signature is verified on the exact body), 3mb cap.
+    registerRawBodyRoutes(app, API_GLOBAL_PREFIX);
 
     // Global validation pipe
     app.useGlobalPipes(
