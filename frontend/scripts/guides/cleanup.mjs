@@ -120,6 +120,9 @@ async function restoreCrmState(db, run) {
     await db.query(`UPDATE crm_settings SET "whatsappQuickReplies" = $1::jsonb`, [st.quickReplies === null ? null : JSON.stringify(st.quickReplies)]);
   }
   if (st.startedAt) {
+    await run('webhook events', `DELETE FROM whatsapp_webhook_events WHERE "receivedAt" >= $1`, [st.startedAt]);
+    // The empty placeholder row the backend creates on first use (a real connection has an account id / token).
+    await run('empty whatsapp connection', `DELETE FROM whatsapp_connection WHERE status = 'DISCONNECTED' AND "wabaId" IS NULL AND "accessTokenEnc" IS NULL`, []);
     await run('audit rows', `DELETE FROM audit_logs WHERE "createdAt" >= $1`, [st.startedAt]);
     await run('refresh tokens', `DELETE FROM refresh_tokens WHERE "createdAt" >= $1`, [st.startedAt]);
     await run('notification logs', `DELETE FROM notification_logs WHERE "createdAt" >= $1`, [st.startedAt]);
