@@ -89,6 +89,50 @@ function useChipLabel() {
   })[s];
 }
 
+/* ------------------- localized failure reasons ------------------- */
+
+/** Error codes the backend emits (publish-errors.ts) that have a translated headline. */
+const ERROR_CODES = new Set([
+  'NOT_CONFIGURED', 'NOT_INTERNAL_CLIENT', 'TOKEN_INVALID', 'PERMISSION_DENIED', 'RATE_LIMITED',
+  'PUBLISH_LIMIT_REACHED', 'MEDIA_FETCH_FAILED', 'MEDIA_INVALID', 'MEDIA_PROCESSING_FAILED',
+  'MEDIA_STORAGE_UNAVAILABLE', 'CONTAINER_EXPIRED', 'META_TRANSIENT', 'OUTCOME_UNCERTAIN',
+  'CANCELLED', 'DUPLICATE_POST', 'UNKNOWN', 'PROCESSING', 'VERIFYING',
+]);
+/** Codes whose stored message is "headline, newline, raw detail" (detail = Meta text / numbers, shown verbatim). */
+const DETAIL_CODES = new Set(['PERMISSION_DENIED', 'PUBLISH_LIMIT_REACHED', 'MEDIA_INVALID', 'MEDIA_PROCESSING_FAILED', 'UNKNOWN']);
+
+/**
+ * Localized reason for a publication. New rows: translate by errorCode and append the raw
+ * detail. Older rows stored "Bahasa / English" in one string: show the half for the UI language.
+ */
+export function failureText(
+  t: (key: string, fallback: string) => string,
+  lang: string | undefined,
+  pub: Pick<SocialPublication, 'errorCode' | 'errorMessage'>,
+): string | null {
+  const msg = pub.errorMessage;
+  if (!msg) return null;
+  const code = pub.errorCode ?? '';
+  const nl = msg.indexOf('\n');
+  const detail = nl >= 0 ? msg.slice(nl + 1).trim() : '';
+  const legacyWithDetail = nl < 0 && DETAIL_CODES.has(code) && msg.includes(': ');
+  if (ERROR_CODES.has(code) && !legacyWithDetail) {
+    const head = t(`socialPublish.error.${code}`, msg);
+    if (!detail) return head;
+    if (code === 'PUBLISH_LIMIT_REACHED') return `${head} (${detail})`;
+    if (code === 'PERMISSION_DENIED') return `${head} (Meta: ${detail})`;
+    return `${head}: ${detail}`;
+  }
+  const first = msg.split('\n')[0];
+  const sep = first.indexOf(' / ');
+  if (sep < 0) return first;
+  const idPart = first.slice(0, sep);
+  const enPart = first.slice(sep + 3);
+  if (lang?.startsWith('en')) return enPart;
+  const colon = enPart.indexOf(': ');
+  return colon >= 0 ? `${idPart}${enPart.slice(colon)}` : idPart;
+}
+
 /** The targets to display chips for: configured targets plus any platform with a row. */
 function chipPlatforms(item: ContentCalendarItem): AutoPublishPlatform[] {
   const set = new Set<AutoPublishPlatform>([...(item.autoPublishTargets ?? [])]);
@@ -98,6 +142,7 @@ function chipPlatforms(item: ContentCalendarItem): AutoPublishPlatform[] {
 
 export function PublishStatusChips({ item, compact = false }: { item: ContentCalendarItem; compact?: boolean }) {
   const label = useChipLabel();
+  const { t, i18n } = useTranslation();
   const platforms = chipPlatforms(item);
   if (platforms.length === 0) return null;
   return (
@@ -120,7 +165,7 @@ export function PublishStatusChips({ item, compact = false }: { item: ContentCal
           </>
         );
         const cls = cn('inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-none', CHIP_CLASS[state]);
-        const title = pub?.errorMessage ?? label(state);
+        const title = (pub && failureText(t as never, i18n.language, pub)) ?? label(state);
         return state === 'published' && pub?.permalink ? (
           <a
             key={p}
@@ -217,7 +262,7 @@ export function AutoPublishPanel({
                 )}
                 {pub && pub.status !== 'PUBLISHED' && pub.errorMessage && (
                   <p className={cn('mt-1 leading-snug', pub.status === 'FAILED' ? 'text-danger' : 'text-text-tertiary')} data-testid={`reason-${p}`}>
-                    {pub.errorMessage}
+                    {failureText(t as never, i18n.language, pub)}
                   </p>
                 )}
                 {pub?.status === 'PENDING' && pub.nextAttemptAt && pub.errorCode && (

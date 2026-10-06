@@ -29,6 +29,7 @@ export type PublishErrorCode =
   | "META_TRANSIENT"
   | "OUTCOME_UNCERTAIN"
   | "CANCELLED"
+  | "DUPLICATE_POST"
   | "UNKNOWN";
 
 export class PublishError extends Error {
@@ -57,6 +58,14 @@ export class PublishDeferred extends Error {
 
 const bi = (id: string, en: string) => `${id} / ${en}`;
 
+/**
+ * Stored message = bilingual headline, then (optionally) a newline and the
+ * raw detail (Meta text / numbers). The UI localizes by the error code and
+ * shows the part after the newline verbatim; rows written before this format
+ * have no newline and fall back to the stored text.
+ */
+const withDetail = (detail?: string) => (detail ? `\n${detail}` : "");
+
 export const MSG = {
   notConfigured: bi(
     "Publikasi otomatis belum dikonfigurasi (token Meta belum diatur).",
@@ -76,16 +85,16 @@ export const MSG = {
     bi(
       "Izin Meta kurang (mis. pages_manage_posts / instagram_content_publish) atau aset belum ditugaskan ke system user.",
       "Missing Meta permission (e.g. pages_manage_posts / instagram_content_publish) or the asset is not assigned to the system user.",
-    ) + (detail ? ` (Meta: ${detail})` : ""),
+    ) + withDetail(detail),
   rateLimited: bi(
     "Meta membatasi jumlah panggilan API sementara. Akan dicoba lagi otomatis.",
     "Meta is rate-limiting API calls. Will retry automatically.",
   ),
   publishLimit: (used?: number, total?: number) =>
     bi(
-      `Batas publikasi Instagram 24 jam tercapai${used !== undefined ? ` (${used}/${total})` : ""}. Akan dicoba lagi otomatis.`,
-      `Instagram 24-hour publishing limit reached${used !== undefined ? ` (${used}/${total})` : ""}. Will retry automatically.`,
-    ),
+      "Batas publikasi Instagram 24 jam tercapai. Akan dicoba lagi otomatis.",
+      "Instagram 24-hour publishing limit reached. Will retry automatically.",
+    ) + withDetail(used !== undefined ? `${used}/${total}` : undefined),
   publishLimitGaveUp: bi(
     "Batas publikasi Instagram masih penuh setelah 24 jam. Tekan Coba lagi nanti.",
     "Instagram publishing limit still reached after 24 hours. Press Retry later.",
@@ -95,9 +104,10 @@ export const MSG = {
     "Meta could not download the media from storage. Will retry with a fresh link.",
   ),
   mediaInvalid: (detail: string) =>
-    `${bi("Media ditolak Meta", "Media rejected by Meta")}: ${detail}`,
+    bi("Media ditolak Meta", "Media rejected by Meta") + withDetail(detail),
   processingFailed: (detail: string) =>
-    `${bi("Meta gagal memproses media", "Meta failed to process the media")}: ${detail}`,
+    bi("Meta gagal memproses media", "Meta failed to process the media") +
+    withDetail(detail),
   processingTimeout: bi(
     "Meta belum selesai memproses video setelah beberapa jam. Tekan Coba lagi.",
     "Meta has not finished processing the video after several hours. Press Retry.",
@@ -135,7 +145,7 @@ export const MSG = {
     "Facebook rejected a duplicate post (same content as a recent post).",
   ),
   unknown: (detail: string) =>
-    `${bi("Gagal menerbitkan", "Publishing failed")}: ${detail}`,
+    bi("Gagal menerbitkan", "Publishing failed") + withDetail(detail),
 };
 
 /** Instagram content-publishing error subcodes (developers.facebook.com, IG Platform error codes). */
@@ -310,7 +320,7 @@ export function publishErrorFromGraph(e: GraphApiError): PublishError {
     return toPublishError(m.code, m.retryable, m.text);
   }
   if (e.code === 506)
-    return new PublishError("MEDIA_INVALID", MSG.duplicate, false);
+    return new PublishError("DUPLICATE_POST", MSG.duplicate, false);
   switch (e.kind) {
     case "token":
       return new PublishError("TOKEN_INVALID", MSG.token, false);

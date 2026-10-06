@@ -79,7 +79,41 @@ export function useCrmLabels() {
       ? new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date(iso))
       : '';
 
-  return { t, stageLabel, sourceLabel, metaStatusLabel, formatWait, formatDateTime, formatDate };
+  /**
+   * History rows written by the server carry a stable key ("@wa.in: text"),
+   * translated here; older rows hold plain (Indonesian) text and pass through.
+   */
+  const activityText = (body: string | null | undefined): string => {
+    const parsed = parseActivityBody(body);
+    if (!parsed) return body ?? '';
+    const rest = parsed.text;
+    switch (parsed.key) {
+      case 'wa.in': return join(t('crm.history.waIn', 'Message received'), rest);
+      case 'wa.monomi': return join(t('crm.history.waMonomi', 'Replied from the Monomi inbox'), rest);
+      case 'wa.phoneApp': return join(t('crm.history.waPhoneApp', 'Replied from the phone (WhatsApp Business)'), rest);
+      case 'lead.quotationCreated': return t('crm.history.quotationCreated', 'Quotation created');
+      case 'lead.converted': {
+        const parts = (rest ?? '').split(',').map((p) => p.trim()).filter(Boolean).map((p) => ({
+          clientNew: t('crm.history.conv.clientNew', 'New client created'),
+          clientLinked: t('crm.history.conv.clientLinked', 'Client linked'),
+          project: t('crm.history.conv.project', 'project'),
+          quotation: t('crm.history.conv.quotation', 'draft quotation'),
+        } as Record<string, string>)[p] ?? p);
+        return parts.join(' + ');
+      }
+      default: return rest ?? body ?? '';
+    }
+  };
+
+  return { t, stageLabel, sourceLabel, metaStatusLabel, formatWait, formatDateTime, formatDate, activityText };
+}
+
+const join = (label: string, text: string | null) => (text ? `${label}: ${text}` : label);
+
+/** "@key: text" -> { key, text } (see backend crm activity bodies); null for plain text. */
+export function parseActivityBody(body: string | null | undefined): { key: string; text: string | null } | null {
+  const m = body?.match(/^@([A-Za-z]+(?:\.[A-Za-z]+)+)(?::\s?([\s\S]*))?$/);
+  return m ? { key: m[1], text: m[2] ? m[2] : null } : null;
 }
 
 /** 6281234567890 style id for wa.me links. */

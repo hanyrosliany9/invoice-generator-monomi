@@ -130,7 +130,7 @@ export default function CrmDashboardPage() {
                   ({t('crm.dash.dropPost', "{{pct}}% don't continue", { pct: Math.round(s.dropOff.dropPct) })}).
                 </p>
               )}
-              {s.lost > 0 && <p className="mt-1 text-xs text-text-tertiary">{t('crm.dash.lost', '{{n}} leads marked as lost.', { n: s.lost })}</p>}
+              {s.lost > 0 && <p className="mt-1 text-xs text-text-tertiary">{t('crm.dash.lost', '{{count}} leads marked as lost.', { count: s.lost })}</p>}
             </GlassPanel>
 
             <GlassPanel padding="none" className="p-5">
@@ -154,7 +154,7 @@ export default function CrmDashboardPage() {
                 <li className="flex justify-between gap-3 border-t border-border-subtle pt-2">
                   <span>{t('crm.dash.unansweredNow', 'Unanswered > {{min}} min', { min: responseTarget })}</span>
                   <Link to="/crm/leads" className={cn('font-mono', s.response.uncontactedNow > 0 ? 'text-warning' : 'text-text-secondary')}>
-                    {t('crm.dash.unansweredCount', '{{n}} leads', { n: s.response.uncontactedNow })}
+                    {t('crm.dash.unansweredCount', '{{count}} leads', { count: s.response.uncontactedNow })}
                   </Link>
                 </li>
               </ul>

@@ -241,7 +241,7 @@ describe("WhatsAppIngestService", () => {
     expect(t.lead[0].ctwaClid).toBe(CTWA_CLID);
     expect(
       t.leadActivity.some(
-        (a: any) => a.type === "WHATSAPP" && a.body.startsWith("Pesan masuk"),
+        (a: any) => a.type === "WHATSAPP" && a.body.startsWith("@wa.in"),
       ),
     ).toBe(true);
   });
@@ -285,7 +285,7 @@ describe("WhatsAppIngestService", () => {
     );
     const act = t.leadActivity.filter((a: any) => a.type === "WHATSAPP");
     expect(act.map((a: any) => a.body)).toEqual([
-      "Dibalas dari HP (WhatsApp Business): Halo kak, boleh tahu kebutuhannya?",
+      "@wa.phoneApp: Halo kak, boleh tahu kebutuhannya?",
     ]);
   });
 

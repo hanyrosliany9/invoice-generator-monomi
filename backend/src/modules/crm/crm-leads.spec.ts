@@ -124,8 +124,9 @@ describe("CrmLeadsService.convert", () => {
     );
     expect(res).toEqual({ leadId: "L9", clientId: "c-new", projectId: "p1", quotationId: "q1", clientCreated: true });
     expect(leads[0]).toMatchObject({ clientId: "c-new", projectId: "p1", quotationId: "q1" });
-    expect(activities.some((a) => a.type === "CONVERTED")).toBe(true);
-    expect(flow.changeStage).toHaveBeenCalledWith("L9", "st-prop", "u1", expect.anything());
+    // Stable key + parts (the UI translates), not Indonesian display text.
+    expect(activities.find((a) => a.type === "CONVERTED")?.body).toBe("@lead.converted: clientNew,project,quotation");
+    expect(flow.changeStage).toHaveBeenCalledWith("L9", "st-prop", "u1", { note: "@lead.quotationCreated" });
   });
 
   it("reuses an existing client with the same phone instead of creating one", async () => {

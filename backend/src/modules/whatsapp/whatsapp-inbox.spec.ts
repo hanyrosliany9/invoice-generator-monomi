@@ -199,7 +199,7 @@ describe("WhatsAppInboxService", () => {
     expect(t.leadActivity[0]).toMatchObject({
       type: "WHATSAPP",
       actorId: "u1",
-      body: "Dibalas dari inbox Monomi: Halo kak Rina!",
+      body: "@wa.monomi: Halo kak Rina!",
     });
   });
 

@@ -115,7 +115,7 @@ export default function LeadsPage() {
   const bulkMut = useMutation({
     mutationFn: (d: { assignedToId?: string | null; stageId?: string }) => crmApi.bulk([...selected], d),
     onSuccess: (r) => {
-      toast.success(t('crm.list.bulkDone', '{{n}} leads updated.', { n: r.updated }));
+      toast.success(t('crm.list.bulkDone', '{{count}} leads updated.', { count: r.updated }));
       if (r.failed.length) toast.error(t('crm.list.bulkFailed', '{{n}} could not be updated.', { n: r.failed.length }));
       setSelected(new Set());
     },
@@ -197,13 +197,13 @@ export default function LeadsPage() {
           {t('crm.leads.unanswered', '{{n}} unanswered > {{min}} min', { n: unanswered, min: threshold })}
         </button>
         <button type="button" aria-pressed={followUp} onClick={() => setFollowUp((v) => !v)} className={chip(followUp)}>
-          {t('crm.leads.followUpsToday', '{{n}} follow-ups today', { n: followUpsDue })}
+          {t('crm.leads.followUpsToday', '{{count}} follow-ups today', { count: followUpsDue })}
         </button>
       </div>
 
       {isMobile && unanswered > 0 && !uncontacted && (
         <button type="button" onClick={() => setUncontacted(true)} className="mb-4 w-full rounded-lg border border-warning/40 bg-warning/10 px-3 py-2.5 text-left text-sm text-warning">
-          {t('crm.leads.unansweredBanner', '{{n}} leads unanswered for more than {{min}} minutes', { n: unanswered, min: threshold })}
+          {t('crm.leads.unansweredBanner', '{{count}} leads unanswered for more than {{min}} minutes', { count: unanswered, min: threshold })}
         </button>
       )}
 

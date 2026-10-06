@@ -58,3 +58,10 @@ export function formatKind(item: Pick<ContentCalendarItem, 'format' | 'media'>):
   if (item.format === 'STORY') return 'STORY';
   return (item.media?.length ?? 0) > 1 ? 'CAROUSEL' : 'POST';
 }
+
+/** Monday-first short weekday names in the active UI language ("Sen" for id, "Mon" for en). */
+export function weekdayShortLabels(lang: string | undefined): string[] {
+  const fmt = new Intl.DateTimeFormat(lang?.startsWith('en') ? 'en-GB' : 'id-ID', { weekday: 'short', timeZone: 'UTC' });
+  // 2024-01-01 is a Monday.
+  return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(Date.UTC(2024, 0, 1 + i))).replace(/\.$/, ''));
+}

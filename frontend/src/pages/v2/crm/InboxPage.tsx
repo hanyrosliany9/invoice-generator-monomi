@@ -111,9 +111,9 @@ export default function InboxPage() {
       )}
 
       <GlassPanel padding="none" className="overflow-hidden">
-        <div className="grid h-[calc(100dvh-220px)] min-h-[520px] lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="grid h-[calc(100dvh-220px)] min-h-[520px] grid-cols-[minmax(0,1fr)] lg:grid-cols-[360px_minmax(0,1fr)]">
           {/* list */}
-          <section className={cn('flex min-h-0 flex-col border-border-subtle lg:border-r', id ? 'hidden lg:flex' : 'flex')} aria-label={t('crm.wa.listLabel', 'Conversations')}>
+          <section className={cn('flex min-h-0 min-w-0 flex-col border-border-subtle lg:border-r', id ? 'hidden lg:flex' : 'flex')} aria-label={t('crm.wa.listLabel', 'Conversations')}>
             <div className="space-y-2 border-b border-border-subtle p-3">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
@@ -154,7 +154,7 @@ export default function InboxPage() {
           </section>
 
           {/* conversation */}
-          <section className={cn('min-h-0', id ? 'flex flex-col' : 'hidden lg:flex lg:flex-col')} aria-label={t('crm.wa.conversationLabel', 'Conversation')}>
+          <section className={cn('min-h-0 min-w-0', id ? 'flex flex-col' : 'hidden lg:flex lg:flex-col')} aria-label={t('crm.wa.conversationLabel', 'Conversation')}>
             {id ? (
               <ConversationView key={id} conversationId={id} onBack={() => navigate('/crm/inbox')} />
             ) : (

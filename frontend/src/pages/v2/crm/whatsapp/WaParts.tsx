@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   AlertCircle, Check, CheckCheck, Clock, Download, ExternalLink, FileText, Image as ImageIcon, Megaphone, Reply, Search, Smartphone, Zap,
 } from 'lucide-react';
@@ -24,9 +25,12 @@ import { nativeSelectClass } from '../CrmShell';
 export function useWaLabels() {
   const base = useCrmLabels();
   const { t } = base;
+  const { i18n } = useTranslation();
+  // id keeps "22.46"; English uses "22:46" (24h clock, WIB).
+  const isEn = i18n.language?.startsWith('en');
   const timeFmt = useMemo(
-    () => new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }),
-    [],
+    () => new Intl.DateTimeFormat(isEn ? 'en-GB' : 'id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }),
+    [isEn],
   );
   const statusLabel = (s: WaStatus): string => ({
     RECEIVED: t('crm.wa.status.RECEIVED', 'Received'),
@@ -76,13 +80,26 @@ const safeHttpUrl = (u?: string): string | null => (u && /^https?:\/\//i.test(u)
 export function CtwaBanner({ referral, at }: { referral: WaReferral; at?: string }) {
   const { t, formatDateTime } = useWaLabels();
   const link = safeHttpUrl(referral.source_url);
+  const thumb = safeHttpUrl(referral.image_url) ?? safeHttpUrl(referral.thumbnail_url);
+  const [thumbFailed, setThumbFailed] = useState(false);
   return (
     <div className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
-      <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+      {thumb && !thumbFailed ? (
+        <img
+          src={thumb}
+          alt={referral.headline ?? t('crm.wa.ctwa.imageAlt', 'Ad image')}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setThumbFailed(true)}
+          className="h-16 w-16 shrink-0 rounded-md border border-border-subtle bg-bg-sunken object-cover"
+        />
+      ) : (
+        <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+      )}
       <div className="min-w-0 flex-1">
         <div className="font-medium text-text-primary">
           {t('crm.wa.ctwa.title', 'Started from a Click-to-WhatsApp ad')}
-          {at ? <span className="ml-2 font-mono text-[11px] font-normal text-text-tertiary">{formatDateTime(at)}</span> : null}
+          {at ? <span className="block whitespace-nowrap font-mono text-[11px] font-normal text-text-tertiary sm:ml-2 sm:inline">{formatDateTime(at)}</span> : null}
         </div>
         {referral.headline && <div className="mt-0.5 break-words text-text-primary">“{referral.headline}”</div>}
         {referral.body && <div className="mt-0.5 line-clamp-2 break-words text-text-secondary">{referral.body}</div>}
@@ -272,12 +289,15 @@ export function TemplateDialog({
             </div>
             {params.map((p, i) => (
               <div key={i} className="space-y-1.5">
-                <Label htmlFor={`wa-p${i}`}>{t('crm.wa.templateParam', 'Value {{n}}', { n: i + 1 })}</Label>
+                <Label htmlFor={`wa-p${i}`}>{t('crm.wa.templateVar', 'Variable {{n}}', { n: `{{${i + 1}}}` })}</Label>
                 <Input id={`wa-p${i}`} value={p} maxLength={1000} onChange={(e) => setParams((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))} />
               </div>
             ))}
             {tpl && (
-              <div className="rounded-lg border border-border-subtle bg-bg-sunken p-3 text-sm whitespace-pre-wrap break-words">{preview || tpl.name}</div>
+              <div>
+                <div className="mb-1 text-xs text-text-tertiary">{t('crm.wa.templatePreview', 'Preview')}</div>
+                <div className="rounded-lg border border-border-subtle bg-bg-sunken p-3 text-sm whitespace-pre-wrap break-words">{preview || tpl.name}</div>
+              </div>
             )}
           </div>
         )}

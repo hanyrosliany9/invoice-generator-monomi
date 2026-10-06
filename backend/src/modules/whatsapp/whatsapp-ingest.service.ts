@@ -36,10 +36,12 @@ export interface IngestResult {
   leadsCreated: number;
 }
 
+// Timeline rows store a stable key ("@key: text"); the frontend translates it
+// (crm.history.*). Rows from before this format hold Indonesian text, shown as stored.
 const ACTIVITY_PREFIX = {
-  IN: "Pesan masuk",
-  MONOMI: "Dibalas dari inbox Monomi",
-  PHONE_APP: "Dibalas dari HP (WhatsApp Business)",
+  IN: "@wa.in",
+  MONOMI: "@wa.monomi",
+  PHONE_APP: "@wa.phoneApp",
 } as const;
 
 function snippet(text: string | null, type: string): string {

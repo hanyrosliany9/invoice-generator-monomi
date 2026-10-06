@@ -35,6 +35,7 @@ import { quotationService, type Quotation } from '@/services/quotations';
 import { projectService, type Project } from '@/services/projects';
 import { calendarEventsService, type CalendarEvent } from '@/services/calendar-events';
 import { cn } from '@/lib/utils';
+import { weekdayShortLabels } from '@/pages/v2/calendar/contentPlannerUtils';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — mirrors the established v2 ordering and adds the two    */
@@ -90,7 +91,7 @@ const safeDate = (s?: string | null) => {
 /* ------------------------------------------------------------------ */
 
 export default function CalendarPageV2() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const idLocale = useDateLocale();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -391,9 +392,9 @@ export default function CalendarPageV2() {
             <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
             <div className="min-w-[560px]">
 
-            {/* Weekday header (Senin–Minggu) */}
+            {/* Weekday header (Monday first, active locale) */}
             <div className="grid grid-cols-7 border-b border-border-subtle bg-bg-sunken/40">
-              {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((d) => (
+              {weekdayShortLabels(i18n.language).map((d) => (
                 <div
                   key={d}
                   className="px-3 py-2 text-[10px] uppercase tracking-[0.16em] text-text-tertiary font-medium"

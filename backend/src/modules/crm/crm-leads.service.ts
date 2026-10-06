@@ -664,9 +664,10 @@ export class CrmLeadsService {
       data: {
         leadId: id,
         type: "CONVERTED",
-        body: [clientCreated ? "Klien baru dibuat" : "Klien dihubungkan", projectId ? "proyek" : null, quotationId ? "penawaran draft" : null]
+        // Stable key + parts; the frontend translates (crm.history.converted*).
+        body: `@lead.converted: ${[clientCreated ? "clientNew" : "clientLinked", projectId ? "project" : null, quotationId ? "quotation" : null]
           .filter(Boolean)
-          .join(" + "),
+          .join(",")}`,
         actorId,
       },
     });
@@ -675,7 +676,7 @@ export class CrmLeadsService {
     if (quotationId && lead.stage.type === "OPEN") {
       const proposal = await this.prisma.leadStage.findFirst({ where: { key: "PROPOSAL", isActive: true } });
       if (proposal && proposal.order > lead.stage.order) {
-        await this.flow.changeStage(id, proposal.id, actorId, { note: "Penawaran dibuat" });
+        await this.flow.changeStage(id, proposal.id, actorId, { note: "@lead.quotationCreated" });
       }
     }
     return { leadId: id, clientId, projectId, quotationId, clientCreated };

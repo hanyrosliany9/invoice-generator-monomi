@@ -73,7 +73,7 @@ import {
   BulkBar, BulkDeleteDialog, ContentThumb, KindBadge, OverdueBadge, PublishDialog, ShiftDialog,
   type BulkStatus,
 } from '@/pages/v2/calendar/ContentPlannerParts';
-import { isOverdue, isReschedulable } from '@/pages/v2/calendar/contentPlannerUtils';
+import { isOverdue, isReschedulable, weekdayShortLabels } from '@/pages/v2/calendar/contentPlannerUtils';
 import {
   AutoPublishPanel, AutoPublishSection, PublishStatusChips, SocialConnectionCard,
   isAdminRole, useSocialPublishingStatus,
@@ -518,7 +518,7 @@ export default function ContentCalendarPageV2() {
               : t('content.subtitle', 'Rencanakan, jadwalkan, dan pantau publikasi media sosial lintas platform.')
           }
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <GuideHelpLink slug="perencana-konten" anchor="kalender" />
               <Button
                 variant="outline"
@@ -922,7 +922,7 @@ function MonthGrid({
   const dragItem = useRef<ContentCalendarItem | null>(null);
   const [dropKey, setDropKey] = useState<string | null>(null);
   const todayKey = wibDayKey(new Date());
-  const weekdays = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  const weekdays = weekdayShortLabels(i18n.language);
 
   const header = (
     <div className="grid grid-cols-7 border-b border-border-subtle bg-bg-sunken/40">
@@ -1411,6 +1411,10 @@ function DetailSheet({
 }) {
   const { t } = useTranslation();
   const open = !!item;
+  const { data: pubStatus } = useSocialPublishingStatus(isInternal && isAdmin);
+  // When auto-publishing is actionable the panel above owns "Publish now" / "Retry";
+  // the manual "Publish" (mark as published) would be a redundant second button.
+  const autoActionable = isInternal && isAdmin && !!pubStatus?.configured && !!item?.autoPublish && (item?.autoPublishTargets?.length ?? 0) > 0;
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
@@ -1554,7 +1558,7 @@ function DetailSheet({
                 <Copy className="h-3.5 w-3.5" />
                 {t('content.planner.duplicate', 'Duplikat')}
               </Button>
-              {item.status !== 'PUBLISHED' && item.status !== 'ARCHIVED' && (
+              {item.status !== 'PUBLISHED' && item.status !== 'ARCHIVED' && !autoActionable && (
                 <Button variant="outline" size="sm" onClick={() => onPublish(item)}>
                   <Rocket className="h-3.5 w-3.5" />
                   {t('contentCalendar.publish', 'Publish')}
@@ -1948,7 +1952,7 @@ function CreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Header + scrolling body + sticky footer, so Save is always reachable
           (on a phone the sheet is taller than the screen). */}
-      <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-xl flex flex-col gap-0 overflow-hidden p-0 max-h-[92dvh] sm:max-h-[90vh]">
+      <DialogContent className="bg-bg-raised border-border-subtle text-text-primary sm:max-w-xl flex flex-col gap-0 overflow-hidden p-0" style={{ maxHeight: '92dvh' }}>
         <DialogHeader className="px-6 pt-6 pb-3 pr-12 pl-12 sm:pl-6 sm:pr-12">
           <DialogTitle className="text-text-primary font-display tracking-tight">
             {isEdit ? t('contentCalendar.editDialog.title', 'Edit Content') : t('contentCalendar.createDialog.title', 'Add Content')}

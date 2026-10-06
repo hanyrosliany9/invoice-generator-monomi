@@ -21,7 +21,7 @@ import {
 } from '@/services/crm';
 import { CrmShell, nativeSelectClass, textareaClass } from './CrmShell';
 import { useCrmAssignees, useCrmCampaigns, useCrmStages } from './crmHooks';
-import { displayPhone, idr, toNumber, useCrmLabels, waLink } from './crmUtils';
+import { displayPhone, idr, parseActivityBody, toNumber, useCrmLabels, waLink } from './crmUtils';
 import { CodeBadge, LostDialog, MoveStageMenu, SourceBadge, StageBadge } from './LeadParts';
 import { ConvertDialog } from './ConvertDialog';
 import { LeadWhatsAppPanel } from './whatsapp/LeadWhatsAppPanel';
@@ -57,7 +57,7 @@ function Section({ title, children, className }: { title: string; children: Reac
 }
 
 function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
-  const { t, stageLabel, sourceLabel, formatDateTime } = useCrmLabels();
+  const { t, stageLabel, sourceLabel, formatDateTime, activityText } = useCrmLabels();
   const who = a.actor?.name;
   const meta = a.metaEvent ? <span className="text-text-tertiary"> · {t('crm.history.meta', 'Meta: {{event}}', { event: a.metaEvent })}</span> : null;
   let body: React.ReactNode;
@@ -70,7 +70,7 @@ function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
               ? t('crm.history.newChat', 'New chat ({{source}})', { source: sourceLabel(lead.source) })
               : t('crm.history.created', 'Lead created ({{source}})', { source: sourceLabel(lead.source) })}
             {lead.campaignCode && <> <CodeBadge code={lead.campaignCode} /></>}
-            {a.body ? <>: “{a.body}”</> : null}
+            {a.body ? <>: “{activityText(a.body)}”</> : null}
             {meta}
           </>
         );
@@ -80,7 +80,7 @@ function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
             {t('crm.history.stageChanged', 'Stage changed')}{' '}
             <strong>{stageLabel(a.fromStage)} → {stageLabel(a.toStage)}</strong>
             {who ? <> {t('crm.history.by', 'by {{name}}', { name: who })}</> : <> {t('crm.history.auto', '(automatic)')}</>}
-            {a.body ? <>: {a.body}</> : null}
+            {a.body ? <>: {activityText(a.body)}</> : null}
             {meta}
           </>
         );
@@ -88,11 +88,11 @@ function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
       break;
     case 'NOTE': body = <>{t('crm.history.note', 'Note')}: {a.body}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     case 'CALL': body = <>{t('crm.history.call', 'Call')}: {a.body}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
-    case 'WHATSAPP': body = <>{t('crm.history.wa', 'WhatsApp message')}: {a.body}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
+    case 'WHATSAPP': body = <>{parseActivityBody(a.body) ? activityText(a.body) : <>{t('crm.history.wa', 'WhatsApp message')}: {a.body}</>}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     case 'MEETING': body = <>{t('crm.history.meeting', 'Meeting')}: {a.body}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     case 'FOLLOW_UP_SET': body = <>{t('crm.history.followSet', 'Follow-up scheduled')}{a.body ? `: ${a.body}` : ''}</>; break;
     case 'FOLLOW_UP_DONE': body = <>{t('crm.history.followDone', 'Follow-up done')}{a.body ? `: ${a.body}` : ''}</>; break;
-    case 'CONVERTED': body = <>{t('crm.history.converted', 'Converted')}{a.body ? `: ${a.body}` : ''}</>; break;
+    case 'CONVERTED': body = <>{t('crm.history.converted', 'Converted')}{a.body ? `: ${activityText(a.body)}` : ''}</>; break;
     case 'ASSIGNED': body = <>{t('crm.history.assigned', 'Assigned to {{name}}', { name: a.body ?? '-' })}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     default: body = a.body;
   }

@@ -10178,13 +10178,11 @@
       "funnel": "Sales funnel",
       "dropPre": "Most leads drop off at",
       "dropPost": "{{pct}}% don't continue",
-      "lost": "{{n}} leads marked as lost.",
       "response": "Response speed",
       "responseAvg": "Average first reply time · target {{min}} minutes",
       "responseMedian": "median {{time}}",
       "ownerWon": "{{n}} won",
       "unansweredNow": "Unanswered > {{min}} min",
-      "unansweredCount": "{{n}} leads",
       "byCampaign": "By campaign",
       "col": {
         "qualified": "Qualified",
@@ -10193,7 +10191,11 @@
       },
       "noCampaign": "No campaign",
       "noData": "No leads in this period.",
-      "bySource": "By source"
+      "bySource": "By source",
+      "lost_one": "{{count}} lead marked as lost.",
+      "lost_other": "{{count}} leads marked as lost.",
+      "unansweredCount_one": "{{count}} lead",
+      "unansweredCount_other": "{{count}} leads"
     },
     "leads": {
       "campaign": "Campaign",
@@ -10210,14 +10212,16 @@
       "ownerAll": "Owner: All",
       "ownerMe": "Mine",
       "unanswered": "{{n}} unanswered > {{min}} min",
-      "followUpsToday": "{{n}} follow-ups today",
-      "unansweredBanner": "{{n}} leads unanswered for more than {{min}} minutes",
       "emptyTitle": "No leads yet",
       "emptyDesc": "Paste the first WhatsApp message from an ad and the lead is created for you.",
       "stages": "Stages",
       "emptyStage": "No leads in this stage.",
       "newShort": "Lead",
-      "noMatch": "No leads match these filters."
+      "noMatch": "No leads match these filters.",
+      "followUpsToday_one": "{{count}} follow-up today",
+      "followUpsToday_other": "{{count}} follow-ups today",
+      "unansweredBanner_one": "{{count}} lead unanswered for more than {{min}} minutes",
+      "unansweredBanner_other": "{{count}} leads unanswered for more than {{min}} minutes"
     },
     "settings": {
       "stageDeleted": "Stage removed.",
@@ -10305,7 +10309,17 @@
       "assigned": "Assigned to {{name}}",
       "title": "History",
       "firstReply": "First reply",
-      "responseTime": "response time {{time}}"
+      "responseTime": "response time {{time}}",
+      "waIn": "Message received",
+      "waMonomi": "Replied from the Monomi inbox",
+      "waPhoneApp": "Replied from the phone (WhatsApp Business)",
+      "quotationCreated": "Quotation created",
+      "conv": {
+        "clientNew": "New client created",
+        "clientLinked": "Client linked",
+        "project": "project",
+        "quotation": "draft quotation"
+      }
     },
     "lost": {
       "done": "Lead marked as lost.",
@@ -10400,7 +10414,6 @@
       "email": "Email"
     },
     "list": {
-      "bulkDone": "{{n}} leads updated.",
       "bulkFailed": "{{n}} could not be updated.",
       "bulk": "Bulk actions",
       "selected": "{{n}} selected",
@@ -10413,7 +10426,9 @@
       "owner": "Owner",
       "followUp": "Follow-up",
       "value": "Estimate",
-      "selectRow": "Select {{name}}"
+      "selectRow": "Select {{name}}",
+      "bulkDone_one": "{{count}} lead updated.",
+      "bulkDone_other": "{{count}} leads updated."
     },
     "badge": {
       "aria": "{{n}} leads need attention"
@@ -10470,7 +10485,8 @@
         "type": "Type: {{type}}",
         "adId": "Ad ID {{id}}",
         "clid": "Ad click ID saved (for Meta reporting)",
-        "open": "Open ad"
+        "open": "Open ad",
+        "imageAlt": "Ad image"
       },
       "media": {
         "unavailable": "Media not available (older than 14 days or not shared).",
@@ -10500,7 +10516,6 @@
       "noTemplates": "No approved templates yet. Create them in WhatsApp Manager.",
       "templatePick": "Template",
       "templateChoose": "Choose…",
-      "templateParam": "Value {{n}}",
       "send": "Send",
       "quickReplies": "Quick replies",
       "quickRepliesEmpty": "None yet — add them in CRM settings.",
@@ -10538,7 +10553,7 @@
         "copyFailed": "Copy failed — select and copy manually.",
         "tokenMissing": "Verify token is not set on the server.",
         "capiRan": "Sender ran.",
-        "datasetCreated": "Dataset {{id}} — put it in META_DATASET_ID on the server.",
+        "datasetCreated": "Dataset {{id}} found. Give this ID to the developer/admin to set on the server.",
         "datasetFailed": "Could not create the dataset.",
         "title": "WhatsApp Business (inbox + Meta events)",
         "subtitle": "Coexistence: the team keeps using the WhatsApp Business app; Monomi mirrors the chats and can reply.",
@@ -10570,7 +10585,7 @@
         "copied": "Copied.",
         "verifyToken": "Verify token",
         "revealCopy": "Reveal & copy",
-        "notSet": "Not set (WHATSAPP_WEBHOOK_VERIFY_TOKEN)",
+        "notSet": "Not set on the server yet",
         "fields": "Subscribe fields",
         "signature": "Signature check",
         "noSecret": "App secret missing",
@@ -10579,7 +10594,7 @@
         "capi": "Conversions API (events to Meta)",
         "capiEnabled": "Sending",
         "on": "On",
-        "offUntil": "Off (META_CAPI_ENABLED=false) — nothing is sent",
+        "offUntil": "Off — nothing is sent to Meta",
         "dataset": "Dataset",
         "notSet2": "Not set",
         "testMode": "test event code active",
@@ -10591,7 +10606,7 @@
         "createDataset": "Create / get dataset ID",
         "signupTitle": "Connect WhatsApp (Embedded Signup, coexistence)",
         "signupHint": "Opens Meta’s window: choose “Connect your existing WhatsApp Business app”, then confirm on the phone. Monomi then subscribes to the webhooks and asks for chat history.",
-        "signupDisabled": "Available after Meta approves Monomi as a Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID).",
+        "signupDisabled": "Not available yet: it needs Meta's approval of Monomi as a Tech Provider and the developer to switch it on.",
         "state": "Server configuration",
         "stateReady": "Ready",
         "stateOff": "Not configured",
@@ -10599,13 +10614,19 @@
         "stateInvalid": "Invalid — disabled",
         "problemsHint": "Fix these in the server environment and restart the backend. The rest of the app keeps working meanwhile.",
         "wrongFinish": "Meta finished a different signup type ({{event}}). Only “Connect your existing WhatsApp Business app” (coexistence) is supported — nothing was changed. Start again and choose that option.",
-        "datasetConfigured": "Dataset {{id}} is already set in META_DATASET_ID."
+        "datasetConfigured": "Dataset {{id}} is already set up on the server.",
+        "problemsPlain": "The connection is not fully set up on the server yet. Ask the developer/admin to finish the setup; the rest of the app keeps working meanwhile.",
+        "techDetails": "Technical details (admin)",
+        "sigInactive": "Not active yet (setup incomplete)",
+        "signupTech": "Server settings: WHATSAPP_COEXISTENCE_ENABLED, WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID and the Meta app id/secret."
       },
       "leadNone": "No WhatsApp conversation is linked to this lead yet.",
       "leadNoneHint": "Chats from the same number are linked automatically. You can also link one from the inbox.",
       "openInbox": "Open inbox",
       "openInInbox": "Open in inbox",
-      "badgeAria": "{{n}} WhatsApp chats unread"
+      "badgeAria": "{{n}} WhatsApp chats unread",
+      "templateVar": "Variable {{n}}",
+      "templatePreview": "Preview"
     }
   },
   "socialPublish": {
@@ -10664,6 +10685,26 @@
     "toggleHint": "Published to Monomi's accounts at the scheduled time (WIB). TikTok stays manual.",
     "token": "System user token",
     "tokenInvalid": "Invalid",
-    "viewPost": "View post"
+    "viewPost": "View post",
+    "error": {
+      "NOT_CONFIGURED": "Auto-publishing is not configured (Meta token not set).",
+      "NOT_INTERNAL_CLIENT": "Auto-publishing is only available for the internal client (Monomi) in this phase.",
+      "TOKEN_INVALID": "The Meta token is invalid or revoked. Regenerate the system user token in Business Settings.",
+      "PERMISSION_DENIED": "Missing Meta permission (e.g. pages_manage_posts / instagram_content_publish) or the asset is not assigned to the system user.",
+      "RATE_LIMITED": "Meta is rate-limiting API calls. Will retry automatically.",
+      "PUBLISH_LIMIT_REACHED": "Instagram 24-hour publishing limit reached. Will retry automatically.",
+      "MEDIA_FETCH_FAILED": "Meta could not download the media from storage. Will retry with a fresh link.",
+      "MEDIA_INVALID": "Media rejected by Meta",
+      "MEDIA_PROCESSING_FAILED": "Meta failed to process the media",
+      "MEDIA_STORAGE_UNAVAILABLE": "Media storage (R2) is not configured, so media links for Meta cannot be created.",
+      "CONTAINER_EXPIRED": "The Instagram media container expired; it will be recreated.",
+      "META_TRANSIENT": "Temporary Meta error. Will retry automatically.",
+      "OUTCOME_UNCERTAIN": "Could not confirm whether the post went live (connection to Meta dropped). Check the account/Page first; press Retry only if the post is not there.",
+      "CANCELLED": "Cancelled: the content was marked published/archived manually.",
+      "DUPLICATE_POST": "Facebook rejected a duplicate post (same content as a recent post).",
+      "UNKNOWN": "Publishing failed",
+      "PROCESSING": "Meta is still processing the video.",
+      "VERIFYING": "Connection to Meta dropped while publishing; checking whether the post went live."
+    }
   }
 }

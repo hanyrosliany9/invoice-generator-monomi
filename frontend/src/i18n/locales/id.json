@@ -10177,13 +10177,11 @@
       "funnel": "Corong penjualan",
       "dropPre": "Kebanyakan lead berhenti di",
       "dropPost": "{{pct}}% tidak lanjut",
-      "lost": "{{n}} lead ditandai kalah.",
       "response": "Kecepatan respons",
       "responseAvg": "Rata-rata waktu balasan pertama · target {{min}} menit",
       "responseMedian": "median {{time}}",
       "ownerWon": "{{n}} menang",
       "unansweredNow": "Belum dibalas > {{min}} menit",
-      "unansweredCount": "{{n}} lead",
       "byCampaign": "Per kampanye",
       "col": {
         "qualified": "Dikualifikasi",
@@ -10192,7 +10190,9 @@
       },
       "noCampaign": "Tanpa kampanye",
       "noData": "Tidak ada lead pada periode ini.",
-      "bySource": "Per sumber"
+      "bySource": "Per sumber",
+      "lost_other": "{{count}} lead ditandai kalah.",
+      "unansweredCount_other": "{{count}} lead"
     },
     "leads": {
       "campaign": "Kampanye",
@@ -10209,14 +10209,14 @@
       "ownerAll": "PJ: Semua",
       "ownerMe": "Milik saya",
       "unanswered": "{{n}} belum dibalas > {{min}} mnt",
-      "followUpsToday": "{{n}} tindak lanjut hari ini",
-      "unansweredBanner": "{{n}} lead belum dibalas lebih dari {{min}} menit",
       "emptyTitle": "Belum ada lead",
       "emptyDesc": "Tempel pesan WhatsApp pertama dari iklan dan lead dibuat otomatis.",
       "stages": "Tahap",
       "emptyStage": "Tidak ada lead di tahap ini.",
       "newShort": "Lead",
-      "noMatch": "Tidak ada lead yang cocok dengan filter ini."
+      "noMatch": "Tidak ada lead yang cocok dengan filter ini.",
+      "followUpsToday_other": "{{count}} tindak lanjut hari ini",
+      "unansweredBanner_other": "{{count}} lead belum dibalas lebih dari {{min}} menit"
     },
     "settings": {
       "stageDeleted": "Tahap dihapus.",
@@ -10304,7 +10304,17 @@
       "assigned": "Ditugaskan ke {{name}}",
       "title": "Riwayat",
       "firstReply": "Balasan pertama",
-      "responseTime": "waktu respons {{time}}"
+      "responseTime": "waktu respons {{time}}",
+      "waIn": "Pesan masuk",
+      "waMonomi": "Dibalas dari inbox Monomi",
+      "waPhoneApp": "Dibalas dari HP (WhatsApp Business)",
+      "quotationCreated": "Penawaran dibuat",
+      "conv": {
+        "clientNew": "Klien baru dibuat",
+        "clientLinked": "Klien dihubungkan",
+        "project": "proyek",
+        "quotation": "penawaran draft"
+      }
     },
     "lost": {
       "done": "Lead ditandai kalah.",
@@ -10399,7 +10409,6 @@
       "email": "Email"
     },
     "list": {
-      "bulkDone": "{{n}} lead diperbarui.",
       "bulkFailed": "{{n}} lead gagal diperbarui.",
       "bulk": "Aksi massal",
       "selected": "{{n}} dipilih",
@@ -10412,7 +10421,8 @@
       "owner": "PJ",
       "followUp": "Tindak lanjut",
       "value": "Estimasi",
-      "selectRow": "Pilih {{name}}"
+      "selectRow": "Pilih {{name}}",
+      "bulkDone_other": "{{count}} lead diperbarui."
     },
     "badge": {
       "aria": "{{n}} lead perlu perhatian"
@@ -10469,7 +10479,8 @@
         "type": "Jenis: {{type}}",
         "adId": "ID iklan {{id}}",
         "clid": "ID klik iklan tersimpan (untuk laporan Meta)",
-        "open": "Buka iklan"
+        "open": "Buka iklan",
+        "imageAlt": "Gambar iklan"
       },
       "media": {
         "unavailable": "Media tidak tersedia (lebih dari 14 hari atau tidak dibagikan).",
@@ -10499,7 +10510,6 @@
       "noTemplates": "Belum ada template yang disetujui. Buat di WhatsApp Manager.",
       "templatePick": "Template",
       "templateChoose": "Pilih…",
-      "templateParam": "Isian {{n}}",
       "send": "Kirim",
       "quickReplies": "Balasan cepat",
       "quickRepliesEmpty": "Belum ada — tambahkan di pengaturan CRM.",
@@ -10537,7 +10547,7 @@
         "copyFailed": "Gagal menyalin — pilih teksnya lalu salin manual.",
         "tokenMissing": "Verify token belum diatur di server.",
         "capiRan": "Pengirim sudah dijalankan.",
-        "datasetCreated": "Dataset {{id}} — isikan ke META_DATASET_ID di server.",
+        "datasetCreated": "Dataset {{id}} ditemukan. Berikan ID ini ke developer/admin untuk diatur di server.",
         "datasetFailed": "Tidak dapat membuat dataset.",
         "title": "WhatsApp Business (inbox + event Meta)",
         "subtitle": "Coexistence: tim tetap memakai aplikasi WhatsApp Business; Monomi mencerminkan chat dan bisa membalas.",
@@ -10569,7 +10579,7 @@
         "copied": "Disalin.",
         "verifyToken": "Verify token",
         "revealCopy": "Tampilkan & salin",
-        "notSet": "Belum diatur (WHATSAPP_WEBHOOK_VERIFY_TOKEN)",
+        "notSet": "Belum diatur di server",
         "fields": "Field langganan",
         "signature": "Cek tanda tangan",
         "noSecret": "App secret belum ada",
@@ -10578,7 +10588,7 @@
         "capi": "Conversions API (event ke Meta)",
         "capiEnabled": "Pengiriman",
         "on": "Aktif",
-        "offUntil": "Nonaktif (META_CAPI_ENABLED=false) — tidak ada yang dikirim",
+        "offUntil": "Nonaktif — tidak ada yang dikirim ke Meta",
         "dataset": "Dataset",
         "notSet2": "Belum diatur",
         "testMode": "test event code aktif",
@@ -10590,7 +10600,7 @@
         "createDataset": "Buat / ambil ID dataset",
         "signupTitle": "Hubungkan WhatsApp (Embedded Signup, coexistence)",
         "signupHint": "Membuka jendela Meta: pilih “Hubungkan aplikasi WhatsApp Business yang sudah ada”, lalu konfirmasi di HP. Setelah itu Monomi berlangganan webhook dan meminta riwayat chat.",
-        "signupDisabled": "Tersedia setelah Meta menyetujui Monomi sebagai Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID).",
+        "signupDisabled": "Belum tersedia: perlu persetujuan Meta untuk Monomi sebagai Tech Provider dan diaktifkan oleh developer.",
         "state": "Konfigurasi server",
         "stateReady": "Siap",
         "stateOff": "Belum dikonfigurasi",
@@ -10598,13 +10608,19 @@
         "stateInvalid": "Tidak valid — nonaktif",
         "problemsHint": "Perbaiki ini di environment server lalu restart backend. Bagian lain aplikasi tetap berjalan normal.",
         "wrongFinish": "Meta menyelesaikan jenis pendaftaran lain ({{event}}). Hanya “Hubungkan aplikasi WhatsApp Business yang sudah ada” (coexistence) yang didukung — tidak ada yang diubah. Ulangi dan pilih opsi tersebut.",
-        "datasetConfigured": "Dataset {{id}} sudah diatur di META_DATASET_ID."
+        "datasetConfigured": "Dataset {{id}} sudah diatur di server.",
+        "problemsPlain": "Koneksi belum sepenuhnya diatur di server. Minta developer/admin menyelesaikan pengaturannya; bagian lain aplikasi tetap berjalan normal.",
+        "techDetails": "Detail teknis (admin)",
+        "sigInactive": "Belum aktif (pengaturan belum lengkap)",
+        "signupTech": "Pengaturan server: WHATSAPP_COEXISTENCE_ENABLED, WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID, serta app id/secret Meta."
       },
       "leadNone": "Belum ada percakapan WhatsApp yang terhubung ke lead ini.",
       "leadNoneHint": "Chat dari nomor yang sama terhubung otomatis. Anda juga bisa menghubungkannya dari inbox.",
       "openInbox": "Buka inbox",
       "openInInbox": "Buka di inbox",
-      "badgeAria": "{{n}} chat WhatsApp belum dibaca"
+      "badgeAria": "{{n}} chat WhatsApp belum dibaca",
+      "templateVar": "Variabel {{n}}",
+      "templatePreview": "Pratinjau"
     }
   },
   "socialPublish": {
@@ -10663,6 +10679,26 @@
     "toggleHint": "Diterbitkan ke akun Monomi pada jadwal (WIB). TikTok tetap manual.",
     "token": "Token system user",
     "tokenInvalid": "Tidak valid",
-    "viewPost": "Lihat postingan"
+    "viewPost": "Lihat postingan",
+    "error": {
+      "NOT_CONFIGURED": "Publikasi otomatis belum dikonfigurasi (token Meta belum diatur).",
+      "NOT_INTERNAL_CLIENT": "Publikasi otomatis hanya untuk klien internal (Monomi) pada tahap ini.",
+      "TOKEN_INVALID": "Token Meta tidak valid atau sudah dicabut. Buat ulang token system user di Business Settings.",
+      "PERMISSION_DENIED": "Izin Meta kurang (mis. pages_manage_posts / instagram_content_publish) atau aset belum ditugaskan ke system user.",
+      "RATE_LIMITED": "Meta membatasi jumlah panggilan API sementara. Akan dicoba lagi otomatis.",
+      "PUBLISH_LIMIT_REACHED": "Batas publikasi Instagram 24 jam tercapai. Akan dicoba lagi otomatis.",
+      "MEDIA_FETCH_FAILED": "Meta tidak bisa mengunduh media dari penyimpanan. Akan dicoba lagi dengan tautan baru.",
+      "MEDIA_INVALID": "Media ditolak Meta",
+      "MEDIA_PROCESSING_FAILED": "Meta gagal memproses media",
+      "MEDIA_STORAGE_UNAVAILABLE": "Penyimpanan media (R2) belum dikonfigurasi, jadi tautan media untuk Meta tidak bisa dibuat.",
+      "CONTAINER_EXPIRED": "Kontainer media Instagram kedaluwarsa; akan dibuat ulang.",
+      "META_TRANSIENT": "Gangguan sementara di Meta. Akan dicoba lagi otomatis.",
+      "OUTCOME_UNCERTAIN": "Tidak bisa memastikan apakah postingan sudah terbit (koneksi ke Meta terputus). Periksa akun/Halaman dulu; tekan Coba lagi hanya jika postingan belum ada.",
+      "CANCELLED": "Dibatalkan: konten sudah ditandai terbit/diarsipkan secara manual.",
+      "DUPLICATE_POST": "Facebook menolak postingan duplikat (isi sama dengan postingan terbaru).",
+      "UNKNOWN": "Gagal menerbitkan",
+      "PROCESSING": "Meta masih memproses video.",
+      "VERIFYING": "Koneksi ke Meta terputus saat menerbitkan; memeriksa apakah postingan sudah terbit."
+    }
   }
 }

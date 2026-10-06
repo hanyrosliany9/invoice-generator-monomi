@@ -16,12 +16,17 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { MonomiDatePicker } from '@/components/monomi/MonomiDatePicker';
 import {
   apiErrorMessage, crmApi, type Campaign, type CampaignPlatform, type CampaignStatus,
 } from '@/services/crm';
 import { CrmShell, nativeSelectClass, textareaClass } from './CrmShell';
 import { idr, useCrmLabels, wibDateStr } from './crmUtils';
 import { CodeBadge } from './LeadParts';
+
+/** 'YYYY-MM-DD' <-> local Date for the app date picker (unambiguous "7 October 2026" display). */
+const ymdToDate = (v: string): Date | undefined => (v ? new Date(`${v.slice(0, 10)}T00:00:00`) : undefined);
+const dateToYmd = (d: Date): string => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /** Message to paste into the Meta ad: template + the [CODE] that links every lead to this campaign. */
 export const buildPrefill = (template: string | null, code: string, fallback: string): string => {
@@ -323,8 +328,8 @@ function CampaignDialog({
               <option value="BOTH">{t('crm.campaigns.platform.BOTH', 'Facebook + Instagram')}</option>
             </select>
           </div>
-          <div className="space-y-1.5"><Label htmlFor="cp-start">{t('crm.campaigns.start', 'Start')}</Label><Input id="cp-start" type="date" value={f.startDate} onChange={set('startDate')} /></div>
-          <div className="space-y-1.5"><Label htmlFor="cp-end">{t('crm.campaigns.end', 'End')}</Label><Input id="cp-end" type="date" value={f.endDate} onChange={set('endDate')} /></div>
+          <div className="space-y-1.5"><Label htmlFor="cp-start">{t('crm.campaigns.start', 'Start')}</Label><MonomiDatePicker value={ymdToDate(f.startDate)} onChange={(d) => setF((p) => ({ ...p, startDate: d ? dateToYmd(d) : '' }))} /></div>
+          <div className="space-y-1.5"><Label htmlFor="cp-end">{t('crm.campaigns.end', 'End')}</Label><MonomiDatePicker value={ymdToDate(f.endDate)} onChange={(d) => setF((p) => ({ ...p, endDate: d ? dateToYmd(d) : '' }))} /></div>
           <div className="space-y-1.5"><Label htmlFor="cp-budget">{t('crm.campaigns.budget', 'Budget')} (Rp)</Label><Input id="cp-budget" type="number" min={0} value={f.budget} onChange={set('budget')} /></div>
           <div className="space-y-1.5">
             <Label htmlFor="cp-status">{t('crm.campaigns.statusLabel', 'Status')}</Label>
@@ -374,8 +379,8 @@ function SpendDialog({ campaign, onClose, onSaved }: { campaign: Campaign; onClo
           <DialogDescription>{t('crm.campaigns.spendHint', 'Enter the ad spend for a day or a date range.')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5"><Label htmlFor="sp-from">{t('crm.campaigns.from', 'From')}</Label><Input id="sp-from" type="date" value={f.dateFrom} onChange={set('dateFrom')} /></div>
-          <div className="space-y-1.5"><Label htmlFor="sp-to">{t('crm.campaigns.to', 'To')}</Label><Input id="sp-to" type="date" value={f.dateTo} onChange={set('dateTo')} /></div>
+          <div className="space-y-1.5"><Label htmlFor="sp-from">{t('crm.campaigns.from', 'From')}</Label><MonomiDatePicker value={ymdToDate(f.dateFrom)} onChange={(d) => d && setF((p) => ({ ...p, dateFrom: dateToYmd(d), dateTo: p.dateTo && p.dateTo < dateToYmd(d) ? dateToYmd(d) : p.dateTo }))} /></div>
+          <div className="space-y-1.5"><Label htmlFor="sp-to">{t('crm.campaigns.to', 'To')}</Label><MonomiDatePicker value={ymdToDate(f.dateTo)} onChange={(d) => d && setF((p) => ({ ...p, dateTo: dateToYmd(d) }))} /></div>
           <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="sp-amount">{t('crm.campaigns.amount', 'Amount')} (Rp)</Label><Input id="sp-amount" type="number" inputMode="numeric" min={0} value={f.amount} onChange={set('amount')} autoFocus /></div>
           <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="sp-note">{t('crm.campaigns.noteLabel', 'Note')}</Label><Input id="sp-note" value={f.note} onChange={set('note')} maxLength={300} /></div>
         </div>

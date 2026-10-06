@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/hooks/usePermissions';
 import { apiErrorMessage } from '@/services/crm';
 import { whatsappApi, type WaConfigState, type WaQuickReply, type WaSettingsStatus } from '@/services/whatsapp';
 import { textareaClass } from '../CrmShell';
@@ -46,14 +47,35 @@ function StateBadge({ state }: { state: WaConfigState }) {
   return <span className={cn('font-medium', cls)}>{label}</span>;
 }
 
+/** Plain-language summary for everyone; the exact (env var) problems only in an admin-only disclosure. */
 function ProblemList({ items }: { items: string[] }) {
   const { t } = useWaLabels();
+  const { isAdmin } = usePermissions();
   if (!items.length) return null;
   return (
     <div className="mt-2 text-xs">
-      <ul className="list-disc pl-5 text-warning">{items.map((p) => <li key={p}>{p}</li>)}</ul>
-      <p className="mt-1 text-text-tertiary">{t('crm.wa.settings.problemsHint', 'Fix these in the server environment and restart the backend. The rest of the app keeps working meanwhile.')}</p>
+      <p className="text-warning">{t('crm.wa.settings.problemsPlain', 'The connection is not fully set up on the server yet. Ask the developer/admin to finish the setup; the rest of the app keeps working meanwhile.')}</p>
+      {isAdmin() && (
+        <details className="mt-1.5">
+          <summary className="cursor-pointer text-text-tertiary hover:text-text-primary">{t('crm.wa.settings.techDetails', 'Technical details (admin)')}</summary>
+          <ul className="mt-1 list-disc pl-5 text-warning">{items.map((p) => <li key={p} className="break-words">{p}</li>)}</ul>
+          <p className="mt-1 text-text-tertiary">{t('crm.wa.settings.problemsHint', 'Fix these in the server environment and restart the backend. The rest of the app keeps working meanwhile.')}</p>
+        </details>
+      )}
     </div>
+  );
+}
+
+/** Admin-only technical note (env variable names) shown behind a disclosure. */
+function TechNote({ children }: { children: React.ReactNode }) {
+  const { t } = useWaLabels();
+  const { isAdmin } = usePermissions();
+  if (!isAdmin()) return null;
+  return (
+    <details className="mt-1.5 text-xs">
+      <summary className="cursor-pointer text-text-tertiary hover:text-text-primary">{t('crm.wa.settings.techDetails', 'Technical details (admin)')}</summary>
+      <p className="mt-1 break-words text-text-tertiary">{children}</p>
+    </details>
   );
 }
 
@@ -236,8 +258,8 @@ export function WhatsAppSettingsCard() {
   const dataset = useMutation({
     mutationFn: whatsappApi.createDataset,
     onSuccess: ({ datasetId, source }) => toast.success(source === 'configured'
-      ? t('crm.wa.settings.datasetConfigured', 'Dataset {{id}} is already set in META_DATASET_ID.', { id: datasetId })
-      : t('crm.wa.settings.datasetCreated', 'Dataset {{id}} — put it in META_DATASET_ID on the server.', { id: datasetId }), { duration: 15000 }),
+      ? t('crm.wa.settings.datasetConfigured', 'Dataset {{id}} is already set up on the server.', { id: datasetId })
+      : t('crm.wa.settings.datasetCreated', 'Dataset {{id}} found. Give this ID to the developer/admin to set on the server.', { id: datasetId }), { duration: 15000 }),
     onError: (err) => toast.error(apiErrorMessage(err, t('crm.wa.settings.datasetFailed', 'Could not create the dataset.'))),
   });
 
@@ -294,7 +316,19 @@ export function WhatsAppSettingsCard() {
             </dl>
             <ProblemList items={s.env.problems} />
             {s.check?.numbers?.length ? (
-              <div className="mt-3 overflow-x-auto">
+              <div className="mt-3">
+                <ul className="space-y-2 sm:hidden">
+                  {s.check.numbers.map((n) => (
+                    <li key={n.id} className={cn('rounded-lg border border-border-subtle bg-bg-sunken p-2.5 text-xs', n.isConfigured && 'font-medium')}>
+                      <div className="font-mono">{n.displayPhoneNumber}{n.isConfigured ? ' ★' : ''}</div>
+                      <div className="text-text-secondary">{n.verifiedName}</div>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-text-tertiary">
+                        <span className="font-mono">{n.platformType}</span><span>{n.status}</span><span>{n.qualityRating}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="hidden overflow-x-auto sm:block">
                 <table className="w-full min-w-[520px] text-left text-xs">
                   <thead className="text-text-tertiary">
                     <tr>
@@ -317,6 +351,7 @@ export function WhatsAppSettingsCard() {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <p className="mt-1 text-[11px] text-text-tertiary">{t('crm.wa.settings.platformHint', '★ = the number Monomi uses. Read-only check: Monomi never changes the number.')}</p>
               </div>
             ) : null}
@@ -337,10 +372,14 @@ export function WhatsAppSettingsCard() {
                     {shownToken ? <code className="break-all rounded bg-bg-sunken px-1.5 py-0.5 text-xs">{shownToken}</code> : <span className="text-text-tertiary">••••••••</span>}
                     <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={reveal.isPending} onClick={() => reveal.mutate()}><Eye className="h-3.5 w-3.5" />{t('crm.wa.settings.revealCopy', 'Reveal & copy')}</Button>
                   </span>
-                ) : <span className="text-warning">{t('crm.wa.settings.notSet', 'Not set (WHATSAPP_WEBHOOK_VERIFY_TOKEN)')}</span>}
+                ) : <span className="text-warning">{t('crm.wa.settings.notSet', 'Not set on the server yet')}</span>}
               </Row>
               <Row label={t('crm.wa.settings.fields', 'Subscribe fields')}><code className="text-xs">{s.webhook.fields.join(', ')}</code></Row>
-              <Row label={t('crm.wa.settings.signature', 'Signature check')}><Yes ok={s.env.appSecret} yes={t('crm.wa.settings.ok', 'OK')} no={t('crm.wa.settings.noSecret', 'App secret missing')} /></Row>
+              <Row label={t('crm.wa.settings.signature', 'Signature check')}>
+                {!s.webhook.ready
+                  ? <span className="text-text-tertiary">{t('crm.wa.settings.sigInactive', 'Not active yet (setup incomplete)')}</span>
+                  : <Yes ok={s.env.appSecret} yes={t('crm.wa.settings.ok', 'OK')} no={t('crm.wa.settings.noSecret', 'App secret missing')} />}
+              </Row>
               <Row label={t('crm.wa.settings.lastWebhook', 'Last event received')}>{s.webhook.lastWebhookAt ? formatDateTime(s.webhook.lastWebhookAt) : <span className="text-text-tertiary">{t('crm.wa.settings.never', 'Never')}</span>}</Row>
             </dl>
           </section>
@@ -348,7 +387,7 @@ export function WhatsAppSettingsCard() {
           <section>
             <h3 className="mb-2 text-sm font-semibold">{t('crm.wa.settings.capi', 'Conversions API (events to Meta)')}</h3>
             <dl className="grid grid-cols-[150px_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-              <Row label={t('crm.wa.settings.capiEnabled', 'Sending')}>{s.capi.enabled ? <StateBadge state={s.capi.state} /> : <span className="text-warning">{t('crm.wa.settings.offUntil', 'Off (META_CAPI_ENABLED=false) — nothing is sent')}</span>}</Row>
+              <Row label={t('crm.wa.settings.capiEnabled', 'Sending')}>{s.capi.enabled ? <StateBadge state={s.capi.state} /> : <span className="text-warning">{t('crm.wa.settings.offUntil', 'Off — nothing is sent to Meta')}</span>}</Row>
               <Row label={t('crm.wa.settings.dataset', 'Dataset')}>{s.capi.datasetId ? <code className="text-xs">{s.capi.datasetId}</code> : <span className="text-warning">{t('crm.wa.settings.notSet2', 'Not set')}</span>}{s.capi.testEventCode ? <span className="ml-2 text-xs text-warning">{t('crm.wa.settings.testMode', 'test event code active')}</span> : null}</Row>
               <Row label={t('crm.wa.settings.counts', 'Events')}>
                 <span className="font-mono text-xs">
@@ -373,7 +412,10 @@ export function WhatsAppSettingsCard() {
                 <ConnectWhatsAppButton cfg={s.embeddedSignup} onDone={() => qc.invalidateQueries({ queryKey: ['wa', 'settings-status'] })} />
               </>
             ) : (
-              <p className="text-sm text-text-secondary">{t('crm.wa.settings.signupDisabled', 'Available after Meta approves Monomi as a Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID).')}</p>
+              <>
+                <p className="text-sm text-text-secondary">{t('crm.wa.settings.signupDisabled', 'Not available yet: it needs Meta’s approval of Monomi as a Tech Provider and the developer to switch it on.')}</p>
+                <TechNote>{t('crm.wa.settings.signupTech', 'Server settings: WHATSAPP_COEXISTENCE_ENABLED, WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID and the Meta app id/secret.')}</TechNote>
+              </>
             )}
           </section>
         </>

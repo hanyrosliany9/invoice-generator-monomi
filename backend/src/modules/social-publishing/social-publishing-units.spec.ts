@@ -19,6 +19,8 @@ import {
   validateForTargets,
 } from "./publish-plan";
 import { safePermalink } from "./publish-context";
+import { MSG, publishErrorFromGraph } from "./publish-errors";
+import { GraphApiError } from "../instagram/instagram-graph.client";
 import { AutoPublishPolicy } from "./auto-publish.policy";
 import { MetaAccountsService } from "./meta-accounts.service";
 import { safeCdnUrl } from "./social-publishing.service";
@@ -567,5 +569,23 @@ describe("AutoPublishPolicy (content calendar edits)", () => {
     await mk("FACEBOOK", "FAILED");
     await p.resetUnpublished(a.id);
     expect(prisma.pubs).toHaveLength(0);
+  });
+});
+
+describe("publish error messages (localized by the UI via errorCode)", () => {
+  it("keeps the raw Meta detail on its own line after the bilingual headline", () => {
+    const e = publishErrorFromGraph(new GraphApiError("x", "other", 400, 100, 2207009));
+    expect(e.code).toBe("MEDIA_INVALID");
+    const [head, detail] = e.message.split("\n");
+    expect(head).toBe("Media ditolak Meta / Media rejected by Meta");
+    expect(detail).toMatch(/aspect ratio/);
+  });
+
+  it("uses its own code for Facebook duplicate posts and no detail line for fixed messages", () => {
+    const e = publishErrorFromGraph(new GraphApiError("dup", "other", 400, 506));
+    expect(e.code).toBe("DUPLICATE_POST");
+    expect(e.message).toBe(MSG.duplicate);
+    expect(MSG.publishLimit(5, 100)).toContain("\n5/100");
+    expect(MSG.publishLimit()).not.toContain("\n");
   });
 });
