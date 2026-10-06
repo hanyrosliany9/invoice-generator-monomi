@@ -151,7 +151,8 @@
     "crm": "CRM",
     "crmLeads": "Lead",
     "crmCampaigns": "Kampanye",
-    "crmDashboard": "Dasbor CRM"
+    "crmDashboard": "Dasbor CRM",
+    "crmInbox": "Inbox"
   },
   "auth": {
     "login": "Masuk",
@@ -9740,6 +9741,50 @@
             "body": "Buka Dasbor CRM untuk melihat corong penjualan, kecepatan respons, serta lead, klien, pendapatan, biaya per lead, dan biaya per klien tiap kampanye. Pilih periode di bagian atas."
           }
         }
+      },
+      "crm-whatsapp-inbox": {
+        "title": "Inbox WhatsApp",
+        "purpose": "Baca dan jawab chat WhatsApp dari nomor bisnis langsung di Monomi. Setiap chat baru otomatis menjadi lead, lengkap dengan iklan asalnya.",
+        "steps": {
+          "buka-inbox": {
+            "title": "Buka inbox",
+            "body": "Buka Marketing > CRM > Inbox. Angka hijau menunjukkan jumlah chat yang punya pesan belum dibaca. Pakai tab Semua, Belum dibaca, Milik saya, dan Belum ditugaskan, atau cari nama atau nomor.",
+            "tip": "Daftar diperbarui sendiri setiap beberapa detik."
+          },
+          "lead-otomatis": {
+            "title": "Chat baru menjadi lead",
+            "body": "Saat nomor yang belum dikenal menulis pertama kali, Monomi membuat lead di kolom Baru. Jika chat berawal dari iklan Click-to-WhatsApp, lead mendapat sumber WhatsApp · Iklan, kampanyenya (dari kode di pesan atau ID iklan) dan banner iklan di atas chat.",
+            "tip": "Isi ID iklan di kampanye agar iklan tanpa kode tetap tercocokkan."
+          },
+          "balas": {
+            "title": "Balas dari Monomi",
+            "body": "Buka chat, ketik di kolom bawah lalu tekan Kirim (atau Ctrl+Enter). Nama Anda tampil di atas gelembung sebagai Monomi · nama. Satu centang = terkirim, dua centang = sampai, centang biru = dibaca.",
+            "tip": "Tombol petir menyisipkan balasan cepat."
+          },
+          "jendela-24-jam": {
+            "title": "Jendela 24 jam",
+            "body": "Anda bebas menulis selama 24 jam setelah pesan terakhir pelanggan (garis hijau di atas kolom). Setelah itu WhatsApp hanya mengizinkan template yang disetujui: tekan Kirim template, pilih, lalu isi nilainya.",
+            "tip": "Chat dari iklan juga menampilkan jendela gratis (72 jam)."
+          },
+          "dari-hp": {
+            "title": "Balasan dari HP tetap tercatat",
+            "body": "Tim tetap bisa menjawab lewat aplikasi WhatsApp Business di HP. Balasan itu tampil di Monomi dengan label Dikirim dari aplikasi HP dan dihitung sebagai respons pertama lead.",
+            "tip": "Jangan pernah mendaftarkan atau memverifikasi ulang nomor di Meta: aplikasi di HP akan keluar."
+          },
+          "tetapkan": {
+            "title": "Tugaskan, hubungkan, arsipkan",
+            "body": "Pakai menu di kepala chat untuk menugaskan chat ke rekan, tombol tautan untuk menghubungkannya ke lead lain, dan tombol arsip untuk menyembunyikan chat yang selesai. Pesan baru memindahkan chat yang diarsipkan kembali ke inbox."
+          },
+          "tab-lead": {
+            "title": "Lihat chat di halaman lead",
+            "body": "Di halaman lead, buka tab WhatsApp untuk membaca dan menjawab percakapan yang sama tanpa meninggalkan lead."
+          },
+          "pengaturan": {
+            "title": "Pengaturan dan balasan cepat",
+            "body": "CRM > Pengaturan menampilkan apakah WhatsApp terhubung, nomor beserta platform type-nya, detail webhook untuk Meta, dan status event yang dikirim ke Meta. Tambahkan balasan cepat di sana.",
+            "tip": "Hanya admin yang bisa melihat inbox dan pengaturannya."
+          }
+        }
       }
     }
   },
@@ -10065,7 +10110,9 @@
       "from": "Dari",
       "to": "Sampai",
       "amount": "Jumlah",
-      "noteLabel": "Catatan"
+      "noteLabel": "Catatan",
+      "metaAdIds": "ID iklan Meta (opsional)",
+      "metaAdIdsHint": "Chat dari iklan Click-to-WhatsApp ini otomatis terhubung ke kampanye, meski tanpa kode di pesan. ID-nya ada di Ads Manager."
     },
     "errors": {
       "delete": "Tidak dapat menghapus.",
@@ -10288,7 +10335,10 @@
       "delete": "Hapus lead",
       "lostBecause": "Kalah: {{reason}}",
       "unansweredTitle": "Menunggu balasan pertama",
-      "moveTo": "Pindah ke…"
+      "moveTo": "Pindah ke…",
+      "tabs": "Bagian lead",
+      "tabActivity": "Aktivitas",
+      "tabWhatsApp": "WhatsApp"
     },
     "composer": {
       "note": "Catatan",
@@ -10366,6 +10416,187 @@
     },
     "badge": {
       "aria": "{{n}} lead perlu perhatian"
+    },
+    "wa": {
+      "window": {
+        "openShort": "Jendela balas terbuka",
+        "closedShort": "Jendela tertutup",
+        "open": "Jendela balas 24 jam terbuka · tutup dalam {{time}}",
+        "closed": "Jendela 24 jam tertutup · hanya template yang disetujui yang bisa dikirim",
+        "freeHint": "Chat yang berawal dari iklan Click-to-WhatsApp mendapat jendela free entry point selama 72 jam.",
+        "free": "Jendela gratis dari iklan sampai {{at}}"
+      },
+      "unreadAria": "{{n}} belum dibaca",
+      "fromAd": "Iklan",
+      "filter": {
+        "all": "Semua",
+        "unread": "Belum dibaca",
+        "mine": "Milik saya",
+        "unassigned": "Belum ditugaskan"
+      },
+      "title": "Inbox WhatsApp",
+      "subtitle": "Chat dari nomor bisnis — balasan dari aplikasi di HP juga tampil di sini.",
+      "settingsLink": "Pengaturan WhatsApp",
+      "notConfigured": "WhatsApp belum terhubung. Chat baru akan muncul di sini setelah koneksi diatur di pengaturan CRM.",
+      "listLabel": "Percakapan",
+      "search": "Cari nama atau nomor",
+      "windowFilter": "Jendela balas",
+      "windowAny": "Semua jendela",
+      "windowOpen": "Jendela 24 jam terbuka",
+      "windowClosed": "Jendela tertutup",
+      "archived": "Diarsipkan",
+      "emptyFiltered": "Tidak ada percakapan yang cocok dengan filter ini.",
+      "empty": "Belum ada percakapan. Chat WhatsApp baru akan muncul di sini secara otomatis.",
+      "conversationLabel": "Percakapan",
+      "pick": "Pilih percakapan",
+      "status": {
+        "RECEIVED": "Diterima",
+        "PENDING": "Mengirim",
+        "SENT": "Terkirim",
+        "DELIVERED": "Sampai",
+        "READ": "Dibaca",
+        "FAILED": "Gagal"
+      },
+      "origin": {
+        "monomiBy": "Monomi · {{name}}",
+        "monomi": "Monomi",
+        "phone": "Dikirim dari aplikasi HP",
+        "historyIn": "Riwayat yang diimpor",
+        "historyOut": "Riwayat yang diimpor · bisnis"
+      },
+      "ctwa": {
+        "title": "Berawal dari iklan Click-to-WhatsApp",
+        "type": "Jenis: {{type}}",
+        "adId": "ID iklan {{id}}",
+        "clid": "ID klik iklan tersimpan (untuk laporan Meta)",
+        "open": "Buka iklan"
+      },
+      "media": {
+        "unavailable": "Media tidak tersedia (lebih dari 14 hari atau tidak dibagikan).",
+        "image": "Foto",
+        "file": "Berkas",
+        "loading": "Memuat…",
+        "retry": "Gagal memuat — coba lagi",
+        "showImage": "Tampilkan foto",
+        "playAudio": "Muat pesan suara",
+        "showVideo": "Muat video",
+        "showFile": "Muat berkas"
+      },
+      "template": "Template",
+      "reaction": "Memberi reaksi {{emoji}}",
+      "unsupported": "Pesan tidak didukung ({{type}})",
+      "reply": "Balas",
+      "templateSent": "Template terkirim.",
+      "errors": {
+        "send": "Tidak dapat mengirim pesan.",
+        "templates": "Tidak dapat memuat template.",
+        "load": "Tidak dapat memuat pesan.",
+        "windowClosed": "Jendela 24 jam sudah tertutup. Kirim template yang disetujui."
+      },
+      "templateTitle": "Kirim template",
+      "templateHint": "Di luar jendela 24 jam, WhatsApp hanya mengizinkan template yang sudah disetujui Meta.",
+      "loading": "Memuat…",
+      "noTemplates": "Belum ada template yang disetujui. Buat di WhatsApp Manager.",
+      "templatePick": "Template",
+      "templateChoose": "Pilih…",
+      "templateParam": "Isian {{n}}",
+      "send": "Kirim",
+      "quickReplies": "Balasan cepat",
+      "quickRepliesEmpty": "Belum ada — tambahkan di pengaturan CRM.",
+      "linkLead": "Hubungkan ke lead",
+      "linkSearch": "Cari nama, perusahaan, atau nomor",
+      "unlink": "Lepaskan",
+      "back": "Kembali ke daftar percakapan",
+      "openLead": "Lead",
+      "assign": "Ditugaskan ke",
+      "changeLead": "Ganti lead yang terhubung",
+      "archive": "Arsipkan",
+      "unarchive": "Kembalikan ke inbox",
+      "loadOlder": "Muat pesan sebelumnya",
+      "noMessages": "Belum ada pesan.",
+      "replyingTo": "Membalas",
+      "composerPlaceholder": "Ketik balasan… (Ctrl+Enter untuk kirim)",
+      "composer": "Balasan",
+      "closedHint": "Pelanggan belum menulis dalam 24 jam terakhir. Buka lagi percakapan dengan template yang disetujui.",
+      "sendTemplate": "Kirim template",
+      "useTemplate": "Pakai template",
+      "settings": {
+        "connected": "WhatsApp terhubung. Sinkronisasi riwayat sudah diminta.",
+        "connectFailed": "Gagal menyelesaikan koneksi WhatsApp.",
+        "connecting": "Menghubungkan…",
+        "connect": "Hubungkan WhatsApp (coexistence)",
+        "quickReplies": "Balasan cepat",
+        "quickRepliesHint": "Jawaban singkat yang bisa disisipkan staf di kolom balasan inbox (maks 30).",
+        "qrTitle": "Judul, mis. Daftar harga",
+        "qrTitleLabel": "Judul",
+        "qrTextLabel": "Pesan",
+        "qrRemove": "Hapus",
+        "qrAdd": "Tambah balasan cepat",
+        "checkFailed": "Pemeriksaan gagal.",
+        "tokenCopied": "Verify token disalin.",
+        "copyFailed": "Gagal menyalin — pilih teksnya lalu salin manual.",
+        "tokenMissing": "Verify token belum diatur di server.",
+        "capiRan": "Pengirim sudah dijalankan.",
+        "datasetCreated": "Dataset {{id}} — isikan ke META_DATASET_ID di server.",
+        "datasetFailed": "Tidak dapat membuat dataset.",
+        "title": "WhatsApp Business (inbox + event Meta)",
+        "subtitle": "Coexistence: tim tetap memakai aplikasi WhatsApp Business; Monomi mencerminkan chat dan bisa membalas.",
+        "check": "Periksa koneksi",
+        "safetyTitle": "Jangan pernah mendaftarkan/memverifikasi nomor ini lewat kode SMS atau PIN di Meta — gunakan Hubungkan WhatsApp (coexistence).",
+        "safetyBody": "Mendaftarkan atau memigrasikan nomor akan mengeluarkan aplikasi WhatsApp Business di HP dan menghentikan iklan Click-to-WhatsApp yang sedang berjalan. Monomi sendiri menolak panggilan API tersebut.",
+        "loadFailed": "Tidak dapat memuat status WhatsApp.",
+        "connection": "Koneksi",
+        "configured": "Terkonfigurasi",
+        "yesEmbedded": "Ya (Hubungkan WhatsApp)",
+        "yesEnv": "Ya (token system user)",
+        "no": "Belum",
+        "token": "Token valid",
+        "ok": "OK",
+        "failed": "Gagal",
+        "waba": "WhatsApp Business Account",
+        "checkedAt": "Diperiksa",
+        "disconnected": "Terputus",
+        "history": "Sinkronisasi riwayat",
+        "historyProgress": "Fase {{phase}} · {{progress}}%",
+        "number": "Nomor",
+        "name": "Nama",
+        "status": "Status",
+        "quality": "Kualitas",
+        "platformHint": "★ = nomor yang dipakai Monomi. Pemeriksaan hanya-baca: Monomi tidak pernah mengubah nomor.",
+        "webhook": "Webhook (aplikasi Meta > WhatsApp > Configuration)",
+        "callbackUrl": "Callback URL",
+        "copyUrl": "Salin URL",
+        "copied": "Disalin.",
+        "verifyToken": "Verify token",
+        "revealCopy": "Tampilkan & salin",
+        "notSet": "Belum diatur (WHATSAPP_WEBHOOK_VERIFY_TOKEN)",
+        "fields": "Field langganan",
+        "signature": "Cek tanda tangan",
+        "noSecret": "App secret belum ada",
+        "lastWebhook": "Event terakhir diterima",
+        "never": "Belum pernah",
+        "capi": "Conversions API (event ke Meta)",
+        "capiEnabled": "Pengiriman",
+        "on": "Aktif",
+        "offUntil": "Nonaktif (META_CAPI_ENABLED=false) — tidak ada yang dikirim",
+        "dataset": "Dataset",
+        "notSet2": "Belum diatur",
+        "testMode": "test event code aktif",
+        "counts": "Event",
+        "countsLine": "menunggu {{p}} · antre {{q}} · terkirim {{s}} · gagal {{f}} · dilewati {{k}}",
+        "lastSent": "Terakhir dikirim",
+        "lastFailed": "Kegagalan terakhir",
+        "capiRun": "Kirim event yang antre sekarang",
+        "createDataset": "Buat / ambil ID dataset",
+        "signupTitle": "Hubungkan WhatsApp (Embedded Signup, coexistence)",
+        "signupHint": "Membuka jendela Meta: pilih “Hubungkan aplikasi WhatsApp Business yang sudah ada”, lalu konfirmasi di HP. Setelah itu Monomi berlangganan webhook dan meminta riwayat chat.",
+        "signupDisabled": "Tersedia setelah Meta menyetujui Monomi sebagai Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID)."
+      },
+      "leadNone": "Belum ada percakapan WhatsApp yang terhubung ke lead ini.",
+      "leadNoneHint": "Chat dari nomor yang sama terhubung otomatis. Anda juga bisa menghubungkannya dari inbox.",
+      "openInbox": "Buka inbox",
+      "openInInbox": "Buka di inbox",
+      "badgeAria": "{{n}} chat WhatsApp belum dibaca"
     }
   },
   "socialPublish": {

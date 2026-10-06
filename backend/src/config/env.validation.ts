@@ -230,7 +230,6 @@ export class EnvironmentVariables {
   @IsOptional()
   TOKEN_ENCRYPTION_KEY?: string;
 
-<<<<<<< HEAD
   // Auto-publishing Monomi's own posts to Instagram + Facebook Page via a Meta
   // system user token (optional; the feature is off unless all three are set).
   // Validated in depth by modules/social-publishing/social-publishing.config.ts;
@@ -263,7 +262,7 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   META_GRAPH_BASE_URL?: string;
-=======
+
   // WhatsApp Business Platform inbox + Conversions API (optional; all unset =
   // feature off). Validated in depth by modules/whatsapp/whatsapp.config.ts
   // (production refuses placeholder verify tokens / a missing app secret once
@@ -323,7 +322,6 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   META_CAPI_TEST_EVENT_CODE?: string;
->>>>>>> worktree-agent-ad8951acb86b122e7
 }
 
 export function validate(config: Record<string, unknown>) {

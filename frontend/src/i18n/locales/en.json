@@ -190,7 +190,8 @@
     "crm": "CRM",
     "crmLeads": "Leads",
     "crmCampaigns": "Campaigns",
-    "crmDashboard": "CRM Dashboard"
+    "crmDashboard": "CRM Dashboard",
+    "crmInbox": "Inbox"
   },
   "breadcrumb": {
     "client": "Client",
@@ -9741,6 +9742,50 @@
             "body": "Open CRM Dashboard to see the funnel, response speed and each campaign's leads, clients, revenue, cost per lead and cost per client. Pick a period at the top."
           }
         }
+      },
+      "crm-whatsapp-inbox": {
+        "title": "WhatsApp inbox",
+        "purpose": "Read and answer WhatsApp chats from the business number inside Monomi. Every new chat becomes a lead automatically, with the ad it came from.",
+        "steps": {
+          "buka-inbox": {
+            "title": "Open the inbox",
+            "body": "Go to Marketing > CRM > Inbox. The green number shows how many chats have unread messages. Use the tabs All, Unread, Mine and Unassigned, or search by name or number.",
+            "tip": "The list refreshes by itself every few seconds."
+          },
+          "lead-otomatis": {
+            "title": "New chats become leads",
+            "body": "When an unknown number writes for the first time, Monomi creates a lead in the New column. If the chat started from a Click-to-WhatsApp ad, the lead gets the source WhatsApp · Ad, the campaign (from the code in the message or the ad ID) and the ad banner at the top of the chat.",
+            "tip": "Add the ad IDs to the campaign so ads without the code are still matched."
+          },
+          "balas": {
+            "title": "Reply from Monomi",
+            "body": "Open a chat, type in the box at the bottom and press Send (or Ctrl+Enter). Your name appears above the bubble as Monomi · name. One tick = sent, two ticks = delivered, blue ticks = read.",
+            "tip": "The lightning button inserts a quick reply."
+          },
+          "jendela-24-jam": {
+            "title": "The 24-hour window",
+            "body": "You can write freely for 24 hours after the customer's last message (green line above the box). After that WhatsApp only allows approved templates: press Send template, choose one and fill in the values.",
+            "tip": "Chats from an ad also show the free-entry window (72 hours)."
+          },
+          "dari-hp": {
+            "title": "Replies from the phone still count",
+            "body": "The team can keep answering in the WhatsApp Business app on the phone. Those replies appear in Monomi labelled Sent from phone app and count as the first response for the lead.",
+            "tip": "Never register or verify the number again in Meta: it would log the phone app out."
+          },
+          "tetapkan": {
+            "title": "Assign, link and archive",
+            "body": "Use the menu in the chat header to assign the chat to a colleague, the link button to connect it to another lead, and the archive button to hide finished chats. A new message moves an archived chat back to the inbox."
+          },
+          "tab-lead": {
+            "title": "See the chat on the lead",
+            "body": "On a lead page, open the WhatsApp tab to read and answer the same conversation without leaving the lead."
+          },
+          "pengaturan": {
+            "title": "Settings and quick replies",
+            "body": "CRM > Settings shows whether WhatsApp is connected, the numbers with their platform type, the webhook details for Meta and the status of events sent to Meta. Add your quick replies there.",
+            "tip": "Only admins can see the inbox and the settings."
+          }
+        }
       }
     }
   },
@@ -10066,7 +10111,9 @@
       "from": "From",
       "to": "To",
       "amount": "Amount",
-      "noteLabel": "Note"
+      "noteLabel": "Note",
+      "metaAdIds": "Meta ad IDs (optional)",
+      "metaAdIdsHint": "Chats from these Click-to-WhatsApp ads are linked to this campaign automatically, even without the code in the message. Find the ID in Ads Manager."
     },
     "errors": {
       "delete": "Could not delete.",
@@ -10289,7 +10336,10 @@
       "delete": "Delete lead",
       "lostBecause": "Lost: {{reason}}",
       "unansweredTitle": "Waiting for a first reply",
-      "moveTo": "Move to…"
+      "moveTo": "Move to…",
+      "tabs": "Lead sections",
+      "tabActivity": "Activity",
+      "tabWhatsApp": "WhatsApp"
     },
     "composer": {
       "note": "Note",
@@ -10367,6 +10417,187 @@
     },
     "badge": {
       "aria": "{{n}} leads need attention"
+    },
+    "wa": {
+      "window": {
+        "openShort": "Reply window open",
+        "closedShort": "Window closed",
+        "open": "24h reply window open · closes in {{time}}",
+        "closed": "24h window closed · only approved templates can be sent",
+        "freeHint": "Chats that start from a Click-to-WhatsApp ad get a 72-hour free entry point window.",
+        "free": "Ad free-entry window until {{at}}"
+      },
+      "unreadAria": "{{n}} unread",
+      "fromAd": "Ad",
+      "filter": {
+        "all": "All",
+        "unread": "Unread",
+        "mine": "Mine",
+        "unassigned": "Unassigned"
+      },
+      "title": "WhatsApp inbox",
+      "subtitle": "Chats from the business number — replies from the phone app appear here too.",
+      "settingsLink": "WhatsApp settings",
+      "notConfigured": "WhatsApp is not connected yet. New chats will appear here once the connection is set up in CRM settings.",
+      "listLabel": "Conversations",
+      "search": "Search name or number",
+      "windowFilter": "Reply window",
+      "windowAny": "Any window",
+      "windowOpen": "24h window open",
+      "windowClosed": "Window closed",
+      "archived": "Archived",
+      "emptyFiltered": "No conversations match these filters.",
+      "empty": "No conversations yet. New WhatsApp chats appear here automatically.",
+      "conversationLabel": "Conversation",
+      "pick": "Choose a conversation",
+      "status": {
+        "RECEIVED": "Received",
+        "PENDING": "Sending",
+        "SENT": "Sent",
+        "DELIVERED": "Delivered",
+        "READ": "Read",
+        "FAILED": "Failed"
+      },
+      "origin": {
+        "monomiBy": "Monomi · {{name}}",
+        "monomi": "Monomi",
+        "phone": "Sent from phone app",
+        "historyIn": "Imported history",
+        "historyOut": "Imported history · business"
+      },
+      "ctwa": {
+        "title": "Started from a Click-to-WhatsApp ad",
+        "type": "Type: {{type}}",
+        "adId": "Ad ID {{id}}",
+        "clid": "Ad click ID saved (for Meta reporting)",
+        "open": "Open ad"
+      },
+      "media": {
+        "unavailable": "Media not available (older than 14 days or not shared).",
+        "image": "Photo",
+        "file": "File",
+        "loading": "Loading…",
+        "retry": "Could not load — retry",
+        "showImage": "Show photo",
+        "playAudio": "Load voice note",
+        "showVideo": "Load video",
+        "showFile": "Load file"
+      },
+      "template": "Template",
+      "reaction": "Reacted {{emoji}}",
+      "unsupported": "Unsupported message ({{type}})",
+      "reply": "Reply",
+      "templateSent": "Template sent.",
+      "errors": {
+        "send": "Could not send the message.",
+        "templates": "Could not load templates.",
+        "load": "Could not load messages.",
+        "windowClosed": "The 24-hour window is closed. Send an approved template instead."
+      },
+      "templateTitle": "Send a template",
+      "templateHint": "Outside the 24-hour window WhatsApp only allows templates approved by Meta.",
+      "loading": "Loading…",
+      "noTemplates": "No approved templates yet. Create them in WhatsApp Manager.",
+      "templatePick": "Template",
+      "templateChoose": "Choose…",
+      "templateParam": "Value {{n}}",
+      "send": "Send",
+      "quickReplies": "Quick replies",
+      "quickRepliesEmpty": "None yet — add them in CRM settings.",
+      "linkLead": "Link to lead",
+      "linkSearch": "Search name, company or number",
+      "unlink": "Unlink",
+      "back": "Back to conversations",
+      "openLead": "Lead",
+      "assign": "Assigned to",
+      "changeLead": "Change linked lead",
+      "archive": "Archive",
+      "unarchive": "Move back to inbox",
+      "loadOlder": "Load older messages",
+      "noMessages": "No messages yet.",
+      "replyingTo": "Replying to",
+      "composerPlaceholder": "Type a reply… (Ctrl+Enter to send)",
+      "composer": "Reply",
+      "closedHint": "The customer has not written in the last 24 hours. Re-open the chat with an approved template.",
+      "sendTemplate": "Send template",
+      "useTemplate": "Use a template",
+      "settings": {
+        "connected": "WhatsApp connected. History sync was requested.",
+        "connectFailed": "Could not finish connecting WhatsApp.",
+        "connecting": "Connecting…",
+        "connect": "Connect WhatsApp (coexistence)",
+        "quickReplies": "Quick replies",
+        "quickRepliesHint": "Short answers staff can insert in the inbox composer (max 30).",
+        "qrTitle": "Title, e.g. Price list",
+        "qrTitleLabel": "Title",
+        "qrTextLabel": "Message",
+        "qrRemove": "Remove",
+        "qrAdd": "Add quick reply",
+        "checkFailed": "Check failed.",
+        "tokenCopied": "Verify token copied.",
+        "copyFailed": "Copy failed — select and copy manually.",
+        "tokenMissing": "Verify token is not set on the server.",
+        "capiRan": "Sender ran.",
+        "datasetCreated": "Dataset {{id}} — put it in META_DATASET_ID on the server.",
+        "datasetFailed": "Could not create the dataset.",
+        "title": "WhatsApp Business (inbox + Meta events)",
+        "subtitle": "Coexistence: the team keeps using the WhatsApp Business app; Monomi mirrors the chats and can reply.",
+        "check": "Check connection",
+        "safetyTitle": "Never register/verify this number via SMS code or PIN in Meta — use Connect WhatsApp (coexistence).",
+        "safetyBody": "Registering or migrating the number logs the WhatsApp Business app on the phone out and stops the running Click-to-WhatsApp ads. Monomi itself refuses those API calls.",
+        "loadFailed": "Could not load the WhatsApp status.",
+        "connection": "Connection",
+        "configured": "Configured",
+        "yesEmbedded": "Yes (Connect WhatsApp)",
+        "yesEnv": "Yes (system user token)",
+        "no": "Not yet",
+        "token": "Token valid",
+        "ok": "OK",
+        "failed": "Failed",
+        "waba": "WhatsApp Business Account",
+        "checkedAt": "Checked",
+        "disconnected": "Disconnected",
+        "history": "History sync",
+        "historyProgress": "Phase {{phase}} · {{progress}}%",
+        "number": "Number",
+        "name": "Name",
+        "status": "Status",
+        "quality": "Quality",
+        "platformHint": "★ = the number Monomi uses. Read-only check: Monomi never changes the number.",
+        "webhook": "Webhook (Meta app > WhatsApp > Configuration)",
+        "callbackUrl": "Callback URL",
+        "copyUrl": "Copy URL",
+        "copied": "Copied.",
+        "verifyToken": "Verify token",
+        "revealCopy": "Reveal & copy",
+        "notSet": "Not set (WHATSAPP_WEBHOOK_VERIFY_TOKEN)",
+        "fields": "Subscribe fields",
+        "signature": "Signature check",
+        "noSecret": "App secret missing",
+        "lastWebhook": "Last event received",
+        "never": "Never",
+        "capi": "Conversions API (events to Meta)",
+        "capiEnabled": "Sending",
+        "on": "On",
+        "offUntil": "Off (META_CAPI_ENABLED=false) — nothing is sent",
+        "dataset": "Dataset",
+        "notSet2": "Not set",
+        "testMode": "test event code active",
+        "counts": "Events",
+        "countsLine": "waiting {{p}} · queued {{q}} · sent {{s}} · failed {{f}} · skipped {{k}}",
+        "lastSent": "Last sent",
+        "lastFailed": "Last failure",
+        "capiRun": "Send queued events now",
+        "createDataset": "Create / get dataset ID",
+        "signupTitle": "Connect WhatsApp (Embedded Signup, coexistence)",
+        "signupHint": "Opens Meta’s window: choose “Connect your existing WhatsApp Business app”, then confirm on the phone. Monomi then subscribes to the webhooks and asks for chat history.",
+        "signupDisabled": "Available after Meta approves Monomi as a Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID)."
+      },
+      "leadNone": "No WhatsApp conversation is linked to this lead yet.",
+      "leadNoneHint": "Chats from the same number are linked automatically. You can also link one from the inbox.",
+      "openInbox": "Open inbox",
+      "openInInbox": "Open in inbox",
+      "badgeAria": "{{n}} WhatsApp chats unread"
     }
   },
   "socialPublish": {

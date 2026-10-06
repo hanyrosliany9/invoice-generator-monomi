@@ -84,7 +84,6 @@ services:
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
       - INSTAGRAM_REDIRECT_URI=${INSTAGRAM_REDIRECT_URI:-https://admin.monomiagency.com/api/v1/instagram/oauth/callback}
       - INSTAGRAM_PORTAL_REDIRECT_URI=${INSTAGRAM_PORTAL_REDIRECT_URI:-https://portal.monomiagency.com/api/v1/instagram/oauth/callback}
-<<<<<<< HEAD
       # Auto-publish Monomi's own posts to Instagram + Facebook Page (optional —
       # empty = feature off). System user token from Meta Business Settings.
       - META_SYSTEM_USER_TOKEN=${META_SYSTEM_USER_TOKEN:-}
@@ -92,7 +91,7 @@ services:
       - META_IG_USER_ID=${META_IG_USER_ID:-}
       - META_SYSTEM_APP_SECRET=${META_SYSTEM_APP_SECRET:-}
       - META_AUTOPUBLISH_ENABLED=${META_AUTOPUBLISH_ENABLED:-true}
-=======
+
       # WhatsApp inbox + Conversions API (optional — app boots without them).
       # Webhook: https://admin.monomiagency.com/api/v1/whatsapp/webhook
       - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN:-}
@@ -107,7 +106,6 @@ services:
       - META_DATASET_ID=${META_DATASET_ID:-}
       - META_CAPI_ENABLED=${META_CAPI_ENABLED:-false}
       - META_CAPI_TEST_EVENT_CODE=${META_CAPI_TEST_EVENT_CODE:-}
->>>>>>> worktree-agent-ad8951acb86b122e7
       - PUBLIC_URL=https://share.monomiagency.com
       - MEDIA_URL=https://media.monomiagency.com
       # MCP custom connector — Claude.ai users connect via the admin hostname
