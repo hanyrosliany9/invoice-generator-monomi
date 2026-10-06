@@ -8,6 +8,7 @@ import {
   IsInt,
   IsBoolean,
   ValidateNested,
+  ArrayMaxSize,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -155,6 +156,25 @@ export class CreateContentDto {
   projectId?: string;
 
   // DELETED: campaignId - 2025-11-09
+
+  @ApiPropertyOptional({
+    description:
+      "Publish automatically to the selected Meta platforms at scheduledAt (internal client only, admin only)",
+  })
+  @IsBoolean()
+  @IsOptional()
+  autoPublish?: boolean;
+
+  @ApiPropertyOptional({
+    description: "Auto-publish targets (INSTAGRAM and/or FACEBOOK)",
+    enum: ContentPlatform,
+    isArray: true,
+  })
+  @IsArray()
+  @ArrayMaxSize(2)
+  @IsEnum(ContentPlatform, { each: true })
+  @IsOptional()
+  autoPublishTargets?: ContentPlatform[];
 
   @ApiPropertyOptional({
     description: "Media attachments",

@@ -71,7 +71,11 @@ export class ContentCalendarController {
     const userId = req.user.id;
     this.logger.debug(`Creating content for user: ${userId}`);
 
-    const content = await this.contentCalendarService.create(createDto, userId);
+    const content = await this.contentCalendarService.create(
+      createDto,
+      userId,
+      req.user.role,
+    );
 
     return content;
   }

@@ -84,6 +84,13 @@ services:
       - TOKEN_ENCRYPTION_KEY=${TOKEN_ENCRYPTION_KEY:-}
       - INSTAGRAM_REDIRECT_URI=${INSTAGRAM_REDIRECT_URI:-https://admin.monomiagency.com/api/v1/instagram/oauth/callback}
       - INSTAGRAM_PORTAL_REDIRECT_URI=${INSTAGRAM_PORTAL_REDIRECT_URI:-https://portal.monomiagency.com/api/v1/instagram/oauth/callback}
+      # Auto-publish Monomi's own posts to Instagram + Facebook Page (optional —
+      # empty = feature off). System user token from Meta Business Settings.
+      - META_SYSTEM_USER_TOKEN=${META_SYSTEM_USER_TOKEN:-}
+      - META_PAGE_ID=${META_PAGE_ID:-}
+      - META_IG_USER_ID=${META_IG_USER_ID:-}
+      - META_SYSTEM_APP_SECRET=${META_SYSTEM_APP_SECRET:-}
+      - META_AUTOPUBLISH_ENABLED=${META_AUTOPUBLISH_ENABLED:-true}
       - PUBLIC_URL=https://share.monomiagency.com
       - MEDIA_URL=https://media.monomiagency.com
       # MCP custom connector — Claude.ai users connect via the admin hostname

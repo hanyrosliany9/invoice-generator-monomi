@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../prisma/prisma.module";
 import { MediaModule } from "../media/media.module";
+import { SocialPublishingModule } from "../social-publishing/social-publishing.module";
 import { ContentCalendarService } from "./content-calendar.service";
 import { ContentCalendarController } from "./content-calendar.controller";
 import { ContentPublicController } from "./content-public.controller";
@@ -22,7 +23,7 @@ import { ContentPublicController } from "./content-public.controller";
  * - Client/Project/Campaign associations
  */
 @Module({
-  imports: [PrismaModule, MediaModule],
+  imports: [PrismaModule, MediaModule, SocialPublishingModule],
   controllers: [ContentCalendarController, ContentPublicController],
   providers: [ContentCalendarService],
   exports: [ContentCalendarService],

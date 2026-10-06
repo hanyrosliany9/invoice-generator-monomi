@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Optional,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { MediaService } from "../media/media.service";
@@ -21,6 +22,14 @@ import { validateMediaForPlatforms } from "./content-calendar.constants";
 import { CreateHighlightDto } from "./dto/create-highlight.dto";
 import { BulkContentDto } from "./dto/bulk-content.dto";
 import { randomBytes } from "crypto";
+import { AutoPublishPolicy } from "../social-publishing/auto-publish.policy";
+import { PUBLICATION_PUBLIC_SELECT } from "../social-publishing/social-publishing.service";
+
+/** Per-platform auto-publish status, safe for the staff UI (no Meta state). */
+const PUBLICATIONS_INCLUDE = {
+  select: PUBLICATION_PUBLIC_SELECT,
+  orderBy: { platform: "asc" as const },
+};
 
 /**
  * ContentCalendarService - Business Logic for Content Planning
@@ -91,7 +100,16 @@ export class ContentCalendarService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mediaService: MediaService,
+    @Optional() private readonly autoPublishPolicy?: AutoPublishPolicy,
   ) {}
+
+  /** The auto-publish policy, or a clear error when it is not wired (tests). */
+  private get policy(): AutoPublishPolicy {
+    if (!this.autoPublishPolicy) {
+      throw new BadRequestException("Auto-publishing is not available");
+    }
+    return this.autoPublishPolicy;
+  }
 
   /**
    * Get a client's social profile (non-sensitive fields only) for a platform's
@@ -487,6 +505,7 @@ export class ContentCalendarService {
   async create(
     createDto: CreateContentDto,
     userId: string,
+    userRole?: UserRole,
   ): Promise<ContentWithRelations> {
     // Validate media count against platform limits
     if (
@@ -540,6 +559,20 @@ export class ContentCalendarService {
         "scheduledAt is required when status is SCHEDULED",
       );
     }
+    // Auto-publish (admin + internal client only; media validated per target).
+    const autoPublishTargets = createDto.autoPublish
+      ? await this.policy.validateEnable({
+          userRole,
+          clientId: createDto.clientId,
+          targets: createDto.autoPublishTargets,
+          item: {
+            caption: createDto.caption,
+            format: createDto.format || ContentFormat.FEED,
+            media: this.planMediaFromDto(createDto.media),
+          },
+        })
+      : [];
+
     // New posts go to the top-left of the Instagram grid, even after a manual
     // rearrange (which numbers every existing post).
     const gridOrder =
@@ -564,6 +597,9 @@ export class ContentCalendarService {
         projectId: createDto.projectId,
         // DELETED: campaignId - 2025-11-09
         createdBy: userId,
+        autoPublish: !!createDto.autoPublish,
+        autoPublishTargets,
+        autoPublishBy: createDto.autoPublish ? userId : null,
         media: {
           create: createDto.media?.map((m, index) => ({
             url: m.url,
@@ -587,6 +623,7 @@ export class ContentCalendarService {
         },
         client: true,
         project: true,
+        publications: PUBLICATIONS_INCLUDE,
         // DELETED: campaign include - 2025-11-09
         createdByUser: {
           select: {
@@ -714,6 +751,7 @@ export class ContentCalendarService {
             description: true,
           },
         },
+        publications: PUBLICATIONS_INCLUDE,
         // DELETED: campaign include - 2025-11-09
         createdByUser: {
           select: {
@@ -809,6 +847,7 @@ export class ContentCalendarService {
         },
         client: true,
         project: true,
+        publications: PUBLICATIONS_INCLUDE,
         // DELETED: campaign include - 2025-11-09
         createdByUser: {
           select: {
@@ -840,6 +879,8 @@ export class ContentCalendarService {
     // Check if content exists and user has permission
     const existing = await this.findOne(id);
     this.checkPermission(existing, userId, userRole);
+    // Auto-publish items: admin-only edits, and never while mid-publish.
+    await this.autoPublishPolicy?.assertModifiable(existing, userRole);
 
     // Fix 4: validate status transitions when status is changing
     if (updateDto.status !== undefined && updateDto.status !== existing.status) {
@@ -871,6 +912,14 @@ export class ContentCalendarService {
       } else if (
         newScheduledAt &&
         existing.status === ContentStatus.DRAFT &&
+        newScheduledAt.getTime() > Date.now()
+      ) {
+        nextStatus = ContentStatus.SCHEDULED;
+      } else if (
+        // A failed auto-publish item that gets a new future time is re-armed.
+        newScheduledAt &&
+        existing.status === ContentStatus.FAILED &&
+        (updateDto.autoPublish ?? existing.autoPublish) &&
         newScheduledAt.getTime() > Date.now()
       ) {
         nextStatus = ContentStatus.SCHEDULED;
@@ -943,10 +992,59 @@ export class ContentCalendarService {
       }
     }
 
+    // Auto-publish settings. Re-validated whenever what would be published
+    // (or where / when) changes while auto-publish is on.
+    const effAutoPublish = updateDto.autoPublish ?? existing.autoPublish;
+    const autoPublishToggled =
+      updateDto.autoPublish !== undefined && updateDto.autoPublish !== existing.autoPublish;
+    const sameTargets = (a: ContentPlatform[], b: ContentPlatform[]) =>
+      a.length === b.length && a.every((t) => b.includes(t));
+    const publishRelevantChange =
+      (updateDto.caption !== undefined && updateDto.caption !== existing.caption) ||
+      (updateDto.format !== undefined && updateDto.format !== existing.format) ||
+      updateDto.media !== undefined ||
+      clearingSchedule ||
+      (newScheduledAt !== undefined &&
+        (!existing.scheduledAt ||
+          newScheduledAt.getTime() !== new Date(existing.scheduledAt).getTime())) ||
+      (updateDto.clientId !== undefined && updateDto.clientId !== existing.clientId) ||
+      (nextStatus !== undefined && nextStatus !== existing.status) ||
+      (updateDto.autoPublishTargets !== undefined &&
+        !sameTargets(updateDto.autoPublishTargets, existing.autoPublishTargets ?? []));
+    let autoPublishData: {
+      autoPublish?: boolean;
+      autoPublishTargets?: ContentPlatform[];
+      autoPublishBy?: string | null;
+    } = {};
+    if (
+      effAutoPublish &&
+      (autoPublishToggled || publishRelevantChange) &&
+      effectiveStatus !== ContentStatus.PUBLISHED &&
+      effectiveStatus !== ContentStatus.ARCHIVED
+    ) {
+      const targets = await this.policy.validateEnable({
+        userRole,
+        clientId: updateDto.clientId !== undefined ? updateDto.clientId : existing.clientId,
+        targets: updateDto.autoPublishTargets ?? existing.autoPublishTargets,
+        item: {
+          caption: updateDto.caption ?? existing.caption,
+          format: updateDto.format ?? existing.format,
+          media:
+            updateDto.media !== undefined
+              ? this.planMediaFromDto(updateDto.media)
+              : (existing.media ?? []),
+        },
+      });
+      autoPublishData = { autoPublish: true, autoPublishTargets: targets, autoPublishBy: userId };
+    } else if (updateDto.autoPublish === false && existing.autoPublish) {
+      autoPublishData = { autoPublish: false, autoPublishTargets: [], autoPublishBy: null };
+    }
+
     // Update content
     const content = await this.prisma.contentCalendarItem.update({
       where: { id },
       data: {
+        ...autoPublishData,
         ...(updateDto.caption !== undefined && { caption: updateDto.caption }),
         ...(clearingSchedule && { scheduledAt: null }),
         ...(newScheduledAt && { scheduledAt: newScheduledAt }),
@@ -999,6 +1097,7 @@ export class ContentCalendarService {
         },
         client: true,
         project: true,
+        publications: PUBLICATIONS_INCLUDE,
         // DELETED: campaign include - 2025-11-09
         createdByUser: {
           select: {
@@ -1029,6 +1128,11 @@ export class ContentCalendarService {
       await this.deleteUnreferencedKeys(removed);
     }
 
+    // Unpublished per-platform progress belongs to the old caption/media/time.
+    if (publishRelevantChange || autoPublishToggled) {
+      await this.autoPublishPolicy?.resetUnpublished(id);
+    }
+
     this.logger.log(`✅ Content updated: ${id}`);
 
     return content;
@@ -1041,6 +1145,7 @@ export class ContentCalendarService {
     // Check if content exists and user has permission
     const content = await this.findOne(id);
     this.checkPermission(content, userId, userRole);
+    await this.autoPublishPolicy?.assertModifiable(content, userRole);
 
     const keys = this.collectMediaKeys(content.media ?? []);
 
@@ -1067,6 +1172,7 @@ export class ContentCalendarService {
   ): Promise<ContentWithRelations> {
     const content = await this.findOne(id);
     this.checkPermission(content, userId, userRole);
+    await this.autoPublishPolicy?.assertModifiable(content, userRole);
 
     if (
       content.status === ContentStatus.PUBLISHED ||
@@ -1089,6 +1195,7 @@ export class ContentCalendarService {
         },
         client: true,
         project: true,
+        publications: PUBLICATIONS_INCLUDE,
         // DELETED: campaign include - 2025-11-09
         createdByUser: {
           select: {
@@ -1116,6 +1223,7 @@ export class ContentCalendarService {
   ): Promise<ContentWithRelations> {
     const content = await this.findOne(id);
     this.checkPermission(content, userId, userRole);
+    await this.autoPublishPolicy?.assertModifiable(content, userRole);
 
     const updated = await this.prisma.contentCalendarItem.update({
       where: { id },
@@ -1128,6 +1236,7 @@ export class ContentCalendarService {
         },
         client: true,
         project: true,
+        publications: PUBLICATIONS_INCLUDE,
         // DELETED: campaign include - 2025-11-09
         createdByUser: {
           select: {
@@ -1198,6 +1307,7 @@ export class ContentCalendarService {
         media: { orderBy: { order: "asc" } },
         client: true,
         project: true,
+        publications: PUBLICATIONS_INCLUDE,
         createdByUser: {
           select: { id: true, name: true, email: true, role: true },
         },
@@ -1248,6 +1358,7 @@ export class ContentCalendarService {
       }
       try {
         this.checkPermission(item, userId, userRole);
+        await this.autoPublishPolicy?.assertModifiable(item, userRole);
 
         if (dto.action === "DELETE") {
           await this.prisma.contentCalendarItem.delete({ where: { id } });
@@ -1294,6 +1405,9 @@ export class ContentCalendarService {
                 : {}),
             },
           });
+        }
+        if (dto.action !== "DELETE") {
+          await this.autoPublishPolicy?.resetUnpublished(id);
         }
         succeeded.push(id);
       } catch (e: any) {
@@ -1413,6 +1527,21 @@ export class ContentCalendarService {
     if (!userRole || !(Object.values(UserRole) as string[]).includes(userRole)) {
       throw new ForbiddenException("You do not have permission to read this content.");
     }
+  }
+
+  /** Media of a create/update payload in the shape the publish validator expects. */
+  private planMediaFromDto(media?: CreateContentDto["media"]) {
+    return (media ?? []).map((m, index) => ({
+      id: `new-${index}`,
+      key: m.key,
+      type: this.determineMediaType(m.mimeType),
+      mimeType: m.mimeType,
+      size: Number(m.size) || 0,
+      width: m.width ?? null,
+      height: m.height ?? null,
+      duration: m.duration ?? null,
+      order: m.order !== undefined ? m.order : index,
+    }));
   }
 
   /**

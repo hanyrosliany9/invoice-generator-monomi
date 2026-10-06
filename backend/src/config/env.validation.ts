@@ -229,6 +229,39 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   TOKEN_ENCRYPTION_KEY?: string;
+
+  // Auto-publishing Monomi's own posts to Instagram + Facebook Page via a Meta
+  // system user token (optional; the feature is off unless all three are set).
+  // Validated in depth by modules/social-publishing/social-publishing.config.ts;
+  // an invalid value disables the feature instead of failing boot. The token
+  // stays in the environment only (never stored, logged or returned).
+  @IsString()
+  @IsOptional()
+  META_SYSTEM_USER_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  META_PAGE_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  META_IG_USER_ID?: string;
+
+  // Optional: app secret of the app the system user token belongs to; when set
+  // every call carries appsecret_proof.
+  @IsString()
+  @IsOptional()
+  META_SYSTEM_APP_SECRET?: string;
+
+  // Optional kill switch for the every-minute auto-publish job ("false" = off).
+  @IsString()
+  @IsOptional()
+  META_AUTOPUBLISH_ENABLED?: string;
+
+  // Dev only (ignored in production): fake Graph server base URL.
+  @IsString()
+  @IsOptional()
+  META_GRAPH_BASE_URL?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

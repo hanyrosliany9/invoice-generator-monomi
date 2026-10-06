@@ -1,4 +1,5 @@
 import { apiClient } from '../config/api';
+import type { AutoPublishPlatform, SocialPublication } from './social-publishing';
 
 export interface ContentMedia {
   id: string;
@@ -36,6 +37,11 @@ export interface ContentCalendarItem {
   project?: { id: string; number: string; description: string };
   // DELETED: campaign - 2025-11-09
   creator?: { id: string; name: string; email: string; role: string };
+  /** Publish automatically to Meta at scheduledAt (internal client only). */
+  autoPublish?: boolean;
+  autoPublishTargets?: AutoPublishPlatform[];
+  /** Per-platform auto-publish status (staff only). */
+  publications?: SocialPublication[];
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +60,8 @@ export interface CreateContentDto {
   platforms?: ('INSTAGRAM' | 'TIKTOK' | 'FACEBOOK' | 'TWITTER' | 'LINKEDIN' | 'YOUTUBE')[];
   clientId: string; // content is client-scoped — required
   projectId?: string;
+  autoPublish?: boolean;
+  autoPublishTargets?: AutoPublishPlatform[];
   // DELETED: campaignId - 2025-11-09
   media?: {
     url: string;
