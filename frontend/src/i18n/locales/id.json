@@ -147,7 +147,11 @@
     "assetsDepreciation": "Aset & Depresiasi",
     "depreciation": "Depresiasi",
     "fixedAssets": "Aset Tetap",
-    "guides": "Panduan"
+    "guides": "Panduan",
+    "crm": "CRM",
+    "crmLeads": "Lead",
+    "crmCampaigns": "Kampanye",
+    "crmDashboard": "Dasbor CRM"
   },
   "auth": {
     "login": "Masuk",
@@ -9697,6 +9701,45 @@
             "body": "Pakai → atau ↓ untuk slide berikutnya dan ← atau ↑ untuk slide sebelumnya."
           }
         }
+      },
+      "crm-leads-whatsapp": {
+        "title": "CRM: lead dari iklan WhatsApp",
+        "purpose": "Lacak setiap orang yang chat dari iklan WhatsApp: lihat dari kampanye mana mereka datang, balas dengan cepat, tindak lanjuti, lalu ubah menjadi klien dan penawaran.",
+        "steps": {
+          "kampanye": {
+            "title": "Buat kampanye untuk setiap iklan",
+            "body": "Buka Marketing > CRM > Kampanye lalu klik Kampanye baru. Beri nama dan kode unik, misalnya FB-OKT1. Isi anggaran dan tanggal jika sudah ada.",
+            "tip": "Pakai satu kode per iklan supaya dasbor bisa membandingkan iklan dengan adil."
+          },
+          "pesan-iklan": {
+            "title": "Taruh kode di pesan otomatis iklan",
+            "body": "Pilih kampanye lalu klik Salin pesan. Di Meta Ads Manager tempel ke kolom Pesan otomatis pada iklan. Kode di akhir pesan menghubungkan setiap chat baru ke kampanye ini.",
+            "tip": "Catat biaya iklan lewat Catat biaya agar biaya per lead dan per klien akurat."
+          },
+          "tambah-lead": {
+            "title": "Tambah lead dalam hitungan detik",
+            "body": "Saat ada yang chat, klik Lead baru (atau tekan Ctrl+Shift+L, Cmd+Shift+L di Mac). Tempel pesan pertamanya: nama, nomor, dan kode kampanye terisi sendiri. Tekan Ctrl+Enter untuk menyimpan.",
+            "tip": "Jika nomor sudah ada, muncul peringatan dengan tautan ke lead yang sudah ada."
+          },
+          "papan": {
+            "title": "Kerjakan lewat papan",
+            "body": "Lead berada di kolom: Baru, Dikualifikasi, Meeting, Penawaran, Menang, Kalah. Seret kartu ke kolom lain atau pakai menu Pindah ke di kartu. Kartu oranye belum dibalas dalam target waktu respons.",
+            "tip": "Klik Chat di WhatsApp pada lead untuk membuka percakapan; waktu balasan pertama tercatat."
+          },
+          "tindak-lanjut": {
+            "title": "Jadwalkan tindak lanjut",
+            "body": "Buka lead, pakai Tambah aktivitas untuk catatan, telepon, dan meeting, lalu Jadwalkan tindak lanjut agar tidak ada yang terlupa. Angka oranye di samping CRM pada menu menghitung lead belum dibalas dan tindak lanjut yang jatuh tempo hari ini."
+          },
+          "konversi": {
+            "title": "Konversi menjadi klien dan penawaran",
+            "body": "Saat lead siap, klik Konversi ke Klien & Buat Penawaran. Klien dibuat (atau dicocokkan lewat nomor) bersama proyek dan draf penawaran berisi estimasi nilai. Selesaikan penawaran di menu Penawaran.",
+            "tip": "Saat penawaran disetujui atau invoice dibayar, lead pindah ke Menang dengan sendirinya."
+          },
+          "dasbor": {
+            "title": "Baca dasbor",
+            "body": "Buka Dasbor CRM untuk melihat corong penjualan, kecepatan respons, serta lead, klien, pendapatan, biaya per lead, dan biaya per klien tiap kampanye. Pilih periode di bagian atas."
+          }
+        }
       }
     }
   },
@@ -9877,7 +9920,9 @@
       "viewerPrev": "Slide sebelumnya",
       "gridNext": "Pindah ke sel di bawahnya",
       "gridPrev": "Pindah ke sel di atasnya",
-      "scheduleAdd": "Tambahkan adegan dari baris tambah cepat"
+      "scheduleAdd": "Tambahkan adegan dari baris tambah cepat",
+      "crmQuickAdd": "Tambah lead (tempel pesan WhatsApp)",
+      "crmQuickAddSave": "Simpan lead"
     },
     "note": {
       "helpOpen": "Tidak berlaku saat mengetik di kolom isian",
@@ -9902,7 +9947,8 @@
       "videoFrameBack": "1/30 detik",
       "videoFrameFwd": "1/30 detik",
       "gridNext": "Enter di baris terakhir menambah baris baru",
-      "scheduleAdd": "Di baris tambah cepat"
+      "scheduleAdd": "Di baris tambah cepat",
+      "crmQuickAddSave": "Di jendela Tambah lead"
     }
   },
   "instagram": {
@@ -9957,5 +10003,369 @@
     "syncNow": "Sync sekarang",
     "reconnect": "Hubungkan ulang",
     "reconnectExpired": "Hubungkan ulang Instagram"
+  },
+  "crm": {
+    "campaigns": {
+      "defaultPrefill": "Halo Monomi, saya tertarik dengan layanan Anda. Boleh minta detail dan harganya?",
+      "deleted": "Kampanye dihapus.",
+      "copied": "Pesan disalin.",
+      "copyFail": "Tidak dapat menyalin. Pilih teksnya lalu salin secara manual.",
+      "status": {
+        "ACTIVE": "Aktif",
+        "PAUSED": "Dijeda",
+        "ENDED": "Selesai"
+      },
+      "platform": {
+        "FACEBOOK": "Facebook",
+        "INSTAGRAM": "Instagram",
+        "BOTH": "Facebook + Instagram"
+      },
+      "title": "Kampanye",
+      "subtitle": "Setiap iklan punya kode unik. Taruh kodenya di pesan otomatis iklan WhatsApp agar setiap lead tahu asalnya.",
+      "new": "Kampanye baru",
+      "emptyTitle": "Belum ada kampanye",
+      "emptyDesc": "Buat satu per iklan, lalu salin pesan otomatisnya ke Meta Ads Manager.",
+      "col": {
+        "campaign": "Kampanye",
+        "code": "Kode",
+        "leads": "Lead",
+        "won": "Menang",
+        "spend": "Biaya iklan",
+        "costClient": "Biaya / klien"
+      },
+      "more": "Aksi kampanye",
+      "edit": "Ubah",
+      "markAs": "Tandai sebagai {{status}}",
+      "deleteConfirm": "Hapus kampanye ini beserta catatan biaya iklannya? Lead tetap menyimpan kodenya.",
+      "delete": "Hapus",
+      "prefillTitle": "Pesan otomatis untuk iklan WhatsApp",
+      "copiedShort": "Tersalin",
+      "copy": "Salin pesan",
+      "prefillHelp": "Tempel di Meta Ads Manager → Iklan → Pesan → \"Pesan otomatis\". Kode di akhir pesan menghubungkan setiap lead ke kampanye ini.",
+      "budget": "Anggaran",
+      "spendTitle": "Biaya iklan",
+      "logSpend": "Catat biaya",
+      "deleteSpend": "Hapus catatan biaya",
+      "deleteSpendConfirm": "Hapus catatan biaya ini?",
+      "noSpend": "Belum ada biaya yang dicatat.",
+      "metaSpend": "Diambil otomatis dari Meta setelah izin kami disetujui.",
+      "saved": "Kampanye disimpan.",
+      "dialogTitle": "Kampanye",
+      "editTitle": "Ubah kampanye",
+      "codeHint": "Kode (misalnya FB-OKT1) diletakkan di akhir pesan iklan agar setiap lead bisa dilacak asalnya.",
+      "name": "Nama",
+      "code": "Kode unik",
+      "platformLabel": "Platform",
+      "start": "Mulai",
+      "end": "Selesai",
+      "statusLabel": "Status",
+      "prefillLabel": "Pesan otomatis",
+      "spendSaved": "Biaya dicatat.",
+      "spendHint": "Isi biaya iklan untuk satu hari atau rentang tanggal.",
+      "from": "Dari",
+      "to": "Sampai",
+      "amount": "Jumlah",
+      "noteLabel": "Catatan"
+    },
+    "errors": {
+      "delete": "Tidak dapat menghapus.",
+      "save": "Tidak dapat menyimpan.",
+      "move": "Tidak dapat memindahkan lead.",
+      "activity": "Tidak dapat menyimpan aktivitas.",
+      "followUp": "Tidak dapat menyimpan tindak lanjut.",
+      "assign": "Tidak dapat menugaskan lead.",
+      "bulk": "Pembaruan massal gagal."
+    },
+    "common": {
+      "cancel": "Batal",
+      "save": "Simpan",
+      "close": "Tutup",
+      "clear": "Hapus pilihan"
+    },
+    "convert": {
+      "done": "Berhasil dikonversi. Datanya sudah siap.",
+      "error": "Tidak dapat mengonversi lead.",
+      "title": "Konversi menjadi klien",
+      "successTitle": "Lead dikonversi",
+      "clientNew": "Klien baru dibuat dari lead ini.",
+      "clientLinked": "Lead dihubungkan ke klien yang sudah ada dengan nomor yang sama.",
+      "client": "Klien",
+      "project": "Proyek",
+      "quotation": "Draf penawaran",
+      "desc": "Klien dibuat dari {{name}} (atau dicocokkan lewat nomor WhatsApp). Pilih apa lagi yang disiapkan.",
+      "makeQuote": "Buat draf penawaran",
+      "hasQuote": "Lead ini sudah punya penawaran.",
+      "makeQuoteHint": "Terisi dari estimasi nilai; Anda menyelesaikannya di menu Penawaran.",
+      "makeProject": "Buat proyek",
+      "projectName": "Deskripsi proyek",
+      "amount": "Nilai penawaran (Rp)",
+      "needAmount": "Isi nilai lebih dari 0.",
+      "confirmQuote": "Konversi & buat penawaran",
+      "confirm": "Konversi menjadi klien"
+    },
+    "dash": {
+      "period": {
+        "thisMonth": "Bulan ini",
+        "lastMonth": "Bulan lalu",
+        "last30": "30 hari terakhir",
+        "last90": "90 hari terakhir",
+        "thisYear": "Tahun ini"
+      },
+      "vsPrev": "% dibanding periode sebelumnya",
+      "title": "Dasbor CRM",
+      "subtitle": "Dari chat iklan sampai invoice lunas: {{from}} – {{to}}.",
+      "subtitleLoading": "Dari chat iklan sampai invoice lunas.",
+      "periodLabel": "Periode",
+      "allCampaigns": "Semua kampanye",
+      "kpi": {
+        "leads": "Lead baru",
+        "won": "Klien menang",
+        "conversion": "{{pct}}% konversi",
+        "revenue": "Pendapatan dari lead",
+        "revenueHint": "Invoice lunas + penawaran disetujui",
+        "costClient": "Biaya per klien",
+        "costHint": "Biaya iklan {{spend}} ÷ {{n}} menang",
+        "costNone": "Biaya iklan {{spend}}"
+      },
+      "funnel": "Corong penjualan",
+      "dropPre": "Kebanyakan lead berhenti di",
+      "dropPost": "{{pct}}% tidak lanjut",
+      "lost": "{{n}} lead ditandai kalah.",
+      "response": "Kecepatan respons",
+      "responseAvg": "Rata-rata waktu balasan pertama · target {{min}} menit",
+      "responseMedian": "median {{time}}",
+      "ownerWon": "{{n}} menang",
+      "unansweredNow": "Belum dibalas > {{min}} menit",
+      "unansweredCount": "{{n}} lead",
+      "byCampaign": "Per kampanye",
+      "col": {
+        "qualified": "Dikualifikasi",
+        "revenue": "Pendapatan",
+        "costLead": "Biaya / lead"
+      },
+      "noCampaign": "Tanpa kampanye",
+      "noData": "Tidak ada lead pada periode ini.",
+      "bySource": "Per sumber"
+    },
+    "leads": {
+      "campaign": "Kampanye",
+      "ownerNone": "Belum ditugaskan",
+      "title": "Lead",
+      "subtitle": "Semua calon klien dari iklan WhatsApp dan sumber lainnya.",
+      "view": "Tampilan",
+      "board": "Papan",
+      "list": "Daftar",
+      "new": "Lead baru",
+      "search": "Cari nama, nomor WhatsApp, kode kampanye…",
+      "campaignAll": "Kampanye: Semua",
+      "owner": "Penanggung jawab",
+      "ownerAll": "PJ: Semua",
+      "ownerMe": "Milik saya",
+      "unanswered": "{{n}} belum dibalas > {{min}} mnt",
+      "followUpsToday": "{{n}} tindak lanjut hari ini",
+      "unansweredBanner": "{{n}} lead belum dibalas lebih dari {{min}} menit",
+      "emptyTitle": "Belum ada lead",
+      "emptyDesc": "Tempel pesan WhatsApp pertama dari iklan dan lead dibuat otomatis.",
+      "stages": "Tahap",
+      "emptyStage": "Tidak ada lead di tahap ini.",
+      "newShort": "Lead",
+      "noMatch": "Tidak ada lead yang cocok dengan filter ini."
+    },
+    "settings": {
+      "stageDeleted": "Tahap dihapus.",
+      "color": "Warna",
+      "stageName": "Nama tahap",
+      "typeLabel": "Tipe",
+      "type": {
+        "OPEN": "Terbuka",
+        "WON": "Menang",
+        "LOST": "Kalah"
+      },
+      "metaEvent": "Event Meta",
+      "noEvent": "Tanpa event Meta",
+      "active": "Aktif",
+      "up": "Naikkan",
+      "down": "Turunkan",
+      "delete": "Hapus tahap",
+      "deleteConfirm": "Hapus tahap ini?",
+      "saved": "Pengaturan disimpan.",
+      "title": "Pengaturan CRM",
+      "subtitle": "Target waktu respons dan tahap pipeline.",
+      "threshold": "Target waktu respons",
+      "thresholdHint": "Lead yang belum dibalas setelah sekian menit ditandai sebagai belum dibalas.",
+      "minutes": "Menit",
+      "stages": "Tahap pipeline",
+      "stagesHint": "Urutan, nama, dan warna. Event Meta dicatat saat lead masuk tahap tersebut (sekali per lead). Minimal harus ada satu tahap Terbuka, satu Menang, dan satu Kalah.",
+      "newStage": "Tahap baru",
+      "newStagePlaceholder": "mis. Negosiasi",
+      "addStage": "Tambah tahap",
+      "open": "Pengaturan CRM"
+    },
+    "stage": {
+      "NEW": "Baru",
+      "QUALIFIED": "Dikualifikasi",
+      "MEETING": "Meeting",
+      "PROPOSAL": "Penawaran",
+      "WON": "Menang",
+      "LOST": "Kalah"
+    },
+    "source": {
+      "WHATSAPP_CTWA": "WhatsApp · Iklan",
+      "WHATSAPP_ORGANIC": "WhatsApp",
+      "INSTAGRAM_DM": "DM Instagram",
+      "REFERRAL": "Referensi",
+      "WEBSITE": "Website",
+      "OTHER": "Lainnya"
+    },
+    "meta": {
+      "whenPaid": "Saat invoice dibayar",
+      "notTriggered": "Belum terpicu",
+      "status": {
+        "PENDING_CONFIG": "Menunggu persetujuan",
+        "QUEUED": "Dalam antrean",
+        "SENT": "Terkirim",
+        "FAILED": "Gagal",
+        "SKIPPED": "Dilewati"
+      },
+      "title": "Event terkirim ke Meta",
+      "desc": "Dikirim otomatis setelah Meta menyetujui izin kami."
+    },
+    "time": {
+      "min": "{{n}} mnt",
+      "hour": "{{n}} jam",
+      "hourMin": "{{h}} jam {{m}} mnt",
+      "day": "{{n}} hari"
+    },
+    "board": {
+      "dragHint": "{{name}}. Tekan spasi untuk mengangkat, tombol panah untuk memindah, atau pakai menu Pindah ke.",
+      "emptyColumn": "Jatuhkan lead di sini"
+    },
+    "history": {
+      "meta": "Meta: {{event}}",
+      "newChat": "Chat baru ({{source}})",
+      "created": "Lead dibuat ({{source}})",
+      "stageChanged": "Tahap berubah",
+      "by": "oleh {{name}}",
+      "auto": "(otomatis)",
+      "note": "Catatan",
+      "call": "Telepon",
+      "wa": "Pesan WhatsApp",
+      "meeting": "Meeting",
+      "followSet": "Tindak lanjut dijadwalkan",
+      "followDone": "Tindak lanjut selesai",
+      "converted": "Dikonversi",
+      "assigned": "Ditugaskan ke {{name}}",
+      "title": "Riwayat",
+      "firstReply": "Balasan pertama",
+      "responseTime": "waktu respons {{time}}"
+    },
+    "lost": {
+      "done": "Lead ditandai kalah.",
+      "title": "Tandai kalah",
+      "desc": "Mengapa {{name}} tidak lanjut? Ini membantu Anda melihat di mana deal berhenti.",
+      "placeholder": "Alasan",
+      "confirm": "Tandai kalah",
+      "expensive": "Terlalu mahal",
+      "noResponse": "Tidak ada respons",
+      "competitor": "Memilih pesaing",
+      "notFit": "Tidak cocok"
+    },
+    "lead": {
+      "deleted": "Lead dihapus.",
+      "notFound": "Lead tidak ditemukan.",
+      "back": "Kembali ke lead",
+      "openedChat": "Membuka chat WhatsApp",
+      "backBoard": "Kembali ke papan",
+      "waitingFor": "Belum dibalas {{time}}",
+      "chat": "Chat di WhatsApp",
+      "moveStage": "Pindah tahap",
+      "convertMore": "Konversi lagi",
+      "convert": "Konversi ke Klien & Buat Penawaran",
+      "more": "Aksi lainnya",
+      "edit": "Ubah detail",
+      "markLost": "Tandai kalah",
+      "deleteConfirm": "Hapus lead ini beserta riwayatnya?",
+      "delete": "Hapus lead",
+      "lostBecause": "Kalah: {{reason}}",
+      "unansweredTitle": "Menunggu balasan pertama",
+      "moveTo": "Pindah ke…"
+    },
+    "composer": {
+      "note": "Catatan",
+      "call": "Telepon",
+      "wa": "Pesan WA",
+      "meeting": "Meeting",
+      "title": "Tambah aktivitas",
+      "placeholder": "mis. Klien butuh 4 Reels per bulan, anggaran sekitar Rp 12 jt."
+    },
+    "info": {
+      "title": "Info lead",
+      "owner": "Penanggung jawab",
+      "estimate": "Estimasi",
+      "source": "Sumber",
+      "campaign": "Kampanye",
+      "firstChat": "Chat pertama",
+      "linked": "Terkait"
+    },
+    "follow": {
+      "title": "Tindak lanjut",
+      "done": "Tandai selesai",
+      "reschedule": "Jadwalkan ulang",
+      "none": "Belum ada tindak lanjut terjadwal.",
+      "set": "Jadwalkan tindak lanjut",
+      "when": "Kapan (WIB)",
+      "note": "Yang perlu dilakukan",
+      "notePlaceholder": "mis. kirim contoh portofolio",
+      "today": "Hari ini 15:00",
+      "tomorrow": "Besok 10:00",
+      "in3": "3 hari lagi"
+    },
+    "quick": {
+      "name": "Nama",
+      "phone": "Nomor WhatsApp",
+      "noCampaign": "Tanpa kampanye",
+      "saved": "Lead {{name}} ditambahkan.",
+      "open": "Buka",
+      "error": "Tidak dapat menyimpan lead.",
+      "unknownCode": "kode tidak dikenal",
+      "title": "Tambah lead",
+      "desc": "Tempel pesan WhatsApp pertama. Nomor dan kode kampanye terisi otomatis.",
+      "paste": "Tempel pesan / info chat",
+      "placeholder": "Budi Santoso +62 857-1234-9921\nHalo, saya tertarik paket foto produk [IG-REELS2]",
+      "detected": "Terdeteksi otomatis",
+      "detName": "Nama",
+      "campaign": "Kampanye",
+      "owner": "Penanggung jawab",
+      "dupBefore": "Nomor ini sudah ada:",
+      "dupAgo": "{{time}} lalu",
+      "dupOpen": "Buka lead yang ada",
+      "hint": "untuk menyimpan",
+      "saveAnother": "Simpan & tambah lagi",
+      "saveAnyway": "Tetap simpan",
+      "save": "Simpan lead"
+    },
+    "edit": {
+      "company": "Perusahaan",
+      "email": "Email"
+    },
+    "list": {
+      "bulkDone": "{{n}} lead diperbarui.",
+      "bulkFailed": "{{n}} lead gagal diperbarui.",
+      "bulk": "Aksi massal",
+      "selected": "{{n}} dipilih",
+      "assignTo": "Tugaskan ke…",
+      "moveTo": "Pindah ke tahap…",
+      "selectAll": "Pilih semua",
+      "lead": "Lead",
+      "stage": "Tahap",
+      "campaign": "Kampanye",
+      "owner": "PJ",
+      "followUp": "Tindak lanjut",
+      "value": "Estimasi",
+      "selectRow": "Pilih {{name}}"
+    },
+    "badge": {
+      "aria": "{{n}} lead perlu perhatian"
+    }
   }
 }

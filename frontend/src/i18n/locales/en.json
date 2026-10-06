@@ -186,7 +186,11 @@
     "assetsDepreciation": "Assets & Depreciation",
     "depreciation": "Depreciation",
     "fixedAssets": "Assets",
-    "guides": "Guides"
+    "guides": "Guides",
+    "crm": "CRM",
+    "crmLeads": "Leads",
+    "crmCampaigns": "Campaigns",
+    "crmDashboard": "CRM Dashboard"
   },
   "breadcrumb": {
     "client": "Client",
@@ -9698,6 +9702,45 @@
             "body": "Use → or ↓ for the next slide and ← or ↑ for the previous one."
           }
         }
+      },
+      "crm-leads-whatsapp": {
+        "title": "CRM: leads from WhatsApp ads",
+        "purpose": "Track every person who messages you from a WhatsApp ad: see which campaign they came from, reply fast, follow up, and turn them into a client and quotation.",
+        "steps": {
+          "kampanye": {
+            "title": "Create a campaign for each ad",
+            "body": "Open Marketing > CRM > Campaigns and click New campaign. Give it a name and a unique code such as FB-OKT1. Add the budget and dates if you know them.",
+            "tip": "Use one code per ad so the dashboard can compare ads fairly."
+          },
+          "pesan-iklan": {
+            "title": "Put the code in the ad's pre-filled message",
+            "body": "Select the campaign and click Copy message. In Meta Ads Manager paste it into the ad's Pre-filled message. The code at the end links every new chat to this campaign.",
+            "tip": "Log the ad spend with Log spend so cost per lead and cost per client are correct."
+          },
+          "tambah-lead": {
+            "title": "Add a lead in seconds",
+            "body": "When someone messages you, click New lead (or press Ctrl+Shift+L, Cmd+Shift+L on Mac). Paste their first message: the name, number and campaign code fill in by themselves. Press Ctrl+Enter to save.",
+            "tip": "If the number already exists you get a warning with a link to the existing lead."
+          },
+          "papan": {
+            "title": "Work the board",
+            "body": "Leads sit in columns: New, Qualified, Meeting, Proposal, Won, Lost. Drag a card to another column, or use the Move to menu on the card. Amber cards have not had a reply within the response target.",
+            "tip": "Click Chat on WhatsApp on a lead to open the conversation; the first reply time is recorded."
+          },
+          "tindak-lanjut": {
+            "title": "Schedule follow-ups",
+            "body": "Open a lead, use Add activity for notes, calls and meetings, and Schedule follow-up so nothing is forgotten. The orange number next to CRM in the menu counts unanswered leads and follow-ups due today."
+          },
+          "konversi": {
+            "title": "Convert to client and quotation",
+            "body": "When the lead is ready, click Convert to Client & Create Quotation. A client is created (or matched by number), together with a project and a draft quotation filled with the estimated value. Finish the quotation in the Quotations menu.",
+            "tip": "When the quotation is approved or the invoice is paid, the lead moves to Won on its own."
+          },
+          "dasbor": {
+            "title": "Read the dashboard",
+            "body": "Open CRM Dashboard to see the funnel, response speed and each campaign's leads, clients, revenue, cost per lead and cost per client. Pick a period at the top."
+          }
+        }
       }
     }
   },
@@ -9878,7 +9921,9 @@
       "viewerPrev": "Previous slide",
       "gridNext": "Move to the cell below",
       "gridPrev": "Move to the cell above",
-      "scheduleAdd": "Add the scene from the quick-add row"
+      "scheduleAdd": "Add the scene from the quick-add row",
+      "crmQuickAdd": "Add a lead (paste a WhatsApp message)",
+      "crmQuickAddSave": "Save the lead"
     },
     "note": {
       "helpOpen": "Not while typing in a field",
@@ -9903,7 +9948,8 @@
       "videoFrameBack": "1/30 second",
       "videoFrameFwd": "1/30 second",
       "gridNext": "Enter on the last row adds a new row",
-      "scheduleAdd": "In the quick-add row"
+      "scheduleAdd": "In the quick-add row",
+      "crmQuickAddSave": "In the Add lead window"
     }
   },
   "instagram": {
@@ -9958,5 +10004,369 @@
     "syncNow": "Sync now",
     "reconnect": "Reconnect",
     "reconnectExpired": "Reconnect Instagram"
+  },
+  "crm": {
+    "campaigns": {
+      "defaultPrefill": "Hi Monomi, I'm interested in your service. Could you share the details and price?",
+      "deleted": "Campaign deleted.",
+      "copied": "Message copied.",
+      "copyFail": "Could not copy. Select the text and copy it manually.",
+      "status": {
+        "ACTIVE": "Active",
+        "PAUSED": "Paused",
+        "ENDED": "Ended"
+      },
+      "platform": {
+        "FACEBOOK": "Facebook",
+        "INSTAGRAM": "Instagram",
+        "BOTH": "Facebook + Instagram"
+      },
+      "title": "Campaigns",
+      "subtitle": "Every ad gets a unique code. Put it in the WhatsApp ad's pre-filled message so every lead knows where it came from.",
+      "new": "New campaign",
+      "emptyTitle": "No campaigns yet",
+      "emptyDesc": "Create one per ad, then copy its pre-filled message into Meta Ads Manager.",
+      "col": {
+        "campaign": "Campaign",
+        "code": "Code",
+        "leads": "Leads",
+        "won": "Won",
+        "spend": "Ad spend",
+        "costClient": "Cost / client"
+      },
+      "more": "Campaign actions",
+      "edit": "Edit",
+      "markAs": "Mark as {{status}}",
+      "deleteConfirm": "Delete this campaign and its spend log? Leads keep their code.",
+      "delete": "Delete",
+      "prefillTitle": "Pre-filled message for the WhatsApp ad",
+      "copiedShort": "Copied",
+      "copy": "Copy message",
+      "prefillHelp": "Paste it in Meta Ads Manager → Ad → Message → \"Pre-filled message\". The code at the end links each lead to this campaign.",
+      "budget": "Budget",
+      "spendTitle": "Ad spend",
+      "logSpend": "Log spend",
+      "deleteSpend": "Delete spend entry",
+      "deleteSpendConfirm": "Delete this spend entry?",
+      "noSpend": "No spend logged yet.",
+      "metaSpend": "Pulled automatically from Meta once our permissions are approved.",
+      "saved": "Campaign saved.",
+      "dialogTitle": "Campaign",
+      "editTitle": "Edit campaign",
+      "codeHint": "The code (for example FB-OKT1) goes at the end of the ad message so every lead can be traced back.",
+      "name": "Name",
+      "code": "Unique code",
+      "platformLabel": "Platform",
+      "start": "Start",
+      "end": "End",
+      "statusLabel": "Status",
+      "prefillLabel": "Pre-filled message",
+      "spendSaved": "Spend logged.",
+      "spendHint": "Enter the ad spend for a day or a date range.",
+      "from": "From",
+      "to": "To",
+      "amount": "Amount",
+      "noteLabel": "Note"
+    },
+    "errors": {
+      "delete": "Could not delete.",
+      "save": "Could not save.",
+      "move": "Could not move the lead.",
+      "activity": "Could not save the activity.",
+      "followUp": "Could not save the follow-up.",
+      "assign": "Could not assign the lead.",
+      "bulk": "Bulk update failed."
+    },
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "close": "Close",
+      "clear": "Clear"
+    },
+    "convert": {
+      "done": "Converted. The records are ready.",
+      "error": "Could not convert the lead.",
+      "title": "Convert to client",
+      "successTitle": "Lead converted",
+      "clientNew": "A new client was created from this lead.",
+      "clientLinked": "The lead was linked to an existing client with the same number.",
+      "client": "Client",
+      "project": "Project",
+      "quotation": "Draft quotation",
+      "desc": "A client is created from {{name}} (or matched by WhatsApp number). Choose what else to prepare.",
+      "makeQuote": "Create a draft quotation",
+      "hasQuote": "This lead already has a quotation.",
+      "makeQuoteHint": "Prefilled with the estimated value; you finish it in Quotations.",
+      "makeProject": "Create a project",
+      "projectName": "Project description",
+      "amount": "Quotation amount (Rp)",
+      "needAmount": "Enter an amount greater than 0.",
+      "confirmQuote": "Convert & create quotation",
+      "confirm": "Convert to client"
+    },
+    "dash": {
+      "period": {
+        "thisMonth": "This month",
+        "lastMonth": "Last month",
+        "last30": "Last 30 days",
+        "last90": "Last 90 days",
+        "thisYear": "This year"
+      },
+      "vsPrev": "% vs previous period",
+      "title": "CRM Dashboard",
+      "subtitle": "From ad chat to paid invoice: {{from}} – {{to}}.",
+      "subtitleLoading": "From ad chat to paid invoice.",
+      "periodLabel": "Period",
+      "allCampaigns": "All campaigns",
+      "kpi": {
+        "leads": "New leads",
+        "won": "Clients won",
+        "conversion": "{{pct}}% conversion",
+        "revenue": "Revenue from leads",
+        "revenueHint": "Paid invoices + approved quotations",
+        "costClient": "Cost per client",
+        "costHint": "Ad spend {{spend}} ÷ {{n}} won",
+        "costNone": "Ad spend {{spend}}"
+      },
+      "funnel": "Sales funnel",
+      "dropPre": "Most leads drop off at",
+      "dropPost": "{{pct}}% don't continue",
+      "lost": "{{n}} leads marked as lost.",
+      "response": "Response speed",
+      "responseAvg": "Average first reply time · target {{min}} minutes",
+      "responseMedian": "median {{time}}",
+      "ownerWon": "{{n}} won",
+      "unansweredNow": "Unanswered > {{min}} min",
+      "unansweredCount": "{{n}} leads",
+      "byCampaign": "By campaign",
+      "col": {
+        "qualified": "Qualified",
+        "revenue": "Revenue",
+        "costLead": "Cost / lead"
+      },
+      "noCampaign": "No campaign",
+      "noData": "No leads in this period.",
+      "bySource": "By source"
+    },
+    "leads": {
+      "campaign": "Campaign",
+      "ownerNone": "Unassigned",
+      "title": "Leads",
+      "subtitle": "Every potential client from WhatsApp ads and other sources.",
+      "view": "View",
+      "board": "Board",
+      "list": "List",
+      "new": "New lead",
+      "search": "Search name, WhatsApp number, campaign code…",
+      "campaignAll": "Campaign: All",
+      "owner": "Owner",
+      "ownerAll": "Owner: All",
+      "ownerMe": "Mine",
+      "unanswered": "{{n}} unanswered > {{min}} min",
+      "followUpsToday": "{{n}} follow-ups today",
+      "unansweredBanner": "{{n}} leads unanswered for more than {{min}} minutes",
+      "emptyTitle": "No leads yet",
+      "emptyDesc": "Paste the first WhatsApp message from an ad and the lead is created for you.",
+      "stages": "Stages",
+      "emptyStage": "No leads in this stage.",
+      "newShort": "Lead",
+      "noMatch": "No leads match these filters."
+    },
+    "settings": {
+      "stageDeleted": "Stage removed.",
+      "color": "Color",
+      "stageName": "Stage name",
+      "typeLabel": "Type",
+      "type": {
+        "OPEN": "Open",
+        "WON": "Won",
+        "LOST": "Lost"
+      },
+      "metaEvent": "Meta event",
+      "noEvent": "No Meta event",
+      "active": "Active",
+      "up": "Move up",
+      "down": "Move down",
+      "delete": "Delete stage",
+      "deleteConfirm": "Delete this stage?",
+      "saved": "Settings saved.",
+      "title": "CRM settings",
+      "subtitle": "Response-time target and pipeline stages.",
+      "threshold": "Response-time target",
+      "thresholdHint": "A lead without a first reply after this many minutes is flagged as unanswered.",
+      "minutes": "Minutes",
+      "stages": "Pipeline stages",
+      "stagesHint": "Order, names and colors. The Meta event is queued when a lead enters the stage (once per lead). You need at least one Open, one Won and one Lost stage.",
+      "newStage": "New stage",
+      "newStagePlaceholder": "e.g. Negotiation",
+      "addStage": "Add stage",
+      "open": "CRM settings"
+    },
+    "stage": {
+      "NEW": "New",
+      "QUALIFIED": "Qualified",
+      "MEETING": "Meeting",
+      "PROPOSAL": "Proposal",
+      "WON": "Won",
+      "LOST": "Lost"
+    },
+    "source": {
+      "WHATSAPP_CTWA": "WhatsApp · Ad",
+      "WHATSAPP_ORGANIC": "WhatsApp",
+      "INSTAGRAM_DM": "Instagram DM",
+      "REFERRAL": "Referral",
+      "WEBSITE": "Website",
+      "OTHER": "Other"
+    },
+    "meta": {
+      "whenPaid": "When the invoice is paid",
+      "notTriggered": "Not triggered yet",
+      "status": {
+        "PENDING_CONFIG": "Awaiting approval",
+        "QUEUED": "Queued",
+        "SENT": "Sent",
+        "FAILED": "Failed",
+        "SKIPPED": "Skipped"
+      },
+      "title": "Events sent to Meta",
+      "desc": "Sent automatically once Meta approves our permissions."
+    },
+    "time": {
+      "min": "{{n}} min",
+      "hour": "{{n}} h",
+      "hourMin": "{{h}} h {{m}} min",
+      "day": "{{n}} d"
+    },
+    "board": {
+      "dragHint": "{{name}}. Press space to pick up, arrow keys to move, or use the Move to menu.",
+      "emptyColumn": "Drop a lead here"
+    },
+    "history": {
+      "meta": "Meta: {{event}}",
+      "newChat": "New chat ({{source}})",
+      "created": "Lead created ({{source}})",
+      "stageChanged": "Stage changed",
+      "by": "by {{name}}",
+      "auto": "(automatic)",
+      "note": "Note",
+      "call": "Call",
+      "wa": "WhatsApp message",
+      "meeting": "Meeting",
+      "followSet": "Follow-up scheduled",
+      "followDone": "Follow-up done",
+      "converted": "Converted",
+      "assigned": "Assigned to {{name}}",
+      "title": "History",
+      "firstReply": "First reply",
+      "responseTime": "response time {{time}}"
+    },
+    "lost": {
+      "done": "Lead marked as lost.",
+      "title": "Mark as lost",
+      "desc": "Why did {{name}} not continue? This helps you see where deals drop off.",
+      "placeholder": "Reason",
+      "confirm": "Mark as lost",
+      "expensive": "Too expensive",
+      "noResponse": "No response",
+      "competitor": "Chose a competitor",
+      "notFit": "Not a fit"
+    },
+    "lead": {
+      "deleted": "Lead deleted.",
+      "notFound": "Lead not found.",
+      "back": "Back to leads",
+      "openedChat": "Opened WhatsApp chat",
+      "backBoard": "Back to board",
+      "waitingFor": "No reply for {{time}}",
+      "chat": "Chat on WhatsApp",
+      "moveStage": "Move stage",
+      "convertMore": "Convert again",
+      "convert": "Convert to Client & Create Quotation",
+      "more": "More actions",
+      "edit": "Edit details",
+      "markLost": "Mark as lost",
+      "deleteConfirm": "Delete this lead and its history?",
+      "delete": "Delete lead",
+      "lostBecause": "Lost: {{reason}}",
+      "unansweredTitle": "Waiting for a first reply",
+      "moveTo": "Move to…"
+    },
+    "composer": {
+      "note": "Note",
+      "call": "Call",
+      "wa": "WA message",
+      "meeting": "Meeting",
+      "title": "Add activity",
+      "placeholder": "e.g. Client needs 4 Reels per month, budget around Rp 12M."
+    },
+    "info": {
+      "title": "Lead info",
+      "owner": "Owner",
+      "estimate": "Estimate",
+      "source": "Source",
+      "campaign": "Campaign",
+      "firstChat": "First chat",
+      "linked": "Linked"
+    },
+    "follow": {
+      "title": "Follow-up",
+      "done": "Mark done",
+      "reschedule": "Reschedule",
+      "none": "No follow-up scheduled.",
+      "set": "Schedule follow-up",
+      "when": "When (WIB)",
+      "note": "What to do",
+      "notePlaceholder": "e.g. send portfolio samples",
+      "today": "Today 15:00",
+      "tomorrow": "Tomorrow 10:00",
+      "in3": "In 3 days"
+    },
+    "quick": {
+      "name": "Name",
+      "phone": "WhatsApp number",
+      "noCampaign": "No campaign",
+      "saved": "Lead {{name}} added.",
+      "open": "Open",
+      "error": "Could not save the lead.",
+      "unknownCode": "unknown code",
+      "title": "Add lead",
+      "desc": "Paste the first WhatsApp message. The number and campaign code fill in automatically.",
+      "paste": "Paste message / chat info",
+      "placeholder": "Budi Santoso +62 857-1234-9921\nHi, I am interested in a product photo package [IG-REELS2]",
+      "detected": "Detected automatically",
+      "detName": "Name",
+      "campaign": "Campaign",
+      "owner": "Owner",
+      "dupBefore": "This number already exists:",
+      "dupAgo": "{{time}} ago",
+      "dupOpen": "Open existing lead",
+      "hint": "to save",
+      "saveAnother": "Save & add another",
+      "saveAnyway": "Save anyway",
+      "save": "Save lead"
+    },
+    "edit": {
+      "company": "Company",
+      "email": "Email"
+    },
+    "list": {
+      "bulkDone": "{{n}} leads updated.",
+      "bulkFailed": "{{n}} could not be updated.",
+      "bulk": "Bulk actions",
+      "selected": "{{n}} selected",
+      "assignTo": "Assign to…",
+      "moveTo": "Move to stage…",
+      "selectAll": "Select all",
+      "lead": "Lead",
+      "stage": "Stage",
+      "campaign": "Campaign",
+      "owner": "Owner",
+      "followUp": "Follow-up",
+      "value": "Estimate",
+      "selectRow": "Select {{name}}"
+    },
+    "badge": {
+      "aria": "{{n}} leads need attention"
+    }
   }
 }
