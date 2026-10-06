@@ -83,7 +83,7 @@ export function TrackingSettingsCard() {
         <>
           <dl className="grid grid-cols-[120px_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm sm:grid-cols-[150px_minmax(0,1fr)]">
             <Row label={t('crm.tracking.status', 'Status')}><StateBadge state={s.state} /></Row>
-            <Row label={t('crm.tracking.pageViews7d', 'Page views, last 7 days')}><span className="font-mono" data-testid="tracking-pageviews">{s.pageViews7d}</span></Row>
+            <Row label={t('crm.tracking.pageViews48h', 'Page views, last 48 hours')}><span className="font-mono" data-testid="tracking-pageviews">{s.pageViews48h}</span></Row>
             <Row label={t('crm.tracking.clicks7d', 'WhatsApp taps (Lead), last 7 days')}><span className="font-mono">{s.clicks7d}</span></Row>
             <Row label={t('crm.tracking.linked', 'Linked to leads')}>
               {t('crm.tracking.linkedLine', '{{n}} in the last 7 days · {{total}} in total', { n: s.linked7d, total: s.linkedTotal })}

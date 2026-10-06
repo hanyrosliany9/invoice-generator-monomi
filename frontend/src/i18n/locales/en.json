@@ -10842,7 +10842,7 @@
       "sendOff": "The sender is not ready, nothing was sent.",
       "loadFailed": "Could not load the tracking status.",
       "noPixel": "The landing page does not need the Meta Pixel. The one script tag below is the whole integration: it records visits and WhatsApp taps, and Monomi sends the events to Meta from the server.",
-      "pageViews7d": "Page views, last 7 days",
+      "pageViews48h": "Page views, last 48 hours",
       "qualifiedSent": "Qualified sent to Meta"
     },
     "adClick": {

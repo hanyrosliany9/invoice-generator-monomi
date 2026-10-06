@@ -189,7 +189,7 @@ export interface TrackingSummary {
   allowedOrigins: string[];
   scriptPath: string;
   envVars: string[];
-  pageViews7d: number;
+  pageViews48h: number;
   clicks7d: number;
   qualifiedSent: number;
   linked7d: number;

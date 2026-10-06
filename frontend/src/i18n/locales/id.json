@@ -10836,7 +10836,7 @@
       "sendOff": "Pengirim belum siap, tidak ada yang dikirim.",
       "loadFailed": "Tidak bisa memuat status pelacakan.",
       "noPixel": "Landing page tidak membutuhkan Meta Pixel. Satu script tag di bawah ini adalah seluruh integrasinya: mencatat kunjungan dan ketukan WhatsApp, lalu Monomi mengirim event ke Meta dari server.",
-      "pageViews7d": "Kunjungan halaman, 7 hari terakhir",
+      "pageViews48h": "Kunjungan halaman, 48 jam terakhir",
       "qualifiedSent": "Qualified terkirim ke Meta"
     },
     "adClick": {
