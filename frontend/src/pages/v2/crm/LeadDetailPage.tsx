@@ -24,6 +24,7 @@ import { useCrmAssignees, useCrmCampaigns, useCrmStages } from './crmHooks';
 import { displayPhone, idr, parseActivityBody, toNumber, unescapeActivityText, useCrmLabels, waLink } from './crmUtils';
 import { CodeBadge, LostDialog, MoveStageMenu, SourceBadge, StageBadge } from './LeadParts';
 import { ConvertDialog } from './ConvertDialog';
+import { AdClickSection } from './AdClickSection';
 import { LeadWhatsAppPanel } from './whatsapp/LeadWhatsAppPanel';
 
 const META_EVENTS: MetaEventName[] = ['LeadSubmitted', 'QualifiedLead', 'Purchase'];
@@ -107,7 +108,7 @@ function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
 
 export default function LeadDetailPage() {
   const { id = '' } = useParams();
-  const { t, formatDateTime, formatWait, metaStatusLabel } = useCrmLabels();
+  const { t, formatDateTime, formatWait, metaStatusLabel, metaRouteLabel } = useCrmLabels();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { stages } = useCrmStages();
@@ -341,6 +342,14 @@ export default function LeadDetailPage() {
               <dd><SourceBadge source={lead.source} /></dd>
               <dt className="text-text-tertiary">{t('crm.info.campaign', 'Campaign')}</dt>
               <dd>{lead.campaign ? lead.campaign.name : '-'}</dd>
+              {lead.instagramHandle && (
+                <>
+                  <dt className="text-text-tertiary">{t('crm.info.instagram', 'Instagram')}</dt>
+                  <dd className="min-w-0 break-all">
+                    <a className="underline underline-offset-2" href={`https://instagram.com/${encodeURIComponent(lead.instagramHandle)}`} target="_blank" rel="noopener noreferrer" data-testid="lead-instagram">@{lead.instagramHandle}</a>
+                  </dd>
+                </>
+              )}
               <dt className="text-text-tertiary">{t('crm.info.firstChat', 'First chat')}</dt>
               <dd>{formatDateTime(lead.firstContactAt)}</dd>
               {(lead.client || lead.project || lead.quotation) && (
@@ -354,6 +363,10 @@ export default function LeadDetailPage() {
                 </>
               )}
             </dl>
+          </Section>
+
+          <Section title={t('crm.adClick.title', 'Ad click')}>
+            <AdClickSection lead={lead} onData={onData} />
           </Section>
 
           <Section title={t('crm.follow.title', 'Follow-up')}>
@@ -383,14 +396,29 @@ export default function LeadDetailPage() {
           <Section title={t('crm.meta.title', 'Events sent to Meta')}>
             <p className="mb-3 text-xs text-text-tertiary">{t('crm.meta.desc', 'Sent automatically once Meta approves our permissions.')}</p>
             <ul className="space-y-2">
-              {META_EVENTS.map((name) => {
-                const row = lead.metaEvents.find((e) => e.eventName === name);
-                return (
-                  <li key={name} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="font-mono text-xs">{name}</span>
-                    <span className={cn('text-xs', row ? (row.status === 'SENT' ? 'text-success' : row.status === 'FAILED' ? 'text-danger' : 'text-warning') : 'text-text-tertiary')}>
-                      {metaStatusLabel(row, name)}
+              {lead.adClick && lead.adClickEvent && (
+                <li className="text-sm" data-testid="meta-row-lead-click">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-xs">Lead</span>
+                    <span className={cn('text-xs', lead.adClickEvent.status === 'SENT' ? 'text-success' : lead.adClickEvent.status === 'FAILED' ? 'text-danger' : 'text-warning')}>
+                      {metaStatusLabel({ eventName: 'LeadSubmitted', status: lead.adClickEvent.status }, 'LeadSubmitted')}
                     </span>
+                  </div>
+                  <div className="text-[11px] text-text-tertiary">{t('crm.meta.route.leadAtClick', 'Lead (sent when the button was tapped)')} · {t('crm.meta.route.website', 'Matched via website click')}</div>
+                </li>
+              )}
+              {META_EVENTS.filter((name) => !(lead.adClick && name === 'LeadSubmitted')).map((name) => {
+                const row = lead.metaEvents.find((e) => e.eventName === name);
+                const route = metaRouteLabel(row, !!lead.ctwaClid);
+                return (
+                  <li key={name} className="text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-mono text-xs">{name}</span>
+                      <span className={cn('text-xs', row ? (row.status === 'SENT' ? 'text-success' : row.status === 'FAILED' ? 'text-danger' : 'text-warning') : 'text-text-tertiary')}>
+                        {metaStatusLabel(row, name)}
+                      </span>
+                    </div>
+                    {route && <div className="text-[11px] text-text-tertiary" data-testid={`meta-route-${name}`}>{route}</div>}
                   </li>
                 );
               })}

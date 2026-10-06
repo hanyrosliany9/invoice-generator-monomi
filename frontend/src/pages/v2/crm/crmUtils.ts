@@ -52,6 +52,13 @@ export function useCrmLabels() {
     } as Record<MetaEventStatus, string>)[e.status];
   };
 
+  /** Which Conversions API route carried (or will carry) the event. */
+  const metaRouteLabel = (e: { route?: string } | undefined, hasCtwa: boolean): string | null => {
+    if (!e) return null;
+    if (e.route === 'WEBSITE') return t('crm.meta.route.website', 'Matched via website click');
+    return hasCtwa ? t('crm.meta.route.whatsapp', 'via WhatsApp ad click') : null;
+  };
+
   /** "22 min", "1 h 5 min", "3 d". */
   const formatWait = (minutes: number | null | undefined): string => {
     if (minutes === null || minutes === undefined) return '';
@@ -91,6 +98,7 @@ export function useCrmLabels() {
       case 'wa.in': return join(t('crm.history.waIn', 'Message received'), rest);
       case 'wa.monomi': return join(t('crm.history.waMonomi', 'Replied from the Monomi inbox'), rest);
       case 'wa.phoneApp': return join(t('crm.history.waPhoneApp', 'Replied from the phone (WhatsApp Business)'), rest);
+      case 'lead.adClickLinked': return join(t('crm.history.adClickLinked', 'Linked to landing page ad click'), rest);
       case 'lead.quotationCreated': return t('crm.history.quotationCreated', 'Quotation created');
       case 'lead.converted': {
         const parts = (rest ?? '').split(',').map((p) => p.trim()).filter(Boolean).map((p) => ({
@@ -105,7 +113,7 @@ export function useCrmLabels() {
     }
   };
 
-  return { t, stageLabel, sourceLabel, metaStatusLabel, formatWait, formatDateTime, formatDate, activityText };
+  return { t, stageLabel, sourceLabel, metaStatusLabel, metaRouteLabel, formatWait, formatDateTime, formatDate, activityText };
 }
 
 const join = (label: string, text: string | null) => (text ? `${label}: ${text}` : label);
@@ -117,7 +125,7 @@ export function parseActivityBody(body: string | null | undefined): { key: strin
   return m && ACTIVITY_KEYS.has(m[1]) ? { key: m[1], text: m[2] ? m[2] : null } : null;
 }
 
-const ACTIVITY_KEYS = new Set(['wa.in', 'wa.monomi', 'wa.phoneApp', 'lead.converted', 'lead.quotationCreated']);
+const ACTIVITY_KEYS = new Set(['wa.in', 'wa.monomi', 'wa.phoneApp', 'lead.converted', 'lead.quotationCreated', 'lead.adClickLinked']);
 
 /** Plain activity text: the server escapes a leading "@" typed by people as "\@" (crm.utils escapeActivityText). */
 export const unescapeActivityText = (body: string): string => (body.startsWith('\\@') ? body.slice(1) : body);
@@ -174,3 +182,13 @@ export const wibDateStr = (d: Date): string => {
   const w = new Date(d.getTime() + 7 * 3600 * 1000);
   return w.toISOString().slice(0, 10);
 };
+
+const DEFAULT_LANDING_URL = 'https://link.monomiagency.com';
+
+/**
+ * Ad link for the landing page: the campaign code travels as utm_campaign so
+ * every WhatsApp chat that starts there can be linked to this campaign.
+ * "{{ad.id}}" is Meta's dynamic URL parameter and must stay literal.
+ */
+export const buildAdLink = (base: string | null | undefined, code: string): string =>
+  `${(base || DEFAULT_LANDING_URL).replace(/\/+$/, '')}/?utm_source=meta&utm_medium=paid&utm_campaign=${encodeURIComponent(code)}&utm_content={{ad.id}}`;

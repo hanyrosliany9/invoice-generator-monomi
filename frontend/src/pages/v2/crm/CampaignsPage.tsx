@@ -22,7 +22,7 @@ import {
   apiErrorMessage, crmApi, type Campaign, type CampaignPlatform, type CampaignStatus,
 } from '@/services/crm';
 import { CrmShell, nativeSelectClass, textareaClass } from './CrmShell';
-import { idr, useCrmLabels, wibDateStr } from './crmUtils';
+import { buildAdLink, idr, useCrmLabels, wibDateStr } from './crmUtils';
 import { CodeBadge } from './LeadParts';
 
 /** 'YYYY-MM-DD' <-> local Date for the app date picker (unambiguous "7 October 2026" display). */
@@ -44,6 +44,8 @@ export default function CampaignsPage() {
   const [editing, setEditing] = useState<Campaign | 'new' | null>(null);
   const [spendOpen, setSpendOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [adLinkCopied, setAdLinkCopied] = useState(false);
+  const trackingQ = useQuery({ queryKey: ['crm', 'tracking'], queryFn: crmApi.trackingSummary, retry: false });
 
   useEffect(() => {
     if (!selectedId && campaigns.length > 0) setSelectedId(campaigns[0].id);
@@ -80,6 +82,17 @@ export default function CampaignsPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast.success(t('crm.campaigns.copied', 'Message copied.'));
+    } catch {
+      toast.error(t('crm.campaigns.copyFail', 'Could not copy. Select the text and copy it manually.'));
+    }
+  };
+
+  const copyAdLink = async (link: string) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setAdLinkCopied(true);
+      setTimeout(() => setAdLinkCopied(false), 2000);
+      toast.success(t('crm.campaigns.adLink.copied', 'Ad link copied.'));
     } catch {
       toast.error(t('crm.campaigns.copyFail', 'Could not copy. Select the text and copy it manually.'));
     }
@@ -214,6 +227,20 @@ export default function CampaignsPage() {
                 <p className="mt-3 text-xs text-text-tertiary">
                   {t('crm.campaigns.prefillHelp', 'Paste it in Meta Ads Manager → Ad → Message → "Pre-filled message". The code at the end links each lead to this campaign.')}
                 </p>
+                <div className="mt-5 border-t border-border-subtle pt-4">
+                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.adLink.title', 'Website ad link (landing page)')}</div>
+                  <code className="block break-all rounded-lg border border-border-subtle bg-bg-sunken p-3 text-xs" data-testid="ad-link">
+                    {buildAdLink(trackingQ.data?.landingPageUrl, selected.code)}
+                  </code>
+                  <div className="mt-3">
+                    <Button type="button" variant="outline" className="gap-2" onClick={() => copyAdLink(buildAdLink(trackingQ.data?.landingPageUrl, selected.code))}>
+                      {adLinkCopied ? <Check /> : <Copy />} {adLinkCopied ? t('crm.campaigns.copiedShort', 'Copied') : t('crm.campaigns.adLink.copy', 'Copy ad link')}
+                    </Button>
+                  </div>
+                  <p className="mt-3 text-xs text-text-tertiary">
+                    {t('crm.campaigns.adLink.help', "Paste it as the ad's Website URL in Ads Manager (or in the URL parameters). Meta replaces {{adId}} with the ad's id; the campaign code lets every chat be linked back to this campaign.", { adId: '{{ad.id}}' })}
+                  </p>
+                </div>
                 {(selected.startDate || selected.endDate || selected.budget) && (
                   <p className="mt-3 text-xs text-text-secondary">
                     {[

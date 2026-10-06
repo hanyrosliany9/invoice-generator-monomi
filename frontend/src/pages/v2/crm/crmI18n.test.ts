@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseActivityBody, unescapeActivityText } from './crmUtils';
+import { buildAdLink, parseActivityBody, unescapeActivityText } from './crmUtils';
+import { trackingScriptTag } from './TrackingSettingsCard';
 import { failureText } from '../calendar/SocialPublishParts';
 import en from '@/i18n/locales/en.json';
 import id from '@/i18n/locales/id.json';
@@ -88,5 +89,50 @@ describe('failureText (publish failure reasons)', () => {
 
   it('returns null when there is no message', () => {
     expect(failureText(make('en'), 'en', { errorCode: null, errorMessage: null })).toBeNull();
+  });
+});
+
+describe('landing page tracking (ad click) UI helpers', () => {
+  it('builds the Ads Manager link with the campaign code as utm_campaign and a literal {{ad.id}}', () => {
+    expect(buildAdLink(undefined, 'FB-OKT1')).toBe(
+      'https://link.monomiagency.com/?utm_source=meta&utm_medium=paid&utm_campaign=FB-OKT1&utm_content={{ad.id}}',
+    );
+    expect(buildAdLink('https://lp.example.com/', 'A B&C')).toBe(
+      'https://lp.example.com/?utm_source=meta&utm_medium=paid&utm_campaign=A%20B%26C&utm_content={{ad.id}}',
+    );
+  });
+
+  it('prints a single script tag served by this backend', () => {
+    expect(trackingScriptTag('/api/v1/public/track/monomi-track.js', 'https://admin.monomiagency.com')).toBe(
+      '<script async src="https://admin.monomiagency.com/api/v1/public/track/monomi-track.js"></script>',
+    );
+  });
+
+  it('recognises the server timeline key for a linked ad click', () => {
+    expect(parseActivityBody('@lead.adClickLinked: K7QM2X')).toEqual({ key: 'lead.adClickLinked', text: 'K7QM2X' });
+  });
+
+  it('has en + id text for every new key (same key set, nothing empty)', () => {
+    const flat = (o: unknown, p = ''): string[] =>
+      o && typeof o === 'object'
+        ? Object.entries(o as Record<string, unknown>).flatMap(([k, v]) => flat(v, `${p}${p ? '.' : ''}${k}`))
+        : [p];
+    const val = (o: unknown, path: string) => path.split('.').reduce<unknown>((x, k) => (x as Record<string, unknown>)[k], o);
+    const trees: Array<[string, unknown, unknown]> = [
+      ['crm.tracking', en.crm.tracking, id.crm.tracking],
+      ['crm.adClick', en.crm.adClick, id.crm.adClick],
+      ['crm.campaigns.adLink', en.crm.campaigns.adLink, id.crm.campaigns.adLink],
+      ['crm.quick.adClick', en.crm.quick.adClick, id.crm.quick.adClick],
+      ['crm.meta.route', en.crm.meta.route, id.crm.meta.route],
+    ];
+    for (const [, e, i] of trees) {
+      expect(flat(i).sort()).toEqual(flat(e).sort());
+      for (const k of flat(e)) {
+        expect(String(val(e, k)).length).toBeGreaterThan(0);
+        expect(String(val(i, k)).length).toBeGreaterThan(0);
+      }
+    }
+    expect(en.crm.history.adClickLinked).toBeTruthy();
+    expect(id.crm.history.adClickLinked).toBeTruthy();
   });
 });

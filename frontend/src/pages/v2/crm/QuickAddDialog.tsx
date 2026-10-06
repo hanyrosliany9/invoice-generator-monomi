@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { AlertTriangle, Sparkles } from 'lucide-react';
+import { AlertTriangle, Link2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,6 +103,8 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
         campaignCode: !form.campaignId && parsed?.campaignCode ? parsed.campaignCode : undefined,
         assignedToId: form.assignedToId || undefined,
         firstMessage: parsed?.message ?? (form.text.trim() || undefined),
+        adClickRef: parsed?.adClick?.available ? parsed.adClick.ref : undefined,
+        instagramHandle: parsed?.instagram ?? undefined,
         allowDuplicate: vars.allowDuplicate || undefined,
       };
       return crmApi.createLead(body);
@@ -194,6 +196,23 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               </select>
             </div>
           </div>
+
+          {parsed?.adClick && (
+            parsed.adClick.available ? (
+              <div className="flex items-start gap-2.5 rounded-lg border border-success/40 bg-success/10 p-3 text-sm" data-testid="quick-adclick-chip">
+                <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
+                <div className="min-w-0">
+                  <div className="font-medium text-success">{t('crm.quick.adClick.linked', 'Linked to ad click {{ref}}', { ref: parsed.adClick.ref })}</div>
+                  <div className="text-xs text-text-secondary">{t('crm.quick.adClick.linkedSub', 'The lead is saved as a Website lead with the campaign of this ad.')}</div>
+                  {parsed.instagram && <div className="mt-0.5 font-mono text-xs text-text-secondary" data-testid="quick-instagram">@{parsed.instagram}</div>}
+                </div>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs text-warning">
+                {t('crm.quick.adClick.taken', 'Code {{ref}} is already linked to another lead, so it will not be linked again.', { ref: parsed.adClick.ref })}
+              </p>
+            )
+          )}
 
           {dup && (
             <div role="alert" className="flex items-start gap-2.5 rounded-lg border border-warning/50 bg-warning/10 p-3 text-sm text-warning">

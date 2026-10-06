@@ -40,6 +40,8 @@ export interface Lead {
   source: LeadSource;
   campaignId: string | null;
   campaignCode: string | null;
+  /** Normalised Instagram handle without @ (landing page answer or the pasted chat). */
+  instagramHandle?: string | null;
   firstMessage: string | null;
   stageId: string;
   stage: LeadStage;
@@ -75,6 +77,8 @@ export interface LeadActivity {
 
 export interface MetaEventRow {
   id: string;
+  /** Conversions API route: business messaging (Click-to-WhatsApp) or website (landing-page click). */
+  route?: 'BUSINESS_MESSAGING' | 'WEBSITE';
   eventName: MetaEventName;
   status: MetaEventStatus;
   value: string | number | null;
@@ -83,7 +87,29 @@ export interface MetaEventRow {
   lastError: string | null;
 }
 
+/** Landing-page click linked to a lead (no ip / user agent / browser ids). */
+export interface LeadAdClick {
+  ref: string;
+  createdAt: string;
+  linkedAt: string | null;
+  pageUrl: string | null;
+  referrer: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmTerm: string | null;
+  campaignCode: string | null;
+  instagramHandle: string | null;
+  brandName: string | null;
+  category: string | null;
+}
+
 export interface LeadDetail extends Lead {
+  ctwaClid?: string | null;
+  adClick: LeadAdClick | null;
+  /** The website Lead event sent when the WhatsApp button was tapped. */
+  adClickEvent: { status: MetaEventStatus; eventTime: string; sentAt: string | null; lastError: string | null } | null;
   client: { id: string; name: string } | null;
   project: { id: string; number: string; description: string } | null;
   quotation: { id: string; quotationNumber: string; status: string; totalAmount: string | number } | null;
@@ -123,6 +149,9 @@ export interface CreateLeadInput {
   stageId?: string;
   estimatedValue?: number;
   assignedToId?: string;
+  /** Landing-page ad click code ("Kode: XXXXXX") found in the pasted chat. */
+  adClickRef?: string;
+  instagramHandle?: string;
   allowDuplicate?: boolean;
 }
 
@@ -141,6 +170,33 @@ export interface QuickAddParse {
   message: string | null;
   campaign: CampaignRef | null;
   duplicate: DuplicateLead | null;
+  /** Ad click matched by the "Kode:" in the text (null when none / unknown). */
+  adClick: { ref: string; createdAt: string; pageUrl: string | null; campaignCode: string | null; instagramHandle: string | null; available: boolean } | null;
+  /** "Instagram: @handle" line of the chat, else the ad click's answer. */
+  instagram: string | null;
+}
+
+export type TrackingState = 'OFF' | 'INCOMPLETE' | 'INVALID' | 'READY';
+
+export interface TrackingSummary {
+  state: TrackingState;
+  problems: string[];
+  pixelConfigured: boolean;
+  pixelId: string | null;
+  tokenConfigured: boolean;
+  testMode: boolean;
+  landingPageUrl: string;
+  allowedOrigins: string[];
+  scriptPath: string;
+  envVars: string[];
+  pageViews7d: number;
+  clicks7d: number;
+  qualifiedSent: number;
+  linked7d: number;
+  linkedTotal: number;
+  events: Record<MetaEventStatus, number>;
+  lastSentAt: string | null;
+  lastFailed: { at: string; eventName: string; error: string | null } | null;
 }
 
 export interface ConvertInput {
@@ -281,6 +337,11 @@ export const crmApi = {
     unwrap(await api.post(`/crm/leads/${id}/convert`, d)),
   bulk: async (ids: string[], d: { assignedToId?: string | null; stageId?: string }): Promise<{ updated: number; failed: Array<{ id: string; message: string }> }> =>
     unwrap(await api.post('/crm/leads/bulk', { ids, ...d })),
+  linkAdClick: async (id: string, code: string): Promise<LeadDetail> =>
+    unwrap(await api.post(`/crm/leads/${id}/ad-click`, { code })),
+  trackingSummary: async (): Promise<TrackingSummary> => unwrap(await api.get('/crm/tracking/summary')),
+  trackingSendNow: async (): Promise<{ enabled: boolean; sent: number; failed: number; skipped: number }> =>
+    unwrap(await api.post('/crm/tracking/send-now')),
   assignees: async (): Promise<Assignee[]> => unwrap(await api.get('/crm/assignees')),
   badges: async (): Promise<CrmBadges> => unwrap(await api.get('/crm/badges')),
   stats: async (p: { from?: string; to?: string; campaignId?: string } = {}): Promise<CrmStats> =>

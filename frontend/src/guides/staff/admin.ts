@@ -20,6 +20,11 @@ export const adminGuides: GuideDef[] = [
       ['aturan-keselamatan', '/crm/settings'], ['lokasi-token', '/crm/settings'], ['kartu-status', '/crm/settings'],
       ['mati', '/crm/settings'], ['belum-lengkap', '/crm/settings'], ['tidak-valid', '/crm/settings'],
       ['webhook', '/crm/settings'], ['capi', '/crm/settings'], ['hubungkan', '/crm/settings'],
+    ]).concat([
+      // text-only steps (no screenshot): landing-page tracking
+      { id: 'pelacakan-landing-page', href: '/crm/settings' },
+      { id: 'domain-verifikasi', href: '/crm/settings' },
+      { id: 'kampanye-website', href: '/crm/campaigns' },
     ]),
   },
   {

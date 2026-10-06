@@ -9766,6 +9766,16 @@
             "title": "Apa yang dibuat oleh konversi",
             "body": "Jendela ini berisi tautan ke Klien, Proyek, dan Draf penawaran yang baru. Lead pindah ke Penawaran dan tautan yang sama muncul di Info lead. Selesaikan dan kirim penawaran di menu Quotation.",
             "tip": "Riwayat mencatat konversi dan penawarannya, dalam bahasa Anda."
+          },
+          "link-iklan-website": {
+            "title": "Iklan website: salin link iklan",
+            "body": "Jika iklan mengarahkan orang ke landing page dulu, pilih kampanye lalu klik Salin link iklan. Di Meta Ads Manager, tempel sebagai URL Website iklan. Kode kampanye di dalam link membuat setiap chat yang berawal dari landing page bisa dihubungkan kembali ke kampanye ini.",
+            "tip": "Jangan ubah linknya: Meta mengisi id iklan dengan sendirinya."
+          },
+          "kode-chat": {
+            "title": "Chat dari landing page membawa Kode",
+            "body": "Chat yang berawal dari landing page diakhiri baris seperti “Kode: K7QM2X” dan sering ada baris “Instagram: @nama”. Tempel seluruh chat seperti biasa: kodenya ditemukan sendiri dan jendela menampilkan “Terhubung ke klik iklan” beserta handle Instagram. Lead lalu disimpan sebagai lead Website dengan kampanye yang benar. Kalau lupa menempelnya, buka lead dan ketik kodenya di Hubungkan kode klik iklan.",
+            "tip": "Satu kode hanya bisa dihubungkan ke satu lead. Tanpa kode, lead tetap tersimpan, hanya saja tidak bisa dilaporkan ke Meta sebagai lead website."
           }
         }
       },
@@ -9921,6 +9931,21 @@
             "title": "Hubungkan nomor (Embedded Signup)",
             "body": "Nomor hanya dihubungkan dengan Hubungkan WhatsApp (1): di jendela Meta pilih Hubungkan aplikasi WhatsApp Business yang sudah ada (coexistence) lalu konfirmasi di HP. Sampai Meta menyetujui Monomi sebagai Tech Provider dan developer menyalakannya, kartu menyebut belum tersedia.",
             "tip": "Detail teknis (admin) berisi pengaturan server di baliknya."
+          },
+          "pelacakan-landing-page": {
+            "title": "Pelacakan landing page: token dan script",
+            "body": "Landing page tidak memuat Meta Pixel: satu script tag adalah seluruh integrasinya, dan Monomi mengirim event ke Meta dari server. Di Meta Events Manager buka dataset (Pixel) landing page > Settings > Conversions API > Generate access token. Berikan token dan Pixel ID langsung ke developer/admin (jangan ditempel di chat): keduanya diatur di server. Lalu salin script tag dari kartu Pelacakan landing page dan pasang tepat sebelum </body> di landing page. Kartu menampilkan status dan jumlahnya; kalau sudah Siap, event dikirim.",
+            "tip": "Coba dulu lewat Test events di Events Manager: developer bisa mengatur kode uji supaya belum ada yang dihitung sampai Anda puas."
+          },
+          "domain-verifikasi": {
+            "title": "Verifikasi domain landing page",
+            "body": "Di Meta Business Settings > Brand safety > Domains, tambahkan link.monomiagency.com lalu verifikasi. Landing page masih punya placeholder PASTE_META_DOMAIN_CODE di tag facebook-domain-verification: ganti dengan kode yang ditampilkan Meta.",
+            "tip": "Tanpa domain terverifikasi, Meta bisa membatasi event dari halaman itu yang dihitung."
+          },
+          "kampanye-website": {
+            "title": "Atur kampanye iklan untuk event website",
+            "body": "Buat kampanye dengan Conversion location: Website dan pilih dataset (Pixel) landing page. Mulai dengan optimasi Lead. Saat event QualifiedLead masuk stabil (kira-kira 50 per minggu), buat ad set baru yang dioptimalkan untuk QualifiedLead. Tim bekerja seperti biasa: tempel tiap chat ke Lead baru dan pindahkan tahapnya.",
+            "tip": "Meta hanya menerima event paling lama 7 hari; yang lebih lama dilewati otomatis dan ditandai di lead."
           }
         }
       }
@@ -10253,7 +10278,13 @@
       "amount": "Jumlah",
       "noteLabel": "Catatan",
       "metaAdIds": "ID iklan Meta (opsional)",
-      "metaAdIdsHint": "Chat dari iklan Click-to-WhatsApp ini otomatis terhubung ke kampanye, meski tanpa kode di pesan. ID-nya ada di Ads Manager."
+      "metaAdIdsHint": "Chat dari iklan Click-to-WhatsApp ini otomatis terhubung ke kampanye, meski tanpa kode di pesan. ID-nya ada di Ads Manager.",
+      "adLink": {
+        "copy": "Salin link iklan",
+        "copied": "Link iklan disalin.",
+        "title": "Link iklan website (landing page)",
+        "help": "Tempel sebagai URL Website iklan di Ads Manager (atau di parameter URL). Meta mengganti {{adId}} dengan id iklan; kode kampanye membuat setiap chat bisa dihubungkan kembali ke kampanye ini."
+      }
     },
     "errors": {
       "delete": "Tidak dapat menghapus.",
@@ -10416,7 +10447,12 @@
         "SKIPPED": "Dilewati"
       },
       "title": "Event terkirim ke Meta",
-      "desc": "Dikirim otomatis setelah Meta menyetujui izin kami."
+      "desc": "Dikirim otomatis setelah Meta menyetujui izin kami.",
+      "route": {
+        "website": "Dicocokkan lewat klik website",
+        "whatsapp": "lewat klik iklan WhatsApp",
+        "leadAtClick": "Lead (terkirim saat tombol diketuk)"
+      }
     },
     "time": {
       "min": "{{n}} mnt",
@@ -10455,7 +10491,8 @@
         "clientLinked": "Klien dihubungkan",
         "project": "proyek",
         "quotation": "penawaran draft"
-      }
+      },
+      "adClickLinked": "Terhubung ke klik iklan landing page"
     },
     "lost": {
       "done": "Lead ditandai kalah.",
@@ -10506,7 +10543,8 @@
       "source": "Sumber",
       "campaign": "Kampanye",
       "firstChat": "Chat pertama",
-      "linked": "Terkait"
+      "linked": "Terkait",
+      "instagram": "Instagram"
     },
     "follow": {
       "title": "Tindak lanjut",
@@ -10543,7 +10581,12 @@
       "hint": "untuk menyimpan",
       "saveAnother": "Simpan & tambah lagi",
       "saveAnyway": "Tetap simpan",
-      "save": "Simpan lead"
+      "save": "Simpan lead",
+      "adClick": {
+        "linked": "Terhubung ke klik iklan {{ref}}",
+        "linkedSub": "Lead disimpan sebagai lead Website dengan kampanye iklan ini.",
+        "taken": "Kode {{ref}} sudah terhubung ke lead lain, jadi tidak dihubungkan lagi."
+      }
     },
     "edit": {
       "company": "Perusahaan",
@@ -10762,6 +10805,59 @@
       "badgeAria": "{{n}} chat WhatsApp belum dibaca",
       "templateVar": "Variabel {{n}}",
       "templatePreview": "Pratinjau"
+    },
+    "tracking": {
+      "title": "Pelacakan landing page",
+      "subtitle": "Menghubungkan setiap chat WhatsApp dari landing page iklan ke klik iklannya, supaya Meta bisa mengoptimalkan iklan untuk lead yang benar-benar berkualitas atau membeli.",
+      "status": "Status",
+      "stateOff": "Mati: klik tetap dicatat, tidak ada yang dikirim ke Meta",
+      "stateIncomplete": "Belum lengkap: tidak mengirim",
+      "stateInvalid": "Tidak valid: tidak mengirim",
+      "stateReady": "Siap: mengirim event ke Meta",
+      "testMode": "Mode uji: event muncul di Events Manager > Test events",
+      "problemsPlain": "Pelacakan belum disiapkan sepenuhnya di server. Minta developer/admin menyelesaikan pengaturannya. Klik tetap dicatat, tidak ada yang hilang.",
+      "techDetails": "Detail teknis (admin)",
+      "techEnv": "Pengaturan server yang dipakai: {{vars}}. Ubah di environment server lalu restart backend.",
+      "clicks7d": "Ketukan WhatsApp (Lead), 7 hari terakhir",
+      "linked": "Terhubung ke lead",
+      "linkedLine": "{{n}} dalam 7 hari terakhir · {{total}} total",
+      "events": "Event ke Meta",
+      "eventsLine": "terkirim {{sent}} · gagal {{failed}} · menunggu {{waiting}} · dilewati {{skipped}}",
+      "lastSent": "Terakhir terkirim",
+      "lastFailed": "Kegagalan terakhir",
+      "never": "Belum pernah",
+      "scriptTitle": "Pasang di landing page",
+      "scriptHelp": "Tempel baris ini tepat sebelum </body> di landing page. Script mencatat kunjungan dan setiap tombol WhatsApp menambahkan “Kode: XXXXXX” pendek ke pesan.",
+      "copyTag": "Salin script tag",
+      "copied": "Script tag disalin.",
+      "copyFailed": "Tidak bisa menyalin. Pilih teksnya lalu salin manual.",
+      "sendNow": "Kirim event antrean sekarang",
+      "sendRan": "Selesai: {{sent}} terkirim, {{failed}} gagal, {{skipped}} dilewati.",
+      "sendOff": "Pengirim belum siap, tidak ada yang dikirim.",
+      "loadFailed": "Tidak bisa memuat status pelacakan.",
+      "noPixel": "Landing page tidak membutuhkan Meta Pixel. Satu script tag di bawah ini adalah seluruh integrasinya: mencatat kunjungan dan ketukan WhatsApp, lalu Monomi mengirim event ke Meta dari server.",
+      "pageViews7d": "Kunjungan halaman, 7 hari terakhir",
+      "qualifiedSent": "Qualified terkirim ke Meta"
+    },
+    "adClick": {
+      "title": "Klik iklan",
+      "matched": "Dicocokkan lewat klik website",
+      "code": "Kode",
+      "campaign": "Kampanye",
+      "landing": "Landing page",
+      "clickedAt": "Diklik",
+      "utm": "Parameter iklan",
+      "answers": "Jawaban di landing page",
+      "brandName": "Brand",
+      "category": "Kategori",
+      "linkTitle": "Hubungkan kode klik iklan",
+      "linkHelp": "Chat ini tidak ada “Kode: XXXXXX”-nya? Ketik kode dari pesan pelanggan untuk menghubungkan lead ini ke klik iklannya.",
+      "linkPlaceholder": "mis. K7QM2X",
+      "linkButton": "Hubungkan",
+      "linkedToast": "Klik iklan terhubung.",
+      "notFound": "Tidak ada klik iklan dengan kode itu.",
+      "taken": "Kode itu sudah terhubung ke lead lain.",
+      "invalid": "Isi kode 6 karakter, mis. K7QM2X."
     }
   },
   "socialPublish": {

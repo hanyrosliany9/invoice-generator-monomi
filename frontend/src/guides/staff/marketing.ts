@@ -55,11 +55,17 @@ export const marketingGuides: GuideDef[] = [
   {
     slug: 'crm-leads-whatsapp', audience: 'staff', topic: 'marketing', icon: Target, minutes: 12, adminOnly: true,
     openHref: '/crm/leads',
-    steps: steps('crm-leads-whatsapp', [
-      ['kampanye', '/crm/campaigns'], ['pesan-iklan', '/crm/campaigns'], ['biaya-iklan', '/crm/campaigns'],
-      ['tambah-lead', '/crm/leads'], ['papan', '/crm/leads'], ['daftar', '/crm/leads'], ['tindak-lanjut', '/crm/leads'],
-      ['pindah-tahap', '/crm/leads'], ['konversi', '/crm/leads'], ['hasil', '/crm/leads'], ['dasbor', '/crm/dashboard'],
-    ]),
+    steps: [
+      ...steps('crm-leads-whatsapp', [['kampanye', '/crm/campaigns'], ['pesan-iklan', '/crm/campaigns']]),
+      // text-only steps (no screenshot): landing-page tracking
+      { id: 'link-iklan-website', href: '/crm/campaigns' },
+      ...steps('crm-leads-whatsapp', [['biaya-iklan', '/crm/campaigns'], ['tambah-lead', '/crm/leads']]),
+      { id: 'kode-chat', href: '/crm/leads' },
+      ...steps('crm-leads-whatsapp', [
+        ['papan', '/crm/leads'], ['daftar', '/crm/leads'], ['tindak-lanjut', '/crm/leads'],
+        ['pindah-tahap', '/crm/leads'], ['konversi', '/crm/leads'], ['hasil', '/crm/leads'], ['dasbor', '/crm/dashboard'],
+      ]),
+    ],
   },
   {
     slug: 'crm-whatsapp-inbox', audience: 'staff', topic: 'marketing', icon: MessageCircle, minutes: 9, adminOnly: true,
