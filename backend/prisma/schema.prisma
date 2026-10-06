@@ -4043,6 +4043,12 @@ model ContentCalendarItem {
   project       Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdByUser User              @relation(fields: [createdBy], references: [id])
   media         ContentMedia[]
+  // Auto-publishing to Meta (Instagram / Facebook Page) at scheduledAt.
+  // Phase 1: internal client (Client.isInternal) only, enforced server-side.
+  autoPublish        Boolean             @default(false)
+  autoPublishTargets ContentPlatform[]   @default([]) // subset of INSTAGRAM, FACEBOOK
+  autoPublishBy      String? // admin who enabled auto-publish (audit actor for scheduler runs)
+  publications       SocialPublication[]
 
   @@index([status])
   @@index([scheduledAt])
@@ -4052,7 +4058,45 @@ model ContentCalendarItem {
   @@index([status, scheduledAt])
   @@index([format])
   @@index([gridOrder])
+  @@index([autoPublish, status, scheduledAt])
   @@map("content_calendar_items")
+}
+
+// Per-platform auto-publish state of a content item (one row per target).
+// Holds the idempotency state (Meta container / upload ids, "publish request
+// sent" marker) so retries and overlapping scheduler runs never double-post,
+// plus a DB lease (lockToken + lockedUntil) claimed atomically by a worker.
+model SocialPublication {
+  id            String              @id @default(cuid())
+  contentId     String
+  platform      ContentPlatform
+  status        SocialPublishStatus @default(PENDING)
+  attempts      Int                 @default(0)
+  nextAttemptAt DateTime?
+  lockToken     String?
+  lockedUntil   DateTime?
+  state         Json? // container / child / upload ids (never tokens or signed URLs)
+  requestedAt   DateTime? // non-idempotent publish call sent; outcome not yet recorded
+  externalId    String? // published IG media id / FB post or video id
+  permalink     String?
+  errorCode     String?
+  errorMessage  String?             @db.Text
+  lastAttemptAt DateTime?
+  publishedAt   DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  content       ContentCalendarItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, platform])
+  @@index([status, nextAttemptAt])
+  @@map("social_publications")
+}
+
+enum SocialPublishStatus {
+  PENDING // waiting for its (next) attempt
+  PUBLISHING // claimed by a worker (lease in lockedUntil)
+  PUBLISHED
+  FAILED // terminal until a manual retry
 }
 
 model ContentMedia {

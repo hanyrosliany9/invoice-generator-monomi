@@ -74,6 +74,13 @@ import {
   type BulkStatus,
 } from '@/pages/v2/calendar/ContentPlannerParts';
 import { isOverdue, isReschedulable } from '@/pages/v2/calendar/contentPlannerUtils';
+import {
+  AutoPublishPanel, AutoPublishSection, PublishStatusChips, SocialConnectionCard,
+  isAdminRole, useSocialPublishingStatus,
+} from '@/pages/v2/calendar/SocialPublishParts';
+import {
+  autoPublishHints, hasInFlightPublication, probeMediaFile, type AutoPublishPlatform,
+} from '@/services/social-publishing';
 import { clientService } from '@/services/clients';
 import { useMediaToken } from '@/hooks/useMediaToken';
 import { cn } from '@/lib/utils';
@@ -221,6 +228,12 @@ export default function ContentCalendarPageV2() {
   const { data: contentsResp, isLoading } = useQuery({
     queryKey: ['content-calendar-v2', filters],
     queryFn: () => contentCalendarService.getContents(filters),
+    // Poll while an auto-publish is in flight so chips move to Published / Failed.
+    refetchInterval: (query) =>
+      Array.isArray(query.state.data) &&
+      (query.state.data as ContentCalendarItem[]).some((i) => hasInFlightPublication(i.publications))
+        ? 5000
+        : false,
   });
 
   const items: ContentCalendarItem[] = useMemo(() => {
@@ -233,6 +246,13 @@ export default function ContentCalendarPageV2() {
     queryFn: clientService.getClientsWithInternal,
   });
   const currentClient = useMemo(() => clients.find((c) => c.id === clientId), [clients, clientId]);
+  const internalClientIds = useMemo(() => new Set(clients.filter((c) => c.isInternal).map((c) => c.id)), [clients]);
+  const isAdmin = isAdminRole(user?.role);
+  // The detail sheet follows the live list (status chips update while polling).
+  const liveSelected = useMemo(
+    () => (selectedItem ? items.find((i) => i.id === selectedItem.id) ?? selectedItem : null),
+    [selectedItem, items],
+  );
   // If the :clientId param is invalid once clients load, bounce back to the picker.
   useEffect(() => {
     if (clientId && clients.length > 0 && !currentClient) {
@@ -528,6 +548,8 @@ export default function ContentCalendarPageV2() {
           }
         />
 
+        {currentClient?.isInternal && <SocialConnectionCard isAdmin={isAdmin} />}
+
         {/* ─────────────── KPI band (scoped to visible month) ─────────────── */}
         <section className="mb-6 sm:mb-12">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -786,7 +808,9 @@ export default function ContentCalendarPageV2() {
 
       {/* ─────────────── Detail sheet ─────────────── */}
       <DetailSheet
-        item={selectedItem}
+        item={liveSelected}
+        isAdmin={isAdmin}
+        isInternal={!!liveSelected?.clientId && internalClientIds.has(liveSelected.clientId)}
         onClose={() => setSelectedItem(null)}
         onEdit={(it) => { setSelectedItem(null); openEdit(it); }}
         onPublish={(it) => setPublishTarget(it)}
@@ -818,6 +842,7 @@ export default function ContentCalendarPageV2() {
             : createMutation.mutate(data)
         }
         submitting={createMutation.isPending || updateMutation.isPending}
+        isAdmin={isAdmin}
         prefillProjectId={prefillProjectId}
         lockedClientId={clientId}
         lockedClientName={currentClient?.name}
@@ -1233,6 +1258,7 @@ function ListView({
                   )}
                   <KindBadge item={it} />
                   <OverdueBadge item={it} />
+                  <PublishStatusChips item={it} compact />
                 </div>
               </div>
 
@@ -1370,9 +1396,11 @@ function DraftCard({ item, onSelect }: { item: ContentCalendarItem; onSelect: ()
 /* ------------------------------------------------------------------ */
 
 function DetailSheet({
-  item, onClose, onEdit, onPublish, onArchive, onDuplicate, onDelete, idLocale,
+  item, onClose, onEdit, onPublish, onArchive, onDuplicate, onDelete, idLocale, isAdmin = false, isInternal = false,
 }: {
   item: ContentCalendarItem | null;
+  isAdmin?: boolean;
+  isInternal?: boolean;
   onClose: () => void;
   onEdit: (item: ContentCalendarItem) => void;
   onPublish: (item: ContentCalendarItem) => void;
@@ -1478,6 +1506,9 @@ function DetailSheet({
                   )}
                 </div>
               </section>
+
+              {/* Auto-publish (internal client) */}
+              <AutoPublishPanel item={item} isAdmin={isAdmin} isInternal={isInternal} />
 
               {/* Caption */}
               <section>
@@ -1589,8 +1620,9 @@ function kindFromItem(it: ContentCalendarItem): PostKind {
 
 function CreateDialog({
   open, onOpenChange, initialDate, editItem, clients, onSubmit, submitting, prefillProjectId = '',
-  lockedClientId = '', lockedClientName, defaultPlatform = 'INSTAGRAM',
+  lockedClientId = '', lockedClientName, defaultPlatform = 'INSTAGRAM', isAdmin = false,
 }: {
+  isAdmin?: boolean;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   initialDate?: Date;
@@ -1639,9 +1671,12 @@ function CreateDialog({
   // URL for instant display; the rest is the R2 metadata sent on submit.
   type UploadedMedia = {
     url: string; key: string; mimeType: string; size: number;
-    width?: number; height?: number; thumbnailUrl?: string; thumbnailKey?: string;
+    width?: number; height?: number; duration?: number; thumbnailUrl?: string; thumbnailKey?: string;
     preview: string;
   };
+  // Auto-publish to Instagram / Facebook Page (internal client, admin only).
+  const [autoPublish, setAutoPublish] = useState(false);
+  const [autoTargets, setAutoTargets] = useState<AutoPublishPlatform[]>(['INSTAGRAM']);
   const [media, setMedia] = useState<UploadedMedia[]>([]);
   const [uploading, setUploading] = useState(false);
   // Tracks whether media was touched in this session — on edit we only resend
@@ -1664,8 +1699,11 @@ function CreateDialog({
       setSelectedPlatforms((editItem.platforms?.length ? editItem.platforms : [defaultPlatform]) as Platform[]);
       setKind(kindFromItem(editItem));
       setProjectId(editItem.projectId ?? '');
+      setAutoPublish(!!editItem.autoPublish);
+      setAutoTargets(editItem.autoPublishTargets?.length ? editItem.autoPublishTargets : ['INSTAGRAM']);
       setMedia((editItem.media ?? []).map((m) => ({
         url: m.url, key: m.key, mimeType: m.mimeType, size: (m as any).size ?? 0,
+        width: m.width ?? undefined, height: m.height ?? undefined, duration: m.duration ?? undefined,
         thumbnailUrl: m.thumbnailUrl ?? undefined, thumbnailKey: (m as any).thumbnailKey ?? undefined,
         // existing media: resolve a displayable preview via the media token.
         preview: m.key ? `/api/v1/media/view/${m.key}?mt=${encodeURIComponent(mediaToken ?? '')}` : m.url,
@@ -1682,6 +1720,8 @@ function CreateDialog({
       // New post defaults to the viewed client, else the internal client
       // (Monomi) -- never the client left over from a previously edited post.
       setClientId(lockedClientId || internalClientId || '');
+      setAutoPublish(false);
+      setAutoTargets(['INSTAGRAM']);
       setMedia([]);
       setMediaDirty(false);
     }
@@ -1725,9 +1765,12 @@ function CreateDialog({
     }
     const previews = arr.map((f) => URL.createObjectURL(f));
     setUploading(true);
+    // Width/height/duration feed the auto-publish validation (server re-checks).
+    const probes = Promise.all(arr.map((f) => probeMediaFile(f)));
     try {
       const uploaded = await contentCalendarService.uploadMultipleMedia(arr);
-      const merged: UploadedMedia[] = uploaded.map((d, i) => ({ ...d, preview: previews[i] }));
+      const dims = await probes;
+      const merged: UploadedMedia[] = uploaded.map((d, i) => ({ ...dims[i], ...d, preview: previews[i] }));
       setMedia((prev) => [...prev, ...merged]);
       setMediaDirty(true);
     } catch (e) {
@@ -1820,6 +1863,16 @@ function CreateDialog({
     setTime(defaultTimeFor(scheduledAt));
   }, [open, isEdit, timeTouched, scheduledAt]);
 
+  const { data: publishStatus, isSuccess: publishStatusLoaded } = useSocialPublishingStatus(open);
+  const effectiveIsInternal = !!clients.find((c) => c.id === (lockedClientId || clientId))?.isInternal;
+  const showAutoPublish = effectiveIsInternal;
+  const autoHints = useMemo(
+    () => (autoPublish && showAutoPublish
+      ? autoPublishHints(autoTargets, cfg.format, media, caption).map(([k, d, p]) => t(k, d, p ?? {}) as string)
+      : []),
+    [autoPublish, showAutoPublish, autoTargets, cfg.format, media, caption, t],
+  );
+
   const scheduleIso = scheduledAt ? combineWib(scheduledAt, time || '00:00') : undefined;
   const schedulePast = !!scheduledAt && isPastWib(scheduledAt, time || '00:00');
   const scheduleChanged = !isEdit
@@ -1839,6 +1892,12 @@ function CreateDialog({
     }
     if (kind === 'CAROUSEL' && media.length < 2) {
       toast.error(t('contentCalendar.createDialog.carouselMin', 'Carousel butuh minimal 2 media.'));
+      return;
+    }
+    if (showAutoPublish && autoPublish && (autoTargets.length === 0 || autoHints.length > 0)) {
+      toast.error(autoTargets.length === 0
+        ? t('socialPublish.chooseTarget', 'Pilih minimal satu platform.')
+        : autoHints[0]);
       return;
     }
     if (mode === 'auto' && schedulePast && (!isEdit || blockPastEdit)) {
@@ -1871,9 +1930,12 @@ function CreateDialog({
       platforms: selectedPlatforms,
       clientId: effectiveClientId,
       projectId: projectId || undefined,
+      ...(showAutoPublish
+        ? { autoPublish, autoPublishTargets: autoPublish ? autoTargets : [] }
+        : isEdit && editItem?.autoPublish ? { autoPublish: false, autoPublishTargets: [] } : {}),
       media: media.map((m, i) => ({
         url: m.url, key: m.key, mimeType: m.mimeType, size: m.size,
-        width: m.width, height: m.height,
+        width: m.width, height: m.height, duration: m.duration,
         thumbnailUrl: m.thumbnailUrl, thumbnailKey: m.thumbnailKey,
         order: i,
       })),
@@ -2053,6 +2115,24 @@ function CreateDialog({
               ))}
             </div>
           </div>
+
+          {showAutoPublish && (
+            <AutoPublishSection
+              enabled={autoPublish}
+              onEnabledChange={setAutoPublish}
+              targets={autoTargets}
+              onTargetsChange={setAutoTargets}
+              hints={[
+                ...autoHints,
+                ...(autoPublish && !scheduledAt
+                  ? [t('socialPublish.hint.needsSchedule', 'Atur tanggal & jam agar terbit otomatis (atau pakai "Terbitkan sekarang").') as string]
+                  : []),
+              ]}
+              isAdmin={isAdmin}
+              configured={!!publishStatus?.configured}
+              statusLoaded={publishStatusLoaded}
+            />
+          )}
 
           {/* Media — framed at the real aspect ratio for the chosen type, so a
               Reel/Story reads as vertical and a Feed/Carousel as 4:5. */}
