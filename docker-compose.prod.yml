@@ -77,7 +77,8 @@ services:
       - PORTAL_JWT_SECRET=${PORTAL_JWT_SECRET:?PORTAL_JWT_SECRET must be set in .env}
       - PORTAL_URL=https://portal.monomiagency.com
       # Instagram API with Instagram Login (optional — app boots without it).
-      # TOKEN_ENCRYPTION_KEY is required once META_APP_ID/SECRET are set.
+      # TOKEN_ENCRYPTION_KEY is required once META_APP_ID/SECRET are set; without
+      # it (or with a placeholder) Instagram is DISABLED with a boot warning.
       - META_APP_ID=${META_APP_ID:-}
       - META_APP_SECRET=${META_APP_SECRET:-}
       - META_GRAPH_VERSION=${META_GRAPH_VERSION:-v26.0}
@@ -93,6 +94,8 @@ services:
       - META_AUTOPUBLISH_ENABLED=${META_AUTOPUBLISH_ENABLED:-true}
 
       # WhatsApp inbox + Conversions API (optional — app boots without them).
+      # A partial/invalid set never blocks boot: WhatsApp is disabled and the
+      # problems are logged + listed in CRM > Settings.
       # Webhook: https://admin.monomiagency.com/api/v1/whatsapp/webhook
       - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN:-}
       - WHATSAPP_WABA_ID=${WHATSAPP_WABA_ID:-}
@@ -103,6 +106,9 @@ services:
       - WHATSAPP_COEXISTENCE_ENABLED=${WHATSAPP_COEXISTENCE_ENABLED:-false}
       - WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID=${WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID:-}
       - WHATSAPP_HISTORY_LEAD_MAX_AGE_DAYS=${WHATSAPP_HISTORY_LEAD_MAX_AGE_DAYS:-30}
+      - WHATSAPP_HISTORY_SYNC_ENABLED=${WHATSAPP_HISTORY_SYNC_ENABLED:-true}
+      - WHATSAPP_SMB_SYNC_EDGE=${WHATSAPP_SMB_SYNC_EDGE:-smb_app_data}
+      - WHATSAPP_APPSECRET_PROOF=${WHATSAPP_APPSECRET_PROOF:-true}
       - META_DATASET_ID=${META_DATASET_ID:-}
       - META_CAPI_ENABLED=${META_CAPI_ENABLED:-false}
       - META_CAPI_TEST_EVENT_CODE=${META_CAPI_TEST_EVENT_CODE:-}

@@ -2,7 +2,10 @@ import { Body, Controller, INestApplication, Post } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { APP_GUARD } from "@nestjs/core";
 import request from "supertest";
+import * as http from "http";
+import type { AddressInfo } from "net";
 import { registerRawBodyRoutes } from "../../config/body-parser.config";
+import { whatsappWebhookGate } from "./whatsapp.config";
 import { WhatsAppWebhookController } from "./whatsapp-webhook.controller";
 import { WhatsAppWebhookService } from "./whatsapp-webhook.service";
 import {
@@ -21,6 +24,40 @@ class OtherJsonController {
   echo(@Body() body: any) {
     return { got: body };
   }
+}
+
+/**
+ * Sends only the headers (+ a few bytes) of a request that announces a huge
+ * body and resolves with the status the server answers BEFORE the body is
+ * sent — proving the body was never read/buffered.
+ */
+function statusBeforeBody(
+  server: http.Server,
+  path: string,
+  headers: Record<string, string>,
+): Promise<number> {
+  const { port } = server.address() as AddressInfo;
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        host: "127.0.0.1",
+        port,
+        path,
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Content-Length": String(50 * 1024 * 1024), ...headers },
+      },
+      (res) => {
+        resolve(res.statusCode ?? 0);
+        res.resume();
+        req.destroy();
+      },
+    );
+    req.on("error", (e) => {
+      if ((e as NodeJS.ErrnoException).code !== "ECONNRESET") reject(e);
+    });
+    req.write("{\"object\":");
+    setTimeout(() => reject(new Error("server waited for the body")), 3000).unref();
+  });
 }
 
 describe("WhatsApp webhook endpoint (raw body + signature + verification)", () => {
@@ -48,7 +85,7 @@ describe("WhatsApp webhook endpoint (raw body + signature + verification)", () =
       ],
     }).compile();
     app = moduleRef.createNestApplication();
-    registerRawBodyRoutes(app, "api/v1");
+    registerRawBodyRoutes(app, "api/v1", { gate: whatsappWebhookGate });
     app.setGlobalPrefix("api/v1");
     await app.init();
   });
@@ -116,6 +153,17 @@ describe("WhatsApp webhook endpoint (raw body + signature + verification)", () =
         "hub.challenge": "1",
       });
       expect(res.status).toBe(404);
+    });
+
+    it("503 (not 404, never a crash) when WhatsApp is switched on but incomplete", async () => {
+      restoreEnv();
+      restoreEnv = withEnv({ ...waEnv(), WHATSAPP_WEBHOOK_VERIFY_TOKEN: undefined });
+      const res = await request(app.getHttpServer()).get(url).query({
+        "hub.mode": "subscribe",
+        "hub.verify_token": VERIFY_TOKEN,
+        "hub.challenge": "1",
+      });
+      expect(res.status).toBe(503);
     });
   });
 
@@ -213,7 +261,7 @@ describe("WhatsApp webhook endpoint (raw body + signature + verification)", () =
       expect(kicked).toHaveLength(0);
     });
 
-    it("404 when not configured (no app secret)", async () => {
+    it("503 + Retry-After when switched on but incomplete (no app secret); Meta retries later", async () => {
       restoreEnv();
       restoreEnv = withEnv({ ...waEnv(), META_APP_SECRET: undefined });
       const res = await request(app.getHttpServer())
@@ -221,7 +269,48 @@ describe("WhatsApp webhook endpoint (raw body + signature + verification)", () =
         .set("Content-Type", "application/json")
         .set("X-Hub-Signature-256", sign(body))
         .send(body);
+      expect(res.status).toBe(503);
+      expect(res.headers["retry-after"]).toBe("300");
+      expect(stored).toHaveLength(0);
+    });
+
+    it("404 when WhatsApp is OFF — answered before the body is read", async () => {
+      restoreEnv();
+      restoreEnv = withEnv(Object.fromEntries(WA_ENV_KEYS.map((k) => [k, undefined])));
+      const server = app.getHttpServer().listen(0);
+      try {
+        expect(
+          await statusBeforeBody(server, url, { "X-Hub-Signature-256": sign("x") }),
+        ).toBe(404);
+      } finally {
+        server.close();
+      }
+      // small bodies get a normal 404 too
+      const res = await request(app.getHttpServer())
+        .post(url)
+        .set("Content-Type", "application/json")
+        .set("X-Hub-Signature-256", sign(body))
+        .send(body);
       expect(res.status).toBe(404);
+    });
+
+    it("rejects a missing/malformed signature header before reading the body (401)", async () => {
+      const server = app.getHttpServer().listen(0);
+      try {
+        for (const header of [undefined, "sha1=abc", "sha256=xyz"]) {
+          expect(
+            await statusBeforeBody(server, url, header ? { "X-Hub-Signature-256": header } : {}),
+          ).toBe(401);
+        }
+      } finally {
+        server.close();
+      }
+      const res = await request(app.getHttpServer())
+        .post(url)
+        .set("Content-Type", "application/json")
+        .send(body);
+      expect(res.status).toBe(401);
+      expect(stored).toHaveLength(0);
     });
 
     it("does not change JSON parsing of other routes", async () => {
@@ -255,5 +344,54 @@ describe("WhatsApp webhook endpoint (raw body + signature + verification)", () =
       .set("X-Hub-Signature-256", sign(body, APP_SECRET))
       .send(body);
     expect(old.status).toBe(401);
+  });
+});
+
+describe("WhatsApp webhook early per-IP rate limit (before the raw body parser)", () => {
+  let app: INestApplication;
+  let restore: () => void;
+  const store = jest.fn(async () => ({ id: "ev1", duplicate: false }));
+
+  beforeAll(async () => {
+    restore = withEnv({
+      ...Object.fromEntries(WA_ENV_KEYS.map((k) => [k, undefined])),
+      ...waEnv(),
+    });
+    const moduleRef = await Test.createTestingModule({
+      controllers: [WhatsAppWebhookController],
+      providers: [
+        { provide: WhatsAppWebhookService, useValue: { store, kick: jest.fn() } },
+        { provide: APP_GUARD, useValue: { canActivate: () => true } },
+      ],
+    }).compile();
+    app = moduleRef.createNestApplication();
+    registerRawBodyRoutes(app, "api/v1", {
+      gate: whatsappWebhookGate,
+      rateLimit: { perMinute: 3, burst: 3 },
+    });
+    app.setGlobalPrefix("api/v1");
+    await app.init();
+  });
+  afterAll(async () => {
+    await app.close();
+    restore();
+  });
+
+  it("answers 429 + Retry-After once the bucket is empty, without storing anything", async () => {
+    const body = JSON.stringify(messagesPayload({ messages: [] }));
+    const statuses: number[] = [];
+    let retryAfter: string | undefined;
+    for (let i = 0; i < 5; i += 1) {
+      const res = await request(app.getHttpServer())
+        .post("/api/v1/whatsapp/webhook")
+        .set("Content-Type", "application/json")
+        .set("X-Hub-Signature-256", sign(body))
+        .send(body);
+      statuses.push(res.status);
+      if (res.status === 429) retryAfter = res.headers["retry-after"];
+    }
+    expect(statuses).toEqual([200, 200, 200, 429, 429]);
+    expect(Number(retryAfter)).toBeGreaterThanOrEqual(1);
+    expect(store).toHaveBeenCalledTimes(3);
   });
 });

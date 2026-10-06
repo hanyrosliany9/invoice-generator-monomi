@@ -1,12 +1,15 @@
 import { Logger } from "@nestjs/common";
+import { createHmac } from "crypto";
 import {
   assertGraphCallAllowed,
   ForbiddenGraphEndpointError,
   GraphApiError,
+  WaGraphError,
   WhatsAppGraphClient,
 } from "./whatsapp-graph.client";
 import {
   ACCESS_TOKEN,
+  APP_SECRET,
   FakeGraph,
   PHONE_ID,
   WABA_ID,
@@ -219,5 +222,100 @@ describe("WhatsAppGraphClient safety denylist (never register / verify / migrate
         { maxBytes: 2 },
       ),
     ).rejects.toMatchObject({ status: 413 });
+  });
+
+  it.each([
+    ["method override in the query", "GET", `/${PHONE_ID}`, undefined, { method: "post", pin: "123456" }],
+    ["method override (DELETE) in the query", "GET", `/${WABA_ID}/subscribed_apps`, undefined, { method: "DELETE" }],
+    ["_method in the query", "GET", `/${PHONE_ID}`, undefined, { _method: "POST" }],
+    ["pin in the query", "GET", `/${PHONE_ID}`, undefined, { pin: "123456" }],
+    ["register-ish query key", "GET", `/${PHONE_ID}`, undefined, { deregister: "1" }],
+    ["bracketed pin in the query", "GET", `/${PHONE_ID}`, undefined, { "x[pin]": "1" }],
+    ["query string inside the path", "GET", `/${PHONE_ID}?method=post&pin=123456`, undefined, undefined],
+    ["encoded query delimiter in the path", "GET", `/${PHONE_ID}%3Fmethod=post`, undefined, undefined],
+    ["encoded slash in the path", "POST", `/${PHONE_ID}%2Fregister`, {}, undefined],
+    ["nested pin in the body", "POST", `/${PHONE_ID}/messages`, { messaging_product: "whatsapp", nested: { deep: [{ pin: "1" }] } }, undefined],
+    ["nested migrate key", "POST", `/${PHONE_ID}/messages`, { a: { migrate_phone_number: true } }, undefined],
+    ["batch request", "POST", `/${PHONE_ID}/messages`, { batch: [{ method: "POST", relative_url: `${PHONE_ID}/register` }] }, undefined],
+    ["Graph path as a body value", "POST", `/${PHONE_ID}/messages`, { messaging_product: "whatsapp", next: `${PHONE_ID}/register` }, undefined],
+    ["Graph URL as a body value", "POST", `/${PHONE_ID}/messages`, { url: `https://graph.facebook.com/v26.0/${PHONE_ID}/deregister` }, undefined],
+  ])("blocks %s before any I/O", async (_name, method, path, json, query) => {
+    expect(() =>
+      assertGraphCallAllowed(method, path, json, [], query as any),
+    ).toThrow(ForbiddenGraphEndpointError);
+    await expect(
+      client.request(BASE, V, path, {
+        method: method as any,
+        json: json as any,
+        query: query as any,
+        token: ACCESS_TOKEN,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenGraphEndpointError);
+    expect(graph.calls).toHaveLength(0);
+  });
+
+  it("does not block free text that merely mentions the words (customer replies, template params)", async () => {
+    const body = {
+      messaging_product: "whatsapp",
+      to: "6281234567890",
+      type: "text",
+      text: { body: "Please register me — my PIN is not needed, migrate later? method: post" },
+    };
+    expect(() =>
+      assertGraphCallAllowed("POST", `/${PHONE_ID}/messages`, body),
+    ).not.toThrow();
+    expect(() =>
+      assertGraphCallAllowed("GET", `/${WABA_ID}/phone_numbers`, undefined, [], {
+        fields: "display_phone_number,verified_name,platform_type,status,quality_rating",
+      }),
+    ).not.toThrow();
+  });
+
+  it("adds appsecret_proof = HMAC-SHA256(app secret, token) when an app secret is given", async () => {
+    await client.request(BASE, V, `/${WABA_ID}/phone_numbers`, {
+      token: ACCESS_TOKEN,
+      appSecret: APP_SECRET,
+    });
+    await client.request(BASE, V, `/${WABA_ID}/phone_numbers`, { token: ACCESS_TOKEN });
+    const proof = createHmac("sha256", APP_SECRET).update(ACCESS_TOKEN).digest("hex");
+    expect(new URL(graph.calls[0].url).searchParams.get("appsecret_proof")).toBe(proof);
+    expect(new URL(graph.calls[1].url).searchParams.has("appsecret_proof")).toBe(false);
+    expect(graph.calls[0].url).not.toContain(ACCESS_TOKEN);
+    expect(graph.calls[0].url).not.toContain(APP_SECRET);
+  });
+
+  it("classifies POST outcomes: Graph error = definitive, timeout / bare 5xx = ambiguous, refused connection = not sent", async () => {
+    graph.on("POST", /events$/, () => ({ status: 500, json: { error: { message: "down", code: 2 } } }));
+    const definitive = await client
+      .request(BASE, V, `/${WABA_ID}/events`, { json: { data: [] }, token: ACCESS_TOKEN })
+      .catch((e) => e);
+    expect(definitive).toBeInstanceOf(WaGraphError);
+    expect(definitive.ambiguous).toBe(false);
+
+    graph.on("POST", /events$/, () => ({ status: 504, body: Buffer.from("Gateway Timeout") }));
+    const gateway = await client
+      .request(BASE, V, `/${WABA_ID}/events`, { json: { data: [] }, token: ACCESS_TOKEN })
+      .catch((e) => e);
+    expect(gateway.ambiguous).toBe(true);
+
+    const warn = jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    const timeoutClient = new WhatsAppGraphClient((async () => {
+      const e = new Error("timed out");
+      e.name = "TimeoutError";
+      throw e;
+    }) as any);
+    const timeout = await timeoutClient
+      .request(BASE, V, `/${WABA_ID}/events`, { json: { data: [] }, token: ACCESS_TOKEN })
+      .catch((e) => e);
+    expect(timeout.ambiguous).toBe(true);
+
+    const refusedClient = new WhatsAppGraphClient((async () => {
+      throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNREFUSED" } });
+    }) as any);
+    const refused = await refusedClient
+      .request(BASE, V, `/${WABA_ID}/events`, { json: { data: [] }, token: ACCESS_TOKEN })
+      .catch((e) => e);
+    expect(refused.ambiguous).toBe(false);
+    warn.mockRestore();
   });
 });

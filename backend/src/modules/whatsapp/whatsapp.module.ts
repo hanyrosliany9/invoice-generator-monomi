@@ -11,15 +11,18 @@ import { WhatsAppStatusService } from "./whatsapp-status.service";
 import { MetaCapiService } from "./meta-capi.service";
 import { WhatsAppController } from "./whatsapp.controller";
 import { WhatsAppWebhookController } from "./whatsapp-webhook.controller";
-import { assertWhatsAppConfig } from "./whatsapp.config";
+import { reportWhatsAppConfig } from "./whatsapp.config";
 
 /**
  * CRM phase B: WhatsApp Business Platform (Cloud API) inbox with coexistence
  * mirroring, automatic lead capture with Click-to-WhatsApp attribution, and
  * the Conversions API for Business Messaging sender (MetaEventOutbox).
  *
- * Optional: without WHATSAPP_* env vars every endpoint reports "not
- * configured", the webhook answers 404 and the CAPI sender is a no-op.
+ * Optional and feature-gated: the configuration is classified OFF /
+ * INCOMPLETE / INVALID / READY (whatsapp.config.ts). Anything but READY never
+ * blocks boot — it is logged, shown in the settings card, the webhook answers
+ * 404 (OFF) or 503, Graph calls report "not configured" and the CAPI sender
+ * is a no-op.
  * Hard rule: the Graph client refuses phone number registration / code
  * verification / deregistration / two-step PIN / migration endpoints.
  */
@@ -38,8 +41,10 @@ import { assertWhatsAppConfig } from "./whatsapp.config";
 })
 export class WhatsAppModule implements OnModuleInit {
   onModuleInit(): void {
-    // Production: a switched-on but invalid configuration aborts boot.
-    assertWhatsAppConfig();
-    new Logger(WhatsAppModule.name).log("WhatsApp module ready");
+    // Never throws: a partial/invalid WhatsApp config only disables WhatsApp.
+    const cfg = reportWhatsAppConfig();
+    new Logger(WhatsAppModule.name).log(
+      `WhatsApp module loaded (configuration ${cfg?.state ?? "UNKNOWN"})`,
+    );
   }
 }

@@ -12,6 +12,7 @@ import { GraphApiError } from "./whatsapp-graph.client";
 import { WhatsAppApiService } from "./whatsapp-api.service";
 import { MetaCapiService } from "./meta-capi.service";
 import {
+  embeddedSignupReady,
   META_ID_RE,
   PROD_WEBHOOK_URL,
   WEBHOOK_PATH,
@@ -109,6 +110,8 @@ export class WhatsAppStatusService {
     return {
       configured: !!creds,
       credentialSource: creds?.source ?? null,
+      /** OFF | INCOMPLETE | INVALID | READY — anything but READY disables the feature. */
+      state: cfg.state,
       env: {
         accessToken: !!cfg.accessToken,
         wabaId: cfg.wabaId,
@@ -116,6 +119,7 @@ export class WhatsAppStatusService {
         appSecret: !!cfg.appSecret,
         verifyToken: !!cfg.verifyToken,
         graphVersion: cfg.graphVersion,
+        appSecretProof: cfg.appSecretProof,
         problems: cfg.problems,
       },
       webhook: {
@@ -148,13 +152,9 @@ export class WhatsAppStatusService {
           }
         : null,
       check,
-      capi,
+      capi: { ...capi, state: cfg.capiState, problems: cfg.capiProblems },
       embeddedSignup: {
-        enabled:
-          cfg.coexistenceEnabled &&
-          !!cfg.embeddedSignupConfigId &&
-          !!cfg.appId &&
-          !!cfg.appSecret,
+        enabled: embeddedSignupReady(cfg),
         coexistenceFlag: cfg.coexistenceEnabled,
         appId: cfg.coexistenceEnabled ? cfg.appId : null,
         configId: cfg.coexistenceEnabled ? cfg.embeddedSignupConfigId : null,
@@ -171,14 +171,22 @@ export class WhatsAppStatusService {
     return { verifyToken: cfg.verifyToken };
   }
 
-  /** POST /{waba}/dataset — creates (or returns) the CAPI dataset id for META_DATASET_ID. */
-  async createDataset() {
+  /**
+   * POST /{waba}/dataset — creates (or returns) the CAPI dataset id for
+   * META_DATASET_ID. When META_DATASET_ID is already configured it is
+   * returned WITHOUT calling Meta, unless an admin explicitly passes force.
+   */
+  async createDataset(force = false) {
+    const cfg = this.api.config();
+    if (cfg.datasetId && !force) {
+      return { datasetId: cfg.datasetId, source: "configured" as const };
+    }
     const creds = await this.api.require();
     try {
       const res = await this.api.createDataset(creds);
       if (typeof res?.id !== "string" || !META_ID_RE.test(res.id))
         throw new GraphApiError("No dataset id returned", "unknown", 200);
-      return { datasetId: res.id };
+      return { datasetId: res.id, source: "meta" as const };
     } catch (error) {
       if (error instanceof GraphApiError) {
         throw new HttpException(
@@ -207,12 +215,7 @@ export class WhatsAppStatusService {
     userId: string,
   ) {
     const cfg = this.api.config();
-    if (
-      !cfg.coexistenceEnabled ||
-      !cfg.embeddedSignupConfigId ||
-      !cfg.appId ||
-      !cfg.appSecret
-    ) {
+    if (!embeddedSignupReady(cfg)) {
       throw new ForbiddenException({
         statusCode: 403,
         code: "COEXISTENCE_DISABLED",

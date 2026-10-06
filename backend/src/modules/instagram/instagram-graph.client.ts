@@ -58,7 +58,7 @@ const TOKEN_CODES = new Set([102, 190, 463, 467]);
 const PERMISSION_CODES = new Set([10, 200, 201, 299]);
 const TRANSIENT_CODES = new Set([1, 2]);
 
-const SECRET_PARAMS = ["access_token", "client_secret", "code", "input_token", "fb_exchange_token"];
+const SECRET_PARAMS = ["access_token", "client_secret", "code", "input_token", "fb_exchange_token", "appsecret_proof"];
 
 /** Strip secrets from a URL before it can reach a log line. */
 export function redactUrl(url: string): string {

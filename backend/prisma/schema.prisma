@@ -939,6 +939,7 @@ model MetaEventOutbox {
   sentAt    DateTime?
   dedupeKey String?         @unique // "<leadId>:Purchase" keeps Purchase idempotent
   nextTryAt DateTime? // CAPI sender backoff (phase B)
+  inFlightAt DateTime? // CAPI sender: set while a send is in progress; stale = outcome unknown (never auto-resent)
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 

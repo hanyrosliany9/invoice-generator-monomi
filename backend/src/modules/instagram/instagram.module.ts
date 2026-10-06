@@ -27,8 +27,9 @@ import { assertInstagramConfig, InstagramConfig, loadInstagramConfig } from "./i
     {
       provide: INSTAGRAM_CONFIG,
       useFactory: (): InstagramConfig | null => {
-        // Production: an invalid configuration aborts boot (fail fast).
-        assertInstagramConfig();
+        // Never aborts boot: an invalid configuration disables Instagram only
+        // (assertInstagramConfig logs why).
+        if (assertInstagramConfig()) return null;
         try {
           return loadInstagramConfig();
         } catch (error) {

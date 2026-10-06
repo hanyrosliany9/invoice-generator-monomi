@@ -1,4 +1,13 @@
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
+import { createHmac } from "crypto";
+import {
+  assertGraphCallNotDenied,
+  FORBIDDEN_BODY_KEYS,
+  FORBIDDEN_PARAM_KEYS,
+  FORBIDDEN_SEGMENTS,
+  ForbiddenGraphEndpointError,
+  normalisePath,
+} from "../../common/meta/graph-denylist";
 import {
   classifyError,
   FetchLike,
@@ -12,57 +21,65 @@ export { GraphApiError };
 export const WHATSAPP_FETCH = Symbol("WHATSAPP_FETCH");
 
 /**
- * Thrown BEFORE any network I/O when code tries to call a Graph endpoint that
- * could register, re-verify or migrate the business phone number.
- *
- * Why: the owner's live Click-to-WhatsApp number runs on the WhatsApp Business
- * app (coexistence). Registering / verifying / migrating it through the API
- * would log the phone app out and break the running ad campaign. There is no
- * flag to bypass this; changing it requires a code change + review.
+ * The denylist (phone number registration / code verification /
+ * deregistration / two-step PIN / migration, method overrides, batch) lives in
+ * common/meta/graph-denylist.ts and is shared with the auto-publishing client.
+ * ForbiddenGraphEndpointError is thrown BEFORE any network I/O; there is no
+ * flag to bypass it.
  */
-export class ForbiddenGraphEndpointError extends Error {
+export {
+  FORBIDDEN_BODY_KEYS,
+  FORBIDDEN_PARAM_KEYS,
+  FORBIDDEN_SEGMENTS,
+  ForbiddenGraphEndpointError,
+  normalisePath,
+};
+
+/**
+ * A Graph failure whose outcome is UNKNOWN: the request may have reached Meta
+ * and been applied (timeout or connection drop after sending, gateway 5xx
+ * without a Graph error body). Callers must not blindly repeat a
+ * non-idempotent POST (e.g. Conversions API events, which Meta does not
+ * deduplicate for business messaging).
+ */
+export class WaGraphError extends GraphApiError {
   constructor(
-    readonly method: string,
-    readonly path: string,
-    readonly reason: string,
+    message: string,
+    kind: GraphApiError["kind"],
+    status: number,
+    readonly ambiguous: boolean,
+    code?: number,
+    subcode?: number,
+    errorType?: string,
   ) {
-    super(`Blocked Graph API call ${method} ${path}: ${reason}`);
-    this.name = "ForbiddenGraphEndpointError";
+    super(message, kind, status, code, subcode, errorType);
+    this.name = "WaGraphError";
   }
 }
 
-/**
- * Path segments that must never be called (phone number registration,
- * SMS/voice code verification, deregistration, two-step PIN, migration).
- * Matched case-insensitively against every path segment.
- */
-export const FORBIDDEN_SEGMENTS: readonly string[] = [
-  "register",
-  "deregister",
-  "request_code",
-  "verify_code",
-  "two_step_verification",
-  "pin",
-  "migrate",
-  "migration",
-  "migrate_phone_number",
-];
-/** Any segment containing one of these substrings is refused too. */
-const FORBIDDEN_SUBSTRINGS = [
-  "register",
-  "request_code",
-  "verify_code",
-  "migrat",
-  "two_step",
-];
-/** Body keys that only exist on registration / two-step / migration calls. */
-export const FORBIDDEN_BODY_KEYS: readonly string[] = [
-  "pin",
-  "code_method",
-  "migrate_phone_number",
-  "backup",
-  "cert",
-];
+/** Connection errors that prove the request never reached Meta. */
+const NOT_SENT_CODES = new Set([
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "CERT_HAS_EXPIRED",
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "ERR_TLS_CERT_ALTNAME_INVALID",
+  "UND_ERR_CONNECT_TIMEOUT",
+]);
+
+function networkErrorCode(error: unknown): string | null {
+  const cause = (error as { cause?: { code?: unknown } })?.cause;
+  const code = cause?.code ?? (error as { code?: unknown })?.code;
+  return typeof code === "string" ? code : null;
+}
+
+/** appsecret_proof = HMAC-SHA256(app secret, access token), hex. */
+export function appSecretProof(token: string, appSecret: string): string {
+  return createHmac("sha256", appSecret).update(token).digest("hex");
+}
 
 type Method = "GET" | "POST" | "DELETE";
 
@@ -117,14 +134,6 @@ const ALLOWED: ReadonlyArray<{ method: Method; re: RegExp; what: string }> = [
   },
 ];
 
-export function normalisePath(path: string): string {
-  // strip query/fragment, collapse slashes, drop a leading version segment
-  const noQuery = path.split(/[?#]/)[0];
-  let p = ("/" + noQuery).replace(/\/{2,}/g, "/").replace(/\/+$/, "");
-  p = p.replace(/^\/v\d{1,3}\.\d{1,2}(?=\/|$)/i, "");
-  return p === "" ? "/" : p;
-}
-
 /**
  * Throws ForbiddenGraphEndpointError for a forbidden or unknown endpoint.
  * `extraPostEdges`: additional "/{id}/<edge>" POST edges allowed by config
@@ -135,52 +144,16 @@ export function assertGraphCallAllowed(
   path: string,
   body?: unknown,
   extraPostEdges: readonly string[] = [],
+  query?: Record<string, unknown> | null,
 ): void {
   const m = method.toUpperCase();
-  let decoded = path;
-  try {
-    decoded = decodeURIComponent(path);
-  } catch {
-    throw new ForbiddenGraphEndpointError(m, path, "undecodable path");
-  }
-  if (
-    /^[a-z]+:\/\//i.test(decoded) ||
-    decoded.includes("..") ||
-    decoded.includes("\\")
-  ) {
-    throw new ForbiddenGraphEndpointError(
-      m,
-      path,
-      "absolute or traversing path",
-    );
-  }
-  const p = normalisePath(decoded);
-  const segments = p
-    .split("/")
-    .filter(Boolean)
-    .map((s) => s.toLowerCase());
-  for (const seg of segments) {
-    if (
-      FORBIDDEN_SEGMENTS.includes(seg) ||
-      FORBIDDEN_SUBSTRINGS.some((f) => seg.includes(f))
-    ) {
-      throw new ForbiddenGraphEndpointError(
-        m,
-        p,
-        `"${seg}" can register/verify/migrate the phone number`,
-      );
-    }
-  }
-  if (body && typeof body === "object" && !Array.isArray(body)) {
-    for (const key of Object.keys(body as Record<string, unknown>)) {
-      if (FORBIDDEN_BODY_KEYS.includes(key.toLowerCase())) {
-        throw new ForbiddenGraphEndpointError(
-          m,
-          p,
-          `body field "${key}" belongs to registration/two-step/migration calls`,
-        );
-      }
-    }
+  // Shared denylist: path segments, query keys (+ "?..." inside the path),
+  // body keys at any depth, method overrides / batch, Graph-path values.
+  const p = assertGraphCallNotDenied(m, path, { query, body });
+  if (path.includes("?") || path.includes("#")) {
+    // Query parameters must go through `query` (checked and encoded); this
+    // module never builds a path with its own query string.
+    throw new ForbiddenGraphEndpointError(m, p, "query string inside the path");
   }
   const allowed =
     ALLOWED.some((a) => a.method === m && a.re.test(p)) ||
@@ -205,6 +178,12 @@ export interface WaGraphRequest {
   json?: Record<string, unknown>;
   /** Bearer token (sent as a header, never in the URL). */
   token?: string | null;
+  /**
+   * App secret of the app the token belongs to: adds appsecret_proof =
+   * HMAC-SHA256(app secret, token) to the query (required when the Meta app
+   * has "Require app secret" on). Ignored without a token.
+   */
+  appSecret?: string | null;
   timeoutMs?: number;
 }
 
@@ -246,7 +225,7 @@ export class WhatsAppGraphClient {
   ): Promise<T> {
     const method = req.method ?? (req.json ? "POST" : "GET");
     // Hard safety gate: runs before anything touches the network.
-    assertGraphCallAllowed(method, path, req.json, extraPostEdges);
+    assertGraphCallAllowed(method, path, req.json, extraPostEdges, req.query);
 
     const url = new URL(
       `${baseUrl.replace(/\/+$/, "")}/${version}${normalisePath(path)}`,
@@ -255,7 +234,15 @@ export class WhatsAppGraphClient {
       if (v !== undefined && v !== "") url.searchParams.set(k, String(v));
     }
     const headers: Record<string, string> = { Accept: "application/json" };
-    if (req.token) headers.Authorization = `Bearer ${req.token}`;
+    if (req.token) {
+      headers.Authorization = `Bearer ${req.token}`;
+      if (req.appSecret) {
+        url.searchParams.set(
+          "appsecret_proof",
+          appSecretProof(req.token, req.appSecret),
+        );
+      }
+    }
     const init: RequestInit = {
       method,
       headers,
@@ -272,15 +259,20 @@ export class WhatsAppGraphClient {
       res = await this.fetchImpl(url.toString(), init);
     } catch (error) {
       const name = (error as Error)?.name;
+      const timeout = name === "TimeoutError" || name === "AbortError";
+      const netCode = networkErrorCode(error);
+      // GET is safe to repeat; a POST is "outcome unknown" unless the error
+      // proves the request never left (DNS, refused connection, TLS).
+      const ambiguous =
+        method === "POST" && (timeout || !netCode || !NOT_SENT_CODES.has(netCode));
       this.logger.warn(
-        `Graph ${method} ${redactUrl(url.toString())} failed: ${name ?? "network error"}`,
+        `Graph ${method} ${redactUrl(url.toString())} failed: ${timeout ? "timeout" : (netCode ?? name ?? "network error")}`,
       );
-      throw new GraphApiError(
-        name === "TimeoutError" || name === "AbortError"
-          ? "Graph API timeout"
-          : "Graph API unreachable",
+      throw new WaGraphError(
+        timeout ? "Graph API timeout" : "Graph API unreachable",
         "transient",
         0,
+        ambiguous,
       );
     }
     parseUsage(res.headers);
@@ -307,13 +299,26 @@ export class WhatsAppGraphClient {
       this.logger.warn(
         `Graph ${method} ${redactUrl(url.toString())} -> ${res.status} code=${code ?? "-"} sub=${subcode ?? "-"} kind=${kind}: ${message}`,
       );
-      throw new GraphApiError(message, kind, res.status, code, subcode, type);
+      // A Graph error body is Meta's definitive answer; a bare 5xx (proxy /
+      // gateway timeout) on a POST may still have been applied.
+      const ambiguous =
+        method === "POST" && res.status >= 500 && code === undefined;
+      throw new WaGraphError(
+        message,
+        kind,
+        res.status,
+        ambiguous,
+        code,
+        subcode,
+        type,
+      );
     }
     if (body === null) {
-      throw new GraphApiError(
+      throw new WaGraphError(
         "Graph API returned a non-JSON response",
         "unknown",
         res.status,
+        method === "POST",
       );
     }
     return body as T;

@@ -10590,7 +10590,15 @@
         "createDataset": "Buat / ambil ID dataset",
         "signupTitle": "Hubungkan WhatsApp (Embedded Signup, coexistence)",
         "signupHint": "Membuka jendela Meta: pilih “Hubungkan aplikasi WhatsApp Business yang sudah ada”, lalu konfirmasi di HP. Setelah itu Monomi berlangganan webhook dan meminta riwayat chat.",
-        "signupDisabled": "Tersedia setelah Meta menyetujui Monomi sebagai Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID)."
+        "signupDisabled": "Tersedia setelah Meta menyetujui Monomi sebagai Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID).",
+        "state": "Konfigurasi server",
+        "stateReady": "Siap",
+        "stateOff": "Belum dikonfigurasi",
+        "stateIncomplete": "Belum lengkap — nonaktif",
+        "stateInvalid": "Tidak valid — nonaktif",
+        "problemsHint": "Perbaiki ini di environment server lalu restart backend. Bagian lain aplikasi tetap berjalan normal.",
+        "wrongFinish": "Meta menyelesaikan jenis pendaftaran lain ({{event}}). Hanya “Hubungkan aplikasi WhatsApp Business yang sudah ada” (coexistence) yang didukung — tidak ada yang diubah. Ulangi dan pilih opsi tersebut.",
+        "datasetConfigured": "Dataset {{id}} sudah diatur di META_DATASET_ID."
       },
       "leadNone": "Belum ada percakapan WhatsApp yang terhubung ke lead ini.",
       "leadNoneHint": "Chat dari nomor yang sama terhubung otomatis. Anda juga bisa menghubungkannya dari inbox.",

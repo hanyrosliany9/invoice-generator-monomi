@@ -10,6 +10,7 @@ import { ResponseInterceptor } from "./common/interceptors/response.interceptor"
 import { ValidationInterceptor } from "./common/interceptors/validation.interceptor";
 import { getErrorMessage } from "./common/utils/error-handling.util";
 import { validateUrls } from "./config/url.config";
+import { whatsappWebhookGate } from "./modules/whatsapp/whatsapp.config";
 import {
   registerLargeJsonBodyRoutes,
   registerRawBodyRoutes,
@@ -171,8 +172,10 @@ async function bootstrap() {
     registerLargeJsonBodyRoutes(app, API_GLOBAL_PREFIX);
     // Meta webhook-style callbacks: 16kb cap, 413 above it.
     registerSmallBodyRoutes(app, API_GLOBAL_PREFIX);
-    // WhatsApp webhook: raw bytes (signature is verified on the exact body), 3mb cap.
-    registerRawBodyRoutes(app, API_GLOBAL_PREFIX);
+    // WhatsApp webhook: raw bytes (signature is verified on the exact body),
+    // 3mb cap, behind an early per-IP rate limit, the feature gate and a
+    // signature-header check so nothing is buffered for junk requests.
+    registerRawBodyRoutes(app, API_GLOBAL_PREFIX, { gate: whatsappWebhookGate });
 
     // Global validation pipe
     app.useGlobalPipes(

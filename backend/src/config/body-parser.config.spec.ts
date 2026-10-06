@@ -1,7 +1,13 @@
 import { Body, Controller, INestApplication, Param, Post } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { registerLargeJsonBodyRoutes, registerSmallBodyRoutes } from "./body-parser.config";
+import {
+  IpTokenBucket,
+  RAW_BODY_LIMIT,
+  registerLargeJsonBodyRoutes,
+  registerSmallBodyRoutes,
+  WEBHOOK_RATE_LIMIT,
+} from "./body-parser.config";
 import { AllExceptionsFilter } from "../common/filters/all-exceptions.filter";
 
 /**
@@ -177,5 +183,28 @@ describe("registerSmallBodyRoutes (Meta deauthorize / data-deletion)", () => {
   it("other routes keep the default limit", async () => {
     const res = await request(app.getHttpServer()).post("/api/v1/instagram/other").type("form").send(form(50_000));
     expect(res.status).toBe(201);
+  });
+});
+
+describe("IpTokenBucket (early webhook rate limit)", () => {
+  it("defaults stay generous for Meta and keep the documented 3mb cap", () => {
+    expect(WEBHOOK_RATE_LIMIT.perMinute).toBeGreaterThanOrEqual(600);
+    expect(RAW_BODY_LIMIT).toBe("3mb");
+  });
+
+  it("allows a burst, then refills at the per-minute rate, per IP", () => {
+    const b = new IpTokenBucket(60, 3, 100); // 1 token / second
+    const t0 = 1_000_000;
+    expect([b.take("1.1.1.1", t0), b.take("1.1.1.1", t0), b.take("1.1.1.1", t0)]).toEqual([0, 0, 0]);
+    expect(b.take("1.1.1.1", t0)).toBe(1); // retry after ~1s
+    expect(b.take("2.2.2.2", t0)).toBe(0); // other IPs unaffected
+    expect(b.take("1.1.1.1", t0 + 1000)).toBe(0);
+    expect(b.take("1.1.1.1", t0 + 1000)).toBeGreaterThan(0);
+  });
+
+  it("is LRU-bounded so many distinct IPs cannot grow memory without bound", () => {
+    const b = new IpTokenBucket(600, 600, 50);
+    for (let i = 0; i < 500; i += 1) b.take(`10.0.${i >> 8}.${i & 255}`, 1);
+    expect(b.size).toBe(50);
   });
 });

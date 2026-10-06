@@ -94,9 +94,13 @@ export interface WaListFilters {
   limit?: number;
 }
 
+export type WaConfigState = 'OFF' | 'INCOMPLETE' | 'INVALID' | 'READY';
+
 export interface WaSettingsStatus {
   configured: boolean;
   credentialSource: 'env' | 'embedded' | null;
+  /** Anything but READY keeps the webhook, inbox sending and CAPI disabled. */
+  state: WaConfigState;
   env: {
     accessToken: boolean;
     wabaId: string | null;
@@ -104,6 +108,7 @@ export interface WaSettingsStatus {
     appSecret: boolean;
     verifyToken: boolean;
     graphVersion: string;
+    appSecretProof: boolean;
     problems: string[];
   };
   webhook: { url: string; ready: boolean; fields: string[]; lastWebhookAt: string | null };
@@ -139,6 +144,8 @@ export interface WaSettingsStatus {
   } | null;
   capi: {
     enabled: boolean;
+    state: WaConfigState;
+    problems: string[];
     datasetConfigured: boolean;
     datasetId: string | null;
     testEventCode: boolean;
@@ -191,7 +198,8 @@ export const whatsappApi = {
     unwrap(await api.get('/whatsapp/settings/status', { params: refresh ? { refresh: 1 } : {} })),
   revealVerifyToken: async (): Promise<{ verifyToken: string }> => unwrap(await api.post('/whatsapp/settings/verify-token')),
   runCapi: async () => unwrap(await api.post('/whatsapp/capi/run')),
-  createDataset: async (): Promise<{ datasetId: string }> => unwrap(await api.post('/whatsapp/capi/dataset')),
+  createDataset: async (): Promise<{ datasetId: string; source: 'configured' | 'meta' }> =>
+    unwrap(await api.post('/whatsapp/capi/dataset')),
   completeEmbeddedSignup: async (d: { code: string; wabaId: string; phoneNumberId: string }) =>
     unwrap(await api.post('/whatsapp/embedded-signup/complete', d)),
 };

@@ -26,7 +26,12 @@ describe("instagram.config", () => {
   });
 
   it("production: requires a real 32-byte TOKEN_ENCRYPTION_KEY", () => {
-    expect(() => assertInstagramConfig({ ...base, NODE_ENV: "production" } as any)).toThrow(/TOKEN_ENCRYPTION_KEY is required/);
+    // Boot never aborts (META_APP_ID/SECRET may be set only for the WhatsApp
+    // webhook): the integration is disabled and the reason returned/logged.
+    expect(() => assertInstagramConfig({ ...base, NODE_ENV: "production" } as any)).not.toThrow();
+    expect(assertInstagramConfig({ ...base, NODE_ENV: "production" } as any)).toMatch(/TOKEN_ENCRYPTION_KEY is required/);
+    expect(() => loadInstagramConfig({ ...base, NODE_ENV: "production" } as any)).toThrow(/TOKEN_ENCRYPTION_KEY is required/);
+    expect(assertInstagramConfig({ ...base, NODE_ENV: "production", TOKEN_ENCRYPTION_KEY: KEY } as any)).toBeNull();
     expect(() =>
       loadInstagramConfig({ ...base, NODE_ENV: "production", TOKEN_ENCRYPTION_KEY: "change-me-base64-32-bytes" } as any),
     ).toThrow(/placeholder/);

@@ -8,6 +8,7 @@ import {
   scrubSecrets,
 } from "../instagram/instagram-graph.client";
 import { redactUrl } from "../../common/utils/log-redaction.util";
+import { assertGraphCallNotDenied } from "../../common/meta/graph-denylist";
 
 /**
  * HTTP client for graph.facebook.com / graph-video.facebook.com /
@@ -17,6 +18,9 @@ import { redactUrl } from "../../common/utils/log-redaction.util";
  *    header (never in a URL or body), so it cannot leak through URL logging,
  *    proxies or error messages; it is passed per call and never stored here;
  *  - optional appsecret_proof (HMAC-SHA256 of the token with the app secret);
+ *  - the shared Graph denylist (common/meta/graph-denylist.ts: phone number
+ *    registration / verification / PIN / migration, method overrides, batch)
+ *    is enforced on path, query and form body BEFORE any network I/O;
  *  - every call has a timeout (AbortSignal) and refuses redirects;
  *  - log lines carry method + path only (query redacted), Meta error messages
  *    are scrubbed of token-shaped strings;
@@ -85,13 +89,17 @@ export class MetaGraphClient {
     for (const [k, v] of Object.entries(req.query ?? {})) {
       if (v !== undefined && v !== "") u.searchParams.set(k, String(v));
     }
+    const method = req.method ?? (req.form ? "POST" : "GET");
+    // Hard safety gate (throws ForbiddenGraphEndpointError, no I/O happened).
+    assertGraphCallNotDenied(method, `${u.pathname}${u.search}`, {
+      body: req.form,
+    });
     if (appSecret) {
       u.searchParams.set(
         "appsecret_proof",
         createHmac("sha256", appSecret).update(token).digest("hex"),
       );
     }
-    const method = req.method ?? (req.form ? "POST" : "GET");
     const headers: Record<string, string> = {
       Accept: "application/json",
       ...(req.headers ?? {}),

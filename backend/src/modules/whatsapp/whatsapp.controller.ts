@@ -227,8 +227,12 @@ export class WhatsAppController {
   @HttpCode(200)
   @UseGuards(UserThrottleGuard)
   @UserThrottle({ limit: 3, ttl: 60000 })
-  createDataset() {
-    return this.status.createDataset();
+  @ApiOperation({
+    summary:
+      "Return META_DATASET_ID if configured; otherwise (or with force=true) ask Meta for the WABA dataset",
+  })
+  createDataset(@Query("force") force?: string) {
+    return this.status.createDataset(force === "1" || force === "true");
   }
 
   @Post("embedded-signup/complete")

@@ -120,11 +120,77 @@ export function registerSmallBodyRoutes(app: INestApplication, globalPrefix: str
  * Raw (Buffer) body for webhooks whose signature is computed over the exact
  * request bytes: Meta's X-Hub-Signature-256 = HMAC-SHA256(app secret, raw
  * body). Re-serialised JSON would not match, so these routes must never go
- * through the JSON parser. 3mb cap (history-sync chunks), 413 above it. Any
- * content type is accepted as bytes; the controller parses JSON itself only
- * after the signature check.
+ * through the JSON parser. Any content type is accepted as bytes; the
+ * controller parses JSON itself only after the signature check.
+ *
+ * Cap: 3mb, 413 above it (checked against Content-Length before reading).
+ * Kept at 3mb on purpose: Meta documents WhatsApp webhook payloads of up to
+ * 3MB, and coexistence history-sync chunks are the largest of them; a lower
+ * cap would make Meta retry and finally drop those deliveries. The cost of
+ * the cap is bounded instead by what runs BEFORE any byte is buffered:
+ *  1. a per-IP token bucket (WEBHOOK_RATE_LIMIT, 600/min/IP, in memory) —
+ *     generous for Meta (deliveries come from many Meta IPs and a 429 is
+ *     retried by Meta), but stops one client from streaming 3mb bodies in a
+ *     tight loop; no IP is ever hard-blocked (Meta's ranges change);
+ *  2. an optional gate (feature off / not configured -> 404 / 503);
+ *  3. a cheap header check: no well-formed X-Hub-Signature-256 -> 401;
+ *  4. a global cap on bodies being buffered at the same time
+ *     (RAW_BODY_MAX_CONCURRENT x 3mb of memory at most) -> 503 + Retry-After.
+ * The controller repeats every check (defence in depth).
  */
 export const RAW_BODY_LIMIT = "3mb";
+export const RAW_BODY_MAX_CONCURRENT = 16;
+export const WEBHOOK_RATE_LIMIT = { perMinute: 600, burst: 600, maxTrackedIps: 10_000 };
+
+/**
+ * Small in-memory token bucket keyed by client IP. LRU-bounded so a flood of
+ * distinct (spoofed or real) addresses cannot grow memory without bound.
+ */
+export class IpTokenBucket {
+  private readonly buckets = new Map<string, { tokens: number; at: number }>();
+
+  constructor(
+    private readonly perMinute: number,
+    private readonly burst: number,
+    private readonly maxKeys: number,
+  ) {}
+
+  /** Takes one token; returns 0 when allowed, else the seconds until the next token. */
+  take(key: string, now = Date.now()): number {
+    const ratePerMs = this.perMinute / 60_000;
+    const prev = this.buckets.get(key);
+    let tokens = this.burst;
+    if (prev) {
+      tokens = Math.min(this.burst, prev.tokens + (now - prev.at) * ratePerMs);
+      this.buckets.delete(key); // re-insert below: Map order = LRU order
+    }
+    const allowed = tokens >= 1;
+    if (allowed) tokens -= 1;
+    this.buckets.set(key, { tokens, at: now });
+    while (this.buckets.size > this.maxKeys) {
+      const oldest = this.buckets.keys().next().value as string;
+      this.buckets.delete(oldest);
+    }
+    return allowed ? 0 : Math.max(1, Math.ceil((1 - tokens) / ratePerMs / 1000));
+  }
+
+  get size(): number {
+    return this.buckets.size;
+  }
+}
+
+/** Early answer for a webhook request (before its body is read), or null to continue. */
+export type RawBodyGate = (req: Request) => { status: number; message: string } | null;
+
+export interface RawBodyRouteOptions {
+  /** e.g. 404 when the WhatsApp feature is OFF, 503 while it is misconfigured. */
+  gate?: RawBodyGate;
+  /** Override for tests. */
+  rateLimit?: { perMinute: number; burst: number; maxTrackedIps?: number };
+  maxConcurrent?: number;
+}
+
+const SIGNATURE_HEADER_RE = /^sha256=[0-9a-f]{64}$/i;
 
 const RAW_BODY_ROUTE_PATTERNS: readonly string[] = ["whatsapp/webhook"];
 
@@ -132,12 +198,63 @@ export function buildRawBodyRouteMatchers(globalPrefix: string): RegExp[] {
   return buildRouteMatchers(RAW_BODY_ROUTE_PATTERNS, globalPrefix);
 }
 
+/** Refuse without reading the request body; close the connection so it is not drained. */
+function refuseEarly(
+  res: Response,
+  status: number,
+  message: string,
+  retryAfterSec?: number,
+): void {
+  res.setHeader("Connection", "close");
+  res.setHeader("Cache-Control", "no-store");
+  if (retryAfterSec) res.setHeader("Retry-After", String(retryAfterSec));
+  res.status(status).json({ message });
+}
+
 /** Same ordering rules as registerLargeJsonBodyRoutes (before init; not named jsonParser). */
-export function registerRawBodyRoutes(app: INestApplication, globalPrefix: string): void {
+export function registerRawBodyRoutes(
+  app: INestApplication,
+  globalPrefix: string,
+  options: RawBodyRouteOptions = {},
+): void {
   const matchers = buildRawBodyRouteMatchers(globalPrefix);
   const rawParser = raw({ type: () => true, limit: RAW_BODY_LIMIT });
+  const rl = { ...WEBHOOK_RATE_LIMIT, ...(options.rateLimit ?? {}) };
+  const bucket = new IpTokenBucket(rl.perMinute, rl.burst, rl.maxTrackedIps ?? WEBHOOK_RATE_LIMIT.maxTrackedIps);
+  const maxConcurrent = options.maxConcurrent ?? RAW_BODY_MAX_CONCURRENT;
+  let buffering = 0;
+
   app.use(function webhookRawBody(req: Request, res: Response, next: NextFunction) {
     if (req.method !== "POST" || !matchers.some((re) => re.test(req.path))) return next();
+
+    // 1) per-IP rate limit (req.ip honours the app's trust-proxy setting)
+    const wait = bucket.take(req.ip || req.socket?.remoteAddress || "unknown");
+    if (wait > 0) return refuseEarly(res, 429, "Too many requests", wait);
+
+    // 2) feature gate (OFF -> 404, misconfigured -> 503)
+    const gated = options.gate?.(req);
+    if (gated) {
+      return refuseEarly(res, gated.status, gated.message, gated.status === 503 ? 300 : undefined);
+    }
+
+    // 3) a signed delivery always carries a well-formed signature header
+    const sig = req.headers["x-hub-signature-256"];
+    if (typeof sig !== "string" || !SIGNATURE_HEADER_RE.test(sig.trim())) {
+      return refuseEarly(res, 401, "Invalid signature");
+    }
+
+    // 4) bound the memory held by bodies being buffered concurrently
+    if (buffering >= maxConcurrent) return refuseEarly(res, 503, "Busy, retry later", 5);
+    buffering += 1;
+    let released = false;
+    const release = () => {
+      if (!released) {
+        released = true;
+        buffering -= 1;
+      }
+    };
+    res.once("finish", release);
+    res.once("close", release);
     return rawParser(req, res, next);
   });
 }

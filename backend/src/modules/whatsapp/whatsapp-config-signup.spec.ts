@@ -3,14 +3,24 @@ import { MetaCapiService } from "./meta-capi.service";
 import { WhatsAppApiService } from "./whatsapp-api.service";
 import { WhatsAppGraphClient } from "./whatsapp-graph.client";
 import { WhatsAppStatusService } from "./whatsapp-status.service";
-import { assertWhatsAppConfig, loadWhatsAppConfig } from "./whatsapp.config";
 import {
+  assertWhatsAppConfig,
+  loadWhatsAppConfig,
+  reportWhatsAppConfig,
+  webhookReady,
+  whatsappWebhookGate,
+} from "./whatsapp.config";
+import {
+  ACCESS_TOKEN,
+  APP_SECRET,
   FakeGraph,
   FakePrisma,
   PHONE_ID,
+  VERIFY_TOKEN,
   WABA_ID,
   WA_ENV_KEYS,
   waEnv,
+  withEnv,
 } from "./testing/whatsapp-fakes.helper-spec";
 
 const blank = Object.fromEntries(
@@ -38,44 +48,95 @@ describe("whatsapp.config", () => {
     });
   });
 
-  it("production refuses placeholder/weak verify tokens and a missing app secret", () => {
-    const prod = { ...blank, ...waEnv(), NODE_ENV: "production" };
-    expect(() => assertWhatsAppConfig(prod)).not.toThrow();
-    expect(() =>
-      assertWhatsAppConfig({
-        ...prod,
-        WHATSAPP_WEBHOOK_VERIFY_TOKEN: "your-verify-token",
-      }),
-    ).toThrow(/VERIFY_TOKEN/);
-    expect(() =>
-      assertWhatsAppConfig({
-        ...prod,
-        WHATSAPP_WEBHOOK_VERIFY_TOKEN: "aaaaaaaaaaaaaaaaaaaa",
-      }),
-    ).toThrow(/VERIFY_TOKEN/);
-    expect(() =>
-      assertWhatsAppConfig({ ...prod, WHATSAPP_WEBHOOK_VERIFY_TOKEN: "short" }),
-    ).toThrow(/VERIFY_TOKEN/);
-    expect(() =>
-      assertWhatsAppConfig({
-        ...prod,
-        WHATSAPP_WEBHOOK_VERIFY_TOKEN: undefined,
-      }),
-    ).toThrow(/VERIFY_TOKEN is required/);
-    expect(() =>
-      assertWhatsAppConfig({ ...prod, META_APP_SECRET: undefined }),
-    ).toThrow(/APP_SECRET/);
-    expect(() =>
-      assertWhatsAppConfig({ ...prod, WHATSAPP_WABA_ID: "abc" }),
-    ).toThrow(/WABA_ID/);
-    // development only warns
-    expect(() =>
-      assertWhatsAppConfig({
-        ...prod,
-        NODE_ENV: "development",
-        WHATSAPP_WEBHOOK_VERIFY_TOKEN: "short",
-      }),
-    ).not.toThrow();
+  const prod = () => ({ ...blank, ...waEnv(), NODE_ENV: "production" });
+  const noThrow = (env: NodeJS.ProcessEnv) => {
+    expect(() => reportWhatsAppConfig(env)).not.toThrow();
+    expect(() => assertWhatsAppConfig(env)).not.toThrow(); // old name, same behaviour
+    return loadWhatsAppConfig(env);
+  };
+
+  it("a complete production config is READY (webhook usable)", () => {
+    const cfg = noThrow(prod());
+    expect(cfg.state).toBe("READY");
+    expect(cfg.problems).toEqual([]);
+    expect(cfg.credentialMode).toBe("env");
+    expect(webhookReady(cfg)).toBe(true);
+  });
+
+  it("NEVER fails boot on a partial / invalid production config: the feature is gated instead", () => {
+    const cases: Array<[string, NodeJS.ProcessEnv, string, RegExp]> = [
+      ["only the access token", { ...blank, NODE_ENV: "production", META_APP_SECRET: APP_SECRET, WHATSAPP_ACCESS_TOKEN: ACCESS_TOKEN }, "INCOMPLETE", /WHATSAPP_WEBHOOK_VERIFY_TOKEN is required.*|WHATSAPP_WABA_ID/],
+      ["only the access token, no app secret", { ...blank, NODE_ENV: "production", WHATSAPP_ACCESS_TOKEN: ACCESS_TOKEN }, "INCOMPLETE", /META_APP_SECRET \(or WHATSAPP_APP_SECRET\) is required/],
+      ["missing verify token", { ...prod(), WHATSAPP_WEBHOOK_VERIFY_TOKEN: undefined }, "INCOMPLETE", /WHATSAPP_WEBHOOK_VERIFY_TOKEN is required/],
+      ["missing app secret", { ...prod(), META_APP_SECRET: undefined }, "INCOMPLETE", /APP_SECRET.*required to verify webhook signatures/],
+      ["missing ids", { ...prod(), WHATSAPP_WABA_ID: undefined, WHATSAPP_PHONE_NUMBER_ID: undefined }, "INCOMPLETE", /WHATSAPP_WABA_ID, WHATSAPP_PHONE_NUMBER_ID are required/],
+      ["placeholder verify token", { ...prod(), WHATSAPP_WEBHOOK_VERIFY_TOKEN: "your-verify-token" }, "INVALID", /WHATSAPP_WEBHOOK_VERIFY_TOKEN is/],
+      ["low-entropy verify token", { ...prod(), WHATSAPP_WEBHOOK_VERIFY_TOKEN: "aaaaaaaaaaaaaaaaaaaa" }, "INVALID", /WHATSAPP_WEBHOOK_VERIFY_TOKEN is a low-entropy/],
+      ["short verify token", { ...prod(), WHATSAPP_WEBHOOK_VERIFY_TOKEN: "monomi-verify" }, "INVALID", /shorter than 16 characters/],
+      ["placeholder app secret", { ...prod(), META_APP_SECRET: "your-meta-app-secret" }, "INVALID", /META_APP_SECRET looks like a placeholder/],
+      ["non-numeric WABA id", { ...prod(), WHATSAPP_WABA_ID: "abc" }, "INVALID", /WHATSAPP_WABA_ID must be the numeric/],
+      ["phone number instead of id", { ...prod(), WHATSAPP_PHONE_NUMBER_ID: "+62 811 1111" }, "INVALID", /WHATSAPP_PHONE_NUMBER_ID must be the numeric/],
+      ["bad graph version", { ...prod(), META_GRAPH_VERSION: "26" }, "INVALID", /META_GRAPH_VERSION must look like/],
+      ["quoted token", { ...prod(), WHATSAPP_ACCESS_TOKEN: `"${ACCESS_TOKEN}"` }, "INVALID", /WHATSAPP_ACCESS_TOKEN looks like a placeholder/],
+      ["dataset only, no WhatsApp", { ...blank, NODE_ENV: "production", META_DATASET_ID: "dataset-abc", META_CAPI_ENABLED: "true" }, "INCOMPLETE", /WHATSAPP_WEBHOOK_VERIFY_TOKEN is required/],
+      ["coexistence without TOKEN_ENCRYPTION_KEY", { ...prod(), WHATSAPP_ACCESS_TOKEN: undefined, WHATSAPP_COEXISTENCE_ENABLED: "true", WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID: "998877665", TOKEN_ENCRYPTION_KEY: undefined }, "INVALID", /TOKEN_ENCRYPTION_KEY is required/],
+    ];
+    for (const [name, env, state, re] of cases) {
+      const cfg = noThrow(env);
+      expect({ name, state: cfg.state }).toEqual({ name, state });
+      expect(cfg.problems.join("; ")).toMatch(re);
+      expect(webhookReady(cfg)).toBe(false);
+      // problems name variables, never their values
+      for (const p of cfg.problems) {
+        expect(p).not.toContain(ACCESS_TOKEN);
+        expect(p).not.toContain(APP_SECRET);
+        expect(p).not.toContain(VERIFY_TOKEN);
+      }
+    }
+  });
+
+  it("logs a warning (not an error / throw) listing the problems", () => {
+    const warn = jest.spyOn(Logger.prototype, "warn");
+    reportWhatsAppConfig({ ...prod(), WHATSAPP_WEBHOOK_VERIFY_TOKEN: "short" });
+    expect(warn.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(
+      /WhatsApp inbox DISABLED — configuration INVALID: .*WHATSAPP_WEBHOOK_VERIFY_TOKEN/,
+    );
+  });
+
+  it("CAPI problems are reported separately and do not disable the inbox", () => {
+    const cfg = noThrow({ ...prod(), META_CAPI_ENABLED: "true", META_DATASET_ID: "dataset-abc" });
+    expect(cfg.state).toBe("READY");
+    expect(cfg.capiState).toBe("INVALID");
+    expect(cfg.capiProblems.join(";")).toMatch(/META_DATASET_ID must be the numeric/);
+    expect(noThrow({ ...prod(), META_CAPI_ENABLED: "true" }).capiState).toBe("INCOMPLETE");
+    expect(noThrow({ ...prod(), META_CAPI_ENABLED: "true", META_DATASET_ID: "556677889900" }).capiState).toBe("READY");
+    const notReady = noThrow({ ...prod(), WHATSAPP_WEBHOOK_VERIFY_TOKEN: undefined, META_CAPI_ENABLED: "true", META_DATASET_ID: "556677889900" });
+    expect(notReady.capiState).toBe("INCOMPLETE");
+    expect(notReady.capiProblems.join(";")).toMatch(/must be READY first \(currently INCOMPLETE\)/);
+    expect(noThrow({ ...prod() }).capiState).toBe("OFF");
+  });
+
+  it("development only warns about a weak verify token (stays READY)", () => {
+    const cfg = noThrow({ ...prod(), NODE_ENV: "development", WHATSAPP_WEBHOOK_VERIFY_TOKEN: "short" });
+    expect(cfg.state).toBe("READY");
+  });
+
+  it("webhook gate (used before the raw body is read): OFF 404, misconfigured 503, READY none", () => {
+    let restore = withEnv({ ...blank });
+    expect(whatsappWebhookGate()).toEqual({ status: 404, message: "Not found" });
+    restore();
+    restore = withEnv({ ...blank, ...waEnv(), WHATSAPP_WEBHOOK_VERIFY_TOKEN: undefined });
+    expect(whatsappWebhookGate()?.status).toBe(503);
+    restore();
+    restore = withEnv({ ...blank, ...waEnv() });
+    expect(whatsappWebhookGate()).toBeNull();
+    restore();
+  });
+
+  it("appsecret_proof is on by default when an app secret is set, and can be opted out", () => {
+    expect(noThrow(prod()).appSecretProof).toBe(true);
+    expect(noThrow({ ...prod(), WHATSAPP_APPSECRET_PROOF: "false" }).appSecretProof).toBe(false);
+    expect(noThrow({ ...prod(), META_APP_SECRET: undefined }).appSecretProof).toBe(false);
   });
 
   it("ignores the fake Graph base URL in production; feature flags default off", () => {
@@ -167,6 +228,7 @@ describe("Embedded Signup (coexistence) completion", () => {
       ...blank,
       META_APP_ID: "1234567890",
       META_APP_SECRET: "0123456789abcdef0123456789abcdef",
+      WHATSAPP_WEBHOOK_VERIFY_TOKEN: VERIFY_TOKEN,
       WHATSAPP_COEXISTENCE_ENABLED: "true",
       WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID: "998877665",
     } as any;

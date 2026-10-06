@@ -8,7 +8,12 @@ import { getPortalUrl, portalSecretWeakness } from "../portal/portal.config";
  * The feature is OPTIONAL: when META_APP_ID / META_APP_SECRET are not set the
  * app boots normally and every Instagram endpoint answers "not configured".
  * When it IS configured, TOKEN_ENCRYPTION_KEY becomes mandatory in production
- * (32 random bytes, base64) and placeholders are refused at boot.
+ * (32 random bytes, base64) and placeholders are refused — by DISABLING the
+ * feature with a boot warning, never by aborting boot: META_APP_ID /
+ * META_APP_SECRET are also set for the WhatsApp webhooks, and a missing key
+ * must not take the whole admin app down. Disabling is as safe as crashing:
+ * without a valid key no token is ever encrypted, decrypted or stored
+ * (resolveTokenKey has no weak production fallback).
  */
 
 /** Default Graph API version (v26.0 released 2026-07-29). Meta ships a new
@@ -255,7 +260,7 @@ export function resolveTokenKey(env: NodeJS.ProcessEnv = process.env): Buffer {
   }
   if (isProduction) {
     throw new Error(
-      "TOKEN_ENCRYPTION_KEY is required in production when Instagram is configured (generate with: openssl rand -base64 32)",
+      "TOKEN_ENCRYPTION_KEY is required in production when Instagram / WhatsApp Embedded Signup is configured (generate with: openssl rand -base64 32)",
     );
   }
   if (!warnedDevKey) {
@@ -292,7 +297,7 @@ function validUrl(url: string, isProduction: boolean, name: string): string {
 
 /**
  * Full config, or null when the feature is not configured. Throws on an
- * invalid configuration (boot-time in production via assertInstagramConfig).
+ * invalid configuration (the module factory turns that into "disabled").
  */
 export function loadInstagramConfig(env: NodeJS.ProcessEnv = process.env): InstagramConfig | null {
   if (!isInstagramConfigured(env)) return null;
@@ -384,16 +389,24 @@ export function loadInstagramConfig(env: NodeJS.ProcessEnv = process.env): Insta
   };
 }
 
-/** Boot-time check: throws in production when Instagram is configured but invalid. */
-export function assertInstagramConfig(env: NodeJS.ProcessEnv = process.env): void {
+/**
+ * Boot-time report. NEVER throws: an invalid Instagram configuration disables
+ * the Instagram integration (warning logged, endpoints answer "not
+ * configured") instead of aborting boot. Returns the problem, or null.
+ */
+export function assertInstagramConfig(env: NodeJS.ProcessEnv = process.env): string | null {
   if (!isInstagramConfigured(env)) {
     logger.log("Instagram integration not configured (META_APP_ID / META_APP_SECRET unset)");
-    return;
+    return null;
   }
   try {
     loadInstagramConfig(env);
+    return null;
   } catch (error) {
-    if (env.NODE_ENV === "production") throw error;
-    logger.warn(`Instagram configuration invalid: ${(error as Error).message}`);
+    const problem = (error as Error).message;
+    logger.warn(
+      `Instagram integration DISABLED — configuration invalid: ${problem}. The rest of the app is unaffected; fix the environment and restart to enable it.`,
+    );
+    return problem;
   }
 }

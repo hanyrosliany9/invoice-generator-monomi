@@ -264,9 +264,11 @@ export class EnvironmentVariables {
   META_GRAPH_BASE_URL?: string;
 
   // WhatsApp Business Platform inbox + Conversions API (optional; all unset =
-  // feature off). Validated in depth by modules/whatsapp/whatsapp.config.ts
-  // (production refuses placeholder verify tokens / a missing app secret once
-  // WHATSAPP_* is set). Empty strings = unset; flags are "true"/"false".
+  // feature off). Validated in depth by modules/whatsapp/whatsapp.config.ts:
+  // a partial or invalid value (placeholder/short verify token, missing app
+  // secret, non-numeric ids...) DISABLES the feature with a boot warning and
+  // a problem list in the CRM settings card — it never fails boot.
+  // Empty strings = unset; flags are "true"/"false".
   @IsString()
   @IsOptional()
   WHATSAPP_ACCESS_TOKEN?: string;
@@ -322,6 +324,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   META_CAPI_TEST_EVENT_CODE?: string;
+
+  @IsString()
+  @IsOptional()
+  WHATSAPP_APPSECRET_PROOF?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

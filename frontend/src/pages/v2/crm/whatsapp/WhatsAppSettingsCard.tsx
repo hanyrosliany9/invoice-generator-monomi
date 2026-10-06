@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { apiErrorMessage } from '@/services/crm';
-import { whatsappApi, type WaQuickReply, type WaSettingsStatus } from '@/services/whatsapp';
+import { whatsappApi, type WaConfigState, type WaQuickReply, type WaSettingsStatus } from '@/services/whatsapp';
 import { textareaClass } from '../CrmShell';
 import { useWaLabels } from './WaParts';
 
@@ -33,6 +33,32 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 const Yes = ({ ok, yes, no }: { ok: boolean; yes: string; no: string }) => (
   <span className={ok ? 'text-success' : 'text-warning'}>{ok ? yes : no}</span>
 );
+
+function StateBadge({ state }: { state: WaConfigState }) {
+  const { t } = useWaLabels();
+  const label = {
+    READY: t('crm.wa.settings.stateReady', 'Ready'),
+    OFF: t('crm.wa.settings.stateOff', 'Not configured'),
+    INCOMPLETE: t('crm.wa.settings.stateIncomplete', 'Incomplete — disabled'),
+    INVALID: t('crm.wa.settings.stateInvalid', 'Invalid — disabled'),
+  }[state];
+  const cls = state === 'READY' ? 'text-success' : state === 'INVALID' ? 'text-danger' : state === 'OFF' ? 'text-text-tertiary' : 'text-warning';
+  return <span className={cn('font-medium', cls)}>{label}</span>;
+}
+
+function ProblemList({ items }: { items: string[] }) {
+  const { t } = useWaLabels();
+  if (!items.length) return null;
+  return (
+    <div className="mt-2 text-xs">
+      <ul className="list-disc pl-5 text-warning">{items.map((p) => <li key={p}>{p}</li>)}</ul>
+      <p className="mt-1 text-text-tertiary">{t('crm.wa.settings.problemsHint', 'Fix these in the server environment and restart the backend. The rest of the app keeps working meanwhile.')}</p>
+    </div>
+  );
+}
+
+/** The only Embedded Signup finish event this flow accepts (coexistence onboarding). */
+const COEXISTENCE_FINISH = 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING';
 
 // ---------------------------------------------------------------------------
 // Embedded Signup (coexistence) — feature-flagged, needs Tech Provider approval
@@ -85,12 +111,19 @@ function ConnectWhatsAppButton({ cfg, onDone }: { cfg: WaSettingsStatus['embedde
       let data: any;
       try { data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data; } catch { return; }
       if (data?.type !== 'WA_EMBEDDED_SIGNUP') return;
-      if (data.event === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING' || data.event === 'FINISH') {
+      if (data.event === COEXISTENCE_FINISH) {
         const d = data.data ?? {};
         if (/^\d{5,25}$/.test(String(d.waba_id ?? '')) && /^\d{5,25}$/.test(String(d.phone_number_id ?? ''))) {
           session.current = { wabaId: String(d.waba_id), phoneNumberId: String(d.phone_number_id) };
           tryComplete();
         }
+      } else if (typeof data.event === 'string' && data.event.startsWith('FINISH')) {
+        // e.g. plain FINISH (new Cloud API number) or FINISH_ONLY_WABA: not the
+        // coexistence flow — never complete it (nothing is changed server-side).
+        session.current = {};
+        code.current = null;
+        setBusy(false);
+        toast.error(t('crm.wa.settings.wrongFinish', 'Meta finished a different signup type ({{event}}). Only “Connect your existing WhatsApp Business app” (coexistence) is supported — nothing was changed. Start again and choose that option.', { event: data.event.slice(0, 60) }));
       } else if (data.event === 'CANCEL' || data.event === 'ERROR') {
         setBusy(false);
       }
@@ -202,7 +235,9 @@ export function WhatsAppSettingsCard() {
   });
   const dataset = useMutation({
     mutationFn: whatsappApi.createDataset,
-    onSuccess: ({ datasetId }) => toast.success(t('crm.wa.settings.datasetCreated', 'Dataset {{id}} — put it in META_DATASET_ID on the server.', { id: datasetId }), { duration: 15000 }),
+    onSuccess: ({ datasetId, source }) => toast.success(source === 'configured'
+      ? t('crm.wa.settings.datasetConfigured', 'Dataset {{id}} is already set in META_DATASET_ID.', { id: datasetId })
+      : t('crm.wa.settings.datasetCreated', 'Dataset {{id}} — put it in META_DATASET_ID on the server.', { id: datasetId }), { duration: 15000 }),
     onError: (err) => toast.error(apiErrorMessage(err, t('crm.wa.settings.datasetFailed', 'Could not create the dataset.'))),
   });
 
@@ -233,6 +268,7 @@ export function WhatsAppSettingsCard() {
           <section>
             <h3 className="mb-2 text-sm font-semibold">{t('crm.wa.settings.connection', 'Connection')}</h3>
             <dl className="grid grid-cols-[150px_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
+              <Row label={t('crm.wa.settings.state', 'Server configuration')}><StateBadge state={s.state} /></Row>
               <Row label={t('crm.wa.settings.configured', 'Configured')}>
                 <Yes ok={s.configured} yes={s.credentialSource === 'embedded' ? t('crm.wa.settings.yesEmbedded', 'Yes (Connect WhatsApp)') : t('crm.wa.settings.yesEnv', 'Yes (system user token)')} no={t('crm.wa.settings.no', 'Not yet')} />
               </Row>
@@ -256,9 +292,7 @@ export function WhatsAppSettingsCard() {
                 </Row>
               )}
             </dl>
-            {s.env.problems.length > 0 && (
-              <ul className="mt-2 list-disc pl-5 text-xs text-warning">{s.env.problems.map((p) => <li key={p}>{p}</li>)}</ul>
-            )}
+            <ProblemList items={s.env.problems} />
             {s.check?.numbers?.length ? (
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full min-w-[520px] text-left text-xs">
@@ -314,7 +348,7 @@ export function WhatsAppSettingsCard() {
           <section>
             <h3 className="mb-2 text-sm font-semibold">{t('crm.wa.settings.capi', 'Conversions API (events to Meta)')}</h3>
             <dl className="grid grid-cols-[150px_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-              <Row label={t('crm.wa.settings.capiEnabled', 'Sending')}><Yes ok={s.capi.enabled} yes={t('crm.wa.settings.on', 'On')} no={t('crm.wa.settings.offUntil', 'Off (META_CAPI_ENABLED=false) — nothing is sent')} /></Row>
+              <Row label={t('crm.wa.settings.capiEnabled', 'Sending')}>{s.capi.enabled ? <StateBadge state={s.capi.state} /> : <span className="text-warning">{t('crm.wa.settings.offUntil', 'Off (META_CAPI_ENABLED=false) — nothing is sent')}</span>}</Row>
               <Row label={t('crm.wa.settings.dataset', 'Dataset')}>{s.capi.datasetId ? <code className="text-xs">{s.capi.datasetId}</code> : <span className="text-warning">{t('crm.wa.settings.notSet2', 'Not set')}</span>}{s.capi.testEventCode ? <span className="ml-2 text-xs text-warning">{t('crm.wa.settings.testMode', 'test event code active')}</span> : null}</Row>
               <Row label={t('crm.wa.settings.counts', 'Events')}>
                 <span className="font-mono text-xs">
@@ -324,8 +358,9 @@ export function WhatsAppSettingsCard() {
               <Row label={t('crm.wa.settings.lastSent', 'Last sent')}>{s.capi.lastSentAt ? formatDateTime(s.capi.lastSentAt) : '-'}</Row>
               {s.capi.lastFailed && <Row label={t('crm.wa.settings.lastFailed', 'Last failure')}><span className="text-danger">{formatDateTime(s.capi.lastFailed.at)} · {s.capi.lastFailed.eventName} · {s.capi.lastFailed.error}</span></Row>}
             </dl>
+            <ProblemList items={s.capi.problems} />
             <div className="mt-3 flex flex-wrap gap-2">
-              {s.capi.enabled && <Button type="button" variant="outline" size="sm" disabled={runCapi.isPending} onClick={() => runCapi.mutate()}>{t('crm.wa.settings.capiRun', 'Send queued events now')}</Button>}
+              {s.capi.state === 'READY' && <Button type="button" variant="outline" size="sm" disabled={runCapi.isPending} onClick={() => runCapi.mutate()}>{t('crm.wa.settings.capiRun', 'Send queued events now')}</Button>}
               {s.configured && !s.capi.datasetConfigured && <Button type="button" variant="outline" size="sm" disabled={dataset.isPending} onClick={() => dataset.mutate()}>{t('crm.wa.settings.createDataset', 'Create / get dataset ID')}</Button>}
             </div>
           </section>

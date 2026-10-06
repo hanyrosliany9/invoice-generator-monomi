@@ -69,6 +69,8 @@ export class WhatsAppApiService {
    */
   async resolve(): Promise<WaCredentials | null> {
     const cfg = this.config();
+    // Feature gate: an OFF / INCOMPLETE / INVALID configuration never talks to Meta.
+    if (cfg.state !== "READY") return null;
     if (cfg.accessToken) {
       const conn =
         cfg.wabaId && cfg.phoneNumberId ? null : await this.connection();
@@ -196,7 +198,9 @@ export class WhatsAppApiService {
       cfg.graphBaseUrl,
       cfg.graphVersion,
       path,
-      req,
+      // appsecret_proof on every token-bearing call when an app secret is set
+      // (WHATSAPP_APPSECRET_PROOF=false opts out for a token of another app).
+      { ...req, appSecret: cfg.appSecretProof ? cfg.appSecret : null },
       [cfg.smbSyncEdge],
     );
   }

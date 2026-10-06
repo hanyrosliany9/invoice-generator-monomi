@@ -12,7 +12,11 @@ import { Throttle } from "@nestjs/throttler";
 import type { Request, Response } from "express";
 import { Public } from "../../common/decorators/public.decorator";
 import { WhatsAppWebhookService } from "./whatsapp-webhook.service";
-import { loadWhatsAppConfig, webhookReady } from "./whatsapp.config";
+import {
+  loadWhatsAppConfig,
+  webhookReady,
+  WhatsAppConfig,
+} from "./whatsapp.config";
 import { safeEqual, verifyWebhookSignature } from "./whatsapp.utils";
 
 const CHALLENGE_RE = /^[A-Za-z0-9_.-]{1,256}$/;
@@ -23,9 +27,14 @@ const CHALLENGE_RE = /^[A-Za-z0-9_.-]{1,256}$/;
  *  GET  — subscription verification (hub.mode / hub.verify_token / hub.challenge).
  *  POST — events signed with X-Hub-Signature-256 = HMAC-SHA256(app secret,
  *         raw body). The body arrives as a Buffer (route-scoped raw parser in
- *         config/body-parser.config.ts, 3mb cap) so the signature is checked
+ *         config/body-parser.config.ts, 3mb cap, behind an early per-IP
+ *         rate limit and cheap header checks) so the signature is checked
  *         on the exact bytes. Valid deliveries are stored durably, answered
  *         200 immediately and processed asynchronously with retries.
+ *
+ * Feature gating: configuration OFF -> 404 (no such endpoint); INCOMPLETE /
+ * INVALID -> 503 (Meta retries POST deliveries for a while, so events sent
+ * during a short misconfiguration are not lost once it is fixed).
  */
 @ApiExcludeController()
 @Controller("whatsapp/webhook")
@@ -34,6 +43,18 @@ export class WhatsAppWebhookController {
 
   constructor(private readonly webhooks: WhatsAppWebhookService) {}
 
+  /** Writes the 404/503 answer when the webhook is not usable; true if it did. */
+  private refuse(cfg: WhatsAppConfig, res: Response, json: boolean): boolean {
+    if (webhookReady(cfg)) return false;
+    const off = cfg.state === "OFF";
+    const status = off ? 404 : 503;
+    const message = off ? "Not found" : "WhatsApp webhook is not configured";
+    if (!off) res.setHeader("Retry-After", "300");
+    if (json) res.status(status).json({ message });
+    else res.status(status).type("text/plain").send(message);
+    return true;
+  }
+
   @Get()
   @Public()
   @Throttle({ default: { limit: 30, ttl: 60000 } })
@@ -41,10 +62,7 @@ export class WhatsAppWebhookController {
     const cfg = loadWhatsAppConfig();
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
-    if (!webhookReady(cfg)) {
-      res.status(404).type("text/plain").send("Not found");
-      return;
-    }
+    if (this.refuse(cfg, res, false)) return;
     const q = req.query as Record<string, unknown>;
     const mode = q["hub.mode"];
     const token = q["hub.verify_token"];
@@ -71,10 +89,7 @@ export class WhatsAppWebhookController {
   async receive(@Req() req: Request, @Res() res: Response) {
     const cfg = loadWhatsAppConfig();
     res.setHeader("Cache-Control", "no-store");
-    if (!webhookReady(cfg)) {
-      res.status(404).json({ message: "Not found" });
-      return;
-    }
+    if (this.refuse(cfg, res, true)) return;
     const raw = req.body as unknown;
     if (!Buffer.isBuffer(raw) || raw.length === 0) {
       res.status(400).json({ message: "Expected a raw JSON body" });

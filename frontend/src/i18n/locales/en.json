@@ -10591,7 +10591,15 @@
         "createDataset": "Create / get dataset ID",
         "signupTitle": "Connect WhatsApp (Embedded Signup, coexistence)",
         "signupHint": "Opens Meta’s window: choose “Connect your existing WhatsApp Business app”, then confirm on the phone. Monomi then subscribes to the webhooks and asks for chat history.",
-        "signupDisabled": "Available after Meta approves Monomi as a Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID)."
+        "signupDisabled": "Available after Meta approves Monomi as a Tech Provider (WHATSAPP_COEXISTENCE_ENABLED + WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID).",
+        "state": "Server configuration",
+        "stateReady": "Ready",
+        "stateOff": "Not configured",
+        "stateIncomplete": "Incomplete — disabled",
+        "stateInvalid": "Invalid — disabled",
+        "problemsHint": "Fix these in the server environment and restart the backend. The rest of the app keeps working meanwhile.",
+        "wrongFinish": "Meta finished a different signup type ({{event}}). Only “Connect your existing WhatsApp Business app” (coexistence) is supported — nothing was changed. Start again and choose that option.",
+        "datasetConfigured": "Dataset {{id}} is already set in META_DATASET_ID."
       },
       "leadNone": "No WhatsApp conversation is linked to this lead yet.",
       "leadNoneHint": "Chats from the same number are linked automatically. You can also link one from the inbox.",
