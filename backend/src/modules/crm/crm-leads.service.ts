@@ -12,6 +12,7 @@ import { ProjectsService } from "../projects/projects.service";
 import { QuotationsService } from "../quotations/quotations.service";
 import { AdClickService } from "../ad-tracking/ad-click.service";
 import { extractRefCode, normalizeRefCode } from "../ad-tracking/ref-code";
+import { extractInstagramHandle, normalizeInstagramHandle } from "../ad-tracking/track-utils";
 import { CrmFlowService } from "./crm-flow.service";
 import { CrmOutboxService } from "./crm-outbox.service";
 import { CrmSettingsService } from "./crm-settings.service";
@@ -108,6 +109,8 @@ export class CrmLeadsService {
       campaignCode: parsed.campaignCode ?? adClick?.campaignCode?.toUpperCase() ?? null,
       duplicate,
       adClick,
+      // "Instagram: @handle" line of the pre-filled message, else the click's answer
+      instagram: extractInstagramHandle(text) ?? adClick?.instagramHandle ?? null,
     };
   }
 
@@ -217,14 +220,23 @@ export class CrmLeadsService {
             utmContent: true,
             utmTerm: true,
             campaignCode: true,
-            meta: true,
+            instagramHandle: true,
+            brandName: true,
+            category: true,
           },
         },
       },
     });
     if (!lead) throw new NotFoundException("Lead tidak ditemukan");
     const threshold = await this.settings.getThresholdMinutes();
-    return { ...this.decorate(lead, threshold), thresholdMinutes: threshold };
+    // The website Lead event is sent at click time and belongs to the click, not the lead.
+    const adClickEvent = lead.adClick
+      ? ((await this.prisma.metaEventOutbox.findFirst({
+          where: { eventName: "Lead", route: "WEBSITE", adClick: { leadId: id } },
+          select: { status: true, eventTime: true, sentAt: true, lastError: true },
+        })) ?? null)
+      : null;
+    return { ...this.decorate(lead, threshold), adClickEvent, thresholdMinutes: threshold };
   }
 
   async assignees() {
@@ -327,6 +339,11 @@ export class CrmLeadsService {
           campaignCode: campaign?.code ?? dto.campaignCode?.trim().toUpperCase() ?? null,
           adId: dto.adId ?? null,
           ctwaClid: dto.ctwaClid ?? null,
+          instagramHandle:
+            normalizeInstagramHandle(dto.instagramHandle) ??
+            extractInstagramHandle(dto.firstMessage) ??
+            clickToLink?.instagramHandle ??
+            null,
           firstMessage: dto.firstMessage ?? null,
           stageId: stage.id,
           estimatedValue: new Prisma.Decimal(dto.estimatedValue ?? 0),

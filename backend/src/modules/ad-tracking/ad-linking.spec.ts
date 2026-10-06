@@ -234,3 +234,40 @@ describe("retention", () => {
     expect(t.adClick.map((c: any) => c.id).sort()).toEqual(["fresh", "oldLinked"]);
   });
 });
+
+describe("Instagram handle on the lead", () => {
+  const withIg = [
+    { id: "c1", ref: REF, eventId: "e", createdAt: new Date(), leadId: null, instagramHandle: "kopi.senja", campaignCode: "FB-OKT1" },
+  ];
+
+  it("parse reads the Instagram line of the pasted chat, else the click's answer", async () => {
+    const { svc } = setup({ clicks: withIg });
+    const a: any = await svc.parseQuickAdd(`Budi +62 812-3456-7890\nInstagram: @Budi.Studio\n\nKode: ${REF}`);
+    expect(a.instagram).toBe("budi.studio");
+    const b: any = await svc.parseQuickAdd(`Budi +62 812-3456-7890\n\nKode: ${REF}`);
+    expect(b.instagram).toBe("kopi.senja");
+    expect(b.adClick.instagramHandle).toBe("kopi.senja");
+    expect(((await svc.parseQuickAdd("Budi +62 812-3456-7890 halo")) as any).instagram).toBeNull();
+  });
+
+  it("create copies the handle onto the lead (chat line wins, then the click, then the field)", async () => {
+    const { svc, t } = setup({ clicks: withIg });
+    await svc.create({ name: "A", phone: "+6281200000001", firstMessage: `x\nInstagram: https://instagram.com/Chat.Handle/\nKode: ${REF}` } as any, "u1");
+    expect(t.lead[0].instagramHandle).toBe("chat.handle");
+    const { svc: s2, t: t2 } = setup({ clicks: withIg });
+    await s2.create({ name: "B", phone: "+6281200000002", firstMessage: `x\nKode: ${REF}` } as any, "u1");
+    expect(t2.lead[0].instagramHandle).toBe("kopi.senja");
+    const { svc: s3, t: t3 } = setup({ clicks: [] });
+    await s3.create({ name: "C", phone: "+6281200000003", instagramHandle: "@Typed.Handle" } as any, "u1");
+    expect(t3.lead[0].instagramHandle).toBe("typed.handle");
+  });
+
+  it("manual link copies the click's handle only when the lead has none", async () => {
+    const { adClicks, t } = setup({ leads: [{ id: "L1", ctwaClid: null, instagramHandle: null }], clicks: withIg });
+    await adClicks.linkLead("L1", REF, null);
+    expect(t.lead[0].instagramHandle).toBe("kopi.senja");
+    const { adClicks: a2, t: t2 } = setup({ leads: [{ id: "L1", ctwaClid: null, instagramHandle: "mine" }], clicks: withIg });
+    await a2.linkLead("L1", REF, null);
+    expect(t2.lead[0].instagramHandle).toBe("mine");
+  });
+});

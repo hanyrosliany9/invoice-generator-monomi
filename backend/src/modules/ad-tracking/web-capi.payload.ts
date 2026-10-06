@@ -42,6 +42,8 @@ export function splitName(name: string | null | undefined): { fn: string | null;
 }
 
 export interface WebClick {
+  /** First-party visit id from the snippet; its hash is the external_id on every event. */
+  visitId?: string | null;
   pageUrl: string | null;
   fbc: string | null;
   fbp: string | null;
@@ -79,6 +81,12 @@ export function buildWebEvent(
   if (click.userAgent) userData.client_user_agent = click.userAgent;
   if (click.fbc) userData.fbc = click.fbc;
   if (click.fbp) userData.fbp = click.fbp;
+  // external_id: ties the visit's events (PageView ... Lead) and the later CRM
+  // stage events of the same person together on Meta's side.
+  const externalIds: string[] = [];
+  if (click.visitId) externalIds.push(sha256(click.visitId));
+  if (lead) externalIds.push(sha256(lead.id));
+  if (externalIds.length) userData.external_id = externalIds;
   if (lead) {
     const ph = normalizePhoneForMeta(lead.phone);
     if (ph) userData.ph = [sha256(ph)];
@@ -86,7 +94,6 @@ export function buildWebEvent(
     if (fn) userData.fn = [sha256(fn)];
     if (ln) userData.ln = [sha256(ln)];
     userData.country = [sha256("id")];
-    userData.external_id = [sha256(lead.id)];
   }
   const event: Record<string, unknown> = {
     event_name: input.eventName,

@@ -45,6 +45,7 @@ export class AdTrackingAdminController {
   @Post("send-now")
   @HttpCode(200)
   async sendNow() {
-    return this.sender.run();
+    const [outbox, visits] = await Promise.all([this.sender.run(), this.sender.flushVisitEvents()]);
+    return { ...outbox, visitSent: visits.sent };
   }
 }

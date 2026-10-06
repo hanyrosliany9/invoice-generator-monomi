@@ -2,7 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { ParsedWaClick } from "./wa-click.payload";
+import { ParsedTrackEvent } from "./track-event.payload";
+import { WebClick } from "./web-capi.payload";
 import { extractRefCode, normalizeRefCode } from "./ref-code";
 
 export const AD_CLICK_RETENTION_DAYS = 30;
@@ -12,11 +13,24 @@ const RELINKABLE_EVENTS = ["QualifiedLead", "Purchase"];
 
 type Tx = Prisma.TransactionClient;
 
-export type RecordOutcome = "created" | "duplicate" | "conflict";
+export type RecordOutcome = "ok" | "duplicate" | "conflict";
 
 export interface ClickContext {
   ip: string | null;
   userAgent: string | null;
+}
+
+/** A first-of-its-kind visit event to send (batched) to Meta. */
+export interface VisitEventToSend {
+  name: "PageView" | "ViewContent" | "EngagedVisit";
+  eventId: string;
+  eventTime: Date;
+  click: WebClick;
+}
+
+export interface RecordResult {
+  outcome: RecordOutcome;
+  visitEvent?: VisitEventToSend;
 }
 
 export interface AdClickPreview {
@@ -25,13 +39,20 @@ export interface AdClickPreview {
   pageUrl: string | null;
   campaignCode: string | null;
   campaign: { id: string; name: string; code: string } | null;
+  instagramHandle: string | null;
   /** True when no lead holds this click yet (so it can still be linked). */
   available: boolean;
 }
 
+const VISIT_FLAG = {
+  PageView: "pageViewAt",
+  ViewContent: "viewContentAt",
+  EngagedVisit: "engagedAt",
+} as const;
+
 /**
- * Landing-page WhatsApp clicks: storage, the click-time website Lead event,
- * and linking a click to the CRM lead created from the matching chat.
+ * Landing-page visits and WhatsApp taps: storage, the tap's website Lead
+ * event, and linking a tap to the CRM lead created from the matching chat.
  */
 @Injectable()
 export class AdClickService {
@@ -40,85 +61,150 @@ export class AdClickService {
   constructor(private readonly prisma: PrismaService) {}
 
   // ---------------------------------------------------------------------
-  // public click endpoint
+  // public event endpoint
   // ---------------------------------------------------------------------
 
+  private async resolveCampaignCode(utmCampaign: string | null): Promise<string | null> {
+    if (!utmCampaign) return null;
+    const c = await this.prisma.campaign.findFirst({
+      where: { code: { equals: utmCampaign, mode: "insensitive" } },
+      select: { code: true },
+    });
+    return c?.code ?? null;
+  }
+
   /**
-   * Stores a click and queues its website `Lead` event (same eventId as the
-   * browser Pixel Lead, so Meta deduplicates the pair). Idempotent on eventId;
-   * a different eventId for an existing ref (or the reverse) is a conflict.
+   * Records one landing-page event.
+   *  - PageView / ViewContent / EngagedVisit: the visit row is created by the
+   *    visit's first event; each of these is accepted ONCE per visit (the
+   *    result carries `visitEvent` only for the first), the rest are duplicates.
+   *  - Lead (WhatsApp tap): fills ref/eventId (+ Instagram/brand/category) on
+   *    the visit row, or on a new row for a second tap in the same visit, and
+   *    queues the website Lead event. Idempotent on eventId; a different
+   *    eventId for an existing ref (or the reverse) is a conflict.
    */
-  async record(click: ParsedWaClick, ctx: ClickContext): Promise<RecordOutcome> {
+  async recordEvent(ev: ParsedTrackEvent, ctx: ClickContext): Promise<RecordResult> {
+    const now = new Date();
+    const campaignCode = await this.resolveCampaignCode(ev.utmCampaign);
+    // The browser normally sends _fbc; rebuild it from fbclid when only the
+    // raw click id reached us (format: fb.<subdomain index>.<ms>.<fbclid>).
+    const fbc = ev.fbc ?? (ev.fbclid ? `fb.1.${now.getTime()}.${ev.fbclid}` : null);
+    const fields = {
+      pageUrl: ev.pageUrl,
+      referrer: ev.referrer,
+      utmSource: ev.utmSource,
+      utmMedium: ev.utmMedium,
+      utmCampaign: ev.utmCampaign,
+      utmContent: ev.utmContent,
+      utmTerm: ev.utmTerm,
+      fbclid: ev.fbclid,
+      fbc,
+      fbp: ev.fbp,
+      clientIp: ctx.ip,
+      userAgent: ctx.userAgent,
+      campaignCode,
+    };
+
+    if (ev.name !== "Lead") {
+      let row = await this.prisma.adClick.findFirst({
+        where: { visitId: ev.visitId },
+        orderBy: { createdAt: "asc" },
+      });
+      if (!row) {
+        row = await this.prisma.adClick.create({ data: { visitId: ev.visitId, ...fields } });
+      } else {
+        // later events may carry identifiers the first one lacked
+        const fill: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(fields)) {
+          if (v !== null && (row as Record<string, unknown>)[k] == null) fill[k] = v;
+        }
+        if (Object.keys(fill).length) {
+          row = await this.prisma.adClick.update({ where: { id: row.id }, data: fill });
+        }
+      }
+      const flag = VISIT_FLAG[ev.name];
+      const claimed = await this.prisma.adClick.updateMany({
+        where: { id: row.id, [flag]: null },
+        data: { [flag]: now },
+      });
+      if (claimed.count === 0) return { outcome: "duplicate" };
+      return {
+        outcome: "ok",
+        visitEvent: {
+          name: ev.name,
+          eventId: ev.eventId,
+          eventTime: now,
+          click: {
+            visitId: ev.visitId,
+            pageUrl: ev.pageUrl ?? row.pageUrl,
+            fbc: fbc ?? row.fbc,
+            fbp: ev.fbp ?? row.fbp,
+            clientIp: ctx.ip ?? row.clientIp,
+            userAgent: ctx.userAgent ?? row.userAgent,
+            campaignCode: row.campaignCode ?? campaignCode,
+          },
+        },
+      };
+    }
+
+    // ---- Lead (WhatsApp tap) ----
     const existing = await this.prisma.adClick.findFirst({
-      where: { OR: [{ ref: click.ref }, { eventId: click.eventId }] },
+      where: { OR: [{ ref: ev.ref as string }, { eventId: ev.eventId }] },
       select: { ref: true, eventId: true },
     });
     if (existing) {
-      return existing.ref === click.ref && existing.eventId === click.eventId
-        ? "duplicate"
-        : "conflict";
+      return {
+        outcome: existing.ref === ev.ref && existing.eventId === ev.eventId ? "duplicate" : "conflict",
+      };
     }
-
-    const campaignCode = click.utmCampaign
-      ? ((
-          await this.prisma.campaign.findFirst({
-            where: { code: { equals: click.utmCampaign, mode: "insensitive" } },
-            select: { code: true },
-          })
-        )?.code ?? null)
-      : null;
-    // The Pixel script normally sets _fbc; rebuild it from fbclid when only
-    // the raw click id reached us (format: fb.<subdomain index>.<ms>.<fbclid>).
-    const fbc =
-      click.fbc ?? (click.fbclid ? `fb.1.${Date.now()}.${click.fbclid}` : null);
-    const createdAt = new Date();
-
+    const tap = {
+      ref: ev.ref,
+      eventId: ev.eventId,
+      instagramHandle: ev.instagramHandle,
+      brandName: ev.brandName,
+      category: ev.category,
+    };
     try {
       await this.prisma.$transaction(async (tx) => {
-        const created = await tx.adClick.create({
-          data: {
-            ref: click.ref,
-            eventId: click.eventId,
-            createdAt,
-            pageUrl: click.pageUrl,
-            referrer: click.referrer,
-            utmSource: click.utmSource,
-            utmMedium: click.utmMedium,
-            utmCampaign: click.utmCampaign,
-            utmContent: click.utmContent,
-            utmTerm: click.utmTerm,
-            fbclid: click.fbclid,
-            fbc,
-            fbp: click.fbp,
-            clientIp: ctx.ip,
-            userAgent: ctx.userAgent,
-            meta: click.meta ?? undefined,
-            campaignCode,
-          },
+        const visitRow = await tx.adClick.findFirst({
+          where: { visitId: ev.visitId, ref: null },
+          orderBy: { createdAt: "asc" },
         });
+        let click;
+        if (visitRow) {
+          const fill: Record<string, unknown> = { ...tap };
+          for (const [k, v] of Object.entries(fields)) {
+            if (v !== null && (visitRow as Record<string, unknown>)[k] == null) fill[k] = v;
+          }
+          click = await tx.adClick.update({ where: { id: visitRow.id }, data: fill });
+        } else {
+          click = await tx.adClick.create({
+            data: { visitId: ev.visitId, createdAt: now, ...fields, ...tap },
+          });
+        }
         await tx.metaEventOutbox.create({
           data: {
             leadId: null,
-            adClickId: created.id,
+            adClickId: click.id,
             route: "WEBSITE",
             eventName: "Lead",
-            eventTime: createdAt,
+            eventTime: now,
             status: "PENDING_CONFIG",
             payload: { event_name: "Lead" },
-            dedupeKey: `click:${click.eventId}`,
+            dedupeKey: `click:${ev.eventId}`,
           },
         });
       });
-      return "created";
+      return { outcome: "ok" };
     } catch (error) {
       if ((error as { code?: string })?.code === "P2002") {
         const again = await this.prisma.adClick.findFirst({
-          where: { OR: [{ ref: click.ref }, { eventId: click.eventId }] },
+          where: { OR: [{ ref: ev.ref as string }, { eventId: ev.eventId }] },
           select: { ref: true, eventId: true },
         });
-        return again?.ref === click.ref && again?.eventId === click.eventId
-          ? "duplicate"
-          : "conflict";
+        return {
+          outcome: again?.ref === ev.ref && again?.eventId === ev.eventId ? "duplicate" : "conflict",
+        };
       }
       throw error;
     }
@@ -139,7 +225,7 @@ export class AdClickService {
     if (!code) return null;
     const click = await this.prisma.adClick.findUnique({
       where: { ref: code },
-      select: { ref: true, createdAt: true, pageUrl: true, campaignCode: true, leadId: true },
+      select: { ref: true, createdAt: true, pageUrl: true, campaignCode: true, leadId: true, instagramHandle: true },
     });
     if (!click) return null;
     const campaign = click.campaignCode
@@ -149,11 +235,12 @@ export class AdClickService {
         })
       : null;
     return {
-      ref: click.ref,
+      ref: code,
       createdAt: click.createdAt,
       pageUrl: click.pageUrl,
       campaignCode: click.campaignCode,
       campaign,
+      instagramHandle: click.instagramHandle,
       available: !click.leadId,
     };
   }
@@ -181,6 +268,12 @@ export class AdClickService {
     });
     if (claimed.count === 0) return null;
 
+    if (click.instagramHandle) {
+      await tx.lead.updateMany({
+        where: { id: leadId, instagramHandle: null },
+        data: { instagramHandle: click.instagramHandle },
+      });
+    }
     const lead = await tx.lead.findUnique({
       where: { id: leadId },
       select: { ctwaClid: true },
@@ -279,10 +372,14 @@ export class AdClickService {
 
   async stats(now: Date = new Date()) {
     const since = new Date(now.getTime() - 7 * DAY_MS);
-    const [clicks7d, linked7d, linkedTotal, groups] = await Promise.all([
-      this.prisma.adClick.count({ where: { createdAt: { gte: since } } }),
+    const [pageViews7d, clicks7d, linked7d, linkedTotal, qualifiedSent, groups] = await Promise.all([
+      this.prisma.adClick.count({ where: { pageViewAt: { gte: since } } }),
+      this.prisma.adClick.count({ where: { createdAt: { gte: since }, ref: { not: null } } }),
       this.prisma.adClick.count({ where: { createdAt: { gte: since }, leadId: { not: null } } }),
       this.prisma.adClick.count({ where: { leadId: { not: null } } }),
+      this.prisma.metaEventOutbox.count({
+        where: { route: "WEBSITE", eventName: "QualifiedLead", status: "SENT" },
+      }),
       this.prisma.metaEventOutbox.groupBy({
         by: ["status"],
         where: { route: "WEBSITE" },
@@ -308,7 +405,9 @@ export class AdClickService {
       select: { updatedAt: true, eventName: true, lastError: true },
     });
     return {
+      pageViews7d,
       clicks7d,
+      qualifiedSent,
       linked7d,
       linkedTotal,
       events,

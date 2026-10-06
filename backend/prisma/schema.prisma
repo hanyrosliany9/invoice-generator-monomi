@@ -861,6 +861,7 @@ model Lead {
   campaignCode    String?
   adId            String?
   ctwaClid        String? // Click-to-WhatsApp click id (Meta CAPI attribution)
+  instagramHandle String? // normalised handle without @ (from the landing page or the pasted chat)
   referral        Json? // raw CTWA referral object
   firstMessage    String?    @db.Text
   stageId         String
@@ -967,8 +968,12 @@ model MetaEventOutbox {
 // No personal data is stored here; unlinked rows are purged after 30 days.
 model AdClick {
   id           String    @id @default(cuid())
-  ref          String    @unique
-  eventId      String    @unique // Pixel eventID, reused as the CAPI Lead event_id (dedup)
+  // Landing-page visit this row belongs to (first-party id from the snippet).
+  // The row is created by the visit's first event; a WhatsApp tap fills in
+  // ref/eventId on it (a second tap in the same visit gets its own row).
+  visitId      String?
+  ref          String?   @unique // "Kode: XXXXXX" written into the WhatsApp text (WhatsApp tap only)
+  eventId      String?   @unique // CAPI event_id of the tap's Lead event
   createdAt    DateTime  @default(now())
   pageUrl      String?
   referrer     String?
@@ -982,7 +987,14 @@ model AdClick {
   fbp          String?
   clientIp     String?
   userAgent    String?
-  meta         Json? // optional qualifier answers: brandName, category, looks
+  // Optional qualifier answers from the landing page (never sent to Meta).
+  instagramHandle String?
+  brandName       String?
+  category        String?
+  // Once-per-visit markers for the high-volume server events.
+  pageViewAt    DateTime?
+  viewContentAt DateTime?
+  engagedAt     DateTime?
   campaignCode String? // utm_campaign matched to an existing CRM campaign code
   leadId       String?   @unique
   lead         Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
@@ -992,6 +1004,7 @@ model AdClick {
 
   @@index([createdAt])
   @@index([campaignCode])
+  @@index([visitId])
   @@map("ad_clicks")
 }
 

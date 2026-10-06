@@ -16,7 +16,9 @@ import { Public } from "../../common/decorators/public.decorator";
 import { AdClickService } from "./ad-click.service";
 import { headerString } from "./public-track.http";
 import { MONOMI_TRACK_JS } from "./monomi-track.snippet";
-import { parseWaClickPayload } from "./wa-click.payload";
+import { parseTrackEvent } from "./track-event.payload";
+import { isBotUserAgent } from "./track-utils";
+import { WebCapiService } from "./web-capi.service";
 
 const SCRIPT_ETAG = `"${createHash("sha256").update(MONOMI_TRACK_JS).digest("hex").slice(0, 24)}"`;
 
@@ -36,7 +38,10 @@ function cleanIp(ip: string | undefined): string | null {
 @ApiExcludeController()
 @Controller("public/track")
 export class PublicTrackController {
-  constructor(private readonly clicks: AdClickService) {}
+  constructor(
+    private readonly clicks: AdClickService,
+    private readonly sender: WebCapiService,
+  ) {}
 
   @Public()
   @Get("monomi-track.js")
@@ -53,19 +58,28 @@ export class PublicTrackController {
     res.status(200).send(MONOMI_TRACK_JS);
   }
 
+  /**
+   * One landing-page event (PageView, ViewContent, EngagedVisit, Lead).
+   * Obvious bots are acknowledged and dropped: nothing stored, nothing sent
+   * to Meta. The limit is per IP and generous because one visit sends several
+   * events and mobile carriers put many visitors behind one address.
+   */
   @Public()
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
-  @Post("wa-click")
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
+  @Post("event")
   @HttpCode(200)
-  async waClick(@Req() req: Request) {
-    const parsed = parseWaClickPayload(req.body);
+  async event(@Req() req: Request) {
+    const parsed = parseTrackEvent(req.body);
     if (!parsed) throw new BadRequestException("Invalid request");
-    const outcome = await this.clicks.record(parsed, {
+    const userAgent = headerString(req.headers["user-agent"], 400);
+    if (isBotUserAgent(userAgent)) return { ok: true };
+    const result = await this.clicks.recordEvent(parsed, {
       // req.ip honours the app's trust-proxy setting (Cloudflare -> nginx -> app).
       ip: cleanIp(req.ip),
-      userAgent: headerString(req.headers["user-agent"], 400),
+      userAgent,
     });
-    if (outcome === "conflict") throw new ConflictException("Conflict");
+    if (result.outcome === "conflict") throw new ConflictException("Conflict");
+    if (result.visitEvent) this.sender.enqueueVisitEvent(result.visitEvent);
     return { ok: true };
   }
 }

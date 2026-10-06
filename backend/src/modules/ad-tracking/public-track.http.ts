@@ -5,7 +5,7 @@ import {
   isOriginAllowed,
   resolveAdTrackingConfig,
 } from "./ad-tracking.config";
-import { WA_CLICK_MAX_BYTES } from "./wa-click.payload";
+import { TRACK_EVENT_MAX_BYTES } from "./track-event.payload";
 
 export const PUBLIC_TRACK_PREFIX = "/api/v1/public/track/";
 
@@ -14,7 +14,7 @@ const isTrackPath = (path: string) => path.toLowerCase().startsWith(PUBLIC_TRACK
 /**
  * CORS for the public tracking endpoints, registered BEFORE the app-wide CORS
  * (which has no business with a third-party landing page and would reject it).
- *  - POST /wa-click: only origins in PUBLIC_TRACK_ALLOWED_ORIGINS (localhost
+ *  - POST /event: only origins in PUBLIC_TRACK_ALLOWED_ORIGINS (localhost
  *    additionally outside production). Disallowed browser origins get 403;
  *    requests without an Origin header (curl, server-to-server) pass through
  *    to the endpoint's own validation and rate limit.
@@ -53,13 +53,13 @@ export function createPublicTrackCors(
 }
 
 /**
- * Body for POST /wa-click: raw text (sendBeacon sends text/plain; fetch from
- * the snippet too), capped at WA_CLICK_MAX_BYTES (413 above it). The controller
+ * Body for POST /event: raw text (sendBeacon sends text/plain; fetch from
+ * the snippet too), capped at TRACK_EVENT_MAX_BYTES (413 above it). The controller
  * JSON-parses it itself. Not named jsonParser: Nest skips its default parser
  * when a middleware with that name exists.
  */
 export function createPublicTrackBody() {
-  const parser = textParser({ type: () => true, limit: WA_CLICK_MAX_BYTES });
+  const parser = textParser({ type: () => true, limit: TRACK_EVENT_MAX_BYTES });
   return function publicTrackBody(req: Request, res: Response, next: NextFunction) {
     if (req.method !== "POST" || !isTrackPath(req.path)) return next();
     return parser(req, res, next);

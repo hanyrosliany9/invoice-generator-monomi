@@ -89,6 +89,10 @@ export class CreateLeadDto {
   @IsOptional() @Transform(emptyToUndefined) @IsString() @MaxLength(12)
   adClickRef?: string;
 
+  /** Instagram handle (or profile URL) of the lead. */
+  @IsOptional() @Transform(emptyToUndefined) @IsString() @MaxLength(100)
+  instagramHandle?: string;
+
   /** Save even when another lead has the same phone number. */
   @IsOptional() @Transform(toBool) @IsBoolean()
   allowDuplicate?: boolean;

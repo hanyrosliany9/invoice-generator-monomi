@@ -12,7 +12,7 @@ import {
   splitName,
   webSkipReason,
 } from "./web-capi.payload";
-import { WebCapiService } from "./web-capi.service";
+import { VISIT_QUEUE_MAX, WEB_CAPI_MAX_BATCH, WebCapiService } from "./web-capi.service";
 import { WhatsAppGraphClient } from "../whatsapp/whatsapp-graph.client";
 import { CAPI_MAX_ATTEMPTS } from "../whatsapp/meta-capi.service";
 import { FakeGraph, FakePrisma, withEnv } from "../whatsapp/testing/whatsapp-fakes.helper-spec";
@@ -23,7 +23,9 @@ const TOKEN = "EAAGm0PX4ZCpsBO7Zxk9QwLrN2vTb8YhJcUdFeGaIiKoMlPqRsStUuVvWwXxYyZz"
 const MIN = 60_000;
 const DAY = 86_400_000;
 
+const VISIT = "0b6f3b0e-52a2-4f0e-8a54-1c1f0f0b6c11";
 const click = {
+  visitId: VISIT,
   pageUrl: "https://link.monomiagency.com/?utm_campaign=FB-OKT1",
   fbc: "fb.1.1759900000000.IwAR3abc",
   fbp: "fb.1.1759900000000.1234567890",
@@ -67,6 +69,14 @@ describe("phone / name normalisation for Meta", () => {
 describe("buildWebEvent", () => {
   const eventTime = new Date("2026-10-07T03:00:00.000Z");
 
+  it("every event carries external_id = SHA-256(visitId); stage events add the lead id hash", () => {
+    const pv: any = buildWebEvent({ eventName: "PageView", eventTime, eventId: "e1" }, click, null);
+    expect(pv.user_data.external_id).toEqual([sha(VISIT)]);
+    expect(pv.user_data.ph).toBeUndefined();
+    const noVisit: any = buildWebEvent({ eventName: "PageView", eventTime, eventId: "e1" }, { ...click, visitId: null }, null);
+    expect(noVisit.user_data.external_id).toBeUndefined();
+  });
+
   it("click-time Lead: website source, technical fields in clear, no personal data", () => {
     const ev = buildWebEvent(
       { eventName: "Lead", eventTime, eventId: "3f6b8c1e-2d4a-4f60-9a51-0c8d7e5b1a22" },
@@ -84,6 +94,7 @@ describe("buildWebEvent", () => {
         client_user_agent: click.userAgent,
         fbc: click.fbc,
         fbp: click.fbp,
+        external_id: [sha(VISIT)],
       },
       custom_data: { campaign_code: "FB-OKT1" },
     });
@@ -105,7 +116,8 @@ describe("buildWebEvent", () => {
       fn: [sha("budi")],
       ln: [sha("santoso")],
       country: [sha("id")],
-      external_id: [sha("lead_1")],
+      // the visit hash ties the stage event to the visit's PageView ... Lead events
+      external_id: [sha(VISIT), sha("lead_1")],
     });
     // no raw personal data anywhere in the event
     const json = JSON.stringify(ev);
@@ -145,7 +157,7 @@ describe("buildWebEvent", () => {
     const stored = redactEventForStorage(ev);
     expect(JSON.stringify(stored)).not.toContain("203.0.113.9");
     expect(JSON.stringify(stored)).not.toContain(click.fbc);
-    expect(stored.user_data_fields).toEqual(["client_ip_address", "client_user_agent", "fbc", "fbp"]);
+    expect(stored.user_data_fields).toEqual(["client_ip_address", "client_user_agent", "fbc", "fbp", "external_id"]);
   });
 });
 
@@ -376,5 +388,92 @@ describe("WebCapiService (website route sender)", () => {
     const ids = new Set(graph.calls.filter((c) => c.body.data[0].event_name === "QualifiedLead").map((c) => c.body.data[0].event_id));
     expect(ids).toEqual(new Set(["ev1"])); // same event_id every attempt
     void prisma;
+  });
+});
+
+
+describe("WebCapiService visit-event batches", () => {
+  const restore: Array<() => void> = [];
+  afterEach(() => restore.splice(0).forEach((r) => r()));
+  const enable = () =>
+    restore.push(withEnv({ NODE_ENV: "test", META_WEB_CAPI_ENABLED: "true", META_PIXEL_ID: PIXEL, META_WEB_CAPI_TOKEN: TOKEN, META_WEB_CAPI_TEST_EVENT_CODE: undefined, META_WEB_CAPI_GRAPH_BASE_URL: undefined }));
+  const build = (graph: FakeGraph) => new WebCapiService(new FakePrisma() as any, new WhatsAppGraphClient(graph.fetch as any));
+  const visit = (i: number, age = 0) => ({
+    name: "PageView" as const,
+    eventId: `evt-${i}-0000`,
+    eventTime: new Date(Date.now() - age),
+    click: { ...click, visitId: `visit-${i}-00000000` },
+  });
+  const okGraph = () =>
+    new FakeGraph().on("POST", new RegExp(`/${PIXEL}/events$`), (c: any) => ({ json: { events_received: c.body.data.length, fbtrace_id: "T" } }));
+
+  it("sends at most 1000 events per request", async () => {
+    enable();
+    const graph = okGraph();
+    const svc = build(graph);
+    for (let i = 0; i < 2500; i += 1) expect(svc.enqueueVisitEvent(visit(i))).toBe(true);
+    const r = await svc.flushVisitEvents();
+    expect(r).toMatchObject({ sent: 2500, requests: 3, stale: 0 });
+    expect(graph.calls.map((c) => c.body.data.length)).toEqual([1000, 1000, 500]);
+    expect(WEB_CAPI_MAX_BATCH).toBe(1000);
+    expect(svc.queuedVisitEvents).toBe(0);
+    const e = graph.calls[0].body.data[0];
+    expect(e).toMatchObject({ event_name: "PageView", action_source: "website", event_id: "evt-0-0000" });
+    expect(e.user_data.external_id).toEqual([sha("visit-0-00000000")]);
+    expect(graph.calls[0].headers.Authorization).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it("filters out events older than 7 days so one stale event cannot fail the request", async () => {
+    enable();
+    const graph = okGraph();
+    const svc = build(graph);
+    svc.enqueueVisitEvent(visit(1, 8 * DAY));
+    svc.enqueueVisitEvent(visit(2, 1000));
+    svc.enqueueVisitEvent(visit(3, 7 * DAY + 5000));
+    const r = await svc.flushVisitEvents();
+    expect(r).toMatchObject({ sent: 1, stale: 2, requests: 1 });
+    expect(graph.calls[0].body.data.map((x: any) => x.event_id)).toEqual(["evt-2-0000"]);
+  });
+
+  it("does not queue or send unless READY; adds test_event_code when set", async () => {
+    restore.push(withEnv({ META_WEB_CAPI_ENABLED: undefined }));
+    const g = okGraph();
+    const off = build(g);
+    expect(off.enqueueVisitEvent(visit(1))).toBe(false);
+    expect((await off.flushVisitEvents()).requests).toBe(0);
+    restore.splice(0).forEach((r) => r());
+    enable();
+    restore.push(withEnv({ META_WEB_CAPI_TEST_EVENT_CODE: "TEST9" }));
+    const g2 = okGraph();
+    const on = build(g2);
+    on.enqueueVisitEvent(visit(1));
+    await on.flushVisitEvents();
+    expect(g2.calls[0].body.test_event_code).toBe("TEST9");
+  });
+
+  it("retries a transient failure with the same event ids, then drops after the attempt cap; invalid_param drops at once", async () => {
+    enable();
+    const bad = new FakeGraph().on("POST", new RegExp(`/${PIXEL}/events$`), () => ({ status: 503, json: { error: { message: "temporarily unavailable", code: 2, type: "OAuthException" } } }));
+    const svc = build(bad);
+    svc.enqueueVisitEvent(visit(1));
+    expect((await svc.flushVisitEvents()).retrying).toBe(1);
+    expect((await svc.flushVisitEvents()).retrying).toBe(1);
+    const last = await svc.flushVisitEvents();
+    expect(last.dropped).toBe(1);
+    expect(svc.queuedVisitEvents).toBe(0);
+    expect(new Set(bad.calls.map((c) => c.body.data[0].event_id))).toEqual(new Set(["evt-1-0000"]));
+
+    const invalid = new FakeGraph().on("POST", new RegExp(`/${PIXEL}/events$`), () => ({ status: 400, json: { error: { message: "Invalid parameter", code: 100, type: "OAuthException" } } }));
+    const s2 = build(invalid);
+    s2.enqueueVisitEvent(visit(1));
+    expect((await s2.flushVisitEvents()).dropped).toBe(1);
+    expect(s2.queuedVisitEvents).toBe(0);
+  });
+
+  it("bounds the in-memory queue", () => {
+    enable();
+    const svc = build(okGraph());
+    for (let i = 0; i < VISIT_QUEUE_MAX; i += 1) svc.enqueueVisitEvent(visit(i));
+    expect(svc.enqueueVisitEvent(visit(99999))).toBe(false);
   });
 });
