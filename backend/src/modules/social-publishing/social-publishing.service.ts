@@ -735,7 +735,7 @@ export class SocialPublishingService {
   // ===========================================================================
 
   /** Cheap, no Meta call, no secrets. */
-  status() {
+  status(includeReason = true) {
     const s = this.accounts.state;
     if (s.status === "configured") {
       return {
@@ -753,7 +753,9 @@ export class SocialPublishingService {
       state: s.status,
       ...(s.status === "not_configured"
         ? { missing: s.missing }
-        : { reason: s.reason }),
+        : includeReason
+          ? { reason: s.reason }
+          : {}),
     };
   }
 

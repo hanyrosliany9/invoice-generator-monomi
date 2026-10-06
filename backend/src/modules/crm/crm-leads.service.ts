@@ -20,6 +20,7 @@ import {
 } from "./dto/crm.dto";
 import {
   endOfTodayWib,
+  escapeActivityText,
   minutesBetween,
   normalizePhone,
   parseQuickAdd,
@@ -312,7 +313,7 @@ export class CrmLeadsService {
         data: {
           leadId: created.id,
           type: "STAGE_CHANGE",
-          body: dto.firstMessage ?? null,
+          body: escapeActivityText(dto.firstMessage) ?? null,
           fromStageId: null,
           toStageId: stage.id,
           metaEvent,
@@ -418,7 +419,7 @@ export class CrmLeadsService {
   }
 
   async moveStage(id: string, stageId: string, actorId: string | null, note?: string, lostReason?: string) {
-    await this.flow.changeStage(id, stageId, actorId, { note, lostReason });
+    await this.flow.changeStage(id, stageId, actorId, { note: escapeActivityText(note), lostReason: escapeActivityText(lostReason) });
     return this.get(id);
   }
 
@@ -429,7 +430,7 @@ export class CrmLeadsService {
     if (!target || target.type !== "LOST") {
       throw new BadRequestException("Tahap 'Kalah' tidak ditemukan");
     }
-    await this.flow.changeStage(id, target.id, actorId, { lostReason: reason, note: reason });
+    await this.flow.changeStage(id, target.id, actorId, { lostReason: escapeActivityText(reason), note: escapeActivityText(reason) });
     // lead may already have been in the lost stage: still store the reason.
     await this.prisma.lead.update({ where: { id }, data: { lostReason: reason } });
     return this.get(id);
@@ -465,7 +466,7 @@ export class CrmLeadsService {
     const now = new Date();
     const isReply = type !== "NOTE";
     await this.prisma.$transaction([
-      this.prisma.leadActivity.create({ data: { leadId: id, type, body: body ?? null, actorId } }),
+      this.prisma.leadActivity.create({ data: { leadId: id, type, body: escapeActivityText(body) ?? null, actorId } }),
       this.prisma.lead.update({
         where: { id },
         data: {

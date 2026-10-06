@@ -574,7 +574,7 @@ describe("AutoPublishPolicy (content calendar edits)", () => {
 
 describe("publish error messages (localized by the UI via errorCode)", () => {
   it("keeps the raw Meta detail on its own line after the bilingual headline", () => {
-    const e = publishErrorFromGraph(new GraphApiError("x", "other", 400, 100, 2207009));
+    const e = publishErrorFromGraph(new GraphApiError("x", "invalid_param", 400, 100, 2207009));
     expect(e.code).toBe("MEDIA_INVALID");
     const [head, detail] = e.message.split("\n");
     expect(head).toBe("Media ditolak Meta / Media rejected by Meta");
@@ -582,7 +582,7 @@ describe("publish error messages (localized by the UI via errorCode)", () => {
   });
 
   it("uses its own code for Facebook duplicate posts and no detail line for fixed messages", () => {
-    const e = publishErrorFromGraph(new GraphApiError("dup", "other", 400, 506));
+    const e = publishErrorFromGraph(new GraphApiError("dup", "unknown", 400, 506));
     expect(e.code).toBe("DUPLICATE_POST");
     expect(e.message).toBe(MSG.duplicate);
     expect(MSG.publishLimit(5, 100)).toContain("\n5/100");

@@ -9910,7 +9910,7 @@
           },
           "webhook": {
             "title": "Webhook URL and verify token",
-            "body": "In the Meta app (WhatsApp > Configuration) the developer enters the Callback URL and the Verify token (1), and subscribes to the fields listed there. Click Show & copy (2) to reveal and copy the token. Signature check says OK once the app secret is set, and Not active yet before that.",
+            "body": "In the Meta app (WhatsApp > Configuration) the developer enters the Callback URL and the Verify token (1), and subscribes to the fields listed there. Click Reveal & copy (2) to reveal and copy the token. Signature check says Not active yet while the setup is incomplete; once WhatsApp is ready it says OK, or App secret missing if the app secret is not set.",
             "tip": "Last event received tells you whether Meta is really sending chats to Monomi."
           },
           "capi": {

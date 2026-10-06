@@ -138,3 +138,14 @@ describe("stats helpers", () => {
     expect(startOfTodayWib(now).toISOString()).toBe("2026-10-06T17:00:00.000Z");
   });
 });
+
+import { escapeActivityText } from "./crm.utils";
+describe("escapeActivityText", () => {
+  const BS = String.fromCharCode(92);
+  it("escapes only a leading @", () => {
+    expect(escapeActivityText("@wa.in: x")).toBe(BS + "@wa.in: x");
+    expect(escapeActivityText("  @lead.converted")).toBe(BS + "@lead.converted");
+    expect(escapeActivityText("mail me @home")).toBe("mail me @home");
+    expect(escapeActivityText(null)).toBeNull();
+  });
+});

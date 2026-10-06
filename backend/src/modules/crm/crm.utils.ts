@@ -3,6 +3,14 @@
  * trivially unit-testable).
  */
 
+/**
+ * Timeline bodies starting with "@key" are server keys the UI translates. Text typed by staff or sent by a
+ * customer must never be read as one, so a leading "@" is escaped with a backslash (the UI removes it).
+ */
+export function escapeActivityText<T extends string | null | undefined>(text: T): T {
+  return (typeof text === "string" && /^\s*@/.test(text) ? "\\" + text.trimStart() : text) as T;
+}
+
 /** WIB = UTC+7, no daylight saving. */
 export const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 

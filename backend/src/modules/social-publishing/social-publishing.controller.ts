@@ -41,8 +41,10 @@ export class SocialPublishingController {
   @ApiOperation({
     summary: "Auto-publish configuration status (no Meta call, no secrets)",
   })
-  status() {
-    return this.service.status();
+  status(@Request() req: any) {
+    // The raw reason names server settings: admins only.
+    const admin = req.user?.role === UserRole.SUPER_ADMIN || req.user?.role === UserRole.ADMIN;
+    return this.service.status(admin);
   }
 
   @Get("connection")

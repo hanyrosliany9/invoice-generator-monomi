@@ -444,7 +444,7 @@ export function SocialConnectionCard({ isAdmin }: { isAdmin: boolean }) {
               <p className="text-xs text-text-tertiary">{t('common.loading', 'Memuat…')}</p>
             ) : !status?.configured ? (
               <p className="text-xs text-text-tertiary" data-testid="not-configured">
-                {status?.state === 'invalid'
+                {status?.state === 'invalid' && isAdmin
                   ? t('socialPublish.invalidConfig', 'Konfigurasi Meta tidak valid: {{reason}}', { reason: status.reason ?? '' })
                   : t('socialPublish.notConfigured', 'Belum terhubung. Minta developer/admin menghubungkan akun Meta (Instagram dan Halaman Facebook).')}
               </p>
@@ -457,7 +457,7 @@ export function SocialConnectionCard({ isAdmin }: { isAdmin: boolean }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-        <GuideHelpLink slug="publikasi-otomatis" anchor="koneksi" />
+        {isAdmin && <GuideHelpLink slug="publikasi-otomatis" anchor="koneksi" />}
         {status?.configured && isAdmin && (
           <Button
             size="sm"

@@ -85,7 +85,7 @@ export function useCrmLabels() {
    */
   const activityText = (body: string | null | undefined): string => {
     const parsed = parseActivityBody(body);
-    if (!parsed) return body ?? '';
+    if (!parsed) return unescapeActivityText(body ?? '');
     const rest = parsed.text;
     switch (parsed.key) {
       case 'wa.in': return join(t('crm.history.waIn', 'Message received'), rest);
@@ -113,8 +113,14 @@ const join = (label: string, text: string | null) => (text ? `${label}: ${text}`
 /** "@key: text" -> { key, text } (see backend crm activity bodies); null for plain text. */
 export function parseActivityBody(body: string | null | undefined): { key: string; text: string | null } | null {
   const m = body?.match(/^@([A-Za-z]+(?:\.[A-Za-z]+)+)(?::\s?([\s\S]*))?$/);
-  return m ? { key: m[1], text: m[2] ? m[2] : null } : null;
+  // Only the keys the server writes; anything else (a customer's "@John.Doe: hi") is plain text.
+  return m && ACTIVITY_KEYS.has(m[1]) ? { key: m[1], text: m[2] ? m[2] : null } : null;
 }
+
+const ACTIVITY_KEYS = new Set(['wa.in', 'wa.monomi', 'wa.phoneApp', 'lead.converted', 'lead.quotationCreated']);
+
+/** Plain activity text: the server escapes a leading "@" typed by people as "\@" (crm.utils escapeActivityText). */
+export const unescapeActivityText = (body: string): string => (body.startsWith('\\@') ? body.slice(1) : body);
 
 /** 6281234567890 style id for wa.me links. */
 export const waDigits = (phone: string | null | undefined): string | null => {

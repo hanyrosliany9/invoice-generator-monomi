@@ -162,3 +162,22 @@ describe("CrmLeadsService.convert", () => {
     await expect(svc.convert("L9", { clientId: "c-int" }, "u1")).rejects.toBeInstanceOf(BadRequestException);
   });
 });
+
+describe("timeline bodies cannot be spoofed with server keys", () => {
+  const BS = String.fromCharCode(92);
+  it("escapes a first message that looks like a key (customer / quick add)", async () => {
+    const { svc, activities } = makeService();
+    await svc.create({ name: "Spoof", phone: "081234567001", firstMessage: "@lead.quotationCreated" } as any, "u1");
+    await svc.create({ name: "Trunc", phone: "081234567002", firstMessage: "@John.Doe: hi" } as any, "u1");
+    expect(activities[0].body).toBe(BS + "@lead.quotationCreated");
+    expect(activities[1].body).toBe(BS + "@John.Doe: hi");
+  });
+
+  it("escapes manually logged activities and leaves normal text alone", async () => {
+    const { svc, activities } = makeService({ leads: [{ id: "L1", stageId: "st-new", phone: "+62811" }] });
+    await svc.addActivity("L1", "NOTE", "@wa.in: fake", "u1");
+    await svc.addActivity("L1", "NOTE", "Call back at 5", "u1");
+    expect(activities[0].body).toBe(BS + "@wa.in: fake");
+    expect(activities[1].body).toBe("Call back at 5");
+  });
+});

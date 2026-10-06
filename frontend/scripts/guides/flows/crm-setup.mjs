@@ -36,7 +36,8 @@ export async function run(ctx) {
     await shot(page, id(name), {
       highlights: [
         H(section(0).locator('dd').first(), { n: 1, pad: 5 }),
-        ...(state === 'off' ? [] : [H(section(0).locator('p.text-warning').first(), { n: 2, pad: 4, scroll: false })]),
+        // incomplete: the plain message; invalid: the "Technical details" disclosure the text points at
+        ...(state === 'off' ? [] : [H(state === 'invalid' ? section(0).locator('details summary').first() : section(0).locator('p.text-warning').first(), { n: 2, pad: 4, scroll: false })]),
       ],
     });
     return;

@@ -9909,7 +9909,7 @@
           },
           "webhook": {
             "title": "URL webhook dan verify token",
-            "body": "Di aplikasi Meta (WhatsApp > Configuration) developer mengisi Callback URL dan Verify token (1), lalu berlangganan field yang tercantum di sana. Klik Tampilkan & salin (2) untuk menampilkan dan menyalin token. Cek tanda tangan menjadi OK setelah app secret diatur, dan Belum aktif sebelum itu.",
+            "body": "Di aplikasi Meta (WhatsApp > Configuration) developer mengisi Callback URL dan Verify token (1), lalu berlangganan field yang tercantum di sana. Klik Tampilkan & salin (2) untuk menampilkan dan menyalin token. Cek tanda tangan menampilkan Belum aktif selama pengaturan belum lengkap; setelah WhatsApp siap, hasilnya OK, atau App secret belum ada jika app secret belum diatur.",
             "tip": "Event terakhir diterima menunjukkan apakah Meta benar-benar mengirim chat ke Monomi."
           },
           "capi": {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseActivityBody } from './crmUtils';
+import { parseActivityBody, unescapeActivityText } from './crmUtils';
 import { failureText } from '../calendar/SocialPublishParts';
 import en from '@/i18n/locales/en.json';
 import id from '@/i18n/locales/id.json';
@@ -10,6 +10,13 @@ describe('parseActivityBody (server timeline keys)', () => {
     expect(parseActivityBody('@wa.phoneApp: a: b')).toEqual({ key: 'wa.phoneApp', text: 'a: b' });
     expect(parseActivityBody('@lead.converted: clientNew,project,quotation')).toEqual({ key: 'lead.converted', text: 'clientNew,project,quotation' });
     expect(parseActivityBody('@lead.quotationCreated')).toEqual({ key: 'lead.quotationCreated', text: null });
+  });
+
+  it('only accepts the keys the server writes (no truncation of customer text)', () => {
+    expect(parseActivityBody('@John.Doe: hi')).toBeNull();
+    expect(parseActivityBody('@wa.other: x')).toBeNull();
+    expect(unescapeActivityText('\\@lead.quotationCreated')).toBe('@lead.quotationCreated');
+    expect(unescapeActivityText('plain')).toBe('plain');
   });
 
   it('leaves legacy rows and plain notes alone', () => {
