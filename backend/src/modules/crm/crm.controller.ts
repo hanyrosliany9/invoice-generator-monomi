@@ -27,6 +27,7 @@ import {
   CreateSpendDto,
   CreateStageDto,
   DuplicateQueryDto,
+  LinkAdClickDto,
   LinkLeadDto,
   ListLeadsQueryDto,
   MarkLostDto,
@@ -155,6 +156,13 @@ export class CrmController {
   @HttpCode(200)
   link(@Param("id") id: string, @Body() dto: LinkLeadDto) {
     return this.leads.link(id, dto);
+  }
+
+  @Post("leads/:id/ad-click")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Link a landing-page ad click code (Kode: XXXXXX) to the lead" })
+  linkAdClick(@Param("id") id: string, @Body() dto: LinkAdClickDto, @Req() req: any) {
+    return this.leads.linkAdClick(id, dto.code, this.uid(req));
   }
 
   @Get("assignees")

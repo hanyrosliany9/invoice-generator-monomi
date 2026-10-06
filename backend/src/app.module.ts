@@ -53,6 +53,7 @@ import { PortalModule } from "./modules/portal/portal.module";
 import { InstagramModule } from "./modules/instagram/instagram.module";
 import { CrmModule } from "./modules/crm/crm.module";
 import { WhatsAppModule } from "./modules/whatsapp/whatsapp.module";
+import { AdTrackingModule } from "./modules/ad-tracking/ad-tracking.module";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
@@ -128,6 +129,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     InstagramModule,
     CrmModule,
     WhatsAppModule,
+    AdTrackingModule,
   ],
   providers: [
     {

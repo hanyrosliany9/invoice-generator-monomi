@@ -3,12 +3,15 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from "@nestjs/common";
 import { LeadSource, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ClientsService } from "../clients/clients.service";
 import { ProjectsService } from "../projects/projects.service";
 import { QuotationsService } from "../quotations/quotations.service";
+import { AdClickService } from "../ad-tracking/ad-click.service";
+import { extractRefCode, normalizeRefCode } from "../ad-tracking/ref-code";
 import { CrmFlowService } from "./crm-flow.service";
 import { CrmOutboxService } from "./crm-outbox.service";
 import { CrmSettingsService } from "./crm-settings.service";
@@ -46,6 +49,7 @@ export class CrmLeadsService {
     private readonly clients: ClientsService,
     private readonly projects: ProjectsService,
     private readonly quotations: QuotationsService,
+    @Optional() private readonly adClicks?: AdClickService,
   ) {}
 
   // -------------------------------------------------------------------
@@ -95,7 +99,16 @@ export class CrmLeadsService {
       ? (campaigns.find((c) => c.code.toUpperCase() === parsed.campaignCode) ?? null)
       : null;
     const duplicate = parsed.phone ? await this.findDuplicate(parsed.phone) : null;
-    return { ...parsed, campaign, duplicate };
+    // "Kode: K7QM2X" written by the landing page: link the chat to its ad click.
+    const adClick = (await this.adClicks?.previewForText(text)) ?? null;
+    return {
+      ...parsed,
+      // the click's own campaign fills in when the chat names none
+      campaign: campaign ?? adClick?.campaign ?? null,
+      campaignCode: parsed.campaignCode ?? adClick?.campaignCode?.toUpperCase() ?? null,
+      duplicate,
+      adClick,
+    };
   }
 
   // -------------------------------------------------------------------
@@ -190,6 +203,23 @@ export class CrmLeadsService {
           },
         },
         metaEvents: { orderBy: { createdAt: "asc" } },
+        // no ip / user agent / browser ids: only what staff need to see
+        adClick: {
+          select: {
+            ref: true,
+            createdAt: true,
+            linkedAt: true,
+            pageUrl: true,
+            referrer: true,
+            utmSource: true,
+            utmMedium: true,
+            utmCampaign: true,
+            utmContent: true,
+            utmTerm: true,
+            campaignCode: true,
+            meta: true,
+          },
+        },
       },
     });
     if (!lead) throw new NotFoundException("Lead tidak ditemukan");
@@ -261,7 +291,7 @@ export class CrmLeadsService {
       }
     }
 
-    const campaign = await this.resolveCampaign(dto.campaignId, dto.campaignCode);
+    const dtoCampaign = await this.resolveCampaign(dto.campaignId, dto.campaignCode);
     const stage = dto.stageId
       ? await this.prisma.leadStage.findUnique({ where: { id: dto.stageId } })
       : await this.prisma.leadStage.findFirst({
@@ -270,8 +300,16 @@ export class CrmLeadsService {
         });
     if (!stage || !stage.isActive) throw new BadRequestException("Tahap tidak valid");
 
-    const source: LeadSource =
-      dto.source ?? (campaign ? "WHATSAPP_CTWA" : phone ? "WHATSAPP_ORGANIC" : "OTHER");
+    // A landing-page ad click (code pasted from the chat) makes this a website lead.
+    const adClickRef = normalizeRefCode(dto.adClickRef) ?? extractRefCode(dto.firstMessage);
+    const clickPreview =
+      adClickRef && !dto.ctwaClid ? await this.adClicks?.preview(adClickRef) : null;
+    const clickToLink = clickPreview?.available ? clickPreview : null;
+    const campaign = dtoCampaign ?? clickToLink?.campaign ?? null;
+
+    const source: LeadSource = clickToLink
+      ? "WEBSITE"
+      : (dto.source ?? (campaign ? "WHATSAPP_CTWA" : phone ? "WHATSAPP_ORGANIC" : "OTHER"));
     const now = new Date();
     const firstContactAt = dto.firstContactAt ? new Date(dto.firstContactAt) : now;
     const name = dto.name?.trim() || (phone as string);
@@ -301,6 +339,12 @@ export class CrmLeadsService {
         },
       });
       let metaEvent: string | null = null;
+      // Link BEFORE any event is queued so the website route is chosen.
+      let linkedRef: string | null = null;
+      if (clickToLink && this.adClicks) {
+        const linked = await this.adClicks.linkInTx(tx, clickToLink.ref, created.id);
+        if (linked) linkedRef = linked.ref;
+      }
       if (WHATSAPP_SOURCES.includes(source)) {
         if (await this.outbox.queueEvent(tx, created, "LeadSubmitted", { eventTime: firstContactAt })) {
           metaEvent = "LeadSubmitted";
@@ -320,6 +364,11 @@ export class CrmLeadsService {
           actorId,
         },
       });
+      if (linkedRef) {
+        await tx.leadActivity.create({
+          data: { leadId: created.id, type: "NOTE", body: `@lead.adClickLinked: ${linkedRef}`, actorId },
+        });
+      }
       if (created.followUpAt) {
         await tx.leadActivity.create({
           data: { leadId: created.id, type: "FOLLOW_UP_SET", body: created.followUpNote, actorId },
@@ -408,6 +457,25 @@ export class CrmLeadsService {
     if (dto.estimatedValue !== undefined) data.estimatedValue = new Prisma.Decimal(dto.estimatedValue);
     await this.prisma.lead.update({ where: { id }, data });
     void actorId;
+    return this.get(id);
+  }
+
+  /** Admin: link a landing-page ad click code to a lead whose chat missed it. */
+  async linkAdClick(id: string, code: string, actorId: string | null) {
+    const lead = await this.prisma.lead.findUnique({ where: { id }, select: { id: true } });
+    if (!lead) throw new NotFoundException("Lead tidak ditemukan");
+    if (!this.adClicks) throw new BadRequestException("Pelacakan landing page tidak aktif");
+    const ref = normalizeRefCode(code) ?? extractRefCode(code);
+    if (!ref) throw new BadRequestException("Kode tidak valid");
+    const result = await this.adClicks.linkLead(id, ref, actorId);
+    if (result === "not_found") throw new NotFoundException("Kode klik iklan tidak ditemukan");
+    if (result === "taken") {
+      throw new ConflictException({
+        statusCode: 409,
+        code: "AD_CLICK_TAKEN",
+        message: "Kode ini sudah terhubung ke lead lain.",
+      });
+    }
     return this.get(id);
   }
 

@@ -85,6 +85,10 @@ export class CreateLeadDto {
   @IsOptional() @Transform(emptyToUndefined) @IsDateString()
   firstContactAt?: string;
 
+  /** Landing-page ad click code ("K7QM2X") from the chat; links the click to the new lead. */
+  @IsOptional() @Transform(emptyToUndefined) @IsString() @MaxLength(12)
+  adClickRef?: string;
+
   /** Save even when another lead has the same phone number. */
   @IsOptional() @Transform(toBool) @IsBoolean()
   allowDuplicate?: boolean;
@@ -149,6 +153,11 @@ export class DuplicateQueryDto {
 
   @IsOptional() @Transform(emptyToUndefined) @IsString()
   excludeId?: string;
+}
+
+export class LinkAdClickDto {
+  @IsString() @MaxLength(40)
+  code: string;
 }
 
 export class QuickAddParseDto {

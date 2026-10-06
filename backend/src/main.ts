@@ -16,6 +16,11 @@ import {
   registerRawBodyRoutes,
   registerSmallBodyRoutes,
 } from "./config/body-parser.config";
+import {
+  createPublicTrackBody,
+  createPublicTrackCors,
+  PUBLIC_TRACK_PREFIX,
+} from "./modules/ad-tracking/public-track.http";
 
 const logger = new Logger("Bootstrap");
 
@@ -143,6 +148,10 @@ async function bootstrap() {
           "http://127.0.0.1:5173",
         ];
 
+    // Landing-page tracking endpoints (public, third-party origin allowlist of
+    // their own) are handled before, and excluded from, the app-wide CORS.
+    app.use(createPublicTrackCors());
+
     const apiCors = cors({
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
@@ -162,6 +171,7 @@ async function bootstrap() {
     });
     app.use((req: any, res: any, next: any) => {
       if (mcpOpenPaths.includes(req.path)) return next();
+      if (String(req.path).toLowerCase().startsWith(PUBLIC_TRACK_PREFIX)) return next();
       return apiCors(req, res, next);
     });
 
@@ -169,6 +179,8 @@ async function bootstrap() {
     // everything else keeps Nest's default 100kb. Registered after CORS so
     // disallowed origins are rejected before any large body is parsed, and
     // before listen() so it runs ahead of Nest's default JSON parser.
+    // Landing-page click beacon: raw text body, 4 KB cap.
+    app.use(createPublicTrackBody());
     registerLargeJsonBodyRoutes(app, API_GLOBAL_PREFIX);
     // Meta webhook-style callbacks: 16kb cap, 413 above it.
     registerSmallBodyRoutes(app, API_GLOBAL_PREFIX);

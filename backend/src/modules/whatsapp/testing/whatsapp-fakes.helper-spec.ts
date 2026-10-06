@@ -32,7 +32,11 @@ const RELATIONS: Record<
     sentBy: ["user", "sentById", "one"],
     conversation: ["whatsAppConversation", "conversationId", "one"],
   },
-  metaEventOutbox: { lead: ["lead", "leadId", "one"] },
+  metaEventOutbox: {
+    lead: ["lead", "leadId", "one"],
+    adClick: ["adClick", "adClickId", "one"],
+  },
+  adClick: { lead: ["lead", "leadId", "one"] },
   lead: {
     stage: ["leadStage", "stageId", "one"],
     campaign: ["campaign", "campaignId", "one"],
@@ -42,6 +46,7 @@ const RELATIONS: Record<
     quotation: ["quotation", "quotationId", "one"],
     activities: ["leadActivity", "leadId", "many"],
     metaEvents: ["metaEventOutbox", "leadId", "many"],
+    adClick: ["adClick", "leadId", "back-one"],
   },
   leadActivity: {
     actor: ["user", "actorId", "one"],
@@ -56,6 +61,7 @@ const UNIQUE: Record<string, string[]> = {
   whatsAppConversation: ["contactId"],
   whatsAppWebhookEvent: ["payloadHash"],
   metaEventOutbox: ["dedupeKey"],
+  adClick: ["ref", "eventId", "leadId"],
   campaign: ["code"],
 };
 
@@ -94,6 +100,8 @@ const DEFAULTS: Record<string, () => Row> = {
   }),
   whatsAppConnection: () => ({ status: "DISCONNECTED", accessTokenEnc: null }),
   metaEventOutbox: () => ({
+    route: "BUSINESS_MESSAGING",
+    adClickId: null,
     attempts: 0,
     status: "PENDING_CONFIG",
     nextTryAt: null,
@@ -115,6 +123,13 @@ const DEFAULTS: Record<string, () => Row> = {
     campaignId: null,
   }),
   campaign: () => ({ metaAdIds: [] }),
+  adClick: () => ({
+    leadId: null,
+    linkedAt: null,
+    campaignCode: null,
+    pageUrl: null,
+    meta: null,
+  }),
 };
 
 const isDbNull = (v: any) =>
@@ -176,7 +191,15 @@ export class FakePrisma {
     if (typeof cond === "object" && !Array.isArray(cond)) {
       let ok = true;
       if ("equals" in cond)
-        ok = ok && (isDbNull(cond.equals) ? v == null : v === cond.equals);
+        ok =
+          ok &&
+          (isDbNull(cond.equals)
+            ? v == null
+            : cond.mode === "insensitive" &&
+                typeof v === "string" &&
+                typeof cond.equals === "string"
+              ? v.toLowerCase() === cond.equals.toLowerCase()
+              : v === cond.equals);
       if ("in" in cond) ok = ok && cond.in.includes(v);
       if ("not" in cond) {
         ok =

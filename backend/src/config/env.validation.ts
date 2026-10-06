@@ -328,6 +328,36 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   WHATSAPP_APPSECRET_PROOF?: string;
+
+  // Landing-page tracking (website Conversions API). All optional; a missing
+  // or malformed value only keeps the website sender off (never fatal).
+  @IsString()
+  @IsOptional()
+  META_PIXEL_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  META_WEB_CAPI_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  META_WEB_CAPI_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  META_WEB_CAPI_TEST_EVENT_CODE?: string;
+
+  @IsString()
+  @IsOptional()
+  PUBLIC_TRACK_ALLOWED_ORIGINS?: string;
+
+  @IsString()
+  @IsOptional()
+  LANDING_PAGE_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  META_WEB_CAPI_GRAPH_BASE_URL?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

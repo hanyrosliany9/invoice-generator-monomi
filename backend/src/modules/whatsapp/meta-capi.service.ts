@@ -34,7 +34,7 @@ interface OutboxRow {
   eventTime: Date;
   value: Prisma.Decimal | number | null;
   attempts: number;
-  lead: { ctwaClid: string | null };
+  lead: { ctwaClid: string | null } | null;
 }
 
 /**
@@ -92,7 +92,7 @@ export interface CapiRunResult {
 }
 
 /**
- * Drains MetaEventOutbox to POST /{dataset_id}/events.
+ * Drains the BUSINESS_MESSAGING route of MetaEventOutbox to POST /{dataset_id}/events.
  *   PENDING_CONFIG --(META_CAPI_ENABLED + dataset + credentials)--> QUEUED
  *   QUEUED --claim (inFlightAt=now)--> request to Meta -->
  *       SENT                         definitive success
@@ -151,7 +151,7 @@ export class MetaCapiService {
 
       // 1) PENDING_CONFIG -> QUEUED / SKIPPED
       const pending = await this.prisma.metaEventOutbox.findMany({
-        where: { status: "PENDING_CONFIG" },
+        where: { route: "BUSINESS_MESSAGING", status: "PENDING_CONFIG" },
         select: {
           id: true,
           eventTime: true,
@@ -175,6 +175,7 @@ export class MetaCapiService {
       //    request may have reached Meta -> never resend automatically.
       const stale = await this.prisma.metaEventOutbox.findMany({
         where: {
+          route: "BUSINESS_MESSAGING",
           status: "QUEUED",
           inFlightAt: { lt: new Date(now.getTime() - CAPI_IN_FLIGHT_LEASE_MS) },
         },
@@ -194,6 +195,7 @@ export class MetaCapiService {
       for (let guard = 0; guard < 20; guard += 1) {
         const due: OutboxRow[] = await this.prisma.metaEventOutbox.findMany({
           where: {
+            route: "BUSINESS_MESSAGING",
             status: "QUEUED",
             inFlightAt: null,
             OR: [{ nextTryAt: null }, { nextTryAt: { lte: now } }],
@@ -281,7 +283,7 @@ export class MetaCapiService {
     result: CapiRunResult,
   ): Promise<void> {
     const events = rows.map((r) =>
-      buildCapiEvent(r, r.lead.ctwaClid as string, creds.wabaId),
+      buildCapiEvent(r, r.lead?.ctwaClid as string, creds.wabaId),
     );
     const body: Record<string, unknown> = { data: events };
     if (testEventCode) body.test_event_code = testEventCode;
@@ -422,15 +424,16 @@ export class MetaCapiService {
     const [groups, lastSent, lastFailed] = await Promise.all([
       this.prisma.metaEventOutbox.groupBy({
         by: ["status"],
+        where: { route: "BUSINESS_MESSAGING" },
         _count: { _all: true },
       }),
       this.prisma.metaEventOutbox.findFirst({
-        where: { status: "SENT" },
+        where: { route: "BUSINESS_MESSAGING", status: "SENT" },
         orderBy: { sentAt: "desc" },
         select: { sentAt: true, eventName: true },
       }),
       this.prisma.metaEventOutbox.findFirst({
-        where: { status: "FAILED" },
+        where: { route: "BUSINESS_MESSAGING", status: "FAILED" },
         orderBy: { updatedAt: "desc" },
         select: { updatedAt: true, eventName: true, lastError: true },
       }),

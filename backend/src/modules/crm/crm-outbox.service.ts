@@ -13,12 +13,31 @@ export interface OutboxLead {
   campaignCode?: string | null;
 }
 
-type Db = Pick<Prisma.TransactionClient, "metaEventOutbox">;
+type Db = Pick<Prisma.TransactionClient, "metaEventOutbox"> &
+  Partial<Pick<Prisma.TransactionClient, "adClick">>;
+
+export type OutboxRoute = "BUSINESS_MESSAGING" | "WEBSITE";
 
 /**
- * Records Meta Conversions API (Business Messaging) events in an outbox.
- * Phase A never calls Meta: rows stay PENDING_CONFIG until phase B ships the
- * sender. Each lead gets at most ONE row per event name (dedupeKey
+ * Which Conversions API route carries a lead's stage events:
+ *  - a Click-to-WhatsApp id wins (business_messaging) — never both routes;
+ *  - else a linked landing-page click -> website;
+ *  - else business_messaging, where the sender marks the row SKIPPED
+ *    ("no ctwa_clid"); linking a click later re-routes it (AdClickService).
+ */
+export function chooseRoute(
+  lead: Pick<OutboxLead, "ctwaClid">,
+  hasAdClick: boolean,
+): OutboxRoute {
+  if (lead.ctwaClid) return "BUSINESS_MESSAGING";
+  return hasAdClick ? "WEBSITE" : "BUSINESS_MESSAGING";
+}
+
+/**
+ * Records Meta Conversions API events in an outbox (two routes: business
+ * messaging for CTWA leads, website for leads linked to a landing-page ad
+ * click). This service never calls Meta: rows stay PENDING_CONFIG until the
+ * matching sender (MetaCapiService / WebCapiService) is configured. Each lead gets at most ONE row per event name (dedupeKey
  * "<leadId>:<eventName>"), which makes every hook idempotent.
  */
 @Injectable()
@@ -54,6 +73,15 @@ export class CrmOutboxService {
     opts: { value?: number | null; eventTime?: Date } = {},
   ): Promise<boolean> {
     const eventTime = opts.eventTime ?? new Date();
+    const click = lead.ctwaClid
+      ? null
+      : ((await db.adClick?.findUnique({
+          where: { leadId: lead.id },
+          select: { id: true },
+        })) ?? null);
+    const route = chooseRoute(lead, !!click);
+    // The website Lead was already sent when the WhatsApp button was tapped.
+    if (route === "WEBSITE" && eventName === "LeadSubmitted") return false;
     const dedupeKey = `${lead.id}:${eventName}`;
     const value = opts.value ?? null;
     const payload = this.buildPayload(lead, eventName, eventTime, value) as Prisma.InputJsonValue;
@@ -61,6 +89,8 @@ export class CrmOutboxService {
       data: [
         {
           leadId: lead.id,
+          route,
+          adClickId: route === "WEBSITE" ? (click?.id ?? null) : null,
           eventName,
           eventTime,
           value: value === null ? null : new Prisma.Decimal(value),

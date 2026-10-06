@@ -40,6 +40,7 @@ function setup(
     metaEventOutbox: rows.map((r, i) => ({
       id: `ev${i + 1}`,
       leadId: "L1",
+      route: "BUSINESS_MESSAGING",
       eventName: "LeadSubmitted",
       eventTime: new Date(now - 10 * MIN),
       value: null,

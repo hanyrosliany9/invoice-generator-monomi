@@ -888,6 +888,7 @@ model Lead {
   activities LeadActivity[]
   metaEvents MetaEventOutbox[]
   waContacts WhatsAppContact[]
+  adClick    AdClick?
 
   @@index([phone])
   @@index([waId])
@@ -923,10 +924,19 @@ model LeadActivity {
 
 // Conversions API for Business Messaging events. Phase A only records rows
 // (PENDING_CONFIG); phase B sends them.
+// Which Conversions API route an outbox row is sent through.
+enum MetaEventRoute {
+  BUSINESS_MESSAGING // CTWA: action_source business_messaging + ctwa_clid
+  WEBSITE // landing-page click linked to the lead: action_source website (Pixel dataset)
+}
+
 model MetaEventOutbox {
   id        String          @id @default(cuid())
-  leadId    String
-  lead      Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId    String? // null for the click-time website Lead event (no CRM lead yet)
+  lead      Lead?           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  route     MetaEventRoute  @default(BUSINESS_MESSAGING)
+  adClickId String? // website route: the landing-page click this event is attributed to
+  adClick   AdClick?        @relation(fields: [adClickId], references: [id], onDelete: SetNull)
   eventName String // LeadSubmitted | QualifiedLead | Purchase
   eventTime DateTime        @default(now())
   value     Decimal?        @db.Decimal(14, 2)
@@ -945,7 +955,44 @@ model MetaEventOutbox {
 
   @@index([leadId])
   @@index([status])
+  @@index([route, status])
+  @@index([adClickId])
   @@map("meta_event_outbox")
+}
+
+// A tap on a WhatsApp button of the landing page (link.monomiagency.com),
+// recorded by the monomi-track.js snippet. The `ref` is also written into the
+// WhatsApp pre-filled text ("Kode: K7QM2X") so staff can link the chat that
+// arrives on the WhatsApp Business app back to the website ad click.
+// No personal data is stored here; unlinked rows are purged after 30 days.
+model AdClick {
+  id           String    @id @default(cuid())
+  ref          String    @unique
+  eventId      String    @unique // Pixel eventID, reused as the CAPI Lead event_id (dedup)
+  createdAt    DateTime  @default(now())
+  pageUrl      String?
+  referrer     String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmContent   String?
+  utmTerm      String?
+  fbclid       String?
+  fbc          String?
+  fbp          String?
+  clientIp     String?
+  userAgent    String?
+  meta         Json? // optional qualifier answers: brandName, category, looks
+  campaignCode String? // utm_campaign matched to an existing CRM campaign code
+  leadId       String?   @unique
+  lead         Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  linkedAt     DateTime?
+
+  metaEvents MetaEventOutbox[]
+
+  @@index([createdAt])
+  @@index([campaignCode])
+  @@map("ad_clicks")
 }
 
 model CrmSettings {
