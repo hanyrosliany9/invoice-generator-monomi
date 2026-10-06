@@ -60,6 +60,25 @@ describe('failureText (publish failure reasons)', () => {
     expect(failureText(make('id'), 'id', legacy)).toBe('Media ditolak Meta: unsupported aspect ratio');
   });
 
+  it('recovers the detail of legacy permission / limit rows and splits at the middle separator', () => {
+    const perm = {
+      errorCode: 'PERMISSION_DENIED',
+      errorMessage: 'Izin Meta kurang (mis. pages_manage_posts / instagram_content_publish) atau aset belum ditugaskan ke system user. / Missing Meta permission (e.g. pages_manage_posts / instagram_content_publish) or the asset is not assigned to the system user. (Meta: (#200) denied)',
+    };
+    expect(failureText(make('en'), 'en', perm)).toMatch(/^Missing Meta permission .* \(Meta: \(#200\) denied\)$/);
+    const limit = { errorCode: 'PUBLISH_LIMIT_REACHED', errorMessage: 'Batas publikasi Instagram 24 jam tercapai (95/100). Akan dicoba lagi otomatis. / Instagram 24-hour publishing limit reached (95/100). Will retry automatically.' };
+    expect(failureText(make('id'), 'id', limit)).toMatch(/\(95\/100\)$/);
+    // Unknown code: bilingual fallback, split at the separator nearest the middle.
+    const other = { errorCode: 'VALIDATION', errorMessage: 'Media (foto / video) wajib diisi untuk Instagram. / Media (photo / video) is required for Instagram.' };
+    expect(failureText(make('en'), 'en', other)).toBe('Media (photo / video) is required for Instagram.');
+    expect(failureText(make('id'), 'id', other)).toBe('Media (foto / video) wajib diisi untuk Instagram.');
+  });
+
+  it('keeps the old duplicate-post row readable (it used the MEDIA_INVALID code)', () => {
+    const dup = { errorCode: 'MEDIA_INVALID', errorMessage: 'Facebook menolak postingan duplikat. / Facebook rejected a duplicate post.' };
+    expect(failureText(make('en'), 'en', dup)).toBe('Facebook rejected a duplicate post.');
+  });
+
   it('returns null when there is no message', () => {
     expect(failureText(make('en'), 'en', { errorCode: null, errorMessage: null })).toBeNull();
   });

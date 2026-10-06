@@ -22,6 +22,7 @@ import {
   cursorInitScript, flushTimeline, markGo, markReady, patchPlaywright, recShot, registerPage, OUT as VIDEO_OUT, RAW_DIR,
 } from './lib-record.mjs';
 import { seed } from './seed.mjs';
+import { seedCrm, seedPublishing } from './seed-crm.mjs';
 import { cleanup, countRemaining, STATE_FILE } from './cleanup.mjs';
 
 const args = process.argv.slice(2);
@@ -34,6 +35,8 @@ mode.record = RECORD;
 const FLOWS = [
   'report', 'planner', 'client-portal', 'media', 'portal',
   'sales', 'finance', 'production', 'tools', 'shortcuts',
+  // CRM / WhatsApp / auto-publishing: standalone flows (own demo data, see seed-crm.mjs)
+  'crm', 'crm-inbox', 'crm-publish', 'crm-setup',
 ];
 
 // Login is rate-limited (5 per minute), so sign in through the UI once and
@@ -79,7 +82,20 @@ async function main() {
   const browser = await chromium.launch();
   let ids;
   try {
-    ids = reuse ? JSON.parse(fs.readFileSync(process.env.GUIDE_IDS_OUT, 'utf8')) : await seed();
+    const wantedNames = only.length > 0 ? FLOWS.filter((f) => only.includes(f)) : FLOWS.filter((f) => fs.existsSync(new URL(`./flows/${f}.mjs`, import.meta.url)));
+    const mods = await Promise.all(wantedNames.map((f) => import(`./flows/${f}.mjs`)));
+    // Standalone flows (crm*) bring their own demo data and do not need the base seed.
+    const standalone = mods.length > 0 && mods.every((m) => m.standalone === true);
+    if (reuse) ids = JSON.parse(fs.readFileSync(process.env.GUIDE_IDS_OUT, 'utf8'));
+    else if (standalone) {
+      ids = {};
+      if (mods.some((m) => (m.needs ?? []).includes('crm'))) Object.assign(ids, await seedCrm());
+      if (mods.some((m) => (m.needs ?? []).includes('publishing'))) await seedPublishing(ids);
+    } else {
+      ids = await seed();
+      if (mods.some((m) => (m.needs ?? []).includes('crm'))) Object.assign(ids, await seedCrm());
+      if (mods.some((m) => (m.needs ?? []).includes('publishing'))) await seedPublishing(ids);
+    }
     if (process.env.GUIDE_IDS_OUT && !reuse) fs.writeFileSync(process.env.GUIDE_IDS_OUT, JSON.stringify(ids, null, 1));
     const openPages = [];
     const track = (page, { w, h, mobile }) => {

@@ -80,6 +80,134 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1280,
     "h": 820
   },
+  "crm-leads-whatsapp/biaya-iklan": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/daftar": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/dasbor": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/hasil": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/kampanye": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/konversi": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/papan": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/pesan-iklan": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/pindah-tahap": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/tambah-lead": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/tindak-lanjut": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/balas": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/balasan-cepat": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/buka-inbox": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/dari-hp": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/di-hp": {
+    "w": 780,
+    "h": 1688
+  },
+  "crm-whatsapp-inbox/filter": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/jendela-24-jam": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/lead-otomatis": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/pengaturan": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/tab-lead": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/template": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-inbox/tetapkan": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/aturan-keselamatan": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/belum-lengkap": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/capi": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/hubungkan": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/kartu-status": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/lokasi-token": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/mati": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/tidak-valid": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/webhook": {
+    "w": 1440,
+    "h": 900
+  },
   "dashboard-navigasi/bahasa": {
     "w": 1280,
     "h": 820
@@ -623,6 +751,34 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
   "proyek-baru/status": {
     "w": 1280,
     "h": 820
+  },
+  "publikasi-otomatis/gagal": {
+    "w": 1440,
+    "h": 1100
+  },
+  "publikasi-otomatis/koneksi": {
+    "w": 1440,
+    "h": 1100
+  },
+  "publikasi-otomatis/nyalakan": {
+    "w": 1440,
+    "h": 1100
+  },
+  "publikasi-otomatis/status": {
+    "w": 1440,
+    "h": 1100
+  },
+  "publikasi-otomatis/syarat": {
+    "w": 1440,
+    "h": 1100
+  },
+  "publikasi-otomatis/terbit": {
+    "w": 1440,
+    "h": 1100
+  },
+  "publikasi-otomatis/terbitkan-sekarang": {
+    "w": 1440,
+    "h": 1100
   },
   "quotation/daftar": {
     "w": 1280,

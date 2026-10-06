@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Inbox, Megaphone, MessageCircle, Search, Settings } from 'lucide-react';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
@@ -99,9 +100,12 @@ export default function InboxPage() {
           <h1 className="font-display text-3xl font-normal leading-tight tracking-[-0.012em] sm:text-4xl">{t('crm.wa.title', 'WhatsApp inbox')}</h1>
           <p className="mt-1 text-sm text-text-secondary">{t('crm.wa.subtitle', 'Chats from the business number — replies from the phone app appear here too.')}</p>
         </div>
-        <Link to="/crm/settings#whatsapp" className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary">
-          <Settings className="h-4 w-4" /> {t('crm.wa.settingsLink', 'WhatsApp settings')}
-        </Link>
+        <div className="flex items-center gap-3">
+          <GuideHelpLink slug="crm-whatsapp-inbox" anchor="buka-inbox" />
+          <Link to="/crm/settings#whatsapp" className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary">
+            <Settings className="h-4 w-4" /> {t('crm.wa.settingsLink', 'WhatsApp settings')}
+          </Link>
+        </div>
       </div>
 
       {notConfigured && (

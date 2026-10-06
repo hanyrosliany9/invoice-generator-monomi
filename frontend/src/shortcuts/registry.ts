@@ -32,7 +32,8 @@ export type ShortcutArea =
   | 'comments'
   | 'deckViewer'
   | 'reportGrid'
-  | 'schedule';
+  | 'schedule'
+  | 'crm';
 
 /** One physical key press: modifiers first, then the key. */
 export type KeyCombo = string[];
@@ -95,6 +96,10 @@ export const AREAS: AreaDef[] = [
     id: 'reportGrid', labelKey: 'shortcuts.areas.reportGrid', audiences: ['staff'],
     routes: { staff: ['/reports/builder', '/reports/:id/edit'] },
   },
+  {
+    id: 'crm', labelKey: 'shortcuts.areas.crm', audiences: ['staff'],
+    routes: { staff: ['/crm/inbox', '/crm/inbox/:id', '/crm/leads', '/crm/leads/:id'] },
+  },
   { id: 'schedule', labelKey: 'shortcuts.areas.schedule', audiences: ['staff'], routes: { staff: ['/schedules/:id'] } },
   { id: 'global', labelKey: 'shortcuts.areas.global', audiences: ['staff', 'portal'], routes: {} },
 ];
@@ -134,6 +139,9 @@ export const SHORTCUTS: Shortcut[] = [
   make('paletteClose', 'global', 'Esc', { note: true, audiences: STAFF }),
   make('crmQuickAdd', 'global', 'Mod Shift L', { audiences: STAFF }),
   make('crmQuickAddSave', 'global', 'Mod Enter', { note: true, audiences: STAFF }),
+
+  // CRM (WhatsApp inbox / lead chat)
+  make('crmWaSend', 'crm', 'Mod Enter', { note: true }),
 
   // Deck editor
   make('deckSave', 'deckEditor', 'Mod S', { group: 'general' }),

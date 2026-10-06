@@ -5,6 +5,7 @@ import { Check, Copy, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { EmptyState } from '@/components/monomi/EmptyState';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -100,7 +101,12 @@ export default function CampaignsPage() {
       <PageHeader
         title={t('crm.campaigns.title', 'Campaigns')}
         description={t('crm.campaigns.subtitle', "Every ad gets a unique code. Put it in the WhatsApp ad's pre-filled message so every lead knows where it came from.")}
-        actions={<Button type="button" className="gap-2" onClick={() => setEditing('new')}><Plus /> {t('crm.campaigns.new', 'New campaign')}</Button>}
+        actions={(
+          <>
+            <GuideHelpLink slug="crm-leads-whatsapp" anchor="kampanye" />
+            <Button type="button" className="gap-2" onClick={() => setEditing('new')}><Plus /> {t('crm.campaigns.new', 'New campaign')}</Button>
+          </>
+        )}
       />
 
       {campaignsQ.isLoading ? (

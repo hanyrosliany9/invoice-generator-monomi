@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/monomi/PageHeader';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,6 +133,7 @@ export default function CrmSettingsPage() {
         title={t('crm.settings.title', 'CRM settings')}
         description={t('crm.settings.subtitle', 'Response-time target and pipeline stages.')}
         breadcrumbs={[{ label: t('crm.leads.title', 'Leads'), href: '/crm/leads' }, { label: t('crm.settings.title', 'CRM settings') }]}
+        actions={<GuideHelpLink slug="crm-whatsapp-setup" />}
       />
       <div className="space-y-5">
         <GlassPanel padding="none" className="p-5">

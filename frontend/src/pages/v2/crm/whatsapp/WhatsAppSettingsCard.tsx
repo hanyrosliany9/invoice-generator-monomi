@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Copy, Eye, Plus, RefreshCw, ShieldAlert, Trash2 } from 'lucide-react';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -270,7 +271,10 @@ export function WhatsAppSettingsCard() {
           <h2 className="text-sm font-semibold">{t('crm.wa.settings.title', 'WhatsApp Business (inbox + Meta events)')}</h2>
           <p className="text-sm text-text-secondary">{t('crm.wa.settings.subtitle', 'Coexistence: the team keeps using the WhatsApp Business app; Monomi mirrors the chats and can reply.')}</p>
         </div>
-        <Button type="button" variant="outline" size="sm" className="gap-2" disabled={refreshing} onClick={refresh}><RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />{t('crm.wa.settings.check', 'Check connection')}</Button>
+        <div className="flex items-center gap-2">
+          <GuideHelpLink slug="crm-whatsapp-setup" anchor="kartu-status" />
+          <Button type="button" variant="outline" size="sm" className="gap-2" disabled={refreshing} onClick={refresh}><RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />{t('crm.wa.settings.check', 'Check connection')}</Button>
+        </div>
       </div>
 
       <div role="note" className="flex gap-3 rounded-lg border border-danger/50 bg-danger/10 p-3 text-sm">

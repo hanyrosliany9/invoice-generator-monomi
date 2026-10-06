@@ -8800,7 +8800,7 @@
           },
           "terbitkan": {
             "title": "Tandai sudah terbit",
-            "body": "Tentukan tanggal (1) dan jam tayang yang sebenarnya, lalu klik Tandai terbit (2). Aplikasi tidak memposting otomatis ke Instagram atau TikTok.",
+            "body": "Tentukan tanggal (1) dan jam tayang yang sebenarnya, lalu klik Tandai terbit (2). Untuk kebanyakan konten, aplikasi tidak memposting sendiri ke Instagram atau TikTok; konten Instagram dan Facebook milik Monomi bisa terbit otomatis, lihat panduan publikasi otomatis.",
             "tip": "Konten berlabel Terlambat berarti jadwalnya sudah lewat; tandai terbit atau jadwalkan ulang."
           },
           "seret": {
@@ -9676,6 +9676,11 @@
             "title": "Cetak lembar pintasan",
             "body": "Pakai tombol Cetak lembar pintasan di bagian atas panduan ini untuk mencetak semua pintasan dalam satu halaman, dua kolom. Taruh di dekat meja sampai tombol-tombolnya terbiasa.",
             "tip": "Di Mac, hasil cetak otomatis memakai ⌘, ⌥ dan ⇧."
+          },
+          "crm": {
+            "title": "CRM: lead dan WhatsApp",
+            "body": "Ctrl+Shift+L (Cmd+Shift+L di Mac) membuka Tambah lead dari halaman mana pun: tempel pesan WhatsApp lalu tekan Ctrl+Enter untuk menyimpan. Di kolom balasan chat WhatsApp, di inbox maupun di lead, Ctrl+Enter mengirim pesan. Tekan ? di halaman CRM untuk melihatnya lebih dulu.",
+            "tip": "Tabel di bawah mencantumkan tombol yang berlaku di inbox WhatsApp dan halaman lead."
           }
         }
       },
@@ -9709,36 +9714,58 @@
         "steps": {
           "kampanye": {
             "title": "Buat kampanye untuk setiap iklan",
-            "body": "Buka Marketing > CRM > Kampanye lalu klik Kampanye baru. Beri nama dan kode unik, misalnya FB-OKT1. Isi anggaran dan tanggal jika sudah ada.",
+            "body": "Buka Marketing > CRM > Kampanye lalu klik Kampanye baru (1). Beri nama dan kode unik, misalnya FB-OKT1. Isi anggaran dan tanggal jika sudah ada. Setiap baris tabel (2) menampilkan lead, klien yang menang, biaya iklan, dan biaya per klien.",
             "tip": "Pakai satu kode per iklan supaya dasbor bisa membandingkan iklan dengan adil."
           },
           "pesan-iklan": {
-            "title": "Taruh kode di pesan otomatis iklan",
-            "body": "Pilih kampanye lalu klik Salin pesan. Di Meta Ads Manager tempel ke kolom Pesan otomatis pada iklan. Kode di akhir pesan menghubungkan setiap chat baru ke kampanye ini.",
-            "tip": "Catat biaya iklan lewat Catat biaya agar biaya per lead dan per klien akurat."
+            "title": "Salin pesan iklan beserta kode kampanye",
+            "body": "Pilih kampanye. Kotak (1) menampilkan pesan otomatis dengan kode di akhir, misalnya [FB-OKT1]. Klik Salin pesan (2), lalu di Meta Ads Manager tempel ke kolom Pesan otomatis pada iklan. Kode itu menghubungkan setiap chat baru ke kampanye ini.",
+            "tip": "Jangan hapus kode dari pesan. Chat tanpa kode hanya tercocokkan jika ID iklan sudah diisi di kampanye."
           },
           "tambah-lead": {
             "title": "Tambah lead dalam hitungan detik",
-            "body": "Saat ada yang chat, klik Lead baru (atau tekan Ctrl+Shift+L, Cmd+Shift+L di Mac). Tempel pesan pertamanya: nama, nomor, dan kode kampanye terisi sendiri. Tekan Ctrl+Enter untuk menyimpan.",
-            "tip": "Jika nomor sudah ada, muncul peringatan dengan tautan ke lead yang sudah ada."
+            "body": "Saat ada yang chat, klik Lead baru, atau tekan Ctrl+Shift+L (Cmd+Shift+L di Mac) di halaman mana pun. Tempel pesan pertamanya (1): nama, nomor, dan kode kampanye terdeteksi sendiri (2). Tekan Ctrl+Enter, atau klik Simpan lead (3).",
+            "tip": "Jika nomor sudah ada, muncul peringatan dengan tautan ke lead yang sudah ada. Simpan & tambah lagi membiarkan jendela tetap terbuka untuk lead berikutnya."
           },
           "papan": {
             "title": "Kerjakan lewat papan",
-            "body": "Lead berada di kolom: Baru, Dikualifikasi, Meeting, Penawaran, Menang, Kalah. Seret kartu ke kolom lain atau pakai menu Pindah ke di kartu. Kartu oranye belum dibalas dalam target waktu respons.",
-            "tip": "Klik Chat di WhatsApp pada lead untuk membuka percakapan; waktu balasan pertama tercatat."
+            "body": "Lead berada di kolom: Baru, Dikualifikasi, Meeting, Penawaran, Menang, Kalah. Seret kartu ke kolom lain. Kartu oranye belum dibalas dalam target waktu respons, dan tombol (3) menyaringnya. Angka oranye di samping Lead pada menu menghitung lead belum dibalas dan tindak lanjut yang jatuh tempo hari ini.",
+            "tip": "Di HP tekan dan tahan kartu untuk menyeretnya, atau pakai tombol pindah di kartu."
           },
           "tindak-lanjut": {
             "title": "Jadwalkan tindak lanjut",
-            "body": "Buka lead, pakai Tambah aktivitas untuk catatan, telepon, dan meeting, lalu Jadwalkan tindak lanjut agar tidak ada yang terlupa. Angka oranye di samping CRM pada menu menghitung lead belum dibalas dan tindak lanjut yang jatuh tempo hari ini."
+            "body": "Buka lead. Jadwalkan tindak lanjut (1) memasang pengingat beserta catatan pada lead; tandai selesai atau jadwalkan ulang saat waktunya tiba. Di Tambah aktivitas (2) tulis catatan dan catat telepon, pesan WhatsApp, dan meeting: semuanya masuk ke Riwayat.",
+            "tip": "Tindak lanjut yang terlambat membuat kartu di papan berwarna oranye."
           },
           "konversi": {
             "title": "Konversi menjadi klien dan penawaran",
-            "body": "Saat lead siap, klik Konversi ke Klien & Buat Penawaran. Klien dibuat (atau dicocokkan lewat nomor) bersama proyek dan draf penawaran berisi estimasi nilai. Selesaikan penawaran di menu Penawaran.",
-            "tip": "Saat penawaran disetujui atau invoice dibayar, lead pindah ke Menang dengan sendirinya."
+            "body": "Saat lead siap, klik Konversi ke Klien & Buat Penawaran. Biarkan Buat draf penawaran tercentang (1), periksa nilainya (2), lalu konfirmasi (3). Klien dibuat (atau dicocokkan lewat nomor WhatsApp) bersama proyek dan draf penawaran berisi estimasi nilai.",
+            "tip": "Hilangkan centang penawaran jika hanya butuh klien dan proyek."
           },
           "dasbor": {
             "title": "Baca dasbor",
-            "body": "Buka Dasbor CRM untuk melihat corong penjualan, kecepatan respons, serta lead, klien, pendapatan, biaya per lead, dan biaya per klien tiap kampanye. Pilih periode di bagian atas."
+            "body": "Buka Dasbor CRM: lead baru, klien menang, pendapatan, dan biaya per klien (1), corong penjualan, kecepatan respons, serta tabel per kampanye (2) berisi lead, pendapatan, biaya per lead, dan biaya per klien. Pilih periode dan kampanye di bagian atas.",
+            "tip": "Kecepatan respons dibandingkan dengan target yang Anda atur di pengaturan CRM."
+          },
+          "biaya-iklan": {
+            "title": "Catat biaya iklan",
+            "body": "Klik Catat biaya pada kampanye. Pilih tanggal, atau hari pertama dan terakhir rentang, dari kalender (1), isi jumlah dalam rupiah (2), lalu klik Simpan (3). Biaya per lead dan biaya per klien di dasbor dihitung dari catatan ini.",
+            "tip": "Catat satu minggu sekaligus dengan rentang tanggal. Catatan yang salah bisa dihapus dengan ikon tempat sampah di sampingnya."
+          },
+          "daftar": {
+            "title": "Tampilan daftar dan aksi massal",
+            "body": "Pindah ke Daftar (1) untuk tabel berisi tahap, kampanye, penanggung jawab, tindak lanjut, dan estimasi. Centang beberapa lead dan bilah aksi massal (2) muncul: tugaskan ke rekan atau pindahkan ke tahap tertentu sekaligus. Filter di atas menyaring daftar berdasarkan kampanye, penanggung jawab, belum dibalas, dan tindak lanjut hari ini.",
+            "tip": "Kolom pencarian bisa mencari nama, nomor, atau kode kampanye."
+          },
+          "pindah-tahap": {
+            "title": "Pindahkan lead ke tahap lain",
+            "body": "Klik Pindah tahap (1) lalu pilih tahap baru (2). Dikualifikasi dan Menang dilaporkan ke Meta secara otomatis, Kalah meminta alasan singkat. Setiap perpindahan tercatat di Riwayat beserta siapa dan kapan.",
+            "tip": "Saat penawaran disetujui atau invoice dibayar, lead pindah ke Menang dengan sendirinya."
+          },
+          "hasil": {
+            "title": "Apa yang dibuat oleh konversi",
+            "body": "Jendela ini berisi tautan ke Klien, Proyek, dan Draf penawaran yang baru. Lead pindah ke Penawaran dan tautan yang sama muncul di Info lead. Selesaikan dan kirim penawaran di menu Quotation.",
+            "tip": "Riwayat mencatat konversi dan penawarannya, dalam bahasa Anda."
           }
         }
       },
@@ -9748,41 +9775,152 @@
         "steps": {
           "buka-inbox": {
             "title": "Buka inbox",
-            "body": "Buka Marketing > CRM > Inbox. Angka hijau menunjukkan jumlah chat yang punya pesan belum dibaca. Pakai tab Semua, Belum dibaca, Milik saya, dan Belum ditugaskan, atau cari nama atau nomor.",
+            "body": "Buka Marketing > CRM > Inbox. Daftar menampilkan setiap chat dengan tahap, kode kampanye, dan angka hijau untuk pesan belum dibaca (2). Pakai tab (1) Semua, Belum dibaca, Milik saya, dan Belum ditugaskan, filter Jendela balas (3), atau cari nama atau nomor.",
             "tip": "Daftar diperbarui sendiri setiap beberapa detik."
           },
           "lead-otomatis": {
-            "title": "Chat baru menjadi lead",
-            "body": "Saat nomor yang belum dikenal menulis pertama kali, Monomi membuat lead di kolom Baru. Jika chat berawal dari iklan Click-to-WhatsApp, lead mendapat sumber WhatsApp · Iklan, kampanyenya (dari kode di pesan atau ID iklan) dan banner iklan di atas chat.",
+            "title": "Chat baru menjadi lead, lengkap dengan iklan asalnya",
+            "body": "Saat nomor yang belum dikenal menulis pertama kali, Monomi membuat lead di kolom Baru. Jika chat berawal dari iklan Click-to-WhatsApp, banner (1) di atas chat menampilkan gambar, judul, dan teks iklannya, dan lead mendapat sumber WhatsApp · Iklan beserta kampanyenya. Chip (2) membuka lead.",
             "tip": "Isi ID iklan di kampanye agar iklan tanpa kode tetap tercocokkan."
           },
           "balas": {
             "title": "Balas dari Monomi",
-            "body": "Buka chat, ketik di kolom bawah lalu tekan Kirim (atau Ctrl+Enter). Nama Anda tampil di atas gelembung sebagai Monomi · nama. Satu centang = terkirim, dua centang = sampai, centang biru = dibaca.",
-            "tip": "Tombol petir menyisipkan balasan cepat."
+            "body": "Buka chat, ketik di kolom (1) lalu tekan Ctrl+Enter (Cmd+Enter di Mac) atau tombol kirim (2). Nama Anda tampil di atas gelembung (3) sebagai Monomi · nama. Satu centang = terkirim, dua centang = sampai, centang biru = dibaca.",
+            "tip": "Tekan Ctrl+Enter, bukan Enter saja: Enter membuat baris baru."
           },
           "jendela-24-jam": {
             "title": "Jendela 24 jam",
-            "body": "Anda bebas menulis selama 24 jam setelah pesan terakhir pelanggan (garis hijau di atas kolom). Setelah itu WhatsApp hanya mengizinkan template yang disetujui: tekan Kirim template, pilih, lalu isi nilainya.",
+            "body": "Anda bebas menulis selama 24 jam setelah pesan terakhir pelanggan (garis hijau di atas kolom). Saat jendela tertutup (1), WhatsApp hanya mengizinkan template yang disetujui: klik Kirim template (2).",
             "tip": "Chat dari iklan juga menampilkan jendela gratis (72 jam)."
           },
           "dari-hp": {
             "title": "Balasan dari HP tetap tercatat",
-            "body": "Tim tetap bisa menjawab lewat aplikasi WhatsApp Business di HP. Balasan itu tampil di Monomi dengan label Dikirim dari aplikasi HP dan dihitung sebagai respons pertama lead.",
+            "body": "Tim tetap bisa menjawab lewat aplikasi WhatsApp Business di HP. Balasan itu tampil di Monomi dengan label Dikirim dari aplikasi HP (1) dan dihitung sebagai respons pertama lead.",
             "tip": "Jangan pernah mendaftarkan atau memverifikasi ulang nomor di Meta: aplikasi di HP akan keluar."
           },
           "tetapkan": {
             "title": "Tugaskan, hubungkan, arsipkan",
-            "body": "Pakai menu di kepala chat untuk menugaskan chat ke rekan, tombol tautan untuk menghubungkannya ke lead lain, dan tombol arsip untuk menyembunyikan chat yang selesai. Pesan baru memindahkan chat yang diarsipkan kembali ke inbox."
+            "body": "Pakai menu di kepala chat (1) untuk menugaskan chat ke rekan, tombol tautan (2) untuk menghubungkannya ke lead lain, dan tombol arsip (3) untuk menyembunyikan chat yang selesai. Pesan baru memindahkan chat yang diarsipkan kembali ke inbox.",
+            "tip": "Chat yang ditugaskan menampilkan nama rekan di daftar."
           },
           "tab-lead": {
             "title": "Lihat chat di halaman lead",
-            "body": "Di halaman lead, buka tab WhatsApp untuk membaca dan menjawab percakapan yang sama tanpa meninggalkan lead."
+            "body": "Di halaman lead, buka tab WhatsApp (1) untuk membaca dan menjawab percakapan yang sama tanpa meninggalkan lead. Balasan, centang, dan jendela 24 jam bekerja persis seperti di inbox."
           },
           "pengaturan": {
-            "title": "Pengaturan dan balasan cepat",
-            "body": "CRM > Pengaturan menampilkan apakah WhatsApp terhubung, nomor beserta platform type-nya, detail webhook untuk Meta, dan status event yang dikirim ke Meta. Tambahkan balasan cepat di sana.",
-            "tip": "Hanya admin yang bisa melihat inbox dan pengaturannya."
+            "title": "Balasan cepat dan pengaturan",
+            "body": "CRM > Pengaturan berisi editor balasan cepat. Klik Tambah balasan cepat (1), beri judul dan teks (2), lalu tekan Simpan. Halaman yang sama menunjukkan apakah WhatsApp sudah terhubung.",
+            "tip": "Hanya admin yang bisa melihat inbox dan pengaturannya. Cara menyiapkan koneksi ada di panduan Koneksi WhatsApp (admin)."
+          },
+          "filter": {
+            "title": "Saring chat yang belum dibaca",
+            "body": "Klik Belum dibaca (1) untuk melihat hanya chat yang menunggu jawaban. Angka hijau di menu (2) adalah jumlah chat belum dibaca, jadi dari halaman mana pun Anda tahu ada yang menunggu.",
+            "tip": "Milik saya menampilkan chat yang ditugaskan ke Anda; Belum ditugaskan menampilkan chat yang belum ada yang menangani."
+          },
+          "balasan-cepat": {
+            "title": "Pakai balasan cepat",
+            "body": "Tombol petir (1) membuka balasan cepat Anda (2). Klik salah satu untuk memasukkan teksnya ke kolom, ubah bila perlu, lalu kirim. Jika Anda sudah mengetik sesuatu, balasan ditambahkan di bawahnya.",
+            "tip": "Balasan cepat diatur di CRM > Pengaturan."
+          },
+          "template": {
+            "title": "Kirim template",
+            "body": "Pilih template yang disetujui (1), lalu isi variabelnya, Variabel 1 dan Variabel 2 (2). Pratinjau (3) menampilkan pesan dengan isian Anda. Klik Kirim.",
+            "tip": "Template dibuat dan disetujui di WhatsApp Manager milik Meta, bukan di Monomi."
+          },
+          "di-hp": {
+            "title": "Di HP",
+            "body": "Di HP, inbox menampilkan daftar selebar layar (1), dengan angka belum dibaca, tahap, dan kampanye di setiap baris (2). Ketuk chat untuk membukanya dan panah di atas untuk kembali ke daftar.",
+            "tip": "Pasang Monomi di layar utama HP agar inbox terbuka dalam satu ketukan."
+          }
+        }
+      },
+      "publikasi-otomatis": {
+        "title": "Publikasi otomatis ke Instagram dan Facebook",
+        "purpose": "Biarkan Monomi memposting konten milik sendiri ke akun Instagram dan Halaman Facebook pada tanggal dan jam yang direncanakan, lihat hasilnya per platform, dan coba lagi jika gagal.",
+        "steps": {
+          "nyalakan": {
+            "title": "Nyalakan Terbitkan otomatis",
+            "body": "Buka Marketing > Kalender Konten > Monomi. Saat menambah atau mengubah konten, nyalakan Terbitkan otomatis (1) lalu centang Instagram dan/atau Halaman Facebook (2). Atur tanggal dan jam dalam WIB: konten tayang pada saat itu.",
+            "tip": "Hanya admin yang bisa menyalakannya, dan hanya untuk konten milik Monomi. TikTok tetap manual."
+          },
+          "syarat": {
+            "title": "Syarat media",
+            "body": "Petunjuk di kotak (1) menunjukkan apa yang masih kurang: foto atau video untuk Instagram, serta tanggal dan jam. Foto Instagram harus JPEG, maksimal 8 MB, dengan rasio antara 4:5 dan 1,91:1; reel dan story berupa video vertikal 9:16. Carousel maksimal 10 media dan caption maksimal 2.200 karakter. Postingan foto Facebook tidak boleh berisi video.",
+            "tip": "Tambahkan media (2) lebih dulu; petunjuk hilang saat semuanya sudah sesuai."
+          },
+          "status": {
+            "title": "Pantau status per platform",
+            "body": "Di tampilan Daftar setiap platform punya chip sendiri. Biru Terjadwal berarti menunggu waktunya, hijau Terbit (1) berarti sudah tayang, dan merah Gagal (3) perlu ditangani. Saat Meta memproses video Anda melihat Memproses, dan gangguan sementara menampilkan Akan dicoba lagi: Monomi mencoba lagi sendiri.",
+            "tip": "Klik chip hijau untuk membuka postingan aslinya."
+          },
+          "terbit": {
+            "title": "Konten yang sudah terbit dan tautannya",
+            "body": "Buka konten yang sudah terbit. Panel Publikasi otomatis (1) menunjukkan kapan tiap platform tayang, dan Lihat postingan (2) membuka postingan aslinya di Instagram atau Facebook."
+          },
+          "gagal": {
+            "title": "Jika gagal: alasan dan Coba lagi",
+            "body": "Platform yang gagal menampilkan alasannya dengan bahasa yang jelas (1), misalnya Meta menolak rasio gambar. Perbaiki media atau caption lewat Edit, lalu tekan Coba lagi (2).",
+            "tip": "Jika pesannya menyebut koneksi ke Meta terputus, periksa dulu akun atau Halamannya. Tekan Coba lagi hanya jika postingan belum ada, kalau tidak postingan terbit dua kali."
+          },
+          "terbitkan-sekarang": {
+            "title": "Terbitkan sekarang",
+            "body": "Untuk konten terjadwal, panel (1) menawarkan Terbitkan sekarang (2): konten langsung terbit tanpa menunggu waktu yang direncanakan. Konten yang terbit otomatis tidak lagi menampilkan tombol Terbitkan manual terpisah, jadi pakai Terbitkan sekarang atau Coba lagi.",
+            "tip": "Untuk konten yang tidak diatur terbit otomatis, Terbitkan tetap hanya menandainya sebagai terbit."
+          },
+          "koneksi": {
+            "title": "Periksa koneksi",
+            "body": "Kartu di bagian atas (1) menunjukkan apakah koneksi Meta siap. Klik Periksa koneksi (2) untuk melihat system user, Halaman Facebook, akun Instagram, dan kuota publikasi 24 jam.",
+            "tip": "Jika kartu menyebut belum terhubung, minta developer/admin menghubungkan akun Meta. Jangan kirim token lewat chat."
+          }
+        }
+      },
+      "crm-whatsapp-setup": {
+        "title": "Koneksi WhatsApp (admin)",
+        "purpose": "Untuk admin: arti kartu pengaturan WhatsApp, ke mana token dan ID dimasukkan, webhook, dan Conversions API. Baca langkah pertama sebelum yang lain: jangan pernah mendaftarkan, memigrasikan, atau memverifikasi lewat kode SMS atau PIN nomor WhatsApp yang dipakai di kampanye iklan.",
+        "steps": {
+          "aturan-keselamatan": {
+            "title": "Aturan keselamatan: jangan daftarkan nomornya",
+            "body": "Jangan pernah mendaftarkan, memigrasikan, atau memverifikasi lewat kode SMS atau PIN nomor WhatsApp yang dipakai untuk iklan Anda. Coexistence menjaga aplikasi WhatsApp Business di HP tetap berfungsi, dan nomor hanya dihubungkan lewat Hubungkan WhatsApp (Embedded Signup). Mendaftarkan atau memigrasikannya (1) mengeluarkan aplikasi di HP dan menghentikan iklan Click-to-WhatsApp. Monomi sendiri menolak panggilan itu.",
+            "tip": "Jangan pernah menempelkan token, app secret, atau verify token ke chat, e-mail, atau tangkapan layar. Serahkan langsung ke developer/admin."
+          },
+          "lokasi-token": {
+            "title": "Ke mana token dan ID dimasukkan",
+            "body": "Staf tidak mengetiknya di Monomi. Token akses WhatsApp serta ID WhatsApp Business Account dan nomor telepon diatur di server, pada pengaturan backend di VPS. Minta developer/admin untuk mengaturnya. Setelah server restart, klik Periksa koneksi: blok Koneksi (1) menampilkan akunnya dan daftar nomor (2) menampilkan nomor yang dipakai Monomi, ditandai bintang.",
+            "tip": "Pemeriksaan hanya membaca: Monomi tidak pernah mengubah nomor."
+          },
+          "kartu-status": {
+            "title": "Membaca status: Siap",
+            "body": "Konfigurasi server (1) menampilkan satu dari empat status: Belum dikonfigurasi (Off), Belum lengkap, Tidak valid, dan Siap. Siap berarti semua pengaturan ada dan valid, dan token berfungsi: inbox, balasan, dan event ke Meta aktif. Klik Periksa koneksi (2) setelah ada perubahan.",
+            "tip": "Status selain Siap hanya mematikan WhatsApp, tidak yang lain: bagian lain aplikasi tetap berjalan."
+          },
+          "mati": {
+            "title": "Belum dikonfigurasi (Off)",
+            "body": "Belum ada yang diatur di server (1). WhatsApp nonaktif dan inbox menyebut belum terhubung. Ini keadaan normal sebelum penyiapan."
+          },
+          "belum-lengkap": {
+            "title": "Belum lengkap",
+            "body": "Ada pengaturan yang belum ada (1), misalnya verify token atau ID akun dan nomor. WhatsApp tetap nonaktif, dan pesan (2) menjelaskannya dengan bahasa yang jelas. Admin bisa membuka Detail teknis untuk melihat pengaturan mana yang kurang.",
+            "tip": "Minta developer/admin melengkapinya lalu restart backend."
+          },
+          "tidak-valid": {
+            "title": "Tidak valid",
+            "body": "Ada pengaturan yang terisi tetapi salah (1), misalnya ID yang bukan angka. WhatsApp tetap nonaktif sampai diperbaiki. Detail teknis (2) menunjukkan pengaturan yang harus dibetulkan.",
+            "tip": "Token itu sendiri tidak pernah ditampilkan, bahkan untuk admin."
+          },
+          "webhook": {
+            "title": "URL webhook dan verify token",
+            "body": "Di aplikasi Meta (WhatsApp > Configuration) developer mengisi Callback URL dan Verify token (1), lalu berlangganan field yang tercantum di sana. Klik Tampilkan & salin (2) untuk menampilkan dan menyalin token. Cek tanda tangan menjadi OK setelah app secret diatur, dan Belum aktif sebelum itu.",
+            "tip": "Event terakhir diterima menunjukkan apakah Meta benar-benar mengirim chat ke Monomi."
+          },
+          "capi": {
+            "title": "Conversions API (event ke Meta)",
+            "body": "Pengiriman tetap Nonaktif sampai developer menyalakannya dan dataset diatur. Saat Siap, perpindahan tahap (Dikualifikasi, Menang) dan invoice lunas dikirim ke Meta sebagai event agar iklan Anda belajar chat mana yang menjadi klien. Baris Event (1) menghitung event menunggu, antre, terkirim, gagal, dan dilewati; Kirim event yang antre sekarang (2) menjalankan pengirim saat itu juga.",
+            "tip": "Buat / ambil ID dataset menampilkan ID yang diberikan ke developer."
+          },
+          "hubungkan": {
+            "title": "Hubungkan nomor (Embedded Signup)",
+            "body": "Nomor hanya dihubungkan dengan Hubungkan WhatsApp (1): di jendela Meta pilih Hubungkan aplikasi WhatsApp Business yang sudah ada (coexistence) lalu konfirmasi di HP. Sampai Meta menyetujui Monomi sebagai Tech Provider dan developer menyalakannya, kartu menyebut belum tersedia.",
+            "tip": "Detail teknis (admin) berisi pengaturan server di baliknya."
           }
         }
       }
@@ -9879,7 +10017,8 @@
       "comments": "Komentar",
       "deckViewer": "Penampil deck",
       "reportGrid": "Tabel data laporan",
-      "schedule": "Jadwal syuting"
+      "schedule": "Jadwal syuting",
+      "crm": "CRM (lead dan WhatsApp)"
     },
     "groups": {
       "general": "Umum",
@@ -9967,7 +10106,8 @@
       "gridPrev": "Pindah ke sel di atasnya",
       "scheduleAdd": "Tambahkan adegan dari baris tambah cepat",
       "crmQuickAdd": "Tambah lead (tempel pesan WhatsApp)",
-      "crmQuickAddSave": "Simpan lead"
+      "crmQuickAddSave": "Simpan lead",
+      "crmWaSend": "Kirim balasan WhatsApp"
     },
     "note": {
       "helpOpen": "Tidak berlaku saat mengetik di kolom isian",
@@ -9993,7 +10133,8 @@
       "videoFrameFwd": "1/30 detik",
       "gridNext": "Enter di baris terakhir menambah baris baru",
       "scheduleAdd": "Di baris tambah cepat",
-      "crmQuickAddSave": "Di jendela Tambah lead"
+      "crmQuickAddSave": "Di jendela Tambah lead",
+      "crmWaSend": "Di kolom balasan chat WhatsApp"
     }
   },
   "instagram": {
@@ -10665,7 +10806,7 @@
     "nextAttempt": "Percobaan berikutnya: {{when}}",
     "noLink": "Tautan tidak tersedia",
     "noTargets": "Belum diatur. Aktifkan \"Terbitkan otomatis\" saat mengedit konten untuk menerbitkan ke Instagram / Facebook.",
-    "notConfigured": "Belum dikonfigurasi. Admin server perlu mengisi META_SYSTEM_USER_TOKEN, META_PAGE_ID dan META_IG_USER_ID (token system user Meta).",
+    "notConfigured": "Belum terhubung. Minta developer/admin menghubungkan akun Meta (Instagram dan Halaman Facebook).",
     "notConfiguredShort": "Koneksi Meta belum dikonfigurasi — publikasi otomatis tidak aktif.",
     "panelTitle": "Publikasi otomatis",
     "publishFailed": "Gagal memulai publikasi.",
@@ -10674,7 +10815,7 @@
     "quota": "Kuota publikasi 24 jam: {{used}}/{{total}}",
     "retry": "Coba lagi",
     "retryStarted": "Mencoba menerbitkan ulang…",
-    "schedulerOff": "Penjadwal sedang dimatikan (META_AUTOPUBLISH_ENABLED=false).",
+    "schedulerOff": "Penjadwal publikasi otomatis sedang dimatikan di server.",
     "toggle": "Terbitkan otomatis",
     "toggleHint": "Diterbitkan ke akun Monomi pada jadwal (WIB). TikTok tetap manual.",
     "token": "Token system user",

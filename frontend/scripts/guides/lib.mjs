@@ -100,7 +100,7 @@ function escapeXml(s) {
  * real bucket or CDN. Dimensions are read from `..._1080x1350.jpg` style names.
  */
 export async function installMediaStub(context) {
-  const hosts = /(media-demo\.invalid|dev-not-used\.r2\.cloudflarestorage\.com|r2\.cloudflarestorage\.com|media\.monomiagency\.com|r2\.dev)/i;
+  const hosts = /(media-demo\.invalid|dev-not-used\.r2\.cloudflarestorage\.com|r2\.cloudflarestorage\.com|media\.monomiagency\.com|r2\.dev|fbcdn\.net)/i;
   // The staff app also reads media through the backend proxy (/api/v1/media/view/<key>),
   // which would in turn call storage; answer those in the browser as well.
   const proxied = /\/api\/v1\/media\/(view|thumbnail|thumb|stream|download-url|public)/;

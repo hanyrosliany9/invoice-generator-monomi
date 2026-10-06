@@ -8801,7 +8801,7 @@
           },
           "terbitkan": {
             "title": "Mark as published",
-            "body": "Set the real date (1) and time it went live, then click Mark published (2). The app does not post to Instagram or TikTok by itself.",
+            "body": "Set the real date (1) and time it went live, then click Mark published (2). For most posts the app does not post to Instagram or TikTok by itself; Monomi's own Instagram and Facebook posts can publish automatically, see the auto-publishing guide.",
             "tip": "A post labelled Overdue has a schedule in the past; mark it published or reschedule it."
           },
           "seret": {
@@ -9677,6 +9677,11 @@
             "title": "Print the cheat sheet",
             "body": "Use the Print cheat sheet button at the top of this guide to print every shortcut on one page, in two columns. Keep it near your desk until the keys become habit.",
             "tip": "On a Mac the printout shows ⌘, ⌥ and ⇧ automatically."
+          },
+          "crm": {
+            "title": "CRM: leads and WhatsApp",
+            "body": "Ctrl+Shift+L (Cmd+Shift+L on a Mac) opens Add lead from any page: paste a WhatsApp message and press Ctrl+Enter to save. In the reply box of a WhatsApp chat, in the inbox or on a lead, Ctrl+Enter sends the message. Press ? on a CRM page to see them first.",
+            "tip": "The table below lists the keys that work in the WhatsApp inbox and on lead pages."
           }
         }
       },
@@ -9710,36 +9715,58 @@
         "steps": {
           "kampanye": {
             "title": "Create a campaign for each ad",
-            "body": "Open Marketing > CRM > Campaigns and click New campaign. Give it a name and a unique code such as FB-OKT1. Add the budget and dates if you know them.",
+            "body": "Open Marketing > CRM > Campaigns and click New campaign (1). Give it a name and a unique code such as FB-OKT1. Add the budget and dates if you know them. Each row of the table (2) shows the leads, the clients won, the ad spend and the cost per client.",
             "tip": "Use one code per ad so the dashboard can compare ads fairly."
           },
           "pesan-iklan": {
-            "title": "Put the code in the ad's pre-filled message",
-            "body": "Select the campaign and click Copy message. In Meta Ads Manager paste it into the ad's Pre-filled message. The code at the end links every new chat to this campaign.",
-            "tip": "Log the ad spend with Log spend so cost per lead and cost per client are correct."
+            "title": "Copy the ad message with the campaign code",
+            "body": "Select the campaign. The box (1) shows the pre-filled message with the code at the end, for example [FB-OKT1]. Click Copy message (2), then in Meta Ads Manager paste it into the ad's Pre-filled message. The code links every new chat to this campaign.",
+            "tip": "Do not delete the code from the message. Chats without it are only matched if you add the ad ID to the campaign."
           },
           "tambah-lead": {
             "title": "Add a lead in seconds",
-            "body": "When someone messages you, click New lead (or press Ctrl+Shift+L, Cmd+Shift+L on Mac). Paste their first message: the name, number and campaign code fill in by themselves. Press Ctrl+Enter to save.",
-            "tip": "If the number already exists you get a warning with a link to the existing lead."
+            "body": "When someone messages you, click New lead, or press Ctrl+Shift+L (Cmd+Shift+L on a Mac) on any page. Paste their first message (1): the name, the number and the campaign code are detected by themselves (2). Press Ctrl+Enter, or click Save lead (3).",
+            "tip": "If the number already exists you get a warning with a link to the existing lead. Save & add another keeps the window open for the next one."
           },
           "papan": {
             "title": "Work the board",
-            "body": "Leads sit in columns: New, Qualified, Meeting, Proposal, Won, Lost. Drag a card to another column, or use the Move to menu on the card. Amber cards have not had a reply within the response target.",
-            "tip": "Click Chat on WhatsApp on a lead to open the conversation; the first reply time is recorded."
+            "body": "Leads sit in columns: New, Qualified, Meeting, Proposal, Won, Lost. Drag a card to another column. Amber cards have not had a reply within the response target, and the button (3) filters them. The orange number next to Leads in the menu counts unanswered leads and follow-ups due today.",
+            "tip": "On a phone press and hold a card to drag it, or use the move button on the card."
           },
           "tindak-lanjut": {
             "title": "Schedule follow-ups",
-            "body": "Open a lead, use Add activity for notes, calls and meetings, and Schedule follow-up so nothing is forgotten. The orange number next to CRM in the menu counts unanswered leads and follow-ups due today."
+            "body": "Open a lead. Schedule follow-up (1) puts a reminder with a note on the lead; mark it done or reschedule it when the time comes. Under Add activity (2) write notes and log calls, WhatsApp messages and meetings: everything lands in the History.",
+            "tip": "A follow-up that is overdue turns the card amber on the board."
           },
           "konversi": {
             "title": "Convert to client and quotation",
-            "body": "When the lead is ready, click Convert to Client & Create Quotation. A client is created (or matched by number), together with a project and a draft quotation filled with the estimated value. Finish the quotation in the Quotations menu.",
-            "tip": "When the quotation is approved or the invoice is paid, the lead moves to Won on its own."
+            "body": "When the lead is ready, click Convert to Client & Create Quotation. Keep Create draft quotation ticked (1), check the amount (2) and confirm (3). A client is created (or matched by the WhatsApp number) together with a project and a draft quotation filled with the estimate.",
+            "tip": "Untick the quotation if you only want the client and the project."
           },
           "dasbor": {
             "title": "Read the dashboard",
-            "body": "Open CRM Dashboard to see the funnel, response speed and each campaign's leads, clients, revenue, cost per lead and cost per client. Pick a period at the top."
+            "body": "Open CRM Dashboard: new leads, clients won, revenue and cost per client (1), the sales funnel, the response speed, and a table per campaign (2) with leads, revenue, cost per lead and cost per client. Pick a period and a campaign at the top.",
+            "tip": "Response speed is compared with the target you set in CRM settings."
+          },
+          "biaya-iklan": {
+            "title": "Log the ad spend",
+            "body": "Click Log spend on the campaign. Pick the day, or the first and last day of a range, from the calendar (1), type the amount in rupiah (2) and click Save (3). Cost per lead and cost per client on the dashboard are calculated from these entries.",
+            "tip": "Log a whole week at once with a date range. A wrong entry can be deleted with the bin icon next to it."
+          },
+          "daftar": {
+            "title": "List view and bulk actions",
+            "body": "Switch to List (1) for a table with stage, campaign, owner, follow-up and estimate. Tick several leads and the bulk bar (2) appears: assign them to a colleague or move them to a stage in one go. The filters above narrow the list by campaign, owner, unanswered and follow-ups today.",
+            "tip": "The search box finds a name, a number or a campaign code."
+          },
+          "pindah-tahap": {
+            "title": "Move a lead to another stage",
+            "body": "Click Move stage (1) and choose the new stage (2). Qualified and Won are reported to Meta automatically, Lost asks for a short reason. Every move is recorded in the History with who did it and when.",
+            "tip": "When the quotation is approved or the invoice is paid, the lead moves to Won on its own."
+          },
+          "hasil": {
+            "title": "What the conversion created",
+            "body": "The window links to the new Client, Project and Draft quotation. The lead moves to Proposal and the same links appear under Lead info. Finish and send the quotation in the Quotations menu.",
+            "tip": "The History records the conversion and the quotation, in your language."
           }
         }
       },
@@ -9749,41 +9776,152 @@
         "steps": {
           "buka-inbox": {
             "title": "Open the inbox",
-            "body": "Go to Marketing > CRM > Inbox. The green number shows how many chats have unread messages. Use the tabs All, Unread, Mine and Unassigned, or search by name or number.",
+            "body": "Go to Marketing > CRM > Inbox. The list shows every chat with its stage, campaign code and a green number for unread messages (2). Use the tabs (1) All, Unread, Mine and Unassigned, or the Reply window filter (3), or search by name or number.",
             "tip": "The list refreshes by itself every few seconds."
           },
           "lead-otomatis": {
-            "title": "New chats become leads",
-            "body": "When an unknown number writes for the first time, Monomi creates a lead in the New column. If the chat started from a Click-to-WhatsApp ad, the lead gets the source WhatsApp · Ad, the campaign (from the code in the message or the ad ID) and the ad banner at the top of the chat.",
+            "title": "New chats become leads, with the ad they came from",
+            "body": "When an unknown number writes for the first time, Monomi creates a lead in the New column. If the chat started from a Click-to-WhatsApp ad, the banner (1) at the top of the chat shows the ad's picture, headline and text, and the lead gets the source WhatsApp · Ad and its campaign. The chip (2) opens the lead.",
             "tip": "Add the ad IDs to the campaign so ads without the code are still matched."
           },
           "balas": {
             "title": "Reply from Monomi",
-            "body": "Open a chat, type in the box at the bottom and press Send (or Ctrl+Enter). Your name appears above the bubble as Monomi · name. One tick = sent, two ticks = delivered, blue ticks = read.",
-            "tip": "The lightning button inserts a quick reply."
+            "body": "Open a chat, type in the box (1) and press Ctrl+Enter (Cmd+Enter on a Mac) or the send button (2). Your name appears above the bubble (3) as Monomi · name. One tick means sent, two ticks delivered, blue ticks read.",
+            "tip": "Press Ctrl+Enter, not Enter alone: Enter adds a new line."
           },
           "jendela-24-jam": {
             "title": "The 24-hour window",
-            "body": "You can write freely for 24 hours after the customer's last message (green line above the box). After that WhatsApp only allows approved templates: press Send template, choose one and fill in the values.",
+            "body": "You can write freely for 24 hours after the customer's last message (green line above the box). When it is closed (1) WhatsApp only allows approved templates: click Send template (2).",
             "tip": "Chats from an ad also show the free-entry window (72 hours)."
           },
           "dari-hp": {
             "title": "Replies from the phone still count",
-            "body": "The team can keep answering in the WhatsApp Business app on the phone. Those replies appear in Monomi labelled Sent from phone app and count as the first response for the lead.",
+            "body": "The team can keep answering in the WhatsApp Business app on the phone. Those replies appear in Monomi labelled Sent from phone app (1) and count as the first response for the lead.",
             "tip": "Never register or verify the number again in Meta: it would log the phone app out."
           },
           "tetapkan": {
             "title": "Assign, link and archive",
-            "body": "Use the menu in the chat header to assign the chat to a colleague, the link button to connect it to another lead, and the archive button to hide finished chats. A new message moves an archived chat back to the inbox."
+            "body": "Use the menu in the chat header (1) to assign the chat to a colleague, the link button (2) to connect it to another lead, and the archive button (3) to hide finished chats. A new message moves an archived chat back to the inbox.",
+            "tip": "Assigned chats show the colleague's name in the list."
           },
           "tab-lead": {
             "title": "See the chat on the lead",
-            "body": "On a lead page, open the WhatsApp tab to read and answer the same conversation without leaving the lead."
+            "body": "On a lead page, open the WhatsApp tab (1) to read and answer the same conversation without leaving the lead. Replies, ticks and the 24-hour window work exactly as in the inbox."
           },
           "pengaturan": {
-            "title": "Settings and quick replies",
-            "body": "CRM > Settings shows whether WhatsApp is connected, the numbers with their platform type, the webhook details for Meta and the status of events sent to Meta. Add your quick replies there.",
-            "tip": "Only admins can see the inbox and the settings."
+            "title": "Quick replies and settings",
+            "body": "CRM > Settings has the quick replies editor. Click Add quick reply (1), give it a title and the text (2) and press Save. The same page shows whether WhatsApp is connected.",
+            "tip": "Only admins can see the inbox and the settings. How the connection is set up is in the WhatsApp connection (admin) guide."
+          },
+          "filter": {
+            "title": "Filter the unread chats",
+            "body": "Click Unread (1) to see only the chats waiting for an answer. The green number in the menu (2) is the total of unread chats, so you can see from any page that someone is waiting.",
+            "tip": "Mine shows the chats assigned to you; Unassigned shows chats nobody has picked up."
+          },
+          "balasan-cepat": {
+            "title": "Use quick replies",
+            "body": "The lightning button (1) opens your quick replies (2). Click one to put its text in the box, then edit it and send. If you already typed something, the reply is added below it.",
+            "tip": "Quick replies are managed in CRM > Settings."
+          },
+          "template": {
+            "title": "Send a template",
+            "body": "Choose an approved template (1), then fill in its variables, Variable 1 and Variable 2 (2). The preview (3) shows the message with your values filled in. Click Send.",
+            "tip": "Templates are created and approved in Meta's WhatsApp Manager, not in Monomi."
+          },
+          "di-hp": {
+            "title": "On a phone",
+            "body": "On a phone the inbox shows the list full width (1), with unread numbers, stage and campaign on every row (2). Tap a chat to open it and the arrow at the top to come back to the list.",
+            "tip": "You can install Monomi on your phone's home screen to reach the inbox in one tap."
+          }
+        }
+      },
+      "publikasi-otomatis": {
+        "title": "Auto-publishing to Instagram and Facebook",
+        "purpose": "Let Monomi post your own content to the Instagram account and Facebook Page on the planned date and time, see the result per platform, and retry when something fails.",
+        "steps": {
+          "nyalakan": {
+            "title": "Turn on Publish automatically",
+            "body": "Open Marketing > Content Calendar > Monomi. When you add or edit a post, switch on Publish automatically (1) and tick Instagram and/or Facebook Page (2). Set the date and the time in WIB: the post goes live at that moment.",
+            "tip": "Only admins can switch it on, and only for Monomi's own posts. TikTok stays manual."
+          },
+          "syarat": {
+            "title": "Media requirements",
+            "body": "The hints in the box (1) tell you what is still missing: a photo or video for Instagram, and a date and time. Instagram photos must be JPEG, up to 8 MB, with a ratio between 4:5 and 1.91:1; reels and stories are vertical 9:16 video. A carousel takes up to 10 items and a caption up to 2,200 characters. Facebook photo posts cannot contain videos.",
+            "tip": "Add the media (2) first; the hints disappear when everything is in order."
+          },
+          "status": {
+            "title": "Follow the status per platform",
+            "body": "In the List view every platform has its own chip. Blue Scheduled means it is waiting for its time, green Published (1) means it is live, and red Failed (3) needs you. While Meta is processing a video you see Processing, and a temporary problem shows Will retry: Monomi tries again by itself.",
+            "tip": "Click a green chip to open the real post."
+          },
+          "terbit": {
+            "title": "Published posts and links",
+            "body": "Open a published post. The Auto-publishing panel (1) shows when each platform went live, and View post (2) opens the real post on Instagram or Facebook."
+          },
+          "gagal": {
+            "title": "When it fails: the reason and Retry",
+            "body": "A failed platform shows the reason in plain words (1), for example that Meta rejected the image ratio. Fix the media or the caption with Edit, then press Retry (2).",
+            "tip": "If the message says the connection to Meta dropped, first check the account or Page. Press Retry only if the post is not there, otherwise it is posted twice."
+          },
+          "terbitkan-sekarang": {
+            "title": "Publish now",
+            "body": "For a scheduled post the panel (1) offers Publish now (2): it publishes right away instead of waiting for the planned time. Posts that publish automatically no longer show a separate manual Publish button, so use Publish now or Retry.",
+            "tip": "For a post that is not set to publish automatically, Publish still just marks it as published."
+          },
+          "koneksi": {
+            "title": "Check the connection",
+            "body": "The card at the top (1) says whether the Meta connection is ready. Click Check connection (2) to see the system user, the Facebook Page, the Instagram account and the 24-hour publishing quota.",
+            "tip": "If the card says it is not connected yet, ask the developer/admin to connect the Meta account. Do not send tokens in chat."
+          }
+        }
+      },
+      "crm-whatsapp-setup": {
+        "title": "WhatsApp connection (admin)",
+        "purpose": "For admins: what the WhatsApp settings card means, where the token and IDs go, the webhook and the Conversions API. Read the first step before anything else: never register, migrate or verify by SMS code or PIN the WhatsApp number used in the ad campaign.",
+        "steps": {
+          "aturan-keselamatan": {
+            "title": "Safety rule: never register the number",
+            "body": "Never register, migrate or verify by SMS code or PIN the WhatsApp number that runs your ad campaign. Coexistence keeps the WhatsApp Business app on the phone working, and the number is connected only through Connect WhatsApp (Embedded Signup). Registering or migrating it (1) logs the phone app out and stops the Click-to-WhatsApp ads. Monomi itself refuses those calls.",
+            "tip": "Never paste tokens, app secrets or the verify token into chat, e-mail or a screenshot. Hand them to the developer/admin directly."
+          },
+          "lokasi-token": {
+            "title": "Where the token and IDs go",
+            "body": "Staff do not type them in Monomi. The WhatsApp access token and the WhatsApp Business Account and phone number IDs are set on the server, in the backend settings on the VPS. Ask the developer/admin to set them. After the server restarts, click Check connection: the Connection block (1) shows the account and the number list (2) shows the number Monomi uses, marked with a star.",
+            "tip": "The check only reads: Monomi never changes the number."
+          },
+          "kartu-status": {
+            "title": "Reading the status: Ready",
+            "body": "Server configuration (1) shows one of four states: Not configured (Off), Incomplete, Invalid and Ready. Ready means every setting is present and valid, and the token works: the inbox, replies and events to Meta are active. Click Check connection (2) after any change.",
+            "tip": "Anything but Ready switches WhatsApp off, nothing else: the rest of the app keeps working."
+          },
+          "mati": {
+            "title": "Not configured (Off)",
+            "body": "Nothing is set on the server (1). WhatsApp is switched off and the inbox says it is not connected yet. This is the normal state before the setup."
+          },
+          "belum-lengkap": {
+            "title": "Incomplete",
+            "body": "Some settings are missing (1), for example the verify token or the account and number IDs. WhatsApp stays disabled, and the message (2) says so in plain words. Admins can open Technical details to see exactly which settings are missing.",
+            "tip": "Ask the developer/admin to complete them and restart the backend."
+          },
+          "tidak-valid": {
+            "title": "Invalid",
+            "body": "A setting is present but wrong (1), for example an ID that is not made of digits. WhatsApp stays disabled until it is corrected. Technical details (2) shows which setting to fix.",
+            "tip": "The token itself is never shown, not even to admins."
+          },
+          "webhook": {
+            "title": "Webhook URL and verify token",
+            "body": "In the Meta app (WhatsApp > Configuration) the developer enters the Callback URL and the Verify token (1), and subscribes to the fields listed there. Click Show & copy (2) to reveal and copy the token. Signature check says OK once the app secret is set, and Not active yet before that.",
+            "tip": "Last event received tells you whether Meta is really sending chats to Monomi."
+          },
+          "capi": {
+            "title": "Conversions API (events to Meta)",
+            "body": "Sending stays Off until the developer switches it on and the dataset is set. When Ready, the stage changes (Qualified, Won) and paid invoices are sent to Meta as events so your ads learn which chats become clients. The Events line (1) counts waiting, queued, sent, failed and skipped events; Send queued events now (2) runs the sender immediately.",
+            "tip": "Create / get dataset ID shows the ID to hand to the developer."
+          },
+          "hubungkan": {
+            "title": "Connect the number (Embedded Signup)",
+            "body": "The number is connected only with Connect WhatsApp (1): in Meta's window choose Connect your existing WhatsApp Business app (coexistence) and confirm on the phone. Until Meta approves Monomi as a Tech Provider and the developer switches it on, the card says it is not available yet.",
+            "tip": "Technical details (admin) lists the server settings behind it."
           }
         }
       }
@@ -9880,7 +10018,8 @@
       "comments": "Comments",
       "deckViewer": "Deck viewer",
       "reportGrid": "Report data table",
-      "schedule": "Shooting schedule"
+      "schedule": "Shooting schedule",
+      "crm": "CRM (leads and WhatsApp)"
     },
     "groups": {
       "general": "General",
@@ -9968,7 +10107,8 @@
       "gridPrev": "Move to the cell above",
       "scheduleAdd": "Add the scene from the quick-add row",
       "crmQuickAdd": "Add a lead (paste a WhatsApp message)",
-      "crmQuickAddSave": "Save the lead"
+      "crmQuickAddSave": "Save the lead",
+      "crmWaSend": "Send the WhatsApp reply"
     },
     "note": {
       "helpOpen": "Not while typing in a field",
@@ -9994,7 +10134,8 @@
       "videoFrameFwd": "1/30 second",
       "gridNext": "Enter on the last row adds a new row",
       "scheduleAdd": "In the quick-add row",
-      "crmQuickAddSave": "In the Add lead window"
+      "crmQuickAddSave": "In the Add lead window",
+      "crmWaSend": "In the reply box of a WhatsApp chat"
     }
   },
   "instagram": {
@@ -10671,7 +10812,7 @@
     "nextAttempt": "Next attempt: {{when}}",
     "noLink": "Link not available",
     "noTargets": "Not set up. Turn on \"Publish automatically\" when editing to publish to Instagram / Facebook.",
-    "notConfigured": "Not configured. A server admin needs to set META_SYSTEM_USER_TOKEN, META_PAGE_ID and META_IG_USER_ID (Meta system user token).",
+    "notConfigured": "Not connected yet. Ask the developer/admin to connect the Meta account (Instagram and Facebook Page).",
     "notConfiguredShort": "Meta connection is not configured — auto-publishing is off.",
     "panelTitle": "Auto-publishing",
     "publishFailed": "Could not start publishing.",
@@ -10680,7 +10821,7 @@
     "quota": "24-hour publishing quota: {{used}}/{{total}}",
     "retry": "Retry",
     "retryStarted": "Retrying…",
-    "schedulerOff": "The scheduler is switched off (META_AUTOPUBLISH_ENABLED=false).",
+    "schedulerOff": "The auto-publish scheduler is switched off on the server.",
     "toggle": "Publish automatically",
     "toggleHint": "Published to Monomi's accounts at the scheduled time (WIB). TikTok stays manual.",
     "token": "System user token",

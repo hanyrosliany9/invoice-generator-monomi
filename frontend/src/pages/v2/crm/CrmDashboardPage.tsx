@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/monomi/PageHeader';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { StatCard } from '@/components/monomi/StatCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -74,6 +75,7 @@ export default function CrmDashboardPage() {
           : t('crm.dash.subtitleLoading', 'From ad chat to paid invoice.')}
         actions={
           <>
+            <GuideHelpLink slug="crm-leads-whatsapp" anchor="dasbor" />
             <select className={cn(nativeSelectClass, 'w-auto')} value={period} onChange={(e) => setPeriod(e.target.value as Period)} aria-label={t('crm.dash.periodLabel', 'Period')}>
               {(Object.keys(periodLabel) as Period[]).map((p) => <option key={p} value={p}>{periodLabel[p]}</option>)}
             </select>

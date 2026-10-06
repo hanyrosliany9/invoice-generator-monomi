@@ -60,12 +60,43 @@ run, handy while writing a flow), `--clean-only`.
 | `finance` | pengeluaran, akuntansi-dasar, aset-penyusutan, vendor-pembelian, gaji, penjualan |
 | `production` | shot-list, jadwal-syuting, call-sheet, production-hub |
 | `tools` | deck-presentasi, media-downloader, dashboard-navigasi, pengguna-peran |
+| `crm` | crm-leads-whatsapp (campaigns, ad message, ad spend, quick add, board, list, follow-ups, move stage, convert, dashboard) |
+| `crm-inbox` | crm-whatsapp-inbox (filters, ad banner, reply, phone-app replies, 24h window, templates, quick replies, assign, phone layout) |
+| `crm-publish` | publikasi-otomatis (auto-publishing to Instagram / Facebook on the Monomi content calendar) |
+| `crm-setup` | crm-whatsapp-setup (the admin WhatsApp settings card; one run per server state, see below) |
 | `shortcuts` | pintasan-keyboard, pintasan-klien (the `?` overlay, lightbox key tooltip, deck shortcuts dialog, presentation hint; the tables are rendered from `src/shortcuts/registry.ts`) |
 
 Staff logins are rate limited (5 per minute), so the capture signs in once through the UI
 and reuses that session (`storageState`) for every browser context. Wide screens
 (financial reports, deck editor) are captured at 1440 or 1920 px so nothing is clipped;
 everything else is 1280 px.
+
+## CRM / WhatsApp / auto-publishing guides
+
+These four flows (`crm`, `crm-inbox`, `crm-publish`, `crm-setup`) are *standalone*: they do not need the base seed, they bring
+their own "(Demo)" data (`seed-crm.mjs`: campaigns, ad spend, WhatsApp chats created through the signed webhook, leads, two converted
+clients with approved quotations, Monomi content with published / scheduled / failed publications) and nothing leaves the machine:
+the backend must talk to the **fake Meta Graph** (`fake-meta-graph.mjs`), never to Meta, and R2 points at dummies.
+
+```bash
+# fake Meta Graph on a free port
+FG_PORT=5598 node fake-meta-graph.mjs &
+
+# backend (built to a scratch dir or "npx nest start") with, in addition to the R2 dummies above:
+#   WHATSAPP_GRAPH_BASE_URL=http://127.0.0.1:5598 META_GRAPH_BASE_URL=http://127.0.0.1:5598
+#   META_APP_SECRET=0123456789abcdef0123456789abcdef          (same value as GUIDE_WA_APP_SECRET)
+#   WHATSAPP_ACCESS_TOKEN=<dummy> WHATSAPP_WABA_ID=1234567890 WHATSAPP_PHONE_NUMBER_ID=1111111111
+#   WHATSAPP_WEBHOOK_VERIFY_TOKEN=<dummy> META_CAPI_ENABLED=true META_DATASET_ID=556677889900
+#   META_SYSTEM_USER_TOKEN=<dummy> META_PAGE_ID=100200300400 META_IG_USER_ID=22222222
+node capture.mjs crm crm-inbox crm-publish crm-setup
+```
+
+`crm-setup` photographs what the *server* is configured with, so it needs one run per state with the backend restarted in between:
+`GUIDE_WA_STATE=ready` (default; all variables above), `off` (no WHATSAPP_* variables), `incomplete` (only WHATSAPP_ACCESS_TOKEN),
+`invalid` (WHATSAPP_WABA_ID not numeric). Use `--keep --reuse` (see Options) so the later runs do not reseed.
+The tokens are dummies; never put a real Meta token, app secret or verify token into the capture environment.
+Cleanup also puts the quotation / invoice counters, the WhatsApp quick replies and the audit / token rows created during the run
+back (`.capture-crm-state.json`, git-ignored).
 
 ## Cleanup
 

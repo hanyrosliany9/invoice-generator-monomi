@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { LayoutGrid, List as ListIcon, Plus, Search, Settings2, UserPlus } from 'lucide-react';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { EmptyState } from '@/components/monomi/EmptyState';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -145,6 +146,7 @@ export default function LeadsPage() {
         description={t('crm.leads.subtitle', 'Every potential client from WhatsApp ads and other sources.')}
         actions={
           <>
+            <GuideHelpLink slug="crm-leads-whatsapp" anchor="papan" />
             {!isMobile && (
               <div role="group" aria-label={t('crm.leads.view', 'View')} className="inline-flex rounded-md border border-border-subtle p-0.5">
                 {(['board', 'list'] as ViewMode[]).map((m) => (

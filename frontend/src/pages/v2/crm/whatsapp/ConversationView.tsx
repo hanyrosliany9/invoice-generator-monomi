@@ -168,7 +168,7 @@ export function ConversationView({
         )}
         <div className="flex items-center gap-1">
           <select
-            className={cn(nativeSelectClass, 'h-8 w-36 md:h-8')}
+            className={cn(nativeSelectClass, 'h-8 w-40 md:h-8')}
             value={conv.assignedTo?.id ?? ''}
             onChange={(e) => assignMut.mutate(e.target.value || null)}
             aria-label={t('crm.wa.assign', 'Assigned to')}

@@ -12,6 +12,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, ExternalLink, Loader2, PlugZap, RefreshCw, Rocket, Send, ShieldCheck,
 } from 'lucide-react';
 
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -98,12 +99,24 @@ const ERROR_CODES = new Set([
   'MEDIA_STORAGE_UNAVAILABLE', 'CONTAINER_EXPIRED', 'META_TRANSIENT', 'OUTCOME_UNCERTAIN',
   'CANCELLED', 'DUPLICATE_POST', 'UNKNOWN', 'PROCESSING', 'VERIFYING',
 ]);
-/** Codes whose stored message is "headline, newline, raw detail" (detail = Meta text / numbers, shown verbatim). */
-const DETAIL_CODES = new Set(['PERMISSION_DENIED', 'PUBLISH_LIMIT_REACHED', 'MEDIA_INVALID', 'MEDIA_PROCESSING_FAILED', 'UNKNOWN']);
+/** Codes whose stored message always carries a raw detail (Meta text) after a newline. */
+const ALWAYS_DETAIL = new Set(['MEDIA_INVALID', 'MEDIA_PROCESSING_FAILED', 'UNKNOWN']);
+
+/** Splits "Bahasa / English" at the separator nearest the middle (either half may contain " / " itself). */
+function splitBilingual(text: string): [string, string] | null {
+  const seps: number[] = [];
+  for (let i = text.indexOf(' / '); i >= 0; i = text.indexOf(' / ', i + 1)) seps.push(i);
+  if (seps.length === 0) return null;
+  const mid = text.length / 2;
+  const at = seps.reduce((best, cur) => (Math.abs(cur - mid) < Math.abs(best - mid) ? cur : best));
+  return [text.slice(0, at), text.slice(at + 3)];
+}
 
 /**
- * Localized reason for a publication. New rows: translate by errorCode and append the raw
- * detail. Older rows stored "Bahasa / English" in one string: show the half for the UI language.
+ * Localized reason for a publication. New rows: the headline comes from the error code
+ * (socialPublish.error.*) and the raw Meta detail stored after a newline is appended verbatim.
+ * Older rows stored "Bahasa / English" in one string: their detail is recovered from the text,
+ * and anything without a known code shows the half for the UI language.
  */
 export function failureText(
   t: (key: string, fallback: string) => string,
@@ -114,23 +127,28 @@ export function failureText(
   if (!msg) return null;
   const code = pub.errorCode ?? '';
   const nl = msg.indexOf('\n');
-  const detail = nl >= 0 ? msg.slice(nl + 1).trim() : '';
-  const legacyWithDetail = nl < 0 && DETAIL_CODES.has(code) && msg.includes(': ');
-  if (ERROR_CODES.has(code) && !legacyWithDetail) {
-    const head = t(`socialPublish.error.${code}`, msg);
+  const first = nl >= 0 ? msg.slice(0, nl) : msg;
+  let detail = nl >= 0 ? msg.slice(nl + 1).trim() : '';
+  const legacyDetailless = nl < 0 && ALWAYS_DETAIL.has(code) && !msg.includes(': ');
+  if (ERROR_CODES.has(code) && !legacyDetailless) {
+    if (nl < 0) {
+      // Rows written before the newline-separated detail format.
+      if (ALWAYS_DETAIL.has(code)) detail = msg.slice(msg.indexOf(': ') + 2).trim();
+      else if (code === 'PERMISSION_DENIED') detail = msg.match(/\(Meta: (.*)\)\s*$/)?.[1] ?? '';
+      else if (code === 'PUBLISH_LIMIT_REACHED') detail = msg.match(/\((\d+\/\d+)\)/)?.[1] ?? '';
+    }
+    const head = t(`socialPublish.error.${code}`, first);
     if (!detail) return head;
     if (code === 'PUBLISH_LIMIT_REACHED') return `${head} (${detail})`;
     if (code === 'PERMISSION_DENIED') return `${head} (Meta: ${detail})`;
     return `${head}: ${detail}`;
   }
-  const first = msg.split('\n')[0];
-  const sep = first.indexOf(' / ');
-  if (sep < 0) return first;
-  const idPart = first.slice(0, sep);
-  const enPart = first.slice(sep + 3);
+  const halves = splitBilingual(first);
+  if (!halves) return first;
+  const [idPart, enPart] = halves;
   if (lang?.startsWith('en')) return enPart;
   const colon = enPart.indexOf(': ');
-  return colon >= 0 ? `${idPart}${enPart.slice(colon)}` : idPart;
+  return colon >= 0 && idPart.indexOf(': ') < 0 ? `${idPart}${enPart.slice(colon)}` : idPart;
 }
 
 /** The targets to display chips for: configured targets plus any platform with a row. */
@@ -428,16 +446,18 @@ export function SocialConnectionCard({ isAdmin }: { isAdmin: boolean }) {
               <p className="text-xs text-text-tertiary" data-testid="not-configured">
                 {status?.state === 'invalid'
                   ? t('socialPublish.invalidConfig', 'Konfigurasi Meta tidak valid: {{reason}}', { reason: status.reason ?? '' })
-                  : t('socialPublish.notConfigured', 'Belum dikonfigurasi. Admin server perlu mengisi META_SYSTEM_USER_TOKEN, META_PAGE_ID dan META_IG_USER_ID (token system user Meta).')}
+                  : t('socialPublish.notConfigured', 'Belum terhubung. Minta developer/admin menghubungkan akun Meta (Instagram dan Halaman Facebook).')}
               </p>
             ) : (
               <p className="text-xs text-text-tertiary">
                 {t('socialPublish.configured', 'Terkonfigurasi (Graph API {{v}}). Postingan dengan "Terbitkan otomatis" terbit sesuai jadwal.', { v: status.graphVersion ?? '' })}
-                {status.schedulerEnabled === false && ` ${t('socialPublish.schedulerOff', 'Penjadwal sedang dimatikan (META_AUTOPUBLISH_ENABLED=false).')}`}
+                {status.schedulerEnabled === false && ` ${t('socialPublish.schedulerOff', 'Penjadwal publikasi otomatis sedang dimatikan di server.')}`}
               </p>
             )}
           </div>
         </div>
+        <div className="flex items-center gap-2">
+        <GuideHelpLink slug="publikasi-otomatis" anchor="koneksi" />
         {status?.configured && isAdmin && (
           <Button
             size="sm"
@@ -450,6 +470,7 @@ export function SocialConnectionCard({ isAdmin }: { isAdmin: boolean }) {
             {t('socialPublish.checkConnection', 'Periksa koneksi')}
           </Button>
         )}
+        </div>
       </div>
 
       {check.isError && (

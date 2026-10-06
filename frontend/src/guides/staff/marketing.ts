@@ -1,5 +1,5 @@
 import {
-  BarChart3, CalendarRange, Download, Grid3x3, Image as ImageIcon, MessageCircle, Presentation, Target,
+  BarChart3, CalendarRange, Download, Grid3x3, Image as ImageIcon, MessageCircle, Presentation, Send, Target,
 } from 'lucide-react';
 import { type GuideDef, steps } from '../types';
 
@@ -46,32 +46,28 @@ export const marketingGuides: GuideDef[] = [
     steps: steps('media-downloader', [['tautan', '/media-downloader'], 'kualitas', 'unduh']),
   },
   {
-    // Text-only guide (no screenshots yet): the steps carry just an id and the page they describe.
-    slug: 'crm-leads-whatsapp', audience: 'staff', topic: 'marketing', icon: Target, minutes: 8, adminOnly: true,
-    openHref: '/crm/leads',
-    steps: [
-      { id: 'kampanye', href: '/crm/campaigns' },
-      { id: 'pesan-iklan', href: '/crm/campaigns' },
-      { id: 'tambah-lead', href: '/crm/leads' },
-      { id: 'papan', href: '/crm/leads' },
-      { id: 'tindak-lanjut', href: '/crm/leads' },
-      { id: 'konversi', href: '/crm/leads' },
-      { id: 'dasbor', href: '/crm/dashboard' },
-    ],
+    slug: 'publikasi-otomatis', audience: 'staff', topic: 'marketing', icon: Send, minutes: 8, adminOnly: true,
+    openHref: '/calendar/content',
+    steps: steps('publikasi-otomatis', [
+      ['nyalakan', '/calendar/content'], 'syarat', 'status', 'terbit', 'gagal', 'terbitkan-sekarang', 'koneksi',
+    ]),
   },
   {
-    // Text-only guide (no screenshots yet): WhatsApp inbox (CRM phase B).
-    slug: 'crm-whatsapp-inbox', audience: 'staff', topic: 'marketing', icon: MessageCircle, minutes: 6, adminOnly: true,
+    slug: 'crm-leads-whatsapp', audience: 'staff', topic: 'marketing', icon: Target, minutes: 12, adminOnly: true,
+    openHref: '/crm/leads',
+    steps: steps('crm-leads-whatsapp', [
+      ['kampanye', '/crm/campaigns'], ['pesan-iklan', '/crm/campaigns'], ['biaya-iklan', '/crm/campaigns'],
+      ['tambah-lead', '/crm/leads'], ['papan', '/crm/leads'], ['daftar', '/crm/leads'], ['tindak-lanjut', '/crm/leads'],
+      ['pindah-tahap', '/crm/leads'], ['konversi', '/crm/leads'], ['hasil', '/crm/leads'], ['dasbor', '/crm/dashboard'],
+    ]),
+  },
+  {
+    slug: 'crm-whatsapp-inbox', audience: 'staff', topic: 'marketing', icon: MessageCircle, minutes: 9, adminOnly: true,
     openHref: '/crm/inbox',
-    steps: [
-      { id: 'buka-inbox', href: '/crm/inbox' },
-      { id: 'lead-otomatis', href: '/crm/inbox' },
-      { id: 'balas', href: '/crm/inbox' },
-      { id: 'jendela-24-jam', href: '/crm/inbox' },
-      { id: 'dari-hp', href: '/crm/inbox' },
-      { id: 'tetapkan', href: '/crm/inbox' },
-      { id: 'tab-lead', href: '/crm/leads' },
-      { id: 'pengaturan', href: '/crm/settings' },
-    ],
+    steps: steps('crm-whatsapp-inbox', [
+      ['buka-inbox', '/crm/inbox'], ['filter', '/crm/inbox'], ['lead-otomatis', '/crm/inbox'], ['balas', '/crm/inbox'],
+      ['balasan-cepat', '/crm/inbox'], ['dari-hp', '/crm/inbox'], ['jendela-24-jam', '/crm/inbox'], ['template', '/crm/inbox'],
+      ['tetapkan', '/crm/inbox'], ['tab-lead', '/crm/leads'], ['di-hp', '/crm/inbox'], ['pengaturan', '/crm/settings'],
+    ]),
   },
 ];

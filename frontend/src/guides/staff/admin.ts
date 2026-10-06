@@ -1,4 +1,4 @@
-import { Keyboard, LayoutDashboard, UserCog } from 'lucide-react';
+import { Keyboard, LayoutDashboard, ShieldCheck, UserCog } from 'lucide-react';
 import { type GuideDef, shortcutSteps, steps } from '../types';
 
 /** Administrasi: getting around the app, and users and roles. */
@@ -14,6 +14,15 @@ export const adminGuides: GuideDef[] = [
     steps: steps('pengguna-peran', [['daftar', '/users'], ['peran', '/users/new'], 'sandi', 'hasil']),
   },
   {
+    slug: 'crm-whatsapp-setup', audience: 'staff', topic: 'admin', icon: ShieldCheck, minutes: 8, adminOnly: true,
+    openHref: '/crm/settings',
+    steps: steps('crm-whatsapp-setup', [
+      ['aturan-keselamatan', '/crm/settings'], ['lokasi-token', '/crm/settings'], ['kartu-status', '/crm/settings'],
+      ['mati', '/crm/settings'], ['belum-lengkap', '/crm/settings'], ['tidak-valid', '/crm/settings'],
+      ['webhook', '/crm/settings'], ['capi', '/crm/settings'], ['hubungkan', '/crm/settings'],
+    ]),
+  },
+  {
     // Every table is rendered from src/shortcuts/registry.ts, so it cannot drift from the app.
     slug: 'pintasan-keyboard', audience: 'staff', topic: 'admin', icon: Keyboard, minutes: 4,
     cheatSheet: true,
@@ -23,6 +32,7 @@ export const adminGuides: GuideDef[] = [
       { id: 'deck', image: true, areas: ['deckEditor'] },
       { id: 'presentasi', image: true, areas: ['presentation', 'deckViewer'] },
       { id: 'formulir', areas: ['reportGrid', 'schedule'] },
+      { id: 'crm', areas: ['crm'] },
       { id: 'cetak' },
     ]),
   },
