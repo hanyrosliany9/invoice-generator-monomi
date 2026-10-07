@@ -18,7 +18,9 @@ The page has **no Meta Pixel**. The last script tag loads the CRM snippet
 PageView, ViewContent, EngagedVisit and Lead to the CRM; the CRM forwards them to the
 Meta Conversions API server-side and adds a `Kode: XXXXXX` line to the WhatsApp message
 so staff can link the chat to the ad click (Ctrl/⌘+Shift+L in the CRM).
-See `docs/landing-page-tracking.md`.
+A verified tap also creates the CRM lead straight away ("Waiting for WhatsApp",
+with the Instagram handle, brand and category from the sheet); pasting the chat
+later fills its phone in. See `docs/landing-page-tracking.md`.
 
 Rules when editing:
 
@@ -27,6 +29,9 @@ Rules when editing:
   snippet's generic link hook from counting the same tap twice.
 - Do not add the Instagram line to the WhatsApp text when `MonomiTrack` is present; the
   snippet adds it (see `buildText(false)`).
+- Keep passing `meta: { instagram, brandName, category }` to `openWhatsApp`: the CRM names
+  the auto-created lead after the brand (else `@handle`) and dedups on the handle. The
+  server clamps brand to 80 and category to 40 characters and shows them as plain text.
 - Keep facts (price, dates, terms, FAQ answers) in sync with the SOW.
 - The page origin must be listed in `PUBLIC_TRACK_ALLOWED_ORIGINS` on the VPS, or the CRM
   rejects its events with 403.
