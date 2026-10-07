@@ -60,10 +60,6 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1280,
     "h": 820
   },
-  "call-sheet/editor": {
-    "w": 1280,
-    "h": 820
-  },
   "call-sheet/info": {
     "w": 1280,
     "h": 820
@@ -100,7 +96,19 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1440,
     "h": 900
   },
+  "crm-leads-whatsapp/kode-chat": {
+    "w": 1440,
+    "h": 900
+  },
   "crm-leads-whatsapp/konversi": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/lead-menunggu-wa": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-leads-whatsapp/link-iklan-website": {
     "w": 1440,
     "h": 900
   },
@@ -200,6 +208,14 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1440,
     "h": 900
   },
+  "crm-whatsapp-setup/pelacakan-landing-page": {
+    "w": 1440,
+    "h": 900
+  },
+  "crm-whatsapp-setup/sinkronisasi-meta-ads": {
+    "w": 1440,
+    "h": 900
+  },
   "crm-whatsapp-setup/tidak-valid": {
     "w": 1440,
     "h": 900
@@ -212,17 +228,13 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1280,
     "h": 820
   },
-  "dashboard-navigasi/bahasa-en": {
-    "w": 1280,
-    "h": 820
-  },
   "dashboard-navigasi/dashboard": {
     "w": 1280,
     "h": 820
   },
   "dashboard-navigasi/menu": {
     "w": 1280,
-    "h": 820
+    "h": 1680
   },
   "dashboard-navigasi/palet": {
     "w": 1280,
@@ -341,10 +353,6 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "h": 820
   },
   "jadwal-syuting/otomatis": {
-    "w": 1280,
-    "h": 820
-  },
-  "jadwal-syuting/otomatis-sebelum": {
     "w": 1280,
     "h": 820
   },
@@ -829,10 +837,6 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "h": 820
   },
   "shot-list/daftar": {
-    "w": 1280,
-    "h": 820
-  },
-  "shot-list/editor": {
     "w": 1280,
     "h": 820
   },

@@ -16,17 +16,17 @@ export const adminGuides: GuideDef[] = [
   {
     slug: 'crm-whatsapp-setup', audience: 'staff', topic: 'admin', icon: ShieldCheck, minutes: 8, adminOnly: true,
     openHref: '/crm/settings',
-    steps: steps('crm-whatsapp-setup', [
-      ['aturan-keselamatan', '/crm/settings'], ['lokasi-token', '/crm/settings'], ['kartu-status', '/crm/settings'],
-      ['mati', '/crm/settings'], ['belum-lengkap', '/crm/settings'], ['tidak-valid', '/crm/settings'],
-      ['webhook', '/crm/settings'], ['capi', '/crm/settings'], ['hubungkan', '/crm/settings'],
-    ]).concat([
-      // text-only steps (no screenshot): landing-page tracking
-      { id: 'pelacakan-landing-page', href: '/crm/settings' },
-      { id: 'sinkronisasi-meta-ads', href: '/crm/settings' },
+    steps: [
+      ...steps('crm-whatsapp-setup', [
+        ['aturan-keselamatan', '/crm/settings'], ['lokasi-token', '/crm/settings'], ['kartu-status', '/crm/settings'],
+        ['mati', '/crm/settings'], ['belum-lengkap', '/crm/settings'], ['tidak-valid', '/crm/settings'],
+        ['webhook', '/crm/settings'], ['capi', '/crm/settings'], ['hubungkan', '/crm/settings'],
+        ['pelacakan-landing-page', '/crm/settings'], ['sinkronisasi-meta-ads', '/crm/settings'],
+      ]),
+      // text-only steps: they happen in Meta Business Settings / Ads Manager, there is no screen of this app to show
       { id: 'domain-verifikasi', href: '/crm/settings' },
       { id: 'kampanye-website', href: '/crm/campaigns' },
-    ]),
+    ],
   },
   {
     // Every table is rendered from src/shortcuts/registry.ts, so it cannot drift from the app.
