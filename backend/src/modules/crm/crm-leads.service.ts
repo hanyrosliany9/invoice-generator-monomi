@@ -11,6 +11,7 @@ import { ClientsService } from "../clients/clients.service";
 import { ProjectsService } from "../projects/projects.service";
 import { QuotationsService } from "../quotations/quotations.service";
 import { AdClickService } from "../ad-tracking/ad-click.service";
+import { AutoLeadService } from "../ad-tracking/auto-lead.service";
 import { extractRefCode, normalizeRefCode } from "../ad-tracking/ref-code";
 import { extractInstagramHandle, normalizeInstagramHandle } from "../ad-tracking/track-utils";
 import { CrmFlowService } from "./crm-flow.service";
@@ -51,18 +52,23 @@ export class CrmLeadsService {
     private readonly projects: ProjectsService,
     private readonly quotations: QuotationsService,
     @Optional() private readonly adClicks?: AdClickService,
+    @Optional() private readonly autoLeads?: AutoLeadService,
   ) {}
 
   // -------------------------------------------------------------------
   // helpers
   // -------------------------------------------------------------------
 
-  private decorate<T extends { firstResponseAt: Date | null; firstContactAt: Date; stage: { type: string } }>(
-    lead: T,
-    thresholdMinutes: number,
-    now = new Date(),
-  ) {
-    const open = lead.stage.type === "OPEN";
+  private decorate<
+    T extends {
+      firstResponseAt: Date | null;
+      firstContactAt: Date;
+      stage: { type: string };
+      awaitingWhatsapp?: boolean;
+    },
+  >(lead: T, thresholdMinutes: number, now = new Date()) {
+    // a waiting lead (landing-page form, no chat yet) cannot be answered: no wait clock
+    const open = lead.stage.type === "OPEN" && !lead.awaitingWhatsapp;
     const waitingMinutes =
       !lead.firstResponseAt && open ? Math.round(minutesBetween(lead.firstContactAt, now)) : null;
     return {
@@ -142,10 +148,12 @@ export class CrmLeadsService {
     if (q.uncontacted) {
       and.push({
         firstResponseAt: null,
+        awaitingWhatsapp: false,
         firstContactAt: { lt: new Date(now.getTime() - threshold * 60000) },
         stage: { type: "OPEN" },
       });
     }
+    if (q.awaiting) and.push({ awaitingWhatsapp: true });
     if (q.q) {
       const term = q.q.trim();
       const digits = term.replace(/\D/g, "");
@@ -154,6 +162,7 @@ export class CrmLeadsService {
         { company: { contains: term, mode: "insensitive" } },
         { email: { contains: term, mode: "insensitive" } },
         { campaignCode: { contains: term, mode: "insensitive" } },
+        { instagramHandle: { contains: term.replace(/^@+/, ""), mode: "insensitive" } },
       ];
       if (digits.length >= 3) {
         const norm = digits.startsWith("0") ? "62" + digits.slice(1) : digits;
@@ -207,8 +216,10 @@ export class CrmLeadsService {
         },
         metaEvents: { orderBy: { createdAt: "asc" } },
         // no ip / user agent / browser ids: only what staff need to see
-        adClick: {
+        adClicks: {
+          orderBy: { createdAt: "desc" },
           select: {
+            id: true,
             ref: true,
             createdAt: true,
             linkedAt: true,
@@ -229,14 +240,24 @@ export class CrmLeadsService {
     });
     if (!lead) throw new NotFoundException("Lead tidak ditemukan");
     const threshold = await this.settings.getThresholdMinutes();
+    // The newest click carries the lead's website events; older taps are listed.
+    const { adClicks = [], ...rest } = lead;
+    const latest = adClicks[0] ?? null;
+    const adClick = latest ? (({ id: _id, ...c }) => c)(latest) : null;
     // The website Lead event is sent at click time and belongs to the click, not the lead.
-    const adClickEvent = lead.adClick
+    const adClickEvent = latest
       ? ((await this.prisma.metaEventOutbox.findFirst({
-          where: { eventName: "Lead", route: "WEBSITE", adClick: { leadId: id } },
+          where: { eventName: "Lead", route: "WEBSITE", adClickId: latest.id },
           select: { status: true, eventTime: true, sentAt: true, lastError: true },
         })) ?? null)
       : null;
-    return { ...this.decorate(lead, threshold), adClickEvent, thresholdMinutes: threshold };
+    return {
+      ...this.decorate(rest, threshold),
+      adClick,
+      otherAdClickRefs: adClicks.slice(1).map((c) => c.ref).filter((r): r is string => !!r),
+      adClickEvent,
+      thresholdMinutes: threshold,
+    };
   }
 
   async assignees() {
@@ -250,10 +271,11 @@ export class CrmLeadsService {
   async badges() {
     const threshold = await this.settings.getThresholdMinutes();
     const now = new Date();
-    const [uncontacted, followUpsDue] = await Promise.all([
+    const [uncontacted, followUpsDue, awaitingWhatsapp] = await Promise.all([
       this.prisma.lead.count({
         where: {
           firstResponseAt: null,
+          awaitingWhatsapp: false,
           firstContactAt: { lt: new Date(now.getTime() - threshold * 60000) },
           stage: { type: "OPEN" },
         },
@@ -261,8 +283,17 @@ export class CrmLeadsService {
       this.prisma.lead.count({
         where: { followUpAt: { lte: endOfTodayWib(now) }, stage: { type: "OPEN" } },
       }),
+      this.prisma.lead.count({ where: { awaitingWhatsapp: true, stage: { type: "OPEN" } } }),
     ]);
-    return { uncontacted, followUpsDue, total: uncontacted + followUpsDue, thresholdMinutes: threshold };
+    // The menu badge counts what staff can act on now; waiting leads have no
+    // number to answer yet, so they are reported separately (board filter).
+    return {
+      uncontacted,
+      followUpsDue,
+      awaitingWhatsapp,
+      total: uncontacted + followUpsDue,
+      thresholdMinutes: threshold,
+    };
   }
 
   // -------------------------------------------------------------------
@@ -291,6 +322,31 @@ export class CrmLeadsService {
     if (!dto.name?.trim() && !phone) {
       throw new BadRequestException("Isi nama atau nomor WhatsApp");
     }
+
+    // A landing-page ad click code ("Kode: K7QM2X") pasted from the chat.
+    const adClickRef = normalizeRefCode(dto.adClickRef) ?? extractRefCode(dto.firstMessage);
+    const clickPreview =
+      adClickRef && !dto.ctwaClid ? await this.adClicks?.preview(adClickRef) : null;
+    // Its lead was auto-created at the tap and waits for this chat: fill that
+    // lead in (or merge it into the lead that already has this number).
+    if (clickPreview?.waitingLead && this.autoLeads) {
+      if (!phone) {
+        throw new BadRequestException({
+          statusCode: 400,
+          code: "WAITING_LEAD_NEEDS_PHONE",
+          message: "Isi nomor WhatsApp untuk melengkapi lead yang menunggu chat ini.",
+        });
+      }
+      const waitingOutcome = await this.autoLeads.resolveWaitingLead(clickPreview.waitingLead.id, {
+        phone,
+        name: dto.name ?? null,
+        message: dto.firstMessage ?? null,
+        assignedToId: dto.assignedToId ?? actorId,
+        actorId,
+      });
+      return { ...(await this.get(waitingOutcome.leadId)), waitingOutcome };
+    }
+
     if (phone && !dto.allowDuplicate) {
       const existing = await this.findDuplicate(phone);
       if (existing) {
@@ -313,9 +369,6 @@ export class CrmLeadsService {
     if (!stage || !stage.isActive) throw new BadRequestException("Tahap tidak valid");
 
     // A landing-page ad click (code pasted from the chat) makes this a website lead.
-    const adClickRef = normalizeRefCode(dto.adClickRef) ?? extractRefCode(dto.firstMessage);
-    const clickPreview =
-      adClickRef && !dto.ctwaClid ? await this.adClicks?.preview(adClickRef) : null;
     const clickToLink = clickPreview?.available ? clickPreview : null;
     const campaign = dtoCampaign ?? clickToLink?.campaign ?? null;
 
@@ -445,7 +498,11 @@ export class CrmLeadsService {
     const lead = await this.prisma.lead.findUnique({ where: { id } });
     if (!lead) throw new NotFoundException("Lead tidak ditemukan");
     const data: Prisma.LeadUncheckedUpdateInput = {};
-    if (dto.name !== undefined) data.name = dto.name.trim();
+    if (dto.name !== undefined) {
+      data.name = dto.name.trim();
+      // staff typed a real name: it may now be used for Meta matching
+      if (data.name !== lead.name) data.nameIsPlaceholder = false;
+    }
     if (dto.phone !== undefined) {
       const phone = dto.phone ? normalizePhone(dto.phone) : null;
       if (dto.phone && !phone) throw new BadRequestException("Nomor WhatsApp tidak valid");
@@ -462,6 +519,12 @@ export class CrmLeadsService {
       }
       data.phone = phone;
       data.waId = waIdFromPhone(phone);
+      if (phone && lead.awaitingWhatsapp) {
+        // the chat is here: the waiting state ends and the response clock starts
+        data.awaitingWhatsapp = false;
+        data.firstContactAt = new Date();
+        data.firstResponseAt = null;
+      }
     }
     if (dto.email !== undefined) data.email = dto.email;
     if (dto.company !== undefined) data.company = dto.company;
@@ -477,13 +540,22 @@ export class CrmLeadsService {
     return this.get(id);
   }
 
-  /** Admin: link a landing-page ad click code to a lead whose chat missed it. */
+  /**
+   * Admin: link a landing-page ad click code to a lead whose chat missed it.
+   * When the code belongs to a lead auto-created at the tap that is still
+   * waiting for its chat, that waiting lead is merged into this one.
+   */
   async linkAdClick(id: string, code: string, actorId: string | null) {
     const lead = await this.prisma.lead.findUnique({ where: { id }, select: { id: true } });
     if (!lead) throw new NotFoundException("Lead tidak ditemukan");
     if (!this.adClicks) throw new BadRequestException("Pelacakan landing page tidak aktif");
     const ref = normalizeRefCode(code) ?? extractRefCode(code);
     if (!ref) throw new BadRequestException("Kode tidak valid");
+    const preview = await this.adClicks.preview(ref);
+    if (preview?.waitingLead && preview.waitingLead.id !== id && this.autoLeads) {
+      const waitingOutcome = await this.autoLeads.mergeWaitingInto(preview.waitingLead.id, id, actorId);
+      return { ...(await this.get(id)), waitingOutcome };
+    }
     const result = await this.adClicks.linkLead(id, ref, actorId);
     if (result === "not_found") throw new NotFoundException("Kode klik iklan tidak ditemukan");
     if (result === "taken") {
@@ -494,6 +566,67 @@ export class CrmLeadsService {
       });
     }
     return this.get(id);
+  }
+
+  /**
+   * "Add phone" on a waiting lead's page: same as pasting its chat (fill the
+   * number in, or merge into the lead that already has it).
+   */
+  async addPhone(id: string, rawPhone: string, actorId: string | null) {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id },
+      select: { id: true, awaitingWhatsapp: true },
+    });
+    if (!lead) throw new NotFoundException("Lead tidak ditemukan");
+    if (!lead.awaitingWhatsapp || !this.autoLeads) {
+      throw new BadRequestException("Lead ini tidak menunggu nomor WhatsApp. Ubah nomor lewat Edit.");
+    }
+    const phone = normalizePhone(rawPhone);
+    if (!phone) throw new BadRequestException("Nomor WhatsApp tidak valid");
+    const waitingOutcome = await this.autoLeads.resolveWaitingLead(id, { phone, actorId });
+    return { ...(await this.get(waitingOutcome.leadId)), waitingOutcome };
+  }
+
+  /**
+   * WhatsApp Cloud API ingest: a customer message carrying a "Kode:" whose
+   * click belongs to a waiting lead. Without a lead for the number, the
+   * waiting lead gets the number (no new lead, no LeadSubmitted); with one,
+   * the waiting lead is merged into it. Returns the lead id, or null when
+   * there is nothing to match (the caller then goes on as before).
+   */
+  async matchWaitingLeadFromChat(input: {
+    text: string | null;
+    waId: string;
+    name: string | null;
+    activityBody: string | null;
+    existingLeadId: string | null;
+  }): Promise<string | null> {
+    if (!this.adClicks || !this.autoLeads || !input.text) return null;
+    const ref = extractRefCode(input.text);
+    if (!ref) return null;
+    const waiting = (await this.adClicks.preview(ref))?.waitingLead;
+    if (!waiting) return null;
+    try {
+      if (input.existingLeadId) {
+        if (input.existingLeadId === waiting.id) return waiting.id;
+        return (await this.autoLeads.mergeWaitingInto(waiting.id, input.existingLeadId, null)).leadId;
+      }
+      const phone = normalizePhone(`+${input.waId}`);
+      if (!phone) return null;
+      const r = await this.autoLeads.resolveWaitingLead(waiting.id, {
+        phone,
+        waId: input.waId,
+        name: input.name,
+        message: input.text.slice(0, 4000),
+        activityBody: input.activityBody,
+        actorId: null,
+      });
+      return r.leadId;
+    } catch (error) {
+      // raced with staff resolving the same lead: fall back to the usual path
+      if (error instanceof ConflictException) return null;
+      throw error;
+    }
   }
 
   async remove(id: string) {
@@ -556,7 +689,7 @@ export class CrmLeadsService {
         where: { id },
         data: {
           lastContactAt: now,
-          ...(isReply && !lead.firstResponseAt ? { firstResponseAt: now } : {}),
+          ...(isReply && !lead.firstResponseAt && !lead.awaitingWhatsapp ? { firstResponseAt: now } : {}),
         },
       }),
     ]);
@@ -590,7 +723,7 @@ export class CrmLeadsService {
           followUpAt: null,
           followUpNote: null,
           lastContactAt: now,
-          ...(!lead.firstResponseAt ? { firstResponseAt: now } : {}),
+          ...(!lead.firstResponseAt && !lead.awaitingWhatsapp ? { firstResponseAt: now } : {}),
         },
       }),
       this.prisma.leadActivity.create({

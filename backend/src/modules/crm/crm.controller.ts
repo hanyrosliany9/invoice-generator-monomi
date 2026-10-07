@@ -18,6 +18,7 @@ import { CrmLeadsService } from "./crm-leads.service";
 import { CrmSettingsService } from "./crm-settings.service";
 import { CrmStatsService } from "./crm-stats.service";
 import {
+  AddLeadPhoneDto,
   AssignLeadDto,
   BulkLeadsDto,
   ConvertLeadDto,
@@ -67,7 +68,7 @@ export class CrmController {
   // ---- leads ------------------------------------------------------------
 
   @Get("leads")
-  @ApiOperation({ summary: "List leads (filters: stage, assignee, campaign, source, follow-up, uncontacted, q)" })
+  @ApiOperation({ summary: "List leads (filters: stage, assignee, campaign, source, follow-up, uncontacted, awaiting, q)" })
   listLeads(@Query() q: ListLeadsQueryDto, @Req() req: any) {
     return this.leads.list(q, this.uid(req));
   }
@@ -163,6 +164,13 @@ export class CrmController {
   @ApiOperation({ summary: "Link a landing-page ad click code (Kode: XXXXXX) to the lead" })
   linkAdClick(@Param("id") id: string, @Body() dto: LinkAdClickDto, @Req() req: any) {
     return this.leads.linkAdClick(id, dto.code, this.uid(req));
+  }
+
+  @Post("leads/:id/phone")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Add the WhatsApp number to a lead that waits for its chat (fills it in or merges it)" })
+  addPhone(@Param("id") id: string, @Body() dto: AddLeadPhoneDto, @Req() req: any) {
+    return this.leads.addPhone(id, dto.phone, this.uid(req));
   }
 
   @Get("assignees")

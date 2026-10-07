@@ -1,6 +1,10 @@
 import { normalizeRefCode } from "./ref-code";
 import { normalizeInstagramHandle } from "./track-utils";
 
+/** Landing-page answers: stored and shown as plain text only. */
+export const BRAND_NAME_MAX = 80;
+export const CATEGORY_MAX = 40;
+
 /** Hard cap for the request body (sendBeacon payloads are tiny). */
 export const TRACK_EVENT_MAX_BYTES = 4096;
 
@@ -116,7 +120,7 @@ export function parseTrackEvent(raw: unknown): ParsedTrackEvent | null {
     fbp: pattern(b.fbp, FBP_RE),
     // qualifier answers only matter on the WhatsApp tap
     instagramHandle: name === "Lead" ? normalizeInstagramHandle(meta.instagram) : null,
-    brandName: name === "Lead" ? text(meta.brandName, 80) : null,
-    category: name === "Lead" ? text(meta.category, 80) : null,
+    brandName: name === "Lead" ? text(meta.brandName, BRAND_NAME_MAX) : null,
+    category: name === "Lead" ? text(meta.category, CATEGORY_MAX) : null,
   };
 }

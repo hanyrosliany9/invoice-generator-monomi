@@ -36,7 +36,7 @@ export interface WebCapiRunResult {
 const BATCH = 50;
 const SEND_INCLUDE = {
   adClick: true,
-  lead: { select: { id: true, name: true, phone: true, ctwaClid: true } },
+  lead: { select: { id: true, name: true, phone: true, nameIsPlaceholder: true, ctwaClid: true } },
 } satisfies Prisma.MetaEventOutboxInclude;
 /** Click-time Leads still PENDING_CONFIG and older than this when the sender becomes READY are skipped. */
 export const STALE_BEFORE_ENABLE_MS = 86_400_000;

@@ -39,6 +39,8 @@ export class AdTrackingAdminController {
         "LANDING_PAGE_URL",
         "PUBLIC_TRACK_MAX_NEW_PER_MIN",
         "AD_CLICK_PII_RETENTION_DAYS",
+        "PUBLIC_TRACK_MAX_AUTO_LEADS_PER_HOUR",
+        "AUTO_LEAD_STALE_DAYS",
       ],
       ...stats,
     };

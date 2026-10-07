@@ -29,6 +29,14 @@ import { looksLikePlaceholder } from "../whatsapp/whatsapp.config";
  *  - AD_CLICK_PII_RETENTION_DAYS   days after which clientIp / userAgent /
  *                                  fbclid / fbc / fbp are nulled on linked
  *                                  ad_clicks rows. Default 90.
+ *  - PUBLIC_TRACK_MAX_AUTO_LEADS_PER_HOUR  global cap on CRM leads auto-created
+ *                                  from landing-page taps (all instances,
+ *                                  Redis). Above it the tap is stored but no
+ *                                  lead is created. 0 turns auto-creation off.
+ *                                  Default 60.
+ *  - AUTO_LEAD_STALE_DAYS          waiting leads (no WhatsApp message / phone)
+ *                                  older than this move to Lost ("Never sent
+ *                                  WhatsApp") in the nightly job. Default 30.
  *  - META_GRAPH_VERSION            shared, default v26.0
  *  - META_WEB_CAPI_GRAPH_BASE_URL  DEV ONLY fake Graph server (ignored in production)
  */
@@ -38,6 +46,8 @@ export const DEFAULT_TRACK_ORIGINS = ["https://link.monomiagency.com"];
 export const PIXEL_ID_RE = /^\d{5,25}$/;
 export const DEFAULT_MAX_NEW_CLICKS_PER_MIN = 600;
 export const DEFAULT_PII_RETENTION_DAYS = 90;
+export const DEFAULT_MAX_AUTO_LEADS_PER_HOUR = 60;
+export const DEFAULT_AUTO_LEAD_STALE_DAYS = 30;
 
 export type WebCapiState = "OFF" | "INCOMPLETE" | "INVALID" | "READY";
 
@@ -56,6 +66,10 @@ export interface AdTrackingConfig {
   maxNewClicksPerMin: number;
   /** Linked clicks lose ip / user agent / Meta ids after this many days. */
   piiRetentionDays: number;
+  /** Global cap on auto-created leads per hour (0 = auto-creation off). */
+  maxAutoLeadsPerHour: number;
+  /** Waiting leads older than this many days are closed as Lost. */
+  autoLeadStaleDays: number;
   isProduction: boolean;
   /** Env var names + what is wrong; never values. */
   problems: string[];
@@ -185,6 +199,23 @@ export function resolveAdTrackingConfig(
     problems,
   );
 
+  const maxAutoLeadsPerHour = intSetting(
+    env.PUBLIC_TRACK_MAX_AUTO_LEADS_PER_HOUR,
+    "PUBLIC_TRACK_MAX_AUTO_LEADS_PER_HOUR",
+    DEFAULT_MAX_AUTO_LEADS_PER_HOUR,
+    0,
+    100_000,
+    problems,
+  );
+  const autoLeadStaleDays = intSetting(
+    env.AUTO_LEAD_STALE_DAYS,
+    "AUTO_LEAD_STALE_DAYS",
+    DEFAULT_AUTO_LEAD_STALE_DAYS,
+    1,
+    3650,
+    problems,
+  );
+
   const state: WebCapiState = !enabled
     ? "OFF"
     : invalid
@@ -206,6 +237,8 @@ export function resolveAdTrackingConfig(
     landingPageUrl,
     maxNewClicksPerMin,
     piiRetentionDays,
+    maxAutoLeadsPerHour,
+    autoLeadStaleDays,
     isProduction,
     problems,
   };

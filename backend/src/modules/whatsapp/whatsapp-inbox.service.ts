@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { normalizePhone } from "../crm/crm.utils";
 import { GraphApiError } from "./whatsapp-graph.client";
 import {
   TemplateInfo,
@@ -571,18 +572,31 @@ export class WhatsAppInboxService {
     if (leadId) {
       const lead = await this.prisma.lead.findUnique({
         where: { id: leadId },
-        select: { id: true, waId: true },
+        select: { id: true, waId: true, phone: true, awaitingWhatsapp: true },
       });
       if (!lead) throw new NotFoundException("Lead tidak ditemukan");
       await this.prisma.whatsAppContact.update({
         where: { id: conv.contact.id },
         data: { leadId },
       });
-      if (!lead.waId)
-        await this.prisma.lead.update({
-          where: { id: leadId },
-          data: { waId: conv.contact.waId },
-        });
+      const data: Prisma.LeadUpdateInput = {};
+      if (!lead.waId) data.waId = conv.contact.waId;
+      if (lead.awaitingWhatsapp) {
+        // a landing-page lead waiting for its chat: this conversation is it
+        data.awaitingWhatsapp = false;
+        data.firstContactAt = new Date();
+        data.firstResponseAt = null;
+        const phone = lead.phone ? null : normalizePhone(`+${conv.contact.waId}`);
+        if (phone) {
+          const taken = await this.prisma.lead.findFirst({
+            where: { phone, id: { not: leadId } },
+            select: { id: true },
+          });
+          if (!taken) data.phone = phone;
+        }
+      }
+      if (Object.keys(data).length)
+        await this.prisma.lead.update({ where: { id: leadId }, data });
     } else {
       await this.prisma.whatsAppContact.update({
         where: { id: conv.contact.id },

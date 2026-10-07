@@ -46,7 +46,7 @@ const RELATIONS: Record<
     quotation: ["quotation", "quotationId", "one"],
     activities: ["leadActivity", "leadId", "many"],
     metaEvents: ["metaEventOutbox", "leadId", "many"],
-    adClick: ["adClick", "leadId", "back-one"],
+    adClicks: ["adClick", "leadId", "many"],
   },
   leadActivity: {
     actor: ["user", "actorId", "one"],
@@ -61,7 +61,7 @@ const UNIQUE: Record<string, string[]> = {
   whatsAppConversation: ["contactId"],
   whatsAppWebhookEvent: ["payloadHash"],
   metaEventOutbox: ["dedupeKey"],
-  adClick: ["ref", "eventId", "leadId", "visitKey"],
+  adClick: ["ref", "eventId", "visitKey"],
   campaign: ["code"],
 };
 
@@ -121,6 +121,16 @@ const DEFAULTS: Record<string, () => Row> = {
     projectId: null,
     quotationId: null,
     campaignId: null,
+    campaignCode: null,
+    instagramHandle: null,
+    company: null,
+    category: null,
+    phone: null,
+    firstMessage: null,
+    lostReason: null,
+    awaitingWhatsapp: false,
+    autoCreated: false,
+    nameIsPlaceholder: false,
   }),
   campaign: () => ({ metaAdIds: [] }),
   adClick: () => ({
@@ -184,6 +194,13 @@ export class FakePrisma {
 
   $transaction = async (arg: any) =>
     typeof arg === "function" ? arg(this) : Promise.all(arg);
+
+  /** Raw SQL (advisory locks): recorded, no effect in memory. */
+  rawCalls: string[] = [];
+  $executeRaw = async (strings: TemplateStringsArray, ...values: unknown[]) => {
+    this.rawCalls.push(strings.join("?") + JSON.stringify(values));
+    return 0;
+  };
 
   // ---------------------------------------------------------------------
 

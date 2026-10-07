@@ -38,6 +38,8 @@ interface LeadRow {
   createdAt: Date;
   firstContactAt: Date;
   firstResponseAt: Date | null;
+  /** Landing-page lead still waiting for its chat: left out of response metrics. */
+  awaitingWhatsapp?: boolean;
   assignedToId: string | null;
   assignedTo: { id: string; name: string } | null;
   source: string;
@@ -80,6 +82,7 @@ export class CrmStatsService {
         createdAt: true,
         firstContactAt: true,
         firstResponseAt: true,
+        awaitingWhatsapp: true,
         assignedToId: true,
         assignedTo: { select: { id: true, name: true } },
         source: true,
@@ -135,6 +138,7 @@ export class CrmStatsService {
       this.prisma.lead.count({
         where: {
           firstResponseAt: null,
+          awaitingWhatsapp: false,
           firstContactAt: { lt: new Date(Date.now() - threshold * 60000) },
           stage: { type: "OPEN" },
         },
@@ -167,8 +171,9 @@ export class CrmStatsService {
       spendByCampaign.set(s.campaignId, (spendByCampaign.get(s.campaignId) ?? 0) + part);
     }
 
+    // waiting leads (no chat yet) have nothing to answer
     const responseMinutes = leads
-      .filter((l) => l.firstResponseAt)
+      .filter((l) => l.firstResponseAt && !l.awaitingWhatsapp)
       .map((l) => minutesBetween(l.firstContactAt, l.firstResponseAt as Date));
 
     // by owner
@@ -183,7 +188,7 @@ export class CrmStatsService {
     const byOwner = [...ownerMap.values()]
       .map((o) => {
         const resp = o.rows
-          .filter((r) => r.l.firstResponseAt)
+          .filter((r) => r.l.firstResponseAt && !r.l.awaitingWhatsapp)
           .map((r) => minutesBetween(r.l.firstContactAt, r.l.firstResponseAt as Date));
         return {
           ownerId: o.ownerId,

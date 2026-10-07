@@ -73,10 +73,12 @@ export class CrmOutboxService {
     opts: { value?: number | null; eventTime?: Date } = {},
   ): Promise<boolean> {
     const eventTime = opts.eventTime ?? new Date();
+    // a lead may hold several landing-page clicks: the newest carries its events
     const click = lead.ctwaClid
       ? null
-      : ((await db.adClick?.findUnique({
+      : ((await db.adClick?.findFirst({
           where: { leadId: lead.id },
+          orderBy: { createdAt: "desc" },
           select: { id: true },
         })) ?? null);
     const route = chooseRoute(lead, !!click);

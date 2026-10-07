@@ -3,6 +3,7 @@ import { RedisThrottlerStorageModule } from "../../common/throttler/redis-thrott
 import { PrismaModule } from "../prisma/prisma.module";
 import { WhatsAppGraphClient } from "../whatsapp/whatsapp-graph.client";
 import { AdClickService } from "./ad-click.service";
+import { AutoLeadService } from "./auto-lead.service";
 import { AdTrackingAdminController } from "./ad-tracking-admin.controller";
 import { reportAdTrackingConfig } from "./ad-tracking.config";
 import { PublicTrackController } from "./public-track.controller";
@@ -21,12 +22,13 @@ import { WebCapiService } from "./web-capi.service";
   controllers: [PublicTrackController, AdTrackingAdminController],
   providers: [
     AdClickService,
+    AutoLeadService,
     WebCapiService,
     WhatsAppGraphClient,
-    // abuse counters (global new-row cap, Lead gating) on the app's Redis
+    // abuse counters (global new-row cap, Lead gating, auto-lead cap) on the app's Redis
     { provide: TrackCounters, useClass: RedisTrackCounters },
   ],
-  exports: [AdClickService],
+  exports: [AdClickService, AutoLeadService],
 })
 export class AdTrackingModule implements OnModuleInit {
   onModuleInit(): void {

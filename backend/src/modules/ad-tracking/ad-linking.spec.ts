@@ -201,17 +201,23 @@ describe("manual link (lead detail) + re-routing of earlier events", () => {
     await expect(svc.linkAdClick("L2", "ZZZZ22", null)).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it("a lead can hold only one click", async () => {
-    const { adClicks, t } = setup({
-      leads: [{ id: "L1", ctwaClid: null }],
+  it("a lead can hold several clicks (newest carries the stage events); a click belongs to one lead", async () => {
+    const { adClicks, outbox, prisma, t } = setup({
+      leads: [{ id: "L1", ctwaClid: null }, { id: "L2", ctwaClid: null }],
       clicks: [
-        { id: "c1", ref: REF, eventId: "e1", createdAt: new Date(), leadId: null },
+        { id: "c1", ref: REF, eventId: "e1", createdAt: new Date(Date.now() - 60_000), leadId: null },
         { id: "c2", ref: "ABCD23", eventId: "e2", createdAt: new Date(), leadId: null },
       ],
     });
     expect(await adClicks.linkLead("L1", REF, null)).toBe("linked");
-    expect(await adClicks.linkLead("L1", "ABCD23", null)).toBe("taken");
-    expect(t.adClick[1].leadId).toBeNull();
+    expect(await adClicks.linkLead("L1", "ABCD23", null)).toBe("linked");
+    expect(t.adClick.map((c: any) => c.leadId)).toEqual(["L1", "L1"]);
+    expect(await adClicks.linkLead("L2", "ABCD23", null)).toBe("taken");
+    await outbox.queueEvent(prisma as any, { id: "L1", ctwaClid: null }, "QualifiedLead");
+    expect(t.metaEventOutbox.find((r: any) => r.eventName === "QualifiedLead")).toMatchObject({
+      route: "WEBSITE",
+      adClickId: "c2",
+    });
   });
 
   it("does not flip a CTWA lead's source", async () => {

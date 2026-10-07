@@ -51,7 +51,9 @@ export class CrmFlowService {
   /**
    * Move a lead to another stage. Appends a STAGE_CHANGE activity and queues
    * the stage's Meta event (if any). A human (actorId set) acting on a lead
-   * that has never been answered also counts as the first response.
+   * that has never been answered also counts as the first response, except
+   * on a waiting lead (landing-page form, no chat yet: nothing to answer).
+   * Closing a waiting lead (Won / Lost) ends its waiting state.
    */
   async changeStage(
     leadId: string,
@@ -78,7 +80,8 @@ export class CrmFlowService {
           stageId: toStageId,
           lostReason:
             toStage.type === "LOST" ? (opts.lostReason ?? lead.lostReason ?? null) : null,
-          ...(actorId && !lead.firstResponseAt ? { firstResponseAt: now } : {}),
+          ...(actorId && !lead.firstResponseAt && !lead.awaitingWhatsapp ? { firstResponseAt: now } : {}),
+          ...(toStage.type !== "OPEN" && lead.awaitingWhatsapp ? { awaitingWhatsapp: false } : {}),
         },
       });
       let metaEvent: string | null = null;

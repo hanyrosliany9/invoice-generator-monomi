@@ -141,6 +141,10 @@ export class ListLeadsQueryDto {
   @IsOptional() @Transform(toBool) @IsBoolean()
   uncontacted?: boolean;
 
+  /** Only leads auto-created from the landing page that still wait for the WhatsApp chat. */
+  @IsOptional() @Transform(toBool) @IsBoolean()
+  awaiting?: boolean;
+
   @IsOptional() @Transform(emptyToUndefined) @IsString() @MaxLength(100)
   q?: string;
 
@@ -162,6 +166,12 @@ export class DuplicateQueryDto {
 export class LinkAdClickDto {
   @IsString() @MaxLength(40)
   code: string;
+}
+
+/** "Add phone" on a lead that waits for its WhatsApp chat. */
+export class AddLeadPhoneDto {
+  @IsString() @MinLength(5) @MaxLength(40)
+  phone: string;
 }
 
 export class QuickAddParseDto {

@@ -73,7 +73,10 @@ export interface WebClick {
 export interface WebLead {
   id: string;
   name: string | null;
+  /** Null for a lead auto-created from the landing page until the chat arrives (no ph is sent). */
   phone: string | null;
+  /** The name is a brand / "@handle" / "Website visitor · Kode", not a person: no fn / ln. */
+  nameIsPlaceholder?: boolean | null;
 }
 
 export interface WebEventInput {
@@ -108,7 +111,7 @@ export function buildWebEvent(
   if (lead) {
     const ph = normalizePhoneForMeta(lead.phone);
     if (ph) userData.ph = [sha256(ph)];
-    const { fn, ln } = splitName(lead.name);
+    const { fn, ln } = lead.nameIsPlaceholder ? { fn: null, ln: null } : splitName(lead.name);
     if (fn) userData.fn = [sha256(fn)];
     if (ln) userData.ln = [sha256(ln)];
     userData.country = [sha256("id")];

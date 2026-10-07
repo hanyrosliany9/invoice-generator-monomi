@@ -862,6 +862,15 @@ model Lead {
   adId            String?
   ctwaClid        String? // Click-to-WhatsApp click id (Meta CAPI attribution)
   instagramHandle String? // normalised handle without @ (from the landing page or the pasted chat)
+  category        String? // landing-page answer (fashion category); the brand name goes to `company`
+  // Auto-created from a landing-page WhatsApp tap: no WhatsApp message and no
+  // phone yet. Cleared when the chat arrives (quick-add / link code / ingest /
+  // "Add phone"). Waiting leads are left out of the response-time metrics.
+  awaitingWhatsapp  Boolean @default(false)
+  autoCreated       Boolean @default(false) // created by the server from a landing-page tap
+  // `name` is the brand / "@handle" / "Website visitor · <Kode>", not a person:
+  // it is never hashed into fn/ln for Meta. Cleared when staff set a real name.
+  nameIsPlaceholder Boolean @default(false)
   referral        Json? // raw CTWA referral object
   firstMessage    String?    @db.Text
   stageId         String
@@ -889,9 +898,14 @@ model Lead {
   activities LeadActivity[]
   metaEvents MetaEventOutbox[]
   waContacts WhatsAppContact[]
-  adClick    AdClick?
+  // Landing-page taps linked to this lead (several when the same person taps
+  // again, or when a waiting lead is merged into it); the newest one carries
+  // the website-route stage events.
+  adClicks   AdClick[]
 
   @@index([phone])
+  @@index([instagramHandle])
+  @@index([awaitingWhatsapp])
   @@index([waId])
   @@index([stageId])
   @@index([assignedToId])
@@ -1007,7 +1021,7 @@ model AdClick {
   viewContentAt DateTime?
   engagedAt     DateTime?
   campaignCode String? // utm_campaign matched to an existing CRM campaign code
-  leadId       String?   @unique
+  leadId       String? // one lead may hold several clicks; a click belongs to at most one lead
   lead         Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
   linkedAt     DateTime?
 
@@ -1016,6 +1030,7 @@ model AdClick {
   @@index([createdAt])
   @@index([campaignCode])
   @@index([visitId])
+  @@index([leadId])
   @@map("ad_clicks")
 }
 

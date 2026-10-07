@@ -121,6 +121,8 @@ services:
       - LANDING_PAGE_URL=${LANDING_PAGE_URL:-https://link.monomiagency.com}
       - PUBLIC_TRACK_MAX_NEW_PER_MIN=${PUBLIC_TRACK_MAX_NEW_PER_MIN:-600}
       - AD_CLICK_PII_RETENTION_DAYS=${AD_CLICK_PII_RETENTION_DAYS:-90}
+      - PUBLIC_TRACK_MAX_AUTO_LEADS_PER_HOUR=${PUBLIC_TRACK_MAX_AUTO_LEADS_PER_HOUR:-60}
+      - AUTO_LEAD_STALE_DAYS=${AUTO_LEAD_STALE_DAYS:-30}
       - PUBLIC_URL=https://share.monomiagency.com
       - MEDIA_URL=https://media.monomiagency.com
       # MCP custom connector — Claude.ai users connect via the admin hostname

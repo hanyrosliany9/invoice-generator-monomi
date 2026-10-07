@@ -554,6 +554,27 @@ export class WhatsAppIngestService {
     origin: WhatsAppOrigin,
   ): Promise<boolean> {
     const leadId = await this.linkedLeadId(contact);
+    // "Kode: XXXXXX" of a landing-page tap whose lead was auto-created and
+    // waits for this chat: that lead gets the number (or is merged into the
+    // number's lead) instead of a new lead being created.
+    if (origin === "CUSTOMER") {
+      const matched = await this.leads.matchWaitingLeadFromChat({
+        text,
+        waId: contact.waId,
+        name: contact.phoneBookName ?? contact.profileName,
+        activityBody: `${ACTIVITY_PREFIX.IN}: ${snippet(text, type)}`,
+        existingLeadId: leadId,
+      });
+      if (matched && matched !== contact.leadId) {
+        await this.prisma.whatsAppContact.update({
+          where: { id: contact.id },
+          data: { leadId: matched },
+        });
+        contact.leadId = matched;
+      }
+      // filled in: the message is already on the lead's timeline
+      if (matched && !leadId) return false;
+    }
     if (!leadId) {
       if (!this.shouldCreateLead(origin, ts, referral)) return false;
       const campaigns = await this.prisma.campaign.findMany({

@@ -16,6 +16,8 @@ import {
   WebClick,
 } from "./web-capi.payload";
 import { extractRefCode, normalizeRefCode } from "./ref-code";
+import { AutoLeadService } from "./auto-lead.service";
+import { attachClickInTx } from "./click-link";
 
 /** Unlinked WhatsApp taps (rows with a ref) are kept this long for linking. */
 export const AD_CLICK_RETENTION_DAYS = 30;
@@ -32,8 +34,6 @@ export const LEAD_MIN_PAGEVIEW_AGE_MS = 3000;
 export const LEAD_IP_CAP_PER_HOUR = 10;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
-/** Outbox events that exist for the website route when a lead is linked later. */
-const RELINKABLE_EVENTS = ["QualifiedLead", "Purchase"];
 
 type Tx = Prisma.TransactionClient;
 
@@ -67,6 +67,21 @@ export interface AdClickPreview {
   instagramHandle: string | null;
   /** True when no lead holds this click yet (so it can still be linked). */
   available: boolean;
+  /**
+   * The click belongs to a lead auto-created from the landing-page form that
+   * is still waiting for its WhatsApp chat: the chat fills that lead in (or
+   * merges it into the lead that already has the number) instead of creating
+   * a new one.
+   */
+  waitingLead: { id: string; name: string; instagramHandle: string | null } | null;
+}
+
+/** Result of the click-time Lead gate (see leadSkipReason). */
+export interface LeadGate {
+  /** null: forward the click-time Lead to Meta; else the SKIPPED reason. */
+  skip: string | null;
+  /** The tap may get an auto-created CRM lead (no Meta click id needed). */
+  autoLead: boolean;
 }
 
 const VISIT_FLAG = {
@@ -137,6 +152,7 @@ export class AdClickService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() @Inject(TrackCounters) counters?: TrackCounters,
+    @Optional() private readonly autoLeads?: AutoLeadService,
   ) {
     this.counters = counters ?? new InMemoryTrackCounters();
   }
@@ -219,9 +235,10 @@ export class AdClickService {
    *  - Lead (WhatsApp tap): fills ref/eventId (+ Instagram/brand/category) on
    *    the visit row, or on a new row for a second tap in the same visit, and
    *    stores the website Lead event: PENDING_CONFIG when it may be forwarded
-   *    to Meta, SKIPPED (+ reason) otherwise (see leadSkipReason). Idempotent
-   *    on eventId; a different eventId for an existing ref (or the reverse)
-   *    is a conflict.
+   *    to Meta, SKIPPED (+ reason) otherwise (see leadSkipReason). A tap that
+   *    passes the auto-lead gate also gets a waiting CRM lead (AutoLeadService)
+   *    once the click is committed. Idempotent on eventId; a different eventId
+   *    for an existing ref (or the reverse) is a conflict.
    * The page URL is kept only when its origin is an allowed landing page.
    */
   async recordEvent(ev: ParsedTrackEvent, ctx: ClickContext): Promise<RecordResult> {
@@ -310,6 +327,7 @@ export class AdClickService {
       brandName: ev.brandName,
       category: ev.category,
     };
+    let autoLeadClickId: string | null = null;
     try {
       const outcome = await this.prisma.$transaction(async (tx) => {
         // Atomic: only a visit row that holds no tap yet takes this one; a
@@ -330,7 +348,8 @@ export class AdClickService {
             data: { visitId: ev.visitId, createdAt: now, ...fields, ...tap },
           });
         }
-        const skip = await this.leadSkipReason(tx, visitRow, click, ctx, now);
+        const { skip, autoLead } = await this.leadSkipReason(tx, visitRow, click, ctx, now);
+        autoLeadClickId = autoLead ? click.id : null;
         await tx.metaEventOutbox.create({
           data: {
             leadId: null,
@@ -346,6 +365,7 @@ export class AdClickService {
         });
         return "ok" as const;
       });
+      if (outcome === "ok" && autoLeadClickId) await this.autoCreateLead(autoLeadClickId, ctx, now);
       return { outcome };
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -356,18 +376,34 @@ export class AdClickService {
   }
 
   /**
-   * Whether a click-time Lead may be forwarded to Meta (null) or is only
-   * stored (the SKIPPED reason). Every Lead is stored and stays linkable in
-   * the CRM; forwarding needs ALL of:
+   * Auto-creates the CRM lead of a gated tap, after the click is committed.
+   * Never fails the request: on any error the click stays stored and staff
+   * can still link it by pasting the chat. Logs carry no visitor data.
+   */
+  private async autoCreateLead(clickId: string, ctx: ClickContext, now: Date): Promise<void> {
+    if (!this.autoLeads) return;
+    try {
+      await this.autoLeads.createForTap(clickId, ctx.userAgent, now);
+    } catch (error) {
+      this.logger.warn(`Auto-lead for a landing-page tap failed: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * The click-time Lead gate. Every Lead is stored and stays linkable in the
+   * CRM. `skip` is null when the Lead may be forwarded to Meta, else the
+   * SKIPPED reason; forwarding needs ALL of:
    *  1. a PageView of the same visit, from the same network (IPv4 address /
    *     IPv6 /64), at least LEAD_MIN_PAGEVIEW_AGE_MS earlier;
    *  2. no Lead of this visit forwarded yet (atomic claim on the visit row);
-   *  3. when the visit carries a Meta click id (fbclid / _fbc): no Lead
+   *  3. at most LEAD_IP_CAP_PER_HOUR verified first taps per network per hour;
+   *  4. when the visit carries a Meta click id (fbclid / _fbc): no Lead
    *     forwarded for that click id in the last 24 h (organic visits have
-   *     none and are not refused for it);
-   *  4. at most LEAD_IP_CAP_PER_HOUR forwarded Leads per network per hour.
-   * The counters for 3 and 4 live in Redis; when it cannot be reached the
-   * Lead is not forwarded. A refusal after the visit claim releases it.
+   *     none and are not refused for it).
+   * `autoLead` (a waiting CRM lead may be created) needs 1, the visit's FIRST
+   * tap (the one the visit row took, atomically) and 3, but no Meta click id.
+   * The counters for 3 and 4 live in Redis; when it cannot be reached neither
+   * happens (fail closed). A refusal after the visit claim releases it.
    */
   private async leadSkipReason(
     tx: Tx,
@@ -375,7 +411,7 @@ export class AdClickService {
     click: AdClick,
     ctx: ClickContext,
     now: Date,
-  ): Promise<string | null> {
+  ): Promise<LeadGate> {
     const network = ipBucket(ctx.ip);
     const pageViewAt = visitRow.pageViewAt;
     if (
@@ -384,41 +420,44 @@ export class AdClickService {
       ipBucket(visitRow.clientIp) !== network ||
       now.getTime() - pageViewAt.getTime() < LEAD_MIN_PAGEVIEW_AGE_MS
     ) {
-      return SKIP_UNVERIFIED_VISIT;
+      return { skip: SKIP_UNVERIFIED_VISIT, autoLead: false };
     }
 
+    // the visit row takes exactly one tap (conditional update on ref null)
+    const firstTap = click.id === visitRow.id;
     const first = await tx.adClick.updateMany({
       where: { id: visitRow.id, leadForwardedAt: null },
       data: { leadForwardedAt: now },
     });
-    if (first.count === 0) return SKIP_DUPLICATE_VISIT_LEAD;
+    const claimed = first.count === 1;
+    if (!claimed && !firstTap) return { skip: SKIP_DUPLICATE_VISIT_LEAD, autoLead: false };
 
-    let reason: string | null = null;
+    let reason: string | null = claimed ? null : SKIP_DUPLICATE_VISIT_LEAD;
+    let ipCapped = true;
     try {
+      // one budget per network for forwarded Leads and auto-created leads
+      ipCapped =
+        (await this.counters.increment(`lead-ip:${network}`, HOUR_MS)) > LEAD_IP_CAP_PER_HOUR;
+      if (!reason && ipCapped) reason = SKIP_IP_LEAD_CAP;
       const clickId = metaClickId(click.fbclid ?? visitRow.fbclid, click.fbc ?? visitRow.fbc);
-      if (clickId) {
+      if (!reason && clickId) {
         const key = createHash("sha256").update(clickId).digest("hex").slice(0, 32);
         if ((await this.counters.increment(`lead-click:${key}`, DAY_MS)) > 1) {
           reason = SKIP_DUPLICATE_CLICK_ID;
         }
       }
-      if (
-        !reason &&
-        (await this.counters.increment(`lead-ip:${network}`, HOUR_MS)) > LEAD_IP_CAP_PER_HOUR
-      ) {
-        reason = SKIP_IP_LEAD_CAP;
-      }
     } catch (error) {
       this.logger.warn(`Lead rate-limit store unavailable: ${(error as Error).message}`);
       reason = SKIP_LIMITER_UNAVAILABLE;
+      ipCapped = true;
     }
-    if (reason) {
+    if (reason && claimed) {
       await tx.adClick.updateMany({
         where: { id: visitRow.id, leadForwardedAt: now },
         data: { leadForwardedAt: null },
       });
     }
-    return reason;
+    return { skip: reason, autoLead: firstTap && !ipCapped };
   }
 
   // ---------------------------------------------------------------------
@@ -436,7 +475,15 @@ export class AdClickService {
     if (!code) return null;
     const click = await this.prisma.adClick.findUnique({
       where: { ref: code },
-      select: { ref: true, createdAt: true, pageUrl: true, campaignCode: true, leadId: true, instagramHandle: true },
+      select: {
+        ref: true,
+        createdAt: true,
+        pageUrl: true,
+        campaignCode: true,
+        leadId: true,
+        instagramHandle: true,
+        lead: { select: { id: true, name: true, instagramHandle: true, awaitingWhatsapp: true } },
+      },
     });
     if (!click) return null;
     const campaign = click.campaignCode
@@ -453,15 +500,16 @@ export class AdClickService {
       campaign,
       instagramHandle: click.instagramHandle,
       available: !click.leadId,
+      waitingLead: click.lead?.awaitingWhatsapp
+        ? { id: click.lead.id, name: click.lead.name, instagramHandle: click.lead.instagramHandle }
+        : null,
     };
   }
 
   /**
-   * Atomically attaches a click to a lead. Returns the click, or null when
-   * the code is unknown, already linked to another lead, or the lead already
-   * has a click. The click's own website Lead event row is tied to the lead
-   * (leadId), and website events the lead had already earned while it was
-   * unlinked (skipped as "no click") are re-routed to the website route.
+   * Atomically attaches a click to a lead (see attachClickInTx). Returns the
+   * click, or null when the code is unknown or already linked to another
+   * lead. A lead may hold several clicks.
    */
   async linkInTx(tx: Tx, rawRef: string, leadId: string) {
     const ref = normalizeRefCode(rawRef);
@@ -469,51 +517,7 @@ export class AdClickService {
     const click = await tx.adClick.findUnique({ where: { ref } });
     if (!click || (click.leadId && click.leadId !== leadId)) return null;
     if (click.leadId === leadId) return click;
-    const hasOther = await tx.adClick.findUnique({
-      where: { leadId },
-      select: { id: true },
-    });
-    if (hasOther) return null;
-    const claimed = await tx.adClick.updateMany({
-      where: { id: click.id, leadId: null },
-      data: { leadId, linkedAt: new Date() },
-    });
-    if (claimed.count === 0) return null;
-
-    // The click-time Lead row now belongs to the lead too (lead page, and the
-    // retention purge only drops click-time rows of unlinked clicks).
-    await tx.metaEventOutbox.updateMany({
-      where: { adClickId: click.id, route: "WEBSITE", eventName: "Lead", leadId: null },
-      data: { leadId },
-    });
-
-    if (click.instagramHandle) {
-      await tx.lead.updateMany({
-        where: { id: leadId, instagramHandle: null },
-        data: { instagramHandle: click.instagramHandle },
-      });
-    }
-    const lead = await tx.lead.findUnique({
-      where: { id: leadId },
-      select: { ctwaClid: true },
-    });
-    if (lead && !lead.ctwaClid) {
-      await tx.metaEventOutbox.updateMany({
-        where: {
-          leadId,
-          route: "BUSINESS_MESSAGING",
-          eventName: { in: RELINKABLE_EVENTS },
-          status: { in: ["PENDING_CONFIG", "SKIPPED"] },
-        },
-        data: {
-          route: "WEBSITE",
-          adClickId: click.id,
-          status: "PENDING_CONFIG",
-          lastError: null,
-          nextTryAt: null,
-        },
-      });
-    }
+    if (!(await attachClickInTx(tx, click, leadId))) return null;
     return { ...click, leadId };
   }
 
@@ -579,6 +583,12 @@ export class AdClickService {
       if (scrubbed) this.logger.log(`Removed device identifiers from ${scrubbed} linked ad click(s)`);
     } catch (error) {
       this.logger.warn(`Ad click purge failed: ${(error as Error).message}`);
+    }
+    try {
+      const closed = (await this.autoLeads?.closeStale()) ?? 0;
+      if (closed) this.logger.log(`Closed ${closed} waiting lead(s) that never sent the WhatsApp message`);
+    } catch (error) {
+      this.logger.warn(`Waiting lead cleanup failed: ${(error as Error).message}`);
     }
   }
 
@@ -688,7 +698,8 @@ export class AdClickService {
     const since = new Date(now.getTime() - 7 * DAY_MS);
     // visit rows without a tap are kept 48 h, so page views are counted over that window
     const since48h = new Date(now.getTime() - AD_CLICK_NO_REF_RETENTION_HOURS * HOUR_MS);
-    const [pageViews48h, clicks7d, linked7d, linkedTotal, qualifiedSent, groups] = await Promise.all([
+    const [pageViews48h, clicks7d, linked7d, linkedTotal, qualifiedSent, groups, autoLeads7d, waitingNow] =
+      await Promise.all([
       this.prisma.adClick.count({ where: { pageViewAt: { gte: since48h } } }),
       this.prisma.adClick.count({ where: { createdAt: { gte: since }, ref: { not: null } } }),
       this.prisma.adClick.count({ where: { createdAt: { gte: since }, leadId: { not: null } } }),
@@ -701,6 +712,8 @@ export class AdClickService {
         where: { route: "WEBSITE" },
         _count: { _all: true },
       }),
+      this.prisma.lead.count({ where: { autoCreated: true, createdAt: { gte: since } } }),
+      this.prisma.lead.count({ where: { awaitingWhatsapp: true } }),
     ]);
     const events: Record<string, number> = {
       PENDING_CONFIG: 0,
@@ -726,6 +739,8 @@ export class AdClickService {
       qualifiedSent,
       linked7d,
       linkedTotal,
+      autoLeads7d,
+      waitingNow,
       events,
       lastSentAt: lastSent?.sentAt ?? null,
       lastFailed: lastFailed

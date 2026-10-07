@@ -1,4 +1,4 @@
-import { parseTrackEvent, TRACK_EVENT_MAX_BYTES, TRACK_EVENT_NAMES } from "./track-event.payload";
+import { BRAND_NAME_MAX, CATEGORY_MAX, parseTrackEvent, TRACK_EVENT_MAX_BYTES, TRACK_EVENT_NAMES } from "./track-event.payload";
 import { extractInstagramHandle, isBotUserAgent, normalizeInstagramHandle } from "./track-utils";
 
 const base = {
@@ -52,6 +52,21 @@ describe("parseTrackEvent", () => {
     expect(p).not.toHaveProperty("looks");
     expect(parseTrackEvent({ ...lead, ref: undefined })).toBeNull();
     expect(parseTrackEvent({ ...lead, ref: "K7QM0X" })).toBeNull(); // 0 is not in the alphabet
+  });
+
+  it("clamps brand (80) and category (40) to one plain-text line (they become the auto-created lead's name / fields)", () => {
+    expect(BRAND_NAME_MAX).toBe(80);
+    expect(CATEGORY_MAX).toBe(40);
+    const p = parseTrackEvent({
+      ...lead,
+      meta: { brandName: `  <b>Kopi</b>
+ Senja ${"x".repeat(200)}`, category: `${"y".repeat(60)}
+z` },
+    })!;
+    expect(p.brandName!.length).toBe(80);
+    expect(p.brandName).toMatch(/^<b>Kopi<\/b> Senja x+$/); // stored as text; the UI renders it escaped
+    expect(p.category).toBe("y".repeat(40));
+    expect(parseTrackEvent({ ...lead, meta: { brandName: { evil: 1 }, category: ["a"] } })).toMatchObject({ brandName: null, category: null });
   });
 
   it("ignores qualifier answers on non-Lead events", () => {
