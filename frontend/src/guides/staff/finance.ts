@@ -1,4 +1,4 @@
-import { Boxes, Building2, CreditCard, Landmark, TrendingUp, Wallet } from 'lucide-react';
+import { Boxes, Building2, CreditCard, Landmark, PieChart, Scale, TrendingUp, Wallet } from 'lucide-react';
 import { type GuideDef, steps } from '../types';
 
 /** Keuangan dan Akuntansi: expenses, ledgers and reports, assets, vendors, payroll, manual sales. Admin only. */
@@ -17,6 +17,23 @@ export const financeGuides: GuideDef[] = [
       ['jurnal', '/accounting/journal-entries'], ['jurnal-baru', '/accounting/journal-entries/create'], 'jurnal-baris',
       ['kas-bank', '/accounting/cash-bank-balance'], ['laba-rugi', '/accounting/income-statement'],
       ['neraca', '/accounting/balance-sheet'], ['bagan-akun', '/accounting/chart-of-accounts'],
+    ]),
+  },
+  {
+    slug: 'akuntansi-lanjutan', audience: 'staff', topic: 'finance', icon: Scale, minutes: 9, adminOnly: true,
+    openHref: '/accounting/general-ledger',
+    steps: steps('akuntansi-lanjutan', [
+      ['buku-besar', '/accounting/general-ledger'], ['neraca-saldo', '/accounting/trial-balance'], ['arus-kas', '/accounting/cash-flow'],
+      ['aging-piutang', '/accounting/ar-aging'], ['aging-hutang', '/accounting/ap-aging'], ['laporan-pembelian', '/accounting/purchases'],
+      ['jurnal-penyesuaian', '/accounting/adjusting-entries'], ['ecl', '/accounting/ecl-provisions'],
+    ]),
+  },
+  {
+    slug: 'laporan-bisnis', audience: 'staff', topic: 'finance', icon: PieChart, minutes: 6, adminOnly: true,
+    openHref: '/reports',
+    steps: steps('laporan-bisnis', [
+      ['katalog', '/reports'], ['bulanan', '/reports/monthly'], ['bulanan-rinci', '/reports/monthly'], ['pendapatan', '/reports/system/revenue'],
+      ['pembayaran', '/reports/system/payment'], ['klien', '/reports/system/clients'], ['proyek', '/reports/system/projects'],
     ]),
   },
   {

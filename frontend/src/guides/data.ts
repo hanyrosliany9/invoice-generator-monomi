@@ -1,4 +1,4 @@
-import { FileText, Film, Keyboard, KeyRound, LayoutTemplate, Presentation } from 'lucide-react';
+import { Camera, FileText, Film, Keyboard, KeyRound, LayoutTemplate, Presentation } from 'lucide-react';
 import { adminGuides } from './staff/admin';
 import { financeGuides } from './staff/finance';
 import { marketingGuides } from './staff/marketing';
@@ -25,6 +25,15 @@ const clientGuides: GuideDef[] = [
   {
     slug: 'membaca-laporan', audience: 'client', topic: 'report', icon: FileText, minutes: 3,
     steps: steps('membaca-laporan', ['daftar', 'ringkasan', 'grafik', 'data']),
+  },
+  {
+    slug: 'instagram-portal', audience: 'client', topic: 'report', icon: Camera, minutes: 3,
+    steps: [
+      ...steps('instagram-portal', ['kartu', 'izin']),
+      // text-only: the sign-in happens on instagram.com, there is no screen of the portal to show
+      { id: 'masuk-instagram' },
+      ...steps('instagram-portal', ['terhubung', 'putuskan']),
+    ],
   },
   {
     slug: 'media-klien', audience: 'client', topic: 'media', icon: Film, minutes: 3,

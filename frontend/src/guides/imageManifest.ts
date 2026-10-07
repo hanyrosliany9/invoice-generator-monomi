@@ -28,6 +28,50 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1440,
     "h": 860
   },
+  "akuntansi-lanjutan/aging-hutang": {
+    "w": 1440,
+    "h": 1000
+  },
+  "akuntansi-lanjutan/aging-piutang": {
+    "w": 1440,
+    "h": 1000
+  },
+  "akuntansi-lanjutan/arus-kas": {
+    "w": 1440,
+    "h": 1000
+  },
+  "akuntansi-lanjutan/buku-besar": {
+    "w": 1440,
+    "h": 1000
+  },
+  "akuntansi-lanjutan/ecl": {
+    "w": 1440,
+    "h": 1000
+  },
+  "akuntansi-lanjutan/jurnal-penyesuaian": {
+    "w": 1440,
+    "h": 1000
+  },
+  "akuntansi-lanjutan/laporan-pembelian": {
+    "w": 1440,
+    "h": 1000
+  },
+  "akuntansi-lanjutan/neraca-saldo": {
+    "w": 1440,
+    "h": 1000
+  },
+  "analitik-milestone/metrik": {
+    "w": 1440,
+    "h": 1200
+  },
+  "analitik-milestone/ringkasan": {
+    "w": 1440,
+    "h": 1200
+  },
+  "analitik-milestone/tabel": {
+    "w": 1440,
+    "h": 1200
+  },
   "aset-penyusutan/akuisisi": {
     "w": 1280,
     "h": 820
@@ -131,6 +175,46 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
   "crm-leads-whatsapp/tindak-lanjut": {
     "w": 1440,
     "h": 900
+  },
+  "crm-pengaturan/buka": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/event-meta": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/ganti-nama": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/kartu-lain": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/nonaktif": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/tahap": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/tambah": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/target": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/urutan": {
+    "w": 1440,
+    "h": 1000
+  },
+  "crm-pengaturan/whatsapp": {
+    "w": 1440,
+    "h": 1000
   },
   "crm-whatsapp-inbox/balas": {
     "w": 1440,
@@ -304,6 +388,74 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1280,
     "h": 820
   },
+  "instagram-klien/kartu": {
+    "w": 1280,
+    "h": 900
+  },
+  "instagram-klien/laporan": {
+    "w": 1280,
+    "h": 900
+  },
+  "instagram-klien/putuskan": {
+    "w": 1280,
+    "h": 900
+  },
+  "instagram-klien/sinkron": {
+    "w": 1280,
+    "h": 900
+  },
+  "instagram-klien/status": {
+    "w": 1280,
+    "h": 900
+  },
+  "instagram-klien/terhubung": {
+    "w": 1280,
+    "h": 900
+  },
+  "instagram-portal/izin": {
+    "w": 780,
+    "h": 1688
+  },
+  "instagram-portal/kartu": {
+    "w": 780,
+    "h": 1688
+  },
+  "instagram-portal/putuskan": {
+    "w": 780,
+    "h": 1688
+  },
+  "instagram-portal/terhubung": {
+    "w": 780,
+    "h": 1688
+  },
+  "invoice-manual/buka": {
+    "w": 1280,
+    "h": 900
+  },
+  "invoice-manual/item": {
+    "w": 1280,
+    "h": 900
+  },
+  "invoice-manual/klien-proyek": {
+    "w": 1280,
+    "h": 900
+  },
+  "invoice-manual/materai": {
+    "w": 1280,
+    "h": 900
+  },
+  "invoice-manual/pembayaran": {
+    "w": 1280,
+    "h": 900
+  },
+  "invoice-manual/ppn": {
+    "w": 1280,
+    "h": 900
+  },
+  "invoice-manual/simpan": {
+    "w": 1280,
+    "h": 900
+  },
   "invoice/daftar": {
     "w": 1280,
     "h": 820
@@ -359,6 +511,26 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
   "jadwal-syuting/strip": {
     "w": 1280,
     "h": 820
+  },
+  "kalender-proyek/acara": {
+    "w": 1440,
+    "h": 1250
+  },
+  "kalender-proyek/bulan": {
+    "w": 1440,
+    "h": 1250
+  },
+  "kalender-proyek/hari": {
+    "w": 1440,
+    "h": 1250
+  },
+  "kalender-proyek/proyek": {
+    "w": 1440,
+    "h": 1250
+  },
+  "kalender-proyek/tambah-acara": {
+    "w": 1440,
+    "h": 1250
   },
   "klien-baru/daftar": {
     "w": 1280,
@@ -427,6 +599,34 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
   "konten-monomi/profil-instagram": {
     "w": 1280,
     "h": 900
+  },
+  "laporan-bisnis/bulanan": {
+    "w": 1440,
+    "h": 1200
+  },
+  "laporan-bisnis/bulanan-rinci": {
+    "w": 1440,
+    "h": 1200
+  },
+  "laporan-bisnis/katalog": {
+    "w": 1440,
+    "h": 1200
+  },
+  "laporan-bisnis/klien": {
+    "w": 1440,
+    "h": 1200
+  },
+  "laporan-bisnis/pembayaran": {
+    "w": 1440,
+    "h": 1200
+  },
+  "laporan-bisnis/pendapatan": {
+    "w": 1440,
+    "h": 1200
+  },
+  "laporan-bisnis/proyek": {
+    "w": 1440,
+    "h": 1200
   },
   "laporan-bulanan/angka-utama": {
     "w": 1280,
@@ -543,6 +743,42 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
   "membaca-laporan/ringkasan": {
     "w": 780,
     "h": 1688
+  },
+  "pengaturan-aplikasi/aplikasi": {
+    "w": 1280,
+    "h": 1000
+  },
+  "pengaturan-aplikasi/buka": {
+    "w": 1280,
+    "h": 1000
+  },
+  "pengaturan-aplikasi/cadangan": {
+    "w": 1280,
+    "h": 1000
+  },
+  "pengaturan-aplikasi/invoice": {
+    "w": 1280,
+    "h": 1000
+  },
+  "pengaturan-aplikasi/keamanan": {
+    "w": 1280,
+    "h": 1000
+  },
+  "pengaturan-aplikasi/notifikasi": {
+    "w": 1280,
+    "h": 1000
+  },
+  "pengaturan-aplikasi/perusahaan": {
+    "w": 1280,
+    "h": 1000
+  },
+  "pengaturan-aplikasi/profil": {
+    "w": 1280,
+    "h": 1000
+  },
+  "pengaturan-aplikasi/rekening": {
+    "w": 1280,
+    "h": 1000
   },
   "pengeluaran/daftar": {
     "w": 1280,

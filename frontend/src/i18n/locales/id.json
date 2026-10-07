@@ -9960,6 +9960,363 @@
             "tip": "Meta merevisi hari-hari terbaru, jadi tiap jalan membaca ulang 7 hari terakhir. Biaya yang diketik manual tidak pernah disentuh."
           }
         }
+      },
+      "instagram-klien": {
+        "title": "Instagram klien: hubungkan, sinkron, dan laporan",
+        "purpose": "Hubungkan akun Instagram Bisnis atau Kreator milik klien dari halaman klien, pahami apa yang disinkronkan dan kapan, isi laporan bulanan dari datanya, dan putuskan koneksinya bila perlu.",
+        "steps": {
+          "kartu": {
+            "title": "Buka kartu Instagram di halaman klien",
+            "body": "Buka Klien, pilih klien, lalu gulir ke kartu Instagram. Selama belum terhubung kartu berbunyi Belum terhubung. Centang Perbarui handle, foto, dan bio Instagram klien dari akun ini (1) bila profil klien di Monomi boleh ikut diperbarui, lalu klik Hubungkan Instagram (2). Baca pengingat (3): masuklah dengan akun Instagram milik klien ini, bukan akun pribadi atau akun Monomi.",
+            "tip": "Akunnya harus Bisnis atau Kreator. Bila kartu menyebut integrasi belum dikonfigurasi di server, minta admin atau developer mengisi META_APP_ID dan META_APP_SECRET."
+          },
+          "masuk-instagram": {
+            "title": "Masuk ke Instagram dan beri izin",
+            "body": "Setelah Hubungkan Instagram diklik, browser pindah ke halaman Instagram. Masuk dengan akun klien lalu izinkan akses baca profil dan statistik (insights). Monomi hanya membaca data; Monomi tidak memposting, mengirim pesan, atau mengubah akun itu. Setelah selesai Anda kembali ke halaman klien dengan pesan Instagram terhubung, dan data mulai disinkronkan.",
+            "tip": "Bila gagal, pesan merah menjelaskan sebabnya: izin ditolak, sesi kedaluwarsa (mulai lagi dari kartu), akun bukan Bisnis atau Kreator, atau akun itu sudah terhubung ke klien lain (putuskan dari klien tersebut dulu). Selama aplikasi Meta masih Standard Access, hanya akun yang terdaftar di App Roles yang bisa dihubungkan."
+          },
+          "terhubung": {
+            "title": "Baca kartu yang sudah terhubung",
+            "body": "Label di pojok kartu (1) menunjukkan status koneksi. Di bawahnya tampil akun (2) beserta jenis akun dan jumlah pengikut, lalu tiga keterangan (3): Sinkronisasi terakhir, Token berlaku sampai, dan Data tersimpan (berapa hari dan berapa konten yang sudah ada di Monomi).",
+            "tip": "Token Instagram diperbarui otomatis saat sinkronisasi harian ketika sudah mendekati batas, jadi Anda tidak perlu berbuat apa-apa selama statusnya Terhubung."
+          },
+          "sinkron": {
+            "title": "Apa yang disinkronkan, dan kapan",
+            "body": "Sistem menyinkronkan setiap hari pukul 02.00 WIB: statistik akun per hari (jangkauan, tayangan, akun yang berinteraksi, interaksi, suka, komentar, dibagikan, disimpan, balasan, repost, ketukan tautan profil), jumlah pengikut, dan statistik tiap konten feed dan Reels. Story diambil tiap jam karena datanya hilang setelah sekitar 24 jam. Sinkronisasi pertama mengambil 30 hari ke belakang, dan tiap putaran mengambil ulang 3 hari terakhir karena Instagram baru memfinalkan angka sampai 48 jam kemudian. Klik Sync sekarang (1) untuk menjalankannya sendiri; Sinkronisasi terakhir (2) berubah setelah selesai.",
+            "tip": "Sync sekarang punya jeda minimal 2 menit dan hanya boleh 3 kali dalam 10 menit. Bila Instagram menolak satu metrik, sinkronisasi tetap berjalan dan metriknya disebut di kotak peringatan pada kartu."
+          },
+          "status": {
+            "title": "Arti status koneksi",
+            "body": "Terhubung: sinkronisasi berjalan. Token kedaluwarsa (1): Instagram tidak lagi memberi akses karena token habis dan tidak bisa diperpanjang. Diputuskan: akses dicabut, dari Monomi atau dari pengaturan Instagram. Bermasalah: ada galat teknis, dan Sync sekarang masih bisa dicoba. Kotak peringatan (2) memuat penyebabnya. Klik Hubungkan ulang Instagram (3) lalu masuk lagi dengan akun yang sama untuk memulihkannya.",
+            "tip": "Data yang sudah tersinkron tetap tersimpan dan tetap bisa dipakai untuk laporan. Menghubungkan akun Instagram yang berbeda ke klien yang sama hanya bisa setelah akun lama diputuskan dengan Hapus data dicentang."
+          },
+          "laporan": {
+            "title": "Isi laporan bulanan dari Instagram",
+            "body": "Di laporan bulanan klien, buka Tambah bagian data lalu pilih Ambil dari Instagram (1). Tab ini hanya muncul bila klien punya data Instagram tersinkron. Pratinjau memperlihatkan bagian yang dibuat dari data bulan laporan (2): angka utama (Ringkasan), tabel Harian, dan konten teratas. Centang yang diinginkan lalu klik Tambahkan bagian Instagram di bawahnya. Langkah membuat dan mengirim laporan ada di panduan Laporan media sosial bulanan.",
+            "tip": "Angka utama yang datanya kurang dari 80% hari dalam sebulan disembunyikan, kecuali Anda mencentang Sertakan metrik dengan data tidak lengkap. Menambah ulang bagian yang sudah ada menggantinya setelah konfirmasi."
+          },
+          "putuskan": {
+            "title": "Putuskan koneksi",
+            "body": "Klik Putuskan pada kartu. Akses Monomi dihapus dan sinkronisasi berhenti, tetapi data yang sudah tersinkron tetap untuk laporan sebelumnya. Centang Hapus juga semua data Instagram yang sudah disinkronkan (1) bila datanya juga harus dihapus, termasuk handle, foto, dan bio yang diambil dari Instagram. Lalu klik Putuskan (2).",
+            "tip": "Klien juga bisa memutuskan sendiri dari portal atau dari pengaturan Instagram."
+          }
+        }
+      },
+      "instagram-portal": {
+        "title": "Hubungkan Instagram Anda",
+        "purpose": "Hubungkan akun Instagram Bisnis atau Kreator Anda dari portal agar Monomi bisa mengisi laporan bulanan secara otomatis, dan putuskan kapan saja.",
+        "steps": {
+          "kartu": {
+            "title": "Buka tab Laporan",
+            "body": "Masuk ke portal, lalu ketuk tab Laporan (1). Di bagian atas ada kartu Hubungkan Instagram Anda (2). Kartu ini hanya muncul bila Monomi sudah menyiapkan fitur ini untuk Anda."
+          },
+          "izin": {
+            "title": "Pahami izin yang Anda berikan",
+            "body": "Monomi hanya membaca profil, jumlah pengikut, jangkauan, tayangan, dan interaksi konten (1). Monomi tidak bisa memposting, mengirim pesan, atau mengubah akun Anda, dan Anda bisa memutuskannya kapan saja. Kebijakan privasi (2) menjelaskan lebih lengkap.",
+            "tip": "Hanya akun Instagram Bisnis atau Kreator yang bisa dihubungkan. Akun pribadi bisa diubah ke akun profesional di aplikasi Instagram."
+          },
+          "masuk-instagram": {
+            "title": "Ketuk Hubungkan Instagram dan masuk",
+            "body": "Ketuk Hubungkan Instagram. Anda dibawa ke Instagram: masuk dengan akun Anda sendiri lalu ketuk izinkan, termasuk izin statistik (insights). Setelah itu Anda kembali ke tab Laporan dengan pesan terima kasih.",
+            "tip": "Bila muncul pesan gagal, coba lagi dari kartu. Pastikan akunnya Bisnis atau Kreator dan belum terhubung ke klien lain."
+          },
+          "terhubung": {
+            "title": "Instagram sudah terhubung",
+            "body": "Kartu (1) kini menampilkan akun Anda, jumlah pengikut, dan keterangan Terhubung: laporan diisi otomatis. Data disinkronkan setiap hari, dan tim Monomi memakainya untuk laporan bulanan Anda.",
+            "tip": "Bila kartu menyebut izin statistik belum diberikan, hubungkan ulang dan izinkan akses insights."
+          },
+          "putuskan": {
+            "title": "Putuskan kapan saja",
+            "body": "Ketuk Putuskan pada kartu. Akses Monomi ke akun dihapus dan sinkronisasi berhenti, tetapi data yang sudah ada tetap dipakai untuk laporan sebelumnya. Centang Hapus juga semua data Instagram yang sudah disinkronkan (1) bila data itu juga harus dihapus, lalu ketuk Putuskan (2)."
+          }
+        }
+      },
+      "invoice-manual": {
+        "title": "Invoice manual: tagih tanpa penawaran",
+        "purpose": "Buat invoice langsung di Invoice Baru bila tidak ada penawaran yang disetujui: isi klien, proyek, item, PPN, dan informasi pembayaran, perhatikan materai untuk total lebih dari Rp 5.000.000, lalu simpan sebagai draf.",
+        "steps": {
+          "buka": {
+            "title": "Buka Invoice Baru",
+            "body": "Di menu Invoice, klik Invoice Baru (1). Cara ini untuk menagih tanpa penawaran, misalnya pekerjaan tambahan. Invoice dari penawaran yang disetujui dibuat otomatis, lihat panduan Quotation.",
+            "tip": "Halaman ini hanya untuk Admin. Tagihan dari penawaran, status, dan pembayarannya dijelaskan di panduan Invoice dan Pembayaran dan piutang."
+          },
+          "klien-proyek": {
+            "title": "Pilih klien dan proyek, atur tanggal",
+            "body": "Pilih Klien (1), lalu Proyek (2): proyek hanya muncul setelah klien dipilih, dan keduanya wajib. Jika klien belum ada, pilih + New client di daftar. Tanggal Terbit (3) menentukan nomor invoice, yang dibuat otomatis setelah disimpan. Jatuh Tempo (4) terisi 30 hari sesudah tanggal terbit; ubah bila termin klien berbeda.",
+            "tip": "Setelah proyek dipilih, produk proyek itu dan biaya reimburse yang belum ditagihkan otomatis menjadi baris item. Periksa dan ubah seperlunya."
+          },
+          "item": {
+            "title": "Isi baris item",
+            "body": "Setiap baris berisi nama item atau layanan (1), catatan opsional, Qty, dan Harga; subtotal baris dan total dihitung otomatis. Klik Tambah Baris (2) untuk menambah layanan, dan ikon tempat sampah (3) untuk menghapus baris.",
+            "tip": "Bagian Deskripsi Pekerjaan di bawahnya opsional; bila dikosongkan, ia mewarisi dari proyek."
+          },
+          "ppn": {
+            "title": "PPN dan total",
+            "body": "Kotak PPN (11%) (1) tercentang secara bawaan; hilangkan centangnya bila invoice tidak memakai PPN. Total (2) adalah subtotal ditambah PPN. Pada contoh ini PPN dimatikan dan totalnya tepat Rp 5.000.000, sehingga materai belum diperlukan.",
+            "tip": "Materai baru diperlukan bila total lebih dari Rp 5.000.000. Total tepat Rp 5.000.000 tidak memerlukannya."
+          },
+          "materai": {
+            "title": "Materai muncul otomatis",
+            "body": "Setelah PPN dicentang, total menjadi Rp 5.550.000 dan melewati Rp 5.000.000. Baris Materai (1) muncul dengan tanda auto, dan kartu Materai diperlukan (2) mengingatkan untuk menempel materai Rp 10.000 pada cetakan sebelum dikirim. Saklar Wajib materai terkunci menyala.",
+            "tip": "Nilai materai tidak ditambahkan ke total invoice dan penempelannya manual di kertas. Setelah ditempel, centang Materai sudah ditempel saat mengedit invoice, seperti di panduan Invoice."
+          },
+          "pembayaran": {
+            "title": "Informasi pembayaran dan syarat",
+            "body": "Informasi Pembayaran (1) terisi dari rekening yang diatur di Pengaturan; klik Pakai default (2) untuk mengembalikan templatenya. Syarat & Ketentuan (3) sudah berisi teks bawaan; sesuaikan bila perlu. Keduanya dicetak pada PDF invoice.",
+            "tip": "Rekening yang dicetak diatur di Pengaturan, bagian Rekening Bank."
+          },
+          "simpan": {
+            "title": "Simpan sebagai draf, lalu kirim",
+            "body": "Klik Simpan di bagian bawah. Invoice dibuat sebagai Draf (1) dengan nomor otomatis, dan belum dikirim ke klien. Periksa isinya, lalu klik Kirim (2) saat siap. Menu Tindakan lainnya (3) berisi Pratinjau PDF untuk mencetak.",
+            "tip": "Invoice yang sudah Terkirim tidak bisa kembali ke Draf. Status, pembayaran, dan PDF dijelaskan di panduan Invoice dan Pembayaran dan piutang."
+          }
+        }
+      },
+      "pengaturan-aplikasi": {
+        "title": "Pengaturan dan aplikasi mobile",
+        "purpose": "Kenali tiap bagian Pengaturan: profil, kata sandi, identitas perusahaan, rekening, penomoran invoice, notifikasi, cadangan data, dan cara memasang aplikasi Android Monomi di ponsel.",
+        "steps": {
+          "buka": {
+            "title": "Buka Pengaturan",
+            "body": "Klik Pengaturan di menu. Daftar bagian (1) ada di kiri dan isinya (2) di kanan; setiap bagian disimpan sendiri-sendiri dengan tombolnya sendiri. Semua staf melihat Profil, Keamanan, Notifikasi, dan Aplikasi Mobile. Perusahaan, Rekening Bank, Invoice & Penomoran, dan Cadangan Data khusus admin dan tidak muncul untuk peran lain.",
+            "tip": "Bila Anda mengetik lalu berpindah bagian tanpa menyimpan, Monomi bertanya dulu apakah perubahan boleh dibuang."
+          },
+          "profil": {
+            "title": "Profil",
+            "body": "Ubah Nama Lengkap (1), Zona Waktu (2), dan Bahasa (3) tampilan akun Anda, lalu klik Simpan Profil (4). Tombol Simpan baru aktif setelah ada perubahan.",
+            "tip": "Bahasa juga bisa diganti cepat dengan tombol EN / ID di bilah atas."
+          },
+          "keamanan": {
+            "title": "Ubah kata sandi (Keamanan)",
+            "body": "Isi Kata Sandi Saat Ini (1), Kata Sandi Baru (2), dan Konfirmasi Kata Sandi Baru (3), lalu klik Ubah Kata Sandi (4). Kata sandi baru minimal 8 karakter dan memuat huruf besar, huruf kecil, dan angka; daftar syarat berubah hijau saat terpenuhi.",
+            "tip": "Ikon mata di tiap kolom menampilkan atau menyembunyikan isinya. Kata sandi awal pengguna baru diatur admin di Pengguna dan peran; setelah itu pemiliknya mengubahnya sendiri di sini."
+          },
+          "perusahaan": {
+            "title": "Perusahaan (khusus admin)",
+            "body": "Identitas resmi yang tampil di invoice, kwitansi, dan dokumen pajak: Nama Perusahaan (1), NPWP (2) dengan format XX.XXX.XXX.X-XXX.XXX, Alamat (3), Telepon, Email, Website, dan Mata Uang. Klik Simpan Perusahaan (4).",
+            "tip": "Periksa NPWP dan alamat dengan teliti: keduanya tercetak di setiap invoice."
+          },
+          "rekening": {
+            "title": "Rekening Bank (khusus admin)",
+            "body": "Hingga tiga rekening yang dicetak di footer invoice sebagai tujuan pembayaran. Isi Nama Pemilik Rekening (1) atau kosongkan untuk memakai nama perusahaan, lalu Nama Bank dan Nomor Rekening tiap rekening (2). Klik Simpan Rekening (3).",
+            "tip": "Rekening ini juga mengisi Informasi Pembayaran secara otomatis pada form Invoice Baru."
+          },
+          "invoice": {
+            "title": "Invoice dan penomoran (khusus admin)",
+            "body": "Pilih Termin Pembayaran Default (1): NET 7, 14, 30, atau 60 hari. Ambang Batas Materai (2) berisi Rp 5.000.000. Prefix Invoice (3) dan Prefix Penawaran (4) ditempel di depan nomor dokumen, misalnya INV- menjadi INV-202610-0122 (prefix, tahun dan bulan, nomor urut). Saklar Pengingat Materai Otomatis (5) mengatur pengingat materai.",
+            "tip": "Aturan materai pada form invoice mengikuti ketentuan: total lebih dari Rp 5.000.000, bukan sama dengan. Biarkan ambangnya di nilai itu. Ganti prefix hanya bila sungguh perlu, karena nomor lama tidak berubah."
+          },
+          "notifikasi": {
+            "title": "Notifikasi",
+            "body": "Pilih bagaimana sistem menghubungi Anda untuk kejadian penting: Notifikasi Email (1) untuk invoice jatuh tempo, pembayaran masuk, dan ringkasan harian, serta Notifikasi Push (2) untuk peringatan langsung di browser saat Anda online. Klik Simpan Notifikasi setelah mengubahnya.",
+            "tip": "Pengaturan ini milik Anda pribadi dan tidak mengubah notifikasi staf lain."
+          },
+          "cadangan": {
+            "title": "Cadangan data (khusus admin)",
+            "body": "Nyalakan Backup Otomatis (1), pilih Frekuensi (2) Harian, Mingguan, atau Bulanan, dan Waktu Backup (zona waktu WIB), lalu klik Simpan Cadangan. Untuk cadangan sekarang juga, klik Unduh .sql (3): sistem menyiapkan cadangan lengkap basis data sebagai berkas SQL.",
+            "tip": "Berkas .sql berisi seluruh data bisnis. Simpan di tempat yang aman dan jangan dikirim lewat chat atau email biasa."
+          },
+          "aplikasi": {
+            "title": "Pasang aplikasi Android",
+            "body": "Klik Unduh APK (1) di ponsel Android Anda. Lalu ikuti Cara memasang (2): aktifkan Instal aplikasi tidak dikenal di Pengaturan ponsel (Keamanan), buka berkas APK yang diunduh dan ketuk Instal, kemudian buka Monomi dan masuk dengan akun Anda.",
+            "tip": "Aplikasi ini berupa berkas APK dan hanya untuk Android. Di iPhone atau komputer, buka Monomi lewat browser. Matikan lagi izin instal dari sumber tidak dikenal setelah selesai."
+          }
+        }
+      },
+      "crm-pengaturan": {
+        "title": "Pengaturan CRM: target respons dan tahap pipeline",
+        "purpose": "Untuk admin: atur target waktu respons, ganti nama, warna, urutan, dan status tahap pipeline, serta pahami tahap mana yang mengirim event Meta (Dikualifikasi mengirim QualifiedLead, Menang mengirim Purchase).",
+        "steps": {
+          "buka": {
+            "title": "Buka Pengaturan CRM",
+            "body": "Di menu CRM pilih Pengaturan CRM (halaman khusus admin). Ada dua bagian pertama: Target waktu respons (1) dan Tahap pipeline (2). Di bawahnya ada kartu koneksi: Pelacakan landing page, Sinkronisasi Meta Ads, dan WhatsApp Business.",
+            "tip": "Semua perubahan tahap tersimpan seketika saat Anda mengubahnya; hanya target waktu respons yang memakai tombol Simpan."
+          },
+          "target": {
+            "title": "Atur target waktu respons",
+            "body": "Isi Menit (1) dengan batas balasan pertama, antara 1 dan 1440 menit (bawaannya 15), lalu klik Simpan (2). Lead yang belum dibalas setelah sekian menit ditandai sebagai belum dibalas di papan, daftar, dan dasbor CRM.",
+            "tip": "Pilih angka yang benar-benar bisa dipenuhi tim Anda; target yang terlalu ketat membuat hampir semua lead tampak terlambat."
+          },
+          "tahap": {
+            "title": "Baca satu baris tahap",
+            "body": "Tiap tahap punya Warna (1), Nama tahap (2), Tipe (3) Terbuka, Menang, atau Kalah, Event Meta (4), saklar Aktif (5), dan tombol panah untuk mengurutkan (6). Enam tahap bawaannya: Baru, Dikualifikasi, Meeting, Penawaran, Menang, dan Kalah.",
+            "tip": "Harus selalu ada minimal satu tahap aktif bertipe Terbuka, satu Menang, dan satu Kalah."
+          },
+          "ganti-nama": {
+            "title": "Ganti nama dan warna",
+            "body": "Klik kotak Warna (1) lalu pilih warna baru; warna langsung tersimpan. Ubah Nama tahap (2) lalu tekan Enter atau klik di luar kolom untuk menyimpan. Nama baru tampil di papan dan daftar lead.",
+            "tip": "Mengganti nama atau warna tidak mengubah tipe dan event Meta tahap itu."
+          },
+          "urutan": {
+            "title": "Ubah urutan tahap",
+            "body": "Gunakan panah Naikkan (1) dan Turunkan (2) pada baris tahap (3). Urutan ini menentukan susunan kolom di papan lead, dan menentukan mana yang dianggap setelah Dikualifikasi (lihat langkah Event Meta).",
+            "tip": "Tahap pertama tidak bisa dinaikkan dan tahap terakhir tidak bisa diturunkan lagi."
+          },
+          "nonaktif": {
+            "title": "Nonaktifkan tahap",
+            "body": "Matikan saklar Aktif (1) untuk menyembunyikan sebuah tahap tanpa menghapusnya: barisnya redup dan lead tidak bisa dipindahkan ke sana. Nyalakan lagi kapan saja.",
+            "tip": "Bila tahap yang membawa event QualifiedLead dinonaktifkan, aturan lompat-melewati-Qualified pada langkah Event Meta tidak berlaku sampai ada tahap aktif lain dengan event itu."
+          },
+          "tambah": {
+            "title": "Tambah atau hapus tahap sendiri",
+            "body": "Ketik nama di Tahap baru (1) lalu klik Tambah tahap (2). Tahap baru bertipe Terbuka tanpa event Meta dan disisipkan sebelum tahap Menang; atur tipe, warna, dan urutannya di barisnya. Hanya tahap buatan sendiri yang punya tombol sampah (3) untuk dihapus, dengan konfirmasi; tahap bawaan hanya bisa dinonaktifkan.",
+            "tip": "Tahap yang masih berisi lead tidak bisa dihapus, dan tahap yang sudah punya riwayat lead hanya dinonaktifkan karena riwayat tidak dihapus."
+          },
+          "event-meta": {
+            "title": "Tahap mana mengirim event Meta apa",
+            "body": "Event Meta dicatat saat lead masuk tahap itu, sekali per lead. Bawaannya: Dikualifikasi (1) mengirim QualifiedLead, dan Menang (2), bertipe Menang (3), mengirim Purchase dengan nilai total penawaran lead, atau nilai perkiraannya bila tidak ada penawaran. Aturan baru: bila lead melompati Dikualifikasi, yaitu langsung ke tahap bertipe Menang atau ke tahap Terbuka yang urutannya setelah Dikualifikasi, QualifiedLead tetap dikirim sekali, sebelum Purchase. Tahap Kalah tidak mengirim apa pun.",
+            "tip": "Lead dari WhatsApp otomatis mengirim LeadSubmitted saat dibuat, jadi opsi itu biasanya tidak perlu dipasang di tahap. Event yang masih antre bisa dikirim lewat tombol Kirim event yang antre pada kartu WhatsApp Business."
+          },
+          "kartu-lain": {
+            "title": "Kartu lain di halaman ini",
+            "body": "Pelacakan landing page (1) memantau kunjungan dan ketukan WhatsApp dari landing page iklan, dan Sinkronisasi Meta Ads (2) menarik biaya iklan ke kampanye CRM. Cara membacanya dan menyiapkannya dibahas di panduan Koneksi WhatsApp (admin), bagian Pelacakan landing page dan Sinkronisasi Meta Ads.",
+            "tip": "Nilai-nilai dalam kartu ini diatur di server oleh developer atau admin, bukan diketik di Monomi."
+          },
+          "whatsapp": {
+            "title": "Kartu WhatsApp Business",
+            "body": "Kartu WhatsApp Business (1) menampilkan status koneksi WhatsApp, webhook, dan Conversions API. Isinya, termasuk aturan keselamatan untuk nomor WhatsApp iklan, dibahas lengkap di panduan Koneksi WhatsApp (admin).",
+            "tip": "Baca langkah pertama panduan itu sebelum menyentuh apa pun yang berkaitan dengan nomor WhatsApp."
+          }
+        }
+      },
+      "kalender-proyek": {
+        "title": "Kalender: tenggat, penawaran, proyek, dan acara",
+        "purpose": "Baca Kalender perusahaan yang menggabungkan jatuh tempo invoice, masa berlaku penawaran, tenggat proyek, dan acara tim, lalu tambahkan acara ke Kalender Proyek untuk satu proyek.",
+        "steps": {
+          "bulan": {
+            "title": "Buka Kalender",
+            "body": "Klik Kalender di menu (khusus admin). Empat kartu (1) merangkum 30 hari ke depan: Jatuh Tempo 30 Hari (invoice dan penawaran), Nilai Piutang (sisa tagihan invoice yang jatuh tempo), Terlewat (yang sudah lewat tanggal dan belum selesai), dan Acara Mendatang (rapat dan tonggak). Grid bulanan mulai hari Senin; panah dan Hari Ini (2) memindahkan bulan. Titik warna menandai jenisnya: Invoice (jatuh tempo), Penawaran (berlaku sampai), Proyek (tanggal selesai), dan Acara. Kalender Konten (3) membuka perencana konten.",
+            "tip": "Rencana konten media sosial tidak ada di sini; langkahnya ada di panduan Perencana konten."
+          },
+          "hari": {
+            "title": "Pilih satu hari",
+            "body": "Klik sebuah hari (1): panel Hari Terpilih (2) mendaftar semua yang jatuh pada hari itu. Klik sebuah invoice, penawaran, atau proyek untuk membukanya. Panel Agenda Mendatang (3) merangkum 14 hari ke depan, dan sel yang penuh menampilkan lainnya untuk sisanya.",
+            "tip": "Item yang sudah lewat tanggal dan belum selesai ditandai cincin merah dan dihitung di kartu Terlewat."
+          },
+          "proyek": {
+            "title": "Kalender Proyek untuk satu proyek",
+            "body": "Kalender Proyek menampilkan acara satu proyek. Alamatnya /projects/ diikuti id proyek lalu /calendar; halaman ini juga bisa dibuka dari tombol Kalender Proyek di Kalender Konten proyek. Tombol Tambah Acara (1) membuat acara, Kalender Konten (2) membuka kalender konten proyek yang sama dengan perencana konten tetapi dibatasi satu proyek, dan tab (3) menyaring acara per tipe: Milestone, Tenggat, Meeting, Pemotretan, atau Pengiriman.",
+            "tip": "Kartu di atasnya menghitung acara Mendatang (14 hari), Terlewat, Bulan Ini, dan Selesai Bulan Ini."
+          },
+          "tambah-acara": {
+            "title": "Tambah acara",
+            "body": "Isi Judul Acara (1) dan pilih Tipe (2): Milestone, Tenggat, Meeting, Pemotretan, Pengiriman, Pekerjaan, Pengingat, atau Lainnya. Pilih Tanggal (3) di pemilih tanggal, lalu atur jam Mulai dan Selesai (bawaannya 09.00 sampai 10.00). Deskripsi dan Lokasi atau tautan rapat boleh diisi. Klik Simpan Acara (4).",
+            "tip": "Judul dan tanggal wajib diisi. Bila jam selesai tidak setelah jam mulai, acara berakhir keesokan harinya."
+          },
+          "acara": {
+            "title": "Lihat dan hapus acara",
+            "body": "Acara tampil sebagai label berwarna di hari-nya (1). Klik untuk membuka panel detail (2): tipe, status, lokasi, waktu mulai dan selesai, deskripsi, dan orang yang ditugaskan. Tombol Hapus (3) menghapusnya setelah konfirmasi.",
+            "tip": "Acara proyek juga tampil sebagai Acara di Kalender perusahaan dan dihitung di kartu Acara Mendatang."
+          }
+        }
+      },
+      "laporan-bisnis": {
+        "title": "Laporan bisnis: bulanan dan analitik sistem",
+        "purpose": "Kenali halaman Laporan: laporan bisnis bulanan yang disusun otomatis dan empat laporan analitik sistem (pendapatan, pembayaran, klien, proyek), plus tempat laporan media sosial klien disimpan.",
+        "steps": {
+          "katalog": {
+            "title": "Buka Laporan",
+            "body": "Klik Laporan di menu (khusus admin). Ekspor PDF (1) mengunduh ringkasan bisnis, dan Laporan Baru (2) membuat laporan media sosial untuk klien: langkahnya ada di panduan Laporan media sosial bulanan. Kartu Laporan Bisnis Bulanan (3) membuka laporan otomatis, dan Laporan Analitik Sistem (4) berisi empat laporan yang selalu tersedia. Laporan Tersimpan (5) hanya memuat laporan media sosial yang Anda buat.",
+            "tip": "Tidak ada yang perlu diketik di laporan bisnis dan analitik: semuanya dihitung dari data invoice, pembayaran, klien, dan proyek."
+          },
+          "bulanan": {
+            "title": "Laporan Bisnis Bulanan",
+            "body": "Pilih bulan (1) dan tahun (2) di kanan atas. Delapan kartu (4) merangkum: Pendapatan (Lunas) yang diterima bulan itu, Tertagih (nilai invoice yang ditagihkan dan jumlah fakturnya), Piutang (AR) yang menunggu pembayaran, Jatuh Tempo, tingkat konversi Penawaran ke Invoice, Tingkat Pembayaran (faktur lunas), serta Klien Baru dan Proyek Baru bulan itu. Cetak / PDF (3) membuka dialog cetak browser; pilih Simpan sebagai PDF.",
+            "tip": "Gunakan laporan ini untuk rapat bulanan: piutang dan jatuh tempo menunjukkan apa yang harus ditagih."
+          },
+          "bulanan-rinci": {
+            "title": "Grafik dan tabel laporan bulanan",
+            "body": "Gulir ke bawah. Grafik Pendapatan per Periode (1) menunjukkan pendapatan yang diterima. Tabel Klien Teratas dan Proyek Teratas (2) mengurutkan pendapatan, dan Invoice menurut Status (3) memuat jumlah dan nilai invoice di tiap status. Ketiga tabel berlabel sepanjang waktu, bukan hanya bulan yang dipilih.",
+            "tip": "Angka bulan yang dipilih ada di kartu di atas; tabel ini memberi gambaran keseluruhan."
+          },
+          "pendapatan": {
+            "title": "Laporan Pendapatan",
+            "body": "Dari Laporan Analitik Sistem, buka Laporan Pendapatan. Tiga kartu (1) menampilkan Total Pendapatan, Rata-rata / Periode, dan jumlah Invoice. Grafik Pendapatan per Periode (2) memperlihatkan pendapatan tiap bulan. Tautan Kembali ke Laporan (3) membawa Anda ke katalog.",
+            "tip": "Pendapatan dihitung dari invoice yang berstatus Lunas, bukan dari invoice yang baru dikirim."
+          },
+          "pembayaran": {
+            "title": "Laporan Pembayaran",
+            "body": "Kartu (1) menampilkan jumlah dan Nilai Jatuh Tempo serta Kelompok Status. Tabel Invoice menurut Status (2) merinci jumlah dan nilai tiap status, dan di bawahnya daftar Invoice Jatuh Tempo lengkap dengan kliennya, sebagai daftar tagihan yang harus ditindaklanjuti.",
+            "tip": "Untuk mencatat pembayaran atau melihat umur piutang, lihat panduan Pembayaran dan piutang."
+          },
+          "klien": {
+            "title": "Laporan Klien",
+            "body": "Kartu (1) menampilkan Total Klien dan berapa yang Diperingkat. Tabel Klien Teratas berdasarkan Pendapatan (2) mengurutkan klien menurut jumlah invoice dan pendapatannya; hingga 50 klien teratas ditampilkan.",
+            "tip": "Pakai tabel ini untuk melihat klien mana yang paling berharga dan mana yang jarang membayar."
+          },
+          "proyek": {
+            "title": "Laporan Proyek",
+            "body": "Kartu (1) menampilkan Total Proyek dan jumlah yang Diperingkat. Tabel Proyek Teratas berdasarkan Pendapatan (2) memuat nomor proyek, status, dan pendapatannya; hingga 50 proyek teratas ditampilkan.",
+            "tip": "Bandingkan pendapatan per proyek dengan anggarannya di halaman proyek, seperti di panduan Proyek."
+          }
+        }
+      },
+      "analitik-milestone": {
+        "title": "Analitik milestone pembayaran",
+        "purpose": "Baca halaman Milestone: seberapa cepat dan tepat klien membayar tiap termin (misalnya DP 30% dan Pelunasan 70%), pendapatan yang sudah diakui, dan proyeksi arus kas.",
+        "steps": {
+          "ringkasan": {
+            "title": "Buka Milestone dan baca ringkasannya",
+            "body": "Klik Milestone di menu. Milestone di sini adalah termin pembayaran yang Anda pilih pada quotation (pilihan Termin, misalnya DP 30% dan Pelunasan 70%); tidak ada isian milestone terpisah. Empat kartu (1) menghitung Total Milestone, Akan Datang (pending atau tertagih), Jatuh Tempo, dan Selesai (sudah lunas). Filter (2) memilih proyek, rentang (30 hari, 90 hari, 1 tahun, atau kustom), dan status. Ekspor JSON (3) menyimpan datanya.",
+            "tip": "Rentang waktu memakai tanggal milestone dibuat. Muat Ulang memperbarui angka setelah ada pembayaran baru."
+          },
+          "metrik": {
+            "title": "Siklus pembayaran dan profitabilitas",
+            "body": "Tiga kartu (1): Siklus Pembayaran (rata-rata hari dari tagihan sampai dibayar), Tepat Waktu (persentase milestone yang dibayar sebelum jatuh tempo), dan Pengakuan Pendapatan (persentase nilai milestone yang sudah diakui). Grafik Profitabilitas per Fase (2) membandingkan Pendapatan, Biaya, dan Laba tiap termin; grafik Proyeksi Arus Kas di bawahnya membandingkan arus masuk Diharapkan, Aktual, dan Proyeksi.",
+            "tip": "Siklus yang makin panjang berarti klien makin lambat membayar; tagih lebih awal atau ubah porsi DP."
+          },
+          "tabel": {
+            "title": "Detail tiap milestone",
+            "body": "Tabel Detail Milestone (1) mendaftar tiap termin: nomor, nama, Jatuh Tempo, Jumlah, nilai yang Diakui, Hari Bayar, dan Status. Jumlah yang jatuh tempo ditandai di judul tabel. Klik sebuah baris untuk membuka proyeknya.",
+            "tip": "Cara memilih termin pada quotation ada di panduan Quotation, langkah Atur ketentuan pembayaran."
+          }
+        }
+      },
+      "akuntansi-lanjutan": {
+        "title": "Akuntansi lanjutan: ke mana mencari tiap laporan",
+        "purpose": "Peta singkat untuk admin: di mana menemukan buku besar, neraca saldo, arus kas, aging piutang dan hutang, laporan pembelian, wizard jurnal penyesuaian, dan cadangan ECL, serta apa yang dikatakan masing-masing. Jurnal, laba rugi, dan neraca dibahas di panduan Akuntansi dasar.",
+        "steps": {
+          "buku-besar": {
+            "title": "Buku Besar: setiap transaksi per akun",
+            "body": "Menu Akuntansi, Laporan, Buku Besar. Tiga kartu (1) menghitung Total Entri, Total Debit, dan Total Kredit pada periode yang dipilih. Tentukan periode, akun, dan tipe, atau cari kode akun, nomor jurnal, dan deskripsi (2). Tabel (3) menampilkan Tanggal, Jurnal, Akun, Deskripsi, Debit, Kredit, dan Saldo berjalan. Ekspor (4) menyimpan hasilnya.",
+            "tip": "Mulailah dari sini bila sebuah angka di laporan tampak janggal: cari akun atau nomor jurnalnya untuk melihat transaksi sumbernya."
+          },
+          "neraca-saldo": {
+            "title": "Neraca Saldo: apakah pembukuan seimbang",
+            "body": "Menu Akuntansi, Laporan, Neraca Saldo. Keterangan hijau di atas (1) menyatakan Buku besar seimbang bila total debit sama dengan total kredit. Tabel (3) memuat saldo tiap akun di kolom Debit atau Kredit; cari akun (2) atau saring menurut tipe. Muat Ulang memperbarui angka, dan Ekspor (4) menyimpannya.",
+            "tip": "Periksa neraca saldo sebelum menutup bulan. Saldo abnormal yang ditandai kuning (misalnya rekening bank bersaldo kredit) biasanya berarti ada transaksi yang belum dicatat."
+          },
+          "arus-kas": {
+            "title": "Laporan Arus Kas: dari mana kas masuk dan keluar",
+            "body": "Menu Akuntansi, Laporan, Arus Kas. Pergerakan kas dikelompokkan menjadi Operasional (1), Investasi (2), dan Pendanaan, direkonsiliasi dengan saldo kas, dan memperlihatkan Kas bersih dari aktivitas operasional. Pilih periodenya di kanan atas, lalu Ekspor (3).",
+            "tip": "Tanda kurung berarti kas keluar. Bagian tanpa transaksi menampilkan Tidak ada transaksi."
+          },
+          "aging-piutang": {
+            "title": "Aging Piutang: siapa yang menunggak dan berapa lama",
+            "body": "Halaman ini belum ada di menu samping: buka alamat /accounting/ar-aging. Lima kartu (1) membagi piutang menurut umur: Belum J.T., 1 sampai 30, 31 sampai 60, 61 sampai 90, dan lebih dari 90 hari. Tabel Analisis Umur per Klien (2) merinci tiap klien, dan PDF (3) serta Excel (4) menyimpannya.",
+            "tip": "Semakin tua bucketnya, semakin besar risiko gagal bayar. Tagihan di atas 60 hari layak ditindaklanjuti lebih dulu."
+          },
+          "aging-hutang": {
+            "title": "Aging Hutang: kewajiban yang harus dibayar",
+            "body": "Buka alamat /accounting/ap-aging. Susunannya sama dengan aging piutang, tetapi untuk hutang: kartu (1) membagi hutang menurut umur dan tabel Analisis Umur per Kategori (2) merinci hutang pembelian per kategori. Pembelian tanpa kategori masuk Kategori tidak diketahui.",
+            "tip": "Hutang tercatat dari pembelian dengan cara bayar Hutang (lihat panduan Vendor dan pembelian). Lunasi lewat Tandai Lunas."
+          },
+          "laporan-pembelian": {
+            "title": "Laporan Pembelian",
+            "body": "Menu Akuntansi, Pembelian, Laporan Pembelian. Kartu (1) menampilkan Total Pembelian tahun ini, yang Belum Lunas (hutang terutang), yang Lunas, dan jumlah catatan. Tabel (2) mendaftar tiap pembelian dengan vendor, akun, dan keterangannya; saring menurut status atau cari. + Pembelian (3) mencatat pembelian baru, dan PDF atau Excel menyimpan laporan.",
+            "tip": "Cara mencatat pembelian dan melunasi hutang ada di panduan Vendor dan pembelian."
+          },
+          "jurnal-penyesuaian": {
+            "title": "Wizard Jurnal Penyesuaian",
+            "body": "Buka alamat /accounting/adjusting-entries. Wizard tiga langkah (1) Pilih Tipe, Isi Data, dan Review membuat jurnal penyesuaian akrual. Pilih satu pola (2): Beban Dibayar Dimuka, Pendapatan Diterima Dimuka, Pendapatan Akrual, atau Beban Akrual. Tiap pola mengatur sisi debit dan kredit otomatis. Klik Lanjut (3) untuk mengisi data.",
+            "tip": "Pakai di akhir bulan untuk mengakui beban atau pendapatan pada periode yang benar. Jurnalnya dibuat pada langkah Review."
+          },
+          "ecl": {
+            "title": "Cadangan ECL (PSAK 71)",
+            "body": "Buka alamat /accounting/ecl-provisions. Halaman ini menampilkan cadangan kerugian kredit ekspektasian atas piutang: Total Piutang, Total Cadangan ECL, Rasio Cadangan, dan Perhitungan Terakhir. Klik Hitung ECL: dialog meminta Tanggal Perhitungan (1) dan Opsi Posting (2), misalnya disimpan sebagai draf untuk diposting manual. Proses ini menghitung cadangan semua invoice outstanding berdasarkan umur piutang dan tarif ECL bawaan PSAK 71. Klik Hitung ECL (3) untuk menjalankan atau Batal.",
+            "tip": "Segarkan memuat ulang data tanpa menghitung. Periksa dulu hasil draf bersama akuntan sebelum memostingnya."
+          }
+        }
       }
     }
   },

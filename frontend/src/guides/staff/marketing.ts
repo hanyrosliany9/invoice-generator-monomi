@@ -1,5 +1,5 @@
 import {
-  BarChart3, CalendarRange, Download, Grid3x3, Image as ImageIcon, MessageCircle, Presentation, Send, Target,
+  BarChart3, CalendarRange, Camera, Download, Grid3x3, Image as ImageIcon, MessageCircle, Presentation, Send, Target,
 } from 'lucide-react';
 import { type GuideDef, steps } from '../types';
 
@@ -12,6 +12,18 @@ export const marketingGuides: GuideDef[] = [
       ['daftar', '/reports/social-media'], ['identitas', '/reports/builder'], 'bagian-data', 'unggah-file', 'pratinjau-file',
       'ketik-tabel', 'tempel-excel', 'angka-utama', 'grafik', 'pratinjau-klien', 'tayangkan', 'kirim', 'kembali-draf', 'salin',
     ]),
+  },
+  {
+    slug: 'instagram-klien', audience: 'staff', topic: 'marketing', icon: Camera, minutes: 7, adminOnly: true,
+    openHref: '/clients',
+    steps: [
+      ...steps('instagram-klien', [['kartu', '/clients']]),
+      // text-only: the sign-in happens on instagram.com, there is no screen of this app to show
+      { id: 'masuk-instagram', href: '/clients' },
+      ...steps('instagram-klien', [
+        ['terhubung', '/clients'], ['sinkron', '/clients'], ['status', '/clients'], ['laporan', '/reports/social-media'], ['putuskan', '/clients'],
+      ]),
+    ],
   },
   {
     slug: 'perencana-konten', audience: 'staff', topic: 'marketing', icon: CalendarRange, minutes: 12,

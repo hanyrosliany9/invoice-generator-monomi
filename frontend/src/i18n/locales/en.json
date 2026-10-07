@@ -9961,6 +9961,363 @@
             "tip": "Meta restates recent days, so each run re-reads the last 7 days. Spend entered by hand is never touched."
           }
         }
+      },
+      "instagram-klien": {
+        "title": "Client Instagram: connect, sync and reports",
+        "purpose": "Connect a client's own Instagram Business or Creator account from the client page, understand what is synced and when, fill the monthly report from that data, and disconnect when needed.",
+        "steps": {
+          "kartu": {
+            "title": "Open the Instagram card on the client page",
+            "body": "Open Clients, pick the client, then scroll to the Instagram card. While nothing is connected it says Belum terhubung (Not connected). Tick Perbarui handle, foto, dan bio Instagram klien dari akun ini (1) if the client profile in Monomi may be updated too, then click Hubungkan Instagram (2). Read the reminder (3): sign in with the client's own Instagram account, not a personal account or the Monomi account.",
+            "tip": "The account must be Business or Creator. If the card says the integration is not configured on the server, ask an admin or developer to set META_APP_ID and META_APP_SECRET."
+          },
+          "masuk-instagram": {
+            "title": "Sign in to Instagram and grant access",
+            "body": "After you click Hubungkan Instagram the browser moves to Instagram. Sign in with the client's account and allow read access to the profile and statistics (insights). Monomi only reads data; it does not post, send messages or change that account. Afterwards you are back on the client page with an Instagram connected message, and data starts syncing.",
+            "tip": "If it fails, a red message explains why: permission denied, session expired (start again from the card), the account is not Business or Creator, or it is already connected to another client (disconnect it there first). While the Meta app is still on Standard Access, only accounts listed in App Roles can be connected."
+          },
+          "terhubung": {
+            "title": "Read the connected card",
+            "body": "The label in the corner (1) shows the connection status. Below it are the account (2) with its type and follower count, then three details (3): Sinkronisasi terakhir (last sync), Token berlaku sampai (token valid until) and Data tersimpan (how many days and posts Monomi already holds).",
+            "tip": "The Instagram token is renewed automatically during the daily sync when it gets close to its limit, so you do nothing as long as the status is Terhubung."
+          },
+          "sinkron": {
+            "title": "What is synced, and when",
+            "body": "The system syncs every day at 02:00 WIB: daily account statistics (reach, views, accounts engaged, interactions, likes, comments, shares, saves, replies, reposts, profile link taps), the follower count, and statistics for each feed post and Reel. Stories are captured every hour because their data disappears after about 24 hours. The first sync goes back 30 days, and every run re-fetches the last 3 days because Instagram only finalises numbers up to 48 hours later. Click Sync sekarang (1) to run it yourself; Sinkronisasi terakhir (2) changes when it finishes.",
+            "tip": "Sync sekarang has a 2 minute minimum gap and allows only 3 runs per 10 minutes. If Instagram rejects one metric the sync still runs and the metric is named in the warning box on the card."
+          },
+          "status": {
+            "title": "What the connection status means",
+            "body": "Terhubung (Connected): syncing works. Token kedaluwarsa (1): Instagram no longer gives access because the token expired and could not be renewed. Diputuskan (Disconnected): access was removed, from Monomi or from the Instagram settings. Bermasalah (Problem): a technical error, and Sync sekarang can still be tried. The warning box (2) states the cause. Click Hubungkan ulang Instagram (3) and sign in again with the same account to recover.",
+            "tip": "Data already synced stays and can still be used for reports. Connecting a different Instagram account to the same client only works after the old one is disconnected with Hapus data ticked."
+          },
+          "laporan": {
+            "title": "Fill the monthly report from Instagram",
+            "body": "In the client's monthly report open Tambah bagian data and choose Ambil dari Instagram (1). The tab only appears when the client has synced Instagram data. The preview shows the sections built from the report month's data (2): headline numbers (Ringkasan), the Harian (daily) table and top content. Tick the ones you want and click Tambahkan bagian Instagram below them. How to create and send the report is in the guide Monthly social media report.",
+            "tip": "Headline numbers based on less than 80% of the month's days are hidden unless you tick Sertakan metrik dengan data tidak lengkap. Adding a section the report already has replaces it after a confirmation."
+          },
+          "putuskan": {
+            "title": "Disconnect",
+            "body": "Click Putuskan on the card. Monomi's access is removed and syncing stops, but already synced data stays for earlier reports. Tick Hapus juga semua data Instagram yang sudah disinkronkan (1) if the data must go too, including the handle, photo and bio taken from Instagram. Then click Putuskan (2).",
+            "tip": "The client can also disconnect on their own, from the portal or from the Instagram settings."
+          }
+        }
+      },
+      "instagram-portal": {
+        "title": "Connect your Instagram",
+        "purpose": "Connect your Instagram Business or Creator account from the portal so Monomi can fill your monthly reports automatically, and disconnect at any time.",
+        "steps": {
+          "kartu": {
+            "title": "Open the Reports tab",
+            "body": "Sign in to the portal, then tap the Laporan (Reports) tab (1). At the top is the card Hubungkan Instagram Anda (Connect your Instagram) (2). The card only appears once Monomi has set this feature up for you."
+          },
+          "izin": {
+            "title": "Understand the access you give",
+            "body": "Monomi only reads your profile, follower count, reach, views and post interactions (1). Monomi cannot post, send messages or change your account, and you can disconnect at any time. The Kebijakan privasi (privacy policy) link (2) explains more.",
+            "tip": "Only Instagram Business or Creator accounts can be connected. A personal account can be switched to a professional account in the Instagram app."
+          },
+          "masuk-instagram": {
+            "title": "Tap Hubungkan Instagram and sign in",
+            "body": "Tap Hubungkan Instagram. You are taken to Instagram: sign in with your own account and tap allow, including the statistics (insights) permission. You then return to the Reports tab with a thank-you message.",
+            "tip": "If a failure message appears, try again from the card. Make sure the account is Business or Creator and not already connected to another client."
+          },
+          "terhubung": {
+            "title": "Instagram is connected",
+            "body": "The card (1) now shows your account, follower count and the note Terhubung: laporan diisi otomatis (Connected: reports are filled automatically). Data is synced every day, and the Monomi team uses it for your monthly reports.",
+            "tip": "If the card says the statistics permission has not been given, reconnect and allow insights access."
+          },
+          "putuskan": {
+            "title": "Disconnect at any time",
+            "body": "Tap Putuskan on the card. Monomi's access to the account is removed and syncing stops, but existing data is still used for earlier reports. Tick Hapus juga semua data Instagram yang sudah disinkronkan (1) if that data must be deleted too, then tap Putuskan (2)."
+          }
+        }
+      },
+      "invoice-manual": {
+        "title": "Manual invoice: bill without a quotation",
+        "purpose": "Create an invoice directly in New Invoice when there is no approved quotation: fill in client, project, items, PPN and payment information, watch the stamp duty (materai) for totals above Rp 5.000.000, then save it as a draft.",
+        "steps": {
+          "buka": {
+            "title": "Open New Invoice",
+            "body": "In the Invoice menu click Invoice Baru (1). Use this to bill without a quotation, for example extra work. Invoices from an approved quotation are created automatically, see the Quotation guide.",
+            "tip": "This page is for Admins only. Invoices from quotations, their statuses and payments are explained in the Invoice and Payments and receivables guides."
+          },
+          "klien-proyek": {
+            "title": "Choose the client and project, set the dates",
+            "body": "Choose the Klien (client) (1), then the Proyek (project) (2): projects only appear once a client is chosen, and both are required. If the client does not exist yet, pick + New client in the list. Tanggal Terbit (issue date) (3) decides the invoice number, which is created automatically after saving. Jatuh Tempo (due date) (4) is filled with 30 days after the issue date; change it if the client's terms differ.",
+            "tip": "Once the project is chosen, its products and any reimbursable costs not yet billed automatically become item rows. Check and adjust them."
+          },
+          "item": {
+            "title": "Fill in the item rows",
+            "body": "Each row has an item or service name (1), an optional note, Qty and Harga (price); line subtotals and the total are calculated for you. Click Tambah Baris (2) to add a service, and the trash icon (3) to remove a row.",
+            "tip": "The Deskripsi Pekerjaan (work description) section below is optional; if left empty it is inherited from the project."
+          },
+          "ppn": {
+            "title": "PPN and the total",
+            "body": "The PPN (11%) box (1) is ticked by default; untick it if the invoice does not carry PPN. Total (2) is the subtotal plus PPN. In this example PPN is off and the total is exactly Rp 5.000.000, so stamp duty is not needed yet.",
+            "tip": "Stamp duty (materai) is only needed when the total is more than Rp 5.000.000. A total of exactly Rp 5.000.000 does not need it."
+          },
+          "materai": {
+            "title": "Materai appears automatically",
+            "body": "After PPN is ticked the total becomes Rp 5.550.000 and passes Rp 5.000.000. A Materai line (1) appears marked auto, and the Materai diperlukan (stamp duty required) card (2) reminds you to stick a Rp 10.000 stamp on the printout before sending. The Wajib materai switch is locked on.",
+            "tip": "The stamp value is not added to the invoice total and sticking it is manual, on paper. Once it is stuck, tick Materai sudah ditempel when editing the invoice, as in the Invoice guide."
+          },
+          "pembayaran": {
+            "title": "Payment information and terms",
+            "body": "Informasi Pembayaran (payment information) (1) is filled from the bank accounts set in Settings; click Pakai default (2) to restore the template. Syarat & Ketentuan (terms) (3) already holds the default text; adjust it if needed. Both are printed on the invoice PDF.",
+            "tip": "The printed accounts are set in Settings, under Rekening Bank (Bank Accounts)."
+          },
+          "simpan": {
+            "title": "Save as a draft, then send",
+            "body": "Click Simpan at the bottom. The invoice is created as Draf (1) with an automatic number and is not sent to the client yet. Check it, then click Kirim (2) when ready. The Tindakan lainnya menu (3) holds Pratinjau PDF for printing.",
+            "tip": "A sent invoice cannot go back to Draf. Statuses, payments and the PDF are explained in the Invoice and Payments and receivables guides."
+          }
+        }
+      },
+      "pengaturan-aplikasi": {
+        "title": "Settings and the mobile app",
+        "purpose": "Learn every part of Settings: profile, password, company identity, bank accounts, invoice numbering, notifications, data backup, and how to install the Monomi Android app on a phone.",
+        "steps": {
+          "buka": {
+            "title": "Open Settings",
+            "body": "Click Pengaturan (Settings) in the menu. The list of sections (1) is on the left and its content (2) on the right; each section is saved on its own with its own button. All staff see Profil, Keamanan, Notifikasi and Aplikasi Mobile. Perusahaan, Rekening Bank, Invoice & Penomoran and Cadangan Data are admin only and do not appear for other roles.",
+            "tip": "If you type and then switch section without saving, Monomi first asks whether the changes may be discarded."
+          },
+          "profil": {
+            "title": "Profile",
+            "body": "Change the Nama Lengkap (full name) (1), Zona Waktu (time zone) (2) and Bahasa (language) (3) of your account, then click Simpan Profil (4). The save button only becomes active once something changed.",
+            "tip": "The language can also be switched quickly with the EN / ID button in the top bar."
+          },
+          "keamanan": {
+            "title": "Change your password (Keamanan)",
+            "body": "Fill in Kata Sandi Saat Ini (current password) (1), Kata Sandi Baru (new password) (2) and Konfirmasi Kata Sandi Baru (confirm) (3), then click Ubah Kata Sandi (4). The new password needs at least 8 characters with an uppercase letter, a lowercase letter and a number; the list of rules turns green as each is met.",
+            "tip": "The eye icon in each field shows or hides its content. The first password of a new user is set by an admin in Users and roles; after that the owner changes it here."
+          },
+          "perusahaan": {
+            "title": "Company (admin only)",
+            "body": "The official identity shown on invoices, receipts and tax documents: Nama Perusahaan (company name) (1), NPWP (2) in the format XX.XXX.XXX.X-XXX.XXX, Alamat (address) (3), phone, email, website and currency. Click Simpan Perusahaan (4).",
+            "tip": "Check the NPWP and address carefully: both are printed on every invoice."
+          },
+          "rekening": {
+            "title": "Bank accounts (admin only)",
+            "body": "Up to three bank accounts are printed in the invoice footer as payment destinations. Fill in Nama Pemilik Rekening (account holder) (1), or leave it empty to use the company name, then the bank name and account number of each account (2). Click Simpan Rekening (3).",
+            "tip": "These accounts also fill Informasi Pembayaran automatically on the New Invoice form."
+          },
+          "invoice": {
+            "title": "Invoicing and numbering (admin only)",
+            "body": "Choose the Termin Pembayaran Default (default payment terms) (1): NET 7, 14, 30 or 60 days. Ambang Batas Materai (stamp duty threshold) (2) holds Rp 5.000.000. Prefix Invoice (3) and Prefix Penawaran (quotation prefix) (4) are put in front of document numbers, for example INV- becomes INV-202610-0122 (prefix, year and month, running number). The Pengingat Materai Otomatis (automatic stamp duty reminder) switch (5) controls the stamp duty reminder.",
+            "tip": "The stamp duty rule on the invoice form follows the regulation: a total of more than Rp 5.000.000, not equal to it. Leave the threshold at that value. Change a prefix only when really needed, because old numbers do not change."
+          },
+          "notifikasi": {
+            "title": "Notifications",
+            "body": "Choose how the system contacts you about important events: Notifikasi Email (1) for overdue invoices, incoming payments and the daily digest, and Notifikasi Push (2) for instant browser alerts while you are online. Click Simpan Notifikasi after changing them.",
+            "tip": "These settings are personal and do not change other staff members' notifications."
+          },
+          "cadangan": {
+            "title": "Data backup (admin only)",
+            "body": "Turn on Backup Otomatis (automatic backup) (1), choose the Frekuensi (2) Harian (daily), Mingguan (weekly) or Bulanan (monthly) and the Waktu Backup (WIB time zone), then click Simpan Cadangan. For a backup right now, click Unduh .sql (3): the system prepares a full database backup as an SQL file.",
+            "tip": "The .sql file contains all business data. Keep it somewhere safe and never send it through chat or ordinary email."
+          },
+          "aplikasi": {
+            "title": "Install the Android app",
+            "body": "On your Android phone click Unduh APK (1). Then follow Cara memasang (how to install) (2): enable Instal aplikasi tidak dikenal (install unknown apps) in the phone Settings (Security), open the downloaded APK file and tap Install, then open Monomi and sign in with your account.",
+            "tip": "The app is an APK file and only for Android. On an iPhone or a computer, open Monomi in the browser. Switch the unknown-sources permission off again afterwards."
+          }
+        }
+      },
+      "crm-pengaturan": {
+        "title": "CRM settings: response target and pipeline stages",
+        "purpose": "For admins: set the response-time target, rename, recolour, reorder and switch pipeline stages, and understand which stage sends which Meta event (Qualified sends QualifiedLead, Won sends Purchase).",
+        "steps": {
+          "buka": {
+            "title": "Open CRM settings",
+            "body": "In the CRM menu choose Pengaturan CRM (CRM settings, an admin-only page). The first two sections are Target waktu respons (response-time target) (1) and Tahap pipeline (pipeline stages) (2). Below them are the connection cards: Pelacakan landing page (landing-page tracking), Sinkronisasi Meta Ads and WhatsApp Business.",
+            "tip": "Every stage change is saved the moment you make it; only the response-time target uses a Simpan (Save) button."
+          },
+          "target": {
+            "title": "Set the response-time target",
+            "body": "Fill Menit (minutes) (1) with the limit for a first reply, between 1 and 1440 minutes (the default is 15), then click Simpan (2). A lead without a reply after that many minutes is flagged as unanswered on the board, the list and the CRM dashboard.",
+            "tip": "Choose a number your team can really meet; a target that is too tight makes almost every lead look late."
+          },
+          "tahap": {
+            "title": "Read one stage row",
+            "body": "Each stage has a Warna (colour) (1), Nama tahap (stage name) (2), Tipe (type) (3) Terbuka (Open), Menang (Won) or Kalah (Lost), an Event Meta (4), an Aktif (active) switch (5) and arrow buttons to reorder (6). The six default stages are Baru, Dikualifikasi, Meeting, Penawaran, Menang and Kalah.",
+            "tip": "There must always be at least one active Open, one Won and one Lost stage."
+          },
+          "ganti-nama": {
+            "title": "Rename and recolour",
+            "body": "Click the Warna (colour) box (1) and pick a new colour; it saves at once. Change the Nama tahap (2) and press Enter or click outside the field to save. The new name shows on the board and in the lead list.",
+            "tip": "Renaming or recolouring does not change that stage's type or Meta event."
+          },
+          "urutan": {
+            "title": "Change the order",
+            "body": "Use the Naikkan (move up) (1) and Turunkan (move down) (2) arrows on the stage row (3). The order sets the column order on the lead board, and decides which stages count as after Dikualifikasi (see the Meta event step).",
+            "tip": "The first stage cannot move up and the last cannot move down."
+          },
+          "nonaktif": {
+            "title": "Switch a stage off",
+            "body": "Turn off the Aktif (active) switch (1) to hide a stage without deleting it: its row dims and leads cannot be moved there. Turn it on again at any time.",
+            "tip": "If the stage that carries the QualifiedLead event is switched off, the skip-past-Qualified rule in the Meta event step does not apply until another active stage has that event."
+          },
+          "tambah": {
+            "title": "Add or delete your own stage",
+            "body": "Type a name in Tahap baru (new stage) (1) and click Tambah tahap (add stage) (2). A new stage is Open with no Meta event and is inserted before the Won stage; set its type, colour and position on its row. Only stages you created have a trash button (3) to delete them, with a confirmation; default stages can only be switched off.",
+            "tip": "A stage that still holds leads cannot be deleted, and a stage that already has lead history is only switched off because history is never deleted."
+          },
+          "event-meta": {
+            "title": "Which stage sends which Meta event",
+            "body": "A Meta event is recorded when a lead enters that stage, once per lead. By default Dikualifikasi (1) sends QualifiedLead, and Menang (2), of type Menang (Won) (3), sends Purchase with the lead's quotation total, or its estimated value when there is no quotation. New rule: if a lead skips past Dikualifikasi, meaning it goes straight to a Won-type stage or to an Open stage ordered after Dikualifikasi, QualifiedLead is still sent once, before the Purchase. A Kalah (Lost) stage sends nothing.",
+            "tip": "Leads from WhatsApp send LeadSubmitted automatically when they are created, so that option normally does not need to be put on a stage. Events still in the queue can be sent with the Kirim event yang antre button on the WhatsApp Business card."
+          },
+          "kartu-lain": {
+            "title": "The other cards on this page",
+            "body": "Pelacakan landing page (1) tracks visits and WhatsApp taps from the ad landing page, and Sinkronisasi Meta Ads (2) pulls ad spend into the CRM campaigns. How to read and set them up is covered in the guide WhatsApp connection (admin), in its Landing-page tracking and Meta Ads sync steps.",
+            "tip": "The values in these cards are set on the server by the developer or an admin, not typed into Monomi."
+          },
+          "whatsapp": {
+            "title": "The WhatsApp Business card",
+            "body": "The WhatsApp Business card (1) shows the WhatsApp connection status, the webhook and the Conversions API. It is covered in full, including the safety rule for the WhatsApp number used in ads, in the guide WhatsApp connection (admin).",
+            "tip": "Read the first step of that guide before touching anything that involves the WhatsApp number."
+          }
+        }
+      },
+      "kalender-proyek": {
+        "title": "Calendar: deadlines, quotations, projects and events",
+        "purpose": "Read the company Calendar that combines invoice due dates, quotation validity, project deadlines and team events, then add events to a project's Project Calendar.",
+        "steps": {
+          "bulan": {
+            "title": "Open the Calendar",
+            "body": "Click Kalender (Calendar) in the menu (admin only). Four cards (1) summarise the next 30 days: Jatuh Tempo 30 Hari (due in 30 days: invoices and quotations), Nilai Piutang (receivable value: the remaining balance of invoices falling due), Terlewat (overdue: past their date and not finished) and Acara Mendatang (upcoming events: meetings and milestones). The month grid starts on Monday; the arrows and Hari Ini (Today) (2) change the month. Coloured dots mark the kind: Invoice (due date), Penawaran (quotation, valid until), Proyek (end date) and Acara (event). Kalender Konten (3) opens the content planner.",
+            "tip": "Social media content plans are not here; the steps are in the Content planner guide."
+          },
+          "hari": {
+            "title": "Pick a day",
+            "body": "Click a day (1): the Hari Terpilih (selected day) panel (2) lists everything that falls on that day. Click an invoice, quotation or project to open it. The Agenda Mendatang (upcoming agenda) panel (3) summarises the next 14 days, and a full cell shows lainnya (more) for the rest.",
+            "tip": "Items that are past their date and not finished get a red ring and are counted in the Terlewat card."
+          },
+          "proyek": {
+            "title": "The Project Calendar for one project",
+            "body": "The Project Calendar shows the events of one project. Its address is /projects/ followed by the project id and /calendar; the page can also be opened from the Kalender Proyek button in the project's Content Calendar. The Tambah Acara (add event) button (1) creates an event, Kalender Konten (2) opens the project's content calendar, which is the content planner limited to one project, and the tabs (3) filter events by type: Milestone, Tenggat (deadline), Meeting, Pemotretan (shoot) or Pengiriman (delivery).",
+            "tip": "The cards above count events Mendatang (next 14 days), Terlewat, Bulan Ini (this month) and Selesai Bulan Ini (completed this month)."
+          },
+          "tambah-acara": {
+            "title": "Add an event",
+            "body": "Fill in Judul Acara (event title) (1) and choose the Tipe (type) (2): Milestone, Tenggat, Meeting, Pemotretan, Pengiriman, Pekerjaan (work), Pengingat (reminder) or Lainnya (other). Choose the Tanggal (date) (3) in the date picker, then set the Mulai (start) and Selesai (end) times (09:00 to 10:00 by default). Deskripsi and Lokasi or meeting link are optional. Click Simpan Acara (4).",
+            "tip": "The title and date are required. If the end time is not after the start time, the event ends the next day."
+          },
+          "acara": {
+            "title": "View and delete an event",
+            "body": "An event shows as a coloured label on its day (1). Click it to open the detail panel (2): type, status, location, start and end time, description and who it is assigned to. The Hapus (delete) button (3) removes it after a confirmation.",
+            "tip": "Project events also show as Acara on the company Calendar and count in the Acara Mendatang card."
+          }
+        }
+      },
+      "laporan-bisnis": {
+        "title": "Business reports: monthly and system analytics",
+        "purpose": "Learn the Reports page: the automatic monthly business report and the four system analytics reports (revenue, payments, clients, projects), plus where the clients' social media reports are kept.",
+        "steps": {
+          "katalog": {
+            "title": "Open Reports",
+            "body": "Click Laporan (Reports) in the menu (admin only). Ekspor PDF (1) downloads a business summary, and Laporan Baru (2) creates a social media report for a client: the steps are in the guide Monthly social media report. The Laporan Bisnis Bulanan card (3) opens the automatic report, and Laporan Analitik Sistem (4) holds four reports that are always available. Laporan Tersimpan (5) only lists the social media reports you built.",
+            "tip": "Nothing is typed in the business and analytics reports: everything is calculated from invoices, payments, clients and projects."
+          },
+          "bulanan": {
+            "title": "Monthly business report",
+            "body": "Choose the month (1) and year (2) at the top right. Eight cards (4) summarise: Pendapatan (Lunas) (revenue received that month), Tertagih (the value of invoices billed and their count), Piutang (AR) awaiting payment, Jatuh Tempo (overdue), the Penawaran to Invoice conversion rate, Tingkat Pembayaran (invoices paid), and Klien Baru and Proyek Baru (new clients and projects) that month. Cetak / PDF (3) opens the browser print dialog; choose Save as PDF.",
+            "tip": "Use this report for the monthly meeting: receivables and overdue show what must be collected."
+          },
+          "bulanan-rinci": {
+            "title": "Charts and tables of the monthly report",
+            "body": "Scroll down. The Pendapatan per Periode chart (1) shows revenue received. The Klien Teratas and Proyek Teratas tables (2) rank revenue, and Invoice menurut Status (3) lists the count and value of invoices in each status. All three tables are labelled sepanjang waktu (all time), not just the chosen month.",
+            "tip": "The figures for the chosen month are in the cards above; these tables give the overall picture."
+          },
+          "pendapatan": {
+            "title": "Revenue report",
+            "body": "From Laporan Analitik Sistem open Laporan Pendapatan. Three cards (1) show Total Pendapatan, Rata-rata / Periode (average per period) and the number of Invoice. The Pendapatan per Periode chart (2) shows revenue per month. Kembali ke Laporan (3) returns to the catalogue.",
+            "tip": "Revenue is counted from invoices with the status Lunas (paid), not from invoices that were only sent."
+          },
+          "pembayaran": {
+            "title": "Payment report",
+            "body": "The cards (1) show the number and Nilai Jatuh Tempo (overdue value) and Kelompok Status (status groups). The Invoice menurut Status table (2) details count and value per status, and below it is the Invoice Jatuh Tempo list with each client, as a list of bills to follow up.",
+            "tip": "To record a payment or see receivables aging, see the guide Payments and receivables."
+          },
+          "klien": {
+            "title": "Client report",
+            "body": "The cards (1) show Total Klien (total clients) and how many are Diperingkat (ranked). The Klien Teratas berdasarkan Pendapatan table (2) ranks clients by invoice count and revenue; up to the top 50 clients are shown.",
+            "tip": "Use it to see which clients are the most valuable and which rarely pay."
+          },
+          "proyek": {
+            "title": "Project report",
+            "body": "The cards (1) show Total Proyek (total projects) and how many are Diperingkat. The Proyek Teratas berdasarkan Pendapatan table (2) lists the project number, status and revenue; up to the top 50 projects are shown.",
+            "tip": "Compare revenue per project with its budget on the project page, as in the Projects guide."
+          }
+        }
+      },
+      "analitik-milestone": {
+        "title": "Payment milestone analytics",
+        "purpose": "Read the Milestone page: how fast and how punctually clients pay each stage (for example 30% down payment and 70% final payment), the revenue already recognised, and the cash flow forecast.",
+        "steps": {
+          "ringkasan": {
+            "title": "Open Milestone and read the summary",
+            "body": "Click Milestone in the menu. A milestone here is a payment stage you choose on a quotation (the Termin option, for example DP 30% and Pelunasan 70%); there is no separate milestone entry. Four cards (1) count Total Milestone, Akan Datang (upcoming: pending or invoiced), Jatuh Tempo (overdue) and Selesai (completed: paid). The filters (2) choose the project, the range (30 days, 90 days, 1 year or custom) and the status. Ekspor JSON (3) saves the data.",
+            "tip": "The range uses the date the milestone was created. Muat Ulang (refresh) updates the figures after a new payment."
+          },
+          "metrik": {
+            "title": "Payment cycle and profitability",
+            "body": "Three cards (1): Siklus Pembayaran (average days from billing to payment), Tepat Waktu (the percentage of milestones paid by their due date) and Pengakuan Pendapatan (the percentage of milestone value already recognised). The Profitabilitas per Fase chart (2) compares Pendapatan (revenue), Biaya (cost) and Laba (profit) per stage; the Proyeksi Arus Kas chart below compares expected, actual and forecast inflow.",
+            "tip": "A growing cycle means clients pay more slowly; bill earlier or change the down payment share."
+          },
+          "tabel": {
+            "title": "Detail of each milestone",
+            "body": "The Detail Milestone table (1) lists each stage: number, name, Jatuh Tempo (due date), Jumlah (amount), the Diakui (recognised) value, Hari Bayar (days to pay) and Status. The number of overdue ones is shown in the table title. Click a row to open its project.",
+            "tip": "How to choose stages on a quotation is in the Quotation guide, in the step Atur ketentuan pembayaran (set the payment terms)."
+          }
+        }
+      },
+      "akuntansi-lanjutan": {
+        "title": "Advanced accounting: where to find each report",
+        "purpose": "A short map for admins: where to find the general ledger, trial balance, cash flow, receivables and payables aging, the purchase report, the adjusting entry wizard and the ECL provision, and what each one says. Journals, the income statement and the balance sheet are in the guide Basic accounting.",
+        "steps": {
+          "buku-besar": {
+            "title": "General ledger: every transaction per account",
+            "body": "Menu Akuntansi (Accounting), Laporan, Buku Besar. Three cards (1) count Total Entri (entries), Total Debit and Total Kredit in the chosen period. Set the period, account and type, or search account code, journal number and description (2). The table (3) shows Tanggal, Jurnal, Akun, Deskripsi, Debit, Kredit and the running Saldo. Ekspor (4) saves the result.",
+            "tip": "Start here when a figure in a report looks odd: search for its account or journal number to see the source transactions."
+          },
+          "neraca-saldo": {
+            "title": "Trial balance: do the books balance",
+            "body": "Menu Akuntansi, Laporan, Neraca Saldo. The green note at the top (1) says Buku besar seimbang (the ledger balances) when total debit equals total credit. The table (3) holds each account's balance in the Debit or Kredit column; search an account (2) or filter by type. Muat Ulang refreshes the figures and Ekspor (4) saves them.",
+            "tip": "Check the trial balance before closing a month. An abnormal balance flagged in yellow (for example a bank account with a credit balance) usually means a transaction is not recorded yet."
+          },
+          "arus-kas": {
+            "title": "Cash flow statement: where cash came from and went",
+            "body": "Menu Akuntansi, Laporan, Arus Kas. Cash movements are grouped into Operasional (operating) (1), Investasi (investing) (2) and Pendanaan (financing), reconciled with the cash balance, and show the Kas bersih dari aktivitas operasional (net cash from operating activities). Choose the period at the top right, then Ekspor (3).",
+            "tip": "Brackets mean cash going out. A section without transactions says Tidak ada transaksi."
+          },
+          "aging-piutang": {
+            "title": "Receivables aging: who is late and for how long",
+            "body": "This page is not in the side menu yet: open the address /accounting/ar-aging. Five cards (1) split receivables by age: Belum J.T. (not yet due), 1 to 30, 31 to 60, 61 to 90 and more than 90 days. The Analisis Umur per Klien table (2) details each client, and PDF (3) and Excel (4) save it.",
+            "tip": "The older the bucket, the greater the risk of non-payment. Bills over 60 days deserve follow-up first."
+          },
+          "aging-hutang": {
+            "title": "Payables aging: what must be paid",
+            "body": "Open the address /accounting/ap-aging. It is built like receivables aging but for payables: the cards (1) split payables by age and the Analisis Umur per Kategori table (2) details purchase payables per category. Purchases without a category fall under Kategori tidak diketahui.",
+            "tip": "Payables come from purchases paid by Hutang (see the guide Vendors and purchases). Settle them with Tandai Lunas."
+          },
+          "laporan-pembelian": {
+            "title": "Purchase report",
+            "body": "Menu Akuntansi, Pembelian, Laporan Pembelian. The cards (1) show Total Pembelian this year, what is Belum Lunas (unpaid, payables owed), what is Lunas (paid) and the number of records. The table (2) lists each purchase with vendor, account and description; filter by status or search. + Pembelian (3) records a new purchase, and PDF or Excel saves the report.",
+            "tip": "How to record a purchase and settle a payable is in the guide Vendors and purchases."
+          },
+          "jurnal-penyesuaian": {
+            "title": "Adjusting entry wizard",
+            "body": "Open the address /accounting/adjusting-entries. A three-step wizard (1), Pilih Tipe (choose type), Isi Data (fill in) and Review, creates accrual adjusting entries. Choose a pattern (2): Beban Dibayar Dimuka (prepaid expense), Pendapatan Diterima Dimuka (unearned revenue), Pendapatan Akrual (accrued revenue) or Beban Akrual (accrued expense). Each pattern sets the debit and credit sides automatically. Click Lanjut (3) to fill in the data.",
+            "tip": "Use it at month end to recognise an expense or revenue in the right period. The journal is created in the Review step."
+          },
+          "ecl": {
+            "title": "ECL provision (PSAK 71)",
+            "body": "Open the address /accounting/ecl-provisions. The page shows the expected credit loss provision on receivables: Total Piutang, Total Cadangan ECL, Rasio Cadangan (provision ratio) and Perhitungan Terakhir (last calculation). Click Hitung ECL: the dialog asks for the Tanggal Perhitungan (calculation date) (1) and Opsi Posting (posting option) (2), for example saved as a draft to be posted manually. The process calculates the provision for every outstanding invoice from receivables age and the default PSAK 71 ECL rates. Click Hitung ECL (3) to run it or Batal to cancel.",
+            "tip": "Segarkan (refresh) reloads the data without calculating. Review the draft result with your accountant before posting it."
+          }
+        }
       }
     }
   },
