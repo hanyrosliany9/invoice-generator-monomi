@@ -45,7 +45,11 @@ for (const name of files) {
   const cmd = ['wrangler', 'r2', 'object', 'put', key, '--file', file, '--content-type', type, '--remote'];
   if (dry) { console.log(`would upload  ${name}  ${kb} KB  ->  ${key}  (${type})`); up += 1; continue; }
   console.log(`uploading  ${name}  ${kb} KB`);
-  const r = spawnSync('npx', cmd, { cwd: WORKERS, stdio: 'inherit', shell: process.platform === 'win32' });
+  // Windows needs a shell to find npx.cmd; quote arguments there so "text/vtt; charset=utf-8"
+  // and paths with spaces reach wrangler as single arguments.
+  const win = process.platform === 'win32';
+  const args = win ? cmd.map((a) => (/[\s;&|^<>"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a)) : cmd;
+  const r = spawnSync('npx', args, { cwd: WORKERS, stdio: 'inherit', shell: win });
   if (r.status !== 0) { console.error(`FAILED ${name}`); process.exitCode = 1; break; }
   done[name] = new Date().toISOString();
   fs.writeFileSync(STATE, JSON.stringify(done, null, 1));
