@@ -51,7 +51,9 @@ export class CrmCampaignsService {
       const n = counts.get(c.id) ?? { leads: 0, qualified: 0, won: 0 };
       const manualSpend = sc.get(c.id) ?? 0;
       const m = meta.byCampaign.get(c.id);
-      const cm = campaignCostMetrics(manualSpend, m?.amount ?? 0, n);
+      // rupiah manual costs are not added to a foreign-currency Meta account: kept apart
+      const mixed = meta.currency !== "IDR";
+      const cm = campaignCostMetrics(mixed ? 0 : manualSpend, m?.amount ?? 0, n);
       return {
         ...c,
         budget: c.budget === null ? null : Number(c.budget),
@@ -64,6 +66,7 @@ export class CrmCampaignsService {
         impressions: m?.impressions ?? 0,
         clicks: m?.clicks ?? 0,
         spendCurrency: meta.currency,
+        manualSeparate: mixed,
         costPerLead: cm.costPerLead,
         costPerQualified: cm.costPerQualified,
         costPerClient: cm.costPerClient,
@@ -98,13 +101,14 @@ export class CrmCampaignsService {
   }
 
   async update(id: string, dto: UpdateCampaignDto) {
-    await this.get(id);
+    const current = await this.get(id);
     try {
       return await this.prisma.campaign.update({
         where: { id },
         data: {
           ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
-          ...(dto.code !== undefined ? { code: dto.code } : {}),
+          // a code staff set themselves is a staff code (matches as a bare word again)
+          ...(dto.code !== undefined ? { code: dto.code, ...(dto.code !== current.code ? { codeAuto: false } : {}) } : {}),
           ...(dto.platform !== undefined ? { platform: dto.platform } : {}),
           ...(dto.startDate !== undefined ? { startDate: dto.startDate ? new Date(dto.startDate) : null } : {}),
           ...(dto.endDate !== undefined ? { endDate: dto.endDate ? new Date(dto.endDate) : null } : {}),

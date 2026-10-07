@@ -55,6 +55,12 @@ export function waIdFromPhone(phone: string | null | undefined): string | null {
   return digits === "" ? null : digits;
 }
 
+/** "Kode kampanye: CODE" / "Campaign code: CODE" (the only non-bracket form an auto-generated code may match in). */
+export function explicitCodeRegex(code: string): RegExp {
+  const c = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:kode\\s+kampanye|campaign\\s+code)\\s*[:=-]?\\s*${c}(?![A-Za-z0-9_-])`, "i");
+}
+
 export interface QuickAddParse {
   name: string | null;
   phone: string | null;
@@ -70,11 +76,17 @@ const PHONE_CANDIDATE =
  * Parse a pasted WhatsApp first message / chat info.
  *   - phone: first plausible number (wa.me links, +62, 08xx ...)
  *   - campaign code: "[CODE]" in square brackets, else a bare token that
- *     matches one of the known campaign codes (case-insensitive)
+ *     matches one of the known campaign codes (case-insensitive). Codes in
+ *     `explicitOnlyCodes` (generated from a Meta campaign name, e.g. "PROMO")
+ *     never match as a bare word: only as "[CODE]" or "Kode kampanye: CODE"
  *   - name: "Name: X" / "Nama: X", else the leftover text of the line that
  *     held the phone number (e.g. "Budi Santoso +62 857-...")
  */
-export function parseQuickAdd(text: string, knownCodes: string[] = []): QuickAddParse {
+export function parseQuickAdd(
+  text: string,
+  knownCodes: string[] = [],
+  explicitOnlyCodes: string[] = [],
+): QuickAddParse {
   const result: QuickAddParse = { name: null, phone: null, campaignCode: null, message: null };
   if (!text || text.trim() === "") return result;
 
@@ -108,6 +120,8 @@ export function parseQuickAdd(text: string, knownCodes: string[] = []): QuickAdd
   const bracket = text.match(/\[\s*([A-Za-z0-9][A-Za-z0-9_-]{1,23})\s*\]/);
   if (bracket) {
     result.campaignCode = bracket[1].toUpperCase();
+  } else if (explicitOnlyCodes.some((c) => explicitCodeRegex(c).test(text))) {
+    result.campaignCode = explicitOnlyCodes.find((c) => explicitCodeRegex(c).test(text))!.toUpperCase();
   } else if (knownCodes.length > 0) {
     const upper = text.toUpperCase();
     for (const code of knownCodes) {

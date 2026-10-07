@@ -216,6 +216,7 @@ export class AutoLeadService {
           source: "WEBSITE",
           campaignId: campaign?.id ?? null,
           campaignCode: campaign?.code ?? null,
+          campaignSource: campaign ? "AUTO" : null,
           instagramHandle: handle,
           stageId: stage.id,
           firstContactAt: now,
@@ -414,6 +415,7 @@ export class AutoLeadService {
     if (!target.campaignId && placeholder.campaignId) {
       data.campaignId = placeholder.campaignId;
       data.campaignCode = placeholder.campaignCode;
+      data.campaignSource = "AUTO";
     }
     if (clicks.length && !target.ctwaClid && target.source !== "WHATSAPP_CTWA") data.source = "WEBSITE";
     const phone = input?.phone ? normalizePhone(input.phone) : null;

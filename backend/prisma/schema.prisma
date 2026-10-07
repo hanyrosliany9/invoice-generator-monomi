@@ -826,6 +826,8 @@ model Campaign {
   metaCampaignName String?
   metaStatus       String? // Meta effective_status (ACTIVE, PAUSED, ARCHIVED...)
   metaObjective    String?
+  // true when the sync generated the code from the Meta name: such a code never matches as a bare word in chat text
+  codeAuto         Boolean          @default(false)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -873,6 +875,8 @@ model Lead {
   // "Add phone"). Waiting leads are left out of the response-time metrics.
   awaitingWhatsapp  Boolean @default(false)
   autoCreated       Boolean @default(false) // created by the server from a landing-page tap
+  // How campaignId was set: AUTO (utm campaign id / ad id / code match: follows Meta re-links) or MANUAL (staff choice: never touched)
+  campaignSource    String?
   // `name` is the brand / "@handle" / "Website visitor · <Kode>", not a person:
   // it is never hashed into fn/ln for Meta. Cleared when staff set a real name.
   nameIsPlaceholder Boolean @default(false)
@@ -1046,6 +1050,7 @@ model AdClick {
 
   @@index([createdAt])
   @@index([campaignCode])
+  @@index([utmCampaign])
   @@index([visitId])
   @@index([leadId])
   @@map("ad_clicks")
@@ -6729,6 +6734,7 @@ model MetaAdsSyncState {
   adAccountId         String? // digits, no act_
   accountName         String?
   currency            String?
+  timezoneName        String?
   leaseOwner          String?
   leaseUntil          DateTime?
   lastRunAt           DateTime?

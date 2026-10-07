@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { crmApi, type CrmStats } from '@/services/crm';
 import { CrmShell, nativeSelectClass } from './CrmShell';
 import { useCrmCampaigns, useCrmStages } from './crmHooks';
-import { formatMoney, idrCompact, timeAgo, useCrmLabels, wibDateStr } from './crmUtils';
+import { formatMoney, idrCompact, moneyCompact, timeAgo, useCrmLabels, wibDateStr } from './crmUtils';
 import { CodeBadge } from './LeadParts';
 
 type Period = 'thisMonth' | 'lastMonth' | 'last30' | 'last90' | 'thisYear';
@@ -106,25 +106,27 @@ export default function CrmDashboardPage() {
             />
             <StatCard
               label={t('crm.dash.kpi.spend', 'Ad spend')}
-              value={s.spendCurrency && s.spendCurrency !== 'IDR' ? formatMoney(s.spend, s.spendCurrency) : idrCompact(s.spend, lang)}
-              sublabel={t('crm.dash.kpi.spendHint', 'Meta {{meta}} · other costs {{other}}', {
-                meta: idrCompact(s.metaSpend ?? 0, lang),
-                other: idrCompact(s.manualSpend ?? s.spend, lang),
-              })}
+              value={moneyCompact(s.spend, s.spendCurrency, lang)}
+              sublabel={s.manualSeparate
+                ? t('crm.dash.kpi.spendHintSeparate', 'Meta only. Other costs {{other}} (rupiah) are shown apart.', { other: idrCompact(s.manualSpend ?? 0, lang) })
+                : t('crm.dash.kpi.spendHint', 'Meta {{meta}} · other costs {{other}}', {
+                  meta: idrCompact(s.metaSpend ?? 0, lang),
+                  other: idrCompact(s.manualSpend ?? s.spend, lang),
+                })}
             />
             <StatCard
               label={t('crm.dash.kpi.costLead', 'Cost per lead')}
-              value={s.costPerLead === null ? '-' : idrCompact(s.costPerLead, lang)}
+              value={s.costPerLead === null ? '-' : moneyCompact(s.costPerLead, s.spendCurrency, lang)}
               sublabel={s.leads > 0
-                ? t('crm.dash.kpi.costLeadHint', 'Ad spend {{spend}} ÷ {{n}} leads', { spend: idrCompact(s.spend, lang), n: s.leads })
-                : t('crm.dash.kpi.costNone', 'Ad spend {{spend}}', { spend: idrCompact(s.spend, lang) })}
+                ? t('crm.dash.kpi.costLeadHint', 'Ad spend {{spend}} ÷ {{n}} leads', { spend: moneyCompact(s.spend, s.spendCurrency, lang), n: s.leads })
+                : t('crm.dash.kpi.costNone', 'Ad spend {{spend}}', { spend: moneyCompact(s.spend, s.spendCurrency, lang) })}
             />
             <StatCard
               label={t('crm.dash.kpi.costClient', 'Cost per client')}
-              value={s.costPerClient === null ? '-' : idrCompact(s.costPerClient, lang)}
+              value={s.costPerClient === null ? '-' : moneyCompact(s.costPerClient, s.spendCurrency, lang)}
               sublabel={s.won > 0
-                ? t('crm.dash.kpi.costHint', 'Ad spend {{spend}} ÷ {{n}} won', { spend: idrCompact(s.spend, lang), n: s.won })
-                : t('crm.dash.kpi.costNone', 'Ad spend {{spend}}', { spend: idrCompact(s.spend, lang) })}
+                ? t('crm.dash.kpi.costHint', 'Ad spend {{spend}} ÷ {{n}} won', { spend: moneyCompact(s.spend, s.spendCurrency, lang), n: s.won })
+                : t('crm.dash.kpi.costNone', 'Ad spend {{spend}}', { spend: moneyCompact(s.spend, s.spendCurrency, lang) })}
             />
           </div>
 

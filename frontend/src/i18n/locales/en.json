@@ -10315,7 +10315,8 @@
         "linkedHelp": "Spend of Meta campaign \"{{name}}\" syncs into this campaign, and landing visits from its ads are linked to it. Choose \"Not linked\" to stop.",
         "empty": "No Meta campaigns known yet. Run \"Sync now\" in CRM settings.",
         "help": "Link this campaign to its Meta campaign to pull the ad spend automatically."
-      }
+      },
+      "spendSplitSeparate": "Meta {{meta}}. Other costs {{other}} are in rupiah and are not added to {{currency}}."
     },
     "errors": {
       "delete": "Could not delete.",
@@ -10379,7 +10380,8 @@
         "spend": "Ad spend",
         "spendHint": "Meta {{meta}} · other costs {{other}}",
         "costLead": "Cost per lead",
-        "costLeadHint": "Ad spend {{spend}} ÷ {{n}} leads"
+        "costLeadHint": "Ad spend {{spend}} ÷ {{n}} leads",
+        "spendHintSeparate": "Meta only. Other costs {{other}} (rupiah) are shown apart."
       },
       "funnel": "Sales funnel",
       "dropPre": "Most leads drop off at",

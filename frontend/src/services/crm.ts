@@ -270,6 +270,8 @@ export interface Campaign {
   clicks?: number;
   /** Currency of the Meta account (IDR for Monomi). */
   spendCurrency?: string;
+  /** Foreign-currency Meta account: manualSpend (rupiah) is shown apart, not added to spend. */
+  manualSeparate?: boolean;
   costPerLead: number | null;
   costPerQualified?: number | null;
   costPerClient: number | null;
@@ -313,7 +315,7 @@ export interface MetaAdsStatus {
   state: MetaAdsState;
   problems: string[];
   message: string | null;
-  account: { id: string; name: string | null; currency: string | null } | null;
+  account: { id: string; name: string | null; currency: string | null; timezone: string | null } | null;
   accountConfigured: boolean;
   backfillDays: number;
   lastRunAt: string | null;
@@ -371,6 +373,7 @@ export interface CrmStats {
   metaSpend?: number;
   manualSpend?: number;
   spendCurrency?: string;
+  manualSeparate?: boolean;
   metaLastSyncAt?: string | null;
   costPerLead: number | null;
   costPerQualified?: number | null;

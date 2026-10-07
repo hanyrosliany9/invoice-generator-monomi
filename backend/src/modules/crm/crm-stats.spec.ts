@@ -47,7 +47,7 @@ describe("parseRange", () => {
 });
 
 describe("CrmStatsService.stats", () => {
-  function build(leads: any[], spends: any[], metaLinked: any[] = [], metaDaily: any[] = []) {
+  function build(leads: any[], spends: any[], metaLinked: any[] = [], metaDaily: any[] = [], syncState: any = null) {
     const prisma: any = {
       leadStage: { findMany: jest.fn(async () => stages) },
       lead: { findMany: jest.fn(async () => leads), count: jest.fn(async (a: any) => (a.where?.firstResponseAt === null ? 3 : 7)) },
@@ -59,7 +59,7 @@ describe("CrmStatsService.stats", () => {
             : [{ id: "c1", name: "October Video Promo", code: "FB-OKT1" }, { id: "c2", name: "Reels", code: "IG-R" }],
         ),
       },
-      metaAdsSyncState: { findUnique: jest.fn(async () => null) },
+      metaAdsSyncState: { findUnique: jest.fn(async () => syncState) },
       metaAdsInsightDaily: { findMany: jest.fn(async () => metaDaily) },
     };
     const settings: any = { getThresholdMinutes: jest.fn(async () => 15) };
@@ -155,5 +155,30 @@ describe("CrmStatsService.stats", () => {
     expect(c1.costPerLead).toBeCloseTo(800_000);
     expect(c1.costPerQualified).toBeCloseTo(1_000_000);
     expect(c1.costPerClient).toBeCloseTo(2_000_000);
+  });
+
+  it("a manual entry counts in its own WIB calendar month, not the neighbouring one (no UTC off-by-one)", async () => {
+    const edge = [
+      { campaignId: "c1", amount: 1_000_000, dateFrom: new Date("2026-09-30T00:00:00Z"), dateTo: new Date("2026-09-30T00:00:00Z") },
+      { campaignId: "c1", amount: 400_000, dateFrom: new Date("2026-10-01T00:00:00Z"), dateTo: new Date("2026-10-01T00:00:00Z") },
+    ];
+    const oct = await build(leads, edge).stats({ from: "2026-10-01", to: "2026-10-31" });
+    expect(oct.spend).toBe(400_000);
+    const sep = await build(leads, edge).stats({ from: "2026-09-01", to: "2026-09-30" });
+    expect(sep.spend).toBe(1_000_000);
+    const oneDay = await build(leads, edge).stats({ from: "2026-09-30", to: "2026-09-30" });
+    expect(oneDay.spend).toBe(1_000_000);
+  });
+
+  it("a non-IDR Meta account keeps rupiah manual costs apart (not in spend or cost per)", async () => {
+    const metaLinked = [{ id: "c1", metaCampaignId: "120254253291320085" }];
+    const metaDaily = [{ metaCampaignId: "120254253291320085", amount: 60, impressions: 100, clicks: 5 }];
+    const s = await build(leads, spends, metaLinked, metaDaily, { currency: "USD" }).stats({ from: "2026-10-01", to: "2026-10-31" });
+    expect(s).toMatchObject({ spend: 60, metaSpend: 60, manualSeparate: true, spendCurrency: "USD" });
+    expect(s.manualSpend).toBeCloseTo(4_000_000);
+    expect(s.costPerLead).toBeCloseTo(10);
+    const c1 = s.byCampaign.find((c) => c.code === "FB-OKT1")!;
+    expect(c1).toMatchObject({ spend: 60, metaSpend: 60 });
+    expect(c1.costPerLead).toBeCloseTo(12);
   });
 });

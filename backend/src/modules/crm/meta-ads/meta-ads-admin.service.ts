@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
-import { backfillMetaAttribution } from "./meta-ads.attribution";
+import { backfillMetaAttribution, releaseMetaAttribution } from "./meta-ads.attribution";
 import { MetaAdsState, resolveMetaAdsConfig } from "./meta-ads.config";
 import { MetaAdsSyncService, SyncResult } from "./meta-ads-sync.service";
 
@@ -10,7 +11,7 @@ export interface MetaAdsStatus {
   problems: string[];
   /** INCOMPLETE: why the ad account could not be chosen. */
   message: string | null;
-  account: { id: string; name: string | null; currency: string | null } | null;
+  account: { id: string; name: string | null; currency: string | null; timezone: string | null } | null;
   accountConfigured: boolean;
   backfillDays: number;
   lastRunAt: string | null;
@@ -62,6 +63,7 @@ export class MetaAdsAdminService {
             id: accountId,
             name: s?.adAccountId === accountId ? s.accountName : null,
             currency: s?.adAccountId === accountId ? s.currency : null,
+            timezone: s?.adAccountId === accountId ? s.timezoneName : null,
           }
         : null,
       accountConfigured: !!cfg.adAccountId,
@@ -108,37 +110,54 @@ export class MetaAdsAdminService {
     }));
   }
 
-  /** Link a CRM campaign to a Meta campaign, or unlink (null). */
+  /** Link a CRM campaign to a Meta campaign, or unlink (null). Attribution follows (AUTO only, MANUAL is never touched). */
   async setLink(campaignId: string, metaCampaignId: string | null) {
     const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId } });
     if (!campaign) throw new NotFoundException("Kampanye tidak ditemukan");
+    const previous = campaign.metaCampaignId;
+    if (previous === metaCampaignId) return campaign;
+
+    let meta: { name: string; effectiveStatus: string | null; objective: string | null } | null = null;
+    if (metaCampaignId !== null) {
+      meta = await this.prisma.metaAdsCampaign.findUnique({ where: { metaCampaignId } });
+      if (!meta) throw new NotFoundException("Kampanye Meta tidak ditemukan. Jalankan sinkronisasi dulu.");
+      const other = await this.prisma.campaign.findFirst({ where: { metaCampaignId, NOT: { id: campaignId } } });
+      if (other) throw new ConflictException(`Kampanye Meta ini sudah terhubung ke ${other.code}.`);
+    }
+
+    // The previously linked Meta campaign (unlink OR switch) must not be re-created by the next sync.
+    if (previous) {
+      await this.prisma.metaAdsCampaign.updateMany({
+        where: { metaCampaignId: previous },
+        data: { autoLinkDisabled: true },
+      });
+      await releaseMetaAttribution(this.prisma, previous, { id: campaign.id, code: campaign.code });
+    }
     if (metaCampaignId === null) {
-      if (campaign.metaCampaignId) {
-        // stay unlinked: the sync must not auto-create it again
-        await this.prisma.metaAdsCampaign.updateMany({
-          where: { metaCampaignId: campaign.metaCampaignId },
-          data: { autoLinkDisabled: true },
-        });
-      }
       return this.prisma.campaign.update({
         where: { id: campaignId },
         data: { metaCampaignId: null, metaCampaignName: null, metaStatus: null, metaObjective: null },
       });
     }
-    const meta = await this.prisma.metaAdsCampaign.findUnique({ where: { metaCampaignId } });
-    if (!meta) throw new NotFoundException("Kampanye Meta tidak ditemukan. Jalankan sinkronisasi dulu.");
-    const other = await this.prisma.campaign.findFirst({ where: { metaCampaignId, NOT: { id: campaignId } } });
-    if (other) throw new ConflictException(`Kampanye Meta ini sudah terhubung ke ${other.code}.`);
+    let updated;
+    try {
+      updated = await this.prisma.campaign.update({
+        where: { id: campaignId },
+        data: {
+          metaCampaignId,
+          metaCampaignName: meta!.name,
+          metaStatus: meta!.effectiveStatus,
+          metaObjective: meta!.objective,
+        },
+      });
+    } catch (error) {
+      // two admins linked the same Meta campaign at the same time
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new ConflictException("Kampanye Meta ini sudah terhubung ke kampanye lain.");
+      }
+      throw error;
+    }
     await this.prisma.metaAdsCampaign.update({ where: { metaCampaignId }, data: { autoLinkDisabled: false } });
-    const updated = await this.prisma.campaign.update({
-      where: { id: campaignId },
-      data: {
-        metaCampaignId,
-        metaCampaignName: meta.name,
-        metaStatus: meta.effectiveStatus,
-        metaObjective: meta.objective,
-      },
-    });
     await backfillMetaAttribution(this.prisma, [metaCampaignId]);
     return updated;
   }

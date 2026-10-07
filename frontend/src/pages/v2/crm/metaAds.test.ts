@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildAdLink, buildUniversalAdLink, formatMoney, timeAgo } from './crmUtils';
+import { buildAdLink, buildUniversalAdLink, formatMoney, moneyCompact, timeAgo } from './crmUtils';
 import { syncResultText } from './MetaAdsSyncCard';
 import en from '@/i18n/locales/en.json';
 import id from '@/i18n/locales/id.json';
@@ -87,5 +87,14 @@ describe('Meta Ads sync i18n', () => {
   it('relabels "Log spend" as other costs', () => {
     expect(en.crm.campaigns.logSpend).toBe('Log other costs');
     expect(id.crm.campaigns.logSpend).toBe('Catat biaya lain');
+  });
+});
+
+describe('moneyCompact (dashboard KPIs in the Meta account currency)', () => {
+  it('keeps IDR tiles as rupiah and shows other currencies with their code', () => {
+    expect(moneyCompact(1500000, 'IDR', 'en')).toBe('Rp 1.5M');
+    expect(moneyCompact(1500000, undefined, 'id')).toBe('Rp 1.5 jt');
+    expect(moneyCompact(60, 'USD', 'en')).toBe('USD 60.00');
+    expect(moneyCompact(null, 'USD', 'en')).toBe('-');
   });
 });

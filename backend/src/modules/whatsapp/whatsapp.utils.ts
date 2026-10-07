@@ -241,6 +241,8 @@ export interface CampaignRef {
   code: string;
   name: string;
   metaAdIds: string[];
+  /** Code generated from a Meta campaign name: matches only in an explicit form, never as a bare word. */
+  codeAuto?: boolean;
 }
 
 export type CampaignMatchReason =
@@ -250,9 +252,11 @@ export type CampaignMatchReason =
 
 /**
  * Attribute a first message to a campaign:
- *   1. "[CODE]" (or a bare known code) in the message text (ad prefill);
- *   2. referral.source_id listed in Campaign.metaAdIds;
- *   3. a campaign code appearing in the referral headline/body.
+ *   1. referral.source_id listed in Campaign.metaAdIds / the synced ads map
+ *      (explicit, wins over any code in the text);
+ *   2. "[CODE]" (or a bare known code) in the message text (ad prefill);
+ *      auto-generated codes only match as "[CODE]" / "Kode kampanye: CODE";
+ *   3. a campaign code appearing in the referral headline/body (staff codes).
  */
 export function matchCampaign(
   text: string | null,
@@ -263,9 +267,18 @@ export function matchCampaign(
   code: string | null;
   reason: CampaignMatchReason | null;
 } {
-  const codes = campaigns.map((c) => c.code);
+  if (referral?.source_id) {
+    const c = campaigns.find((x) =>
+      x.metaAdIds.includes(referral.source_id as string),
+    );
+    if (c) return { campaign: c, code: c.code, reason: "ad_id" };
+  }
   if (text) {
-    const parsed = parseQuickAdd(text, codes);
+    const parsed = parseQuickAdd(
+      text,
+      campaigns.filter((c) => !c.codeAuto).map((c) => c.code),
+      campaigns.filter((c) => c.codeAuto).map((c) => c.code),
+    );
     if (parsed.campaignCode) {
       const c =
         campaigns.find((x) => x.code.toUpperCase() === parsed.campaignCode) ??
@@ -277,16 +290,11 @@ export function matchCampaign(
       };
     }
   }
-  if (referral?.source_id) {
-    const c = campaigns.find((x) =>
-      x.metaAdIds.includes(referral.source_id as string),
-    );
-    if (c) return { campaign: c, code: c.code, reason: "ad_id" };
-  }
   const hay =
     `${referral?.headline ?? ""} ${referral?.body ?? ""}`.toUpperCase();
   if (hay.trim()) {
     for (const c of campaigns) {
+      if (c.codeAuto) continue;
       const code = c.code.toUpperCase();
       const re = new RegExp(
         `(^|[^A-Z0-9_-])${code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^A-Z0-9_-])`,

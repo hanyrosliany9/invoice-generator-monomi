@@ -10314,7 +10314,8 @@
         "linkedHelp": "Biaya kampanye Meta \"{{name}}\" disinkronkan ke kampanye ini, dan kunjungan landing page dari iklannya terhubung ke sini. Pilih \"Tidak terhubung\" untuk menghentikan.",
         "empty": "Belum ada kampanye Meta yang dikenal. Jalankan \"Sinkronkan sekarang\" di pengaturan CRM.",
         "help": "Hubungkan kampanye ini ke kampanye Meta-nya agar biaya iklan terambil otomatis."
-      }
+      },
+      "spendSplitSeparate": "Meta {{meta}}. Biaya lain {{other}} dalam rupiah dan tidak dijumlahkan ke {{currency}}."
     },
     "errors": {
       "delete": "Tidak dapat menghapus.",
@@ -10378,7 +10379,8 @@
         "spend": "Biaya iklan",
         "spendHint": "Meta {{meta}} · biaya lain {{other}}",
         "costLead": "Biaya per lead",
-        "costLeadHint": "Biaya iklan {{spend}} ÷ {{n}} lead"
+        "costLeadHint": "Biaya iklan {{spend}} ÷ {{n}} lead",
+        "spendHintSeparate": "Hanya Meta. Biaya lain {{other}} (rupiah) ditampilkan terpisah."
       },
       "funnel": "Corong penjualan",
       "dropPre": "Kebanyakan lead berhenti di",

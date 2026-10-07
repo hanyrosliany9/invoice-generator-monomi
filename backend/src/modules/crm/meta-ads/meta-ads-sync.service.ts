@@ -2,16 +2,18 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
-import { GraphApiError, scrubSecrets } from "../../instagram/instagram-graph.client";
+import { scrubSecrets } from "../../instagram/instagram-graph.client";
 import { MetaGraphClient } from "../../social-publishing/meta-graph.client";
 import { PrismaService } from "../../prisma/prisma.service";
 import { backfillMetaAttribution } from "./meta-ads.attribution";
 import { MetaAdsConfig, resolveMetaAdsConfig } from "./meta-ads.config";
 import {
   AdAccountInfo,
+  chunkRange,
   computeSyncRange,
   dateOnly,
   discoverAdAccount,
+  isAdsRateLimit,
   mapMetaStatus,
   parseCount,
   parseSpend,
@@ -20,6 +22,7 @@ import {
   uniqueCampaignCode,
 } from "./meta-ads.utils";
 
+/** Renewed on every Graph call, so it only has to outlast one slow request. */
 export const LEASE_MS = 20 * 60_000;
 const PAGE_LIMIT = 500;
 const MAX_PAGES = 200;
@@ -52,6 +55,8 @@ export class MetaAdsSyncService {
   /** Overridable in tests. */
   env: () => NodeJS.ProcessEnv = () => process.env;
   now: () => Date = () => new Date();
+  /** Lease owner of the run in progress on this instance (a second run here is refused by the lease). */
+  private owner: string | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -92,7 +97,19 @@ export class MetaAdsSyncService {
 
   // ---- graph ----------------------------------------------------------------
 
+  /** Keeps the lease alive while a long backfill pages through Graph. */
+  private async renewLease(): Promise<void> {
+    if (!this.owner) return;
+    await this.prisma.metaAdsSyncState
+      .updateMany({
+        where: { id: "default", leaseOwner: this.owner },
+        data: { leaseUntil: new Date(this.now().getTime() + LEASE_MS) },
+      })
+      .catch(() => undefined);
+  }
+
   private async get<T>(cfg: MetaAdsConfig, path: string, query: Record<string, string | number>): Promise<T> {
+    await this.renewLease();
     const url = `${cfg.graphBaseUrl}/${cfg.graphVersion}/${path}`;
     return this.graph.call<T>(url, cfg.token as string, { query }, cfg.appSecret);
   }
@@ -123,23 +140,25 @@ export class MetaAdsSyncService {
     cfg: MetaAdsConfig,
   ): Promise<{ ok: true; account: AdAccountInfo } | { ok: false; message: string }> {
     if (cfg.adAccountId) {
-      const a = await this.get<any>(cfg, `act_${cfg.adAccountId}`, { fields: "account_id,name,currency,account_status" });
+      const a = await this.get<any>(cfg, `act_${cfg.adAccountId}`, { fields: "account_id,name,currency,account_status,timezone_name" });
       return {
         ok: true,
         account: {
           id: cfg.adAccountId,
           name: String(a?.name ?? `act_${cfg.adAccountId}`),
           currency: String(a?.currency ?? "IDR").toUpperCase(),
+          timezone: a?.timezone_name ? String(a.timezone_name) : undefined,
           status: Number(a?.account_status ?? 1),
         },
       };
     }
-    const list = await this.pageAll<any>(cfg, "me/adaccounts", { fields: "account_id,name,account_status,currency" });
+    const list = await this.pageAll<any>(cfg, "me/adaccounts", { fields: "account_id,name,account_status,currency,timezone_name" });
     return discoverAdAccount(
       list.map((a) => ({
         id: String(a.account_id ?? "").replace(/^act_/, ""),
         name: String(a.name ?? ""),
         currency: String(a.currency ?? "IDR").toUpperCase(),
+        timezone: a.timezone_name ? String(a.timezone_name) : undefined,
         status: Number(a.account_status ?? 0),
       })),
     );
@@ -156,6 +175,7 @@ export class MetaAdsSyncService {
     if (!(await this.acquire(owner))) {
       return { status: "BUSY", message: "A sync is already running" };
     }
+    this.owner = owner;
     const startedAt = this.now();
     try {
       const state = await this.prisma.metaAdsSyncState.findUnique({ where: { id: "default" } });
@@ -165,18 +185,20 @@ export class MetaAdsSyncService {
           message: `Meta asked us to slow down; next attempt after ${state.rateLimitedUntil.toISOString()}`,
         };
       }
-      const result = await this.sync(cfg, trigger, startedAt, state?.backfilledAccountId ?? null);
+      const lastTo = state?.lastRangeTo ? state.lastRangeTo.toISOString().slice(0, 10) : null;
+      const result = await this.sync(cfg, trigger, startedAt, state?.backfilledAccountId ?? null, lastTo);
       return result;
     } catch (error) {
       return await this.recordFailure(error, trigger, startedAt);
     } finally {
       await this.release(owner).catch(() => undefined);
+      this.owner = null;
     }
   }
 
   private async recordFailure(error: unknown, trigger: string, at: Date): Promise<SyncResult> {
     const message = scrubSecrets((error as Error)?.message ?? "Sync failed");
-    const limited = error instanceof GraphApiError && error.kind === "rate_limit";
+    const limited = isAdsRateLimit(error);
     if (limited) {
       const cur = await this.prisma.metaAdsSyncState.findUnique({ where: { id: "default" } });
       const strikes = (cur?.rateLimitStrikes ?? 0) + 1;
@@ -207,6 +229,7 @@ export class MetaAdsSyncService {
     trigger: string,
     startedAt: Date,
     backfilledAccountId: string | null,
+    lastRangeTo: string | null,
   ): Promise<SyncResult> {
     const choice = await this.resolveAccount(cfg);
     if (!choice.ok) {
@@ -219,18 +242,24 @@ export class MetaAdsSyncService {
     const account = choice.account;
     const act = `act_${account.id}`;
     const firstRun = backfilledAccountId !== account.id;
-    const range = computeSyncRange(startedAt, cfg.backfillDays, firstRun);
+    const range = computeSyncRange(startedAt, cfg.backfillDays, firstRun ? null : lastRangeTo, account.timezone);
 
-    const [metaCampaigns, metaAds, insights] = await Promise.all([
+    const [metaCampaigns, metaAds] = await Promise.all([
       this.pageAll<any>(cfg, `${act}/campaigns`, { fields: "id,name,status,effective_status,objective" }),
       this.pageAll<any>(cfg, `${act}/ads`, { fields: "id,campaign_id" }),
-      this.pageAll<any>(cfg, `${act}/insights`, {
-        level: "campaign",
-        fields: "campaign_id,campaign_name,spend,impressions,clicks,objective",
-        time_increment: 1,
-        time_range: JSON.stringify(range),
-      }),
     ]);
+    // long ranges (backfill, or catching up after an outage) are read in 30-day chunks
+    const insights: any[] = [];
+    for (const part of chunkRange(range.since, range.until, 30)) {
+      insights.push(
+        ...(await this.pageAll<any>(cfg, `${act}/insights`, {
+          level: "campaign",
+          fields: "campaign_id,campaign_name,spend,impressions,clicks,objective",
+          time_increment: 1,
+          time_range: JSON.stringify(part),
+        })),
+      );
+    }
 
     // ---- insights -> daily rows (idempotent upsert on campaign + date)
     const currency = account.currency || "IDR";
@@ -334,6 +363,7 @@ export class MetaAdsSyncService {
         adAccountId: account.id,
         accountName: account.name,
         currency,
+        timezoneName: account.timezone ?? null,
         lastRunAt: startedAt,
         lastSuccessAt: this.now(),
         lastTrigger: trigger,
@@ -366,7 +396,7 @@ export class MetaAdsSyncService {
     rows: Map<string, { metaCampaignId: string; amount: number }>,
   ): Promise<number> {
     const existing = await this.prisma.campaign.findMany({
-      select: { id: true, code: true, metaCampaignId: true, metaCampaignName: true, metaStatus: true, metaObjective: true },
+      select: { id: true, code: true, name: true, metaCampaignId: true, metaCampaignName: true, metaStatus: true, metaObjective: true },
     });
     const linked = new Map(existing.filter((c) => c.metaCampaignId).map((c) => [c.metaCampaignId as string, c]));
     const taken = new Set(existing.map((c) => c.code.toLowerCase()));
@@ -397,10 +427,42 @@ export class MetaAdsSyncService {
     );
 
     let created = 0;
+    const claimed = new Set<string>();
     for (const [metaId, info] of campaignInfo) {
       if (linked.has(metaId) || optedOut.has(metaId)) continue;
       const active = (info.effectiveStatus ?? "").toUpperCase() === "ACTIVE";
       if (!active && !spent.has(metaId)) continue;
+
+      // An existing, still unlinked CRM campaign with the same (sanitised) code or name IS this
+      // campaign: link it instead of creating a duplicate "-2".
+      const base = sanitizeCampaignCode(info.name, metaId).toLowerCase();
+      const wanted = info.name.trim().toLowerCase();
+      const match = existing.find(
+        (c) =>
+          !c.metaCampaignId &&
+          !claimed.has(c.id) &&
+          (c.code.toLowerCase() === base || c.code.toLowerCase() === wanted || c.name.trim().toLowerCase() === wanted),
+      );
+      if (match) {
+        try {
+          await this.prisma.campaign.update({
+            where: { id: match.id },
+            data: {
+              metaCampaignId: metaId,
+              metaCampaignName: info.name,
+              metaStatus: info.effectiveStatus,
+              metaObjective: info.objective,
+            },
+          });
+          claimed.add(match.id);
+          linked.set(metaId, match as any);
+          continue;
+        } catch (error) {
+          if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002")) throw error;
+          continue; // linked concurrently
+        }
+      }
+
       for (let attempt = 0; attempt < 3; attempt++) {
         const code = uniqueCampaignCode(sanitizeCampaignCode(info.name, metaId), taken);
         try {
@@ -408,6 +470,7 @@ export class MetaAdsSyncService {
             data: {
               name: info.name.slice(0, 120),
               code,
+              codeAuto: true,
               platform: "FACEBOOK",
               status: mapMetaStatus(info.effectiveStatus),
               metaAdIds: [],

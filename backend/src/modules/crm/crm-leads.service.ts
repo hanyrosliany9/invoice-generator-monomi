@@ -99,9 +99,13 @@ export class CrmLeadsService {
 
   async parseQuickAdd(text: string) {
     const campaigns = await this.prisma.campaign.findMany({
-      select: { id: true, name: true, code: true },
+      select: { id: true, name: true, code: true, codeAuto: true },
     });
-    const parsed = parseQuickAdd(text, campaigns.map((c) => c.code));
+    const parsed = parseQuickAdd(
+      text,
+      campaigns.filter((c) => !c.codeAuto).map((c) => c.code),
+      campaigns.filter((c) => c.codeAuto).map((c) => c.code),
+    );
     const campaign = parsed.campaignCode
       ? (campaigns.find((c) => c.code.toUpperCase() === parsed.campaignCode) ?? null)
       : null;
@@ -409,6 +413,8 @@ export class CrmLeadsService {
           source,
           campaignId: campaign?.id ?? null,
           campaignCode: campaign?.code ?? dto.campaignCode?.trim().toUpperCase() ?? null,
+          // staff picked it in the UI: MANUAL; from the system (ingest) or the click's campaign: AUTO
+          campaignSource: !campaign ? null : dtoCampaign && actorId !== null ? "MANUAL" : "AUTO",
           adId: dto.adId ?? null,
           ctwaClid: dto.ctwaClid ?? null,
           instagramHandle:
@@ -552,6 +558,7 @@ export class CrmLeadsService {
       const c = await this.resolveCampaign(dto.campaignId, null);
       data.campaignId = c?.id ?? null;
       data.campaignCode = c?.code ?? null;
+      data.campaignSource = c ? "MANUAL" : null;
     }
     if (dto.estimatedValue !== undefined) data.estimatedValue = new Prisma.Decimal(dto.estimatedValue);
     await this.prisma.lead.update({ where: { id }, data });

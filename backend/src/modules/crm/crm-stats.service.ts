@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { loadMetaSpend } from "./meta-ads/meta-ads-spend";
-import { wibDateString } from "./meta-ads/meta-ads.utils";
+import { dateOnly, wibDateString } from "./meta-ads/meta-ads.utils";
 import { CrmSettingsService } from "./crm-settings.service";
 import {
   WIB_OFFSET_MS,
@@ -128,8 +128,9 @@ export class CrmStatsService {
       }),
       this.prisma.campaignSpend.findMany({
         where: {
-          dateFrom: { lte: range.to },
-          dateTo: { gte: range.from },
+          // manual entries are pure dates: compare them with the WIB calendar days of the range
+          dateFrom: { lte: dateOnly(wibDateString(range.to)) },
+          dateTo: { gte: dateOnly(wibDateString(range.from)) },
           ...(params.campaignId ? { campaignId: params.campaignId } : {}),
         },
       }),
@@ -165,17 +166,28 @@ export class CrmStatsService {
     const spendByCampaign = new Map<string, number>();
     let spend = 0;
     for (const s of spendRows) {
-      const part = prorateSpend(Number(s.amount), s.dateFrom, s.dateTo, range.from, range.to);
+      const part = prorateSpend(
+        Number(s.amount),
+        s.dateFrom,
+        s.dateTo,
+        dateOnly(wibDateString(range.from)),
+        dateOnly(wibDateString(range.to)),
+      );
       spend += part;
       spendByCampaign.set(s.campaignId, (spendByCampaign.get(s.campaignId) ?? 0) + part);
     }
 
     // synced Meta spend (daily rows, WIB days) adds to the manual entries
-    const meta = await loadMetaSpend(this.prisma, {
-      from: wibDateString(range.from),
-      to: wibDateString(range.to),
-      campaignId: params.campaignId,
-    });
+    const meta = await loadMetaSpend(this.prisma, { range, campaignId: params.campaignId });
+    // Manual entries are rupiah: they are only added to an IDR account. A foreign-currency
+    // account keeps them apart (reported as otherCosts) instead of mixing currencies.
+    const mixed = meta.currency !== "IDR";
+    const manualSpendTotal = spend;
+    const manualByCampaign = new Map(spendByCampaign);
+    if (mixed) {
+      spend = 0;
+      spendByCampaign.clear();
+    }
     for (const [cid, m] of meta.byCampaign) {
       spend += m.amount;
       spendByCampaign.set(cid, (spendByCampaign.get(cid) ?? 0) + m.amount);
@@ -247,6 +259,7 @@ export class CrmStatsService {
         revenue: cl.reduce((s, r) => s + r.revenue, 0),
         spend: sp,
         metaSpend: metaSp,
+        manualSpend: manualByCampaign.get(id) ?? 0,
         impressions: meta.byCampaign.get(id)?.impressions ?? 0,
         clicks: meta.byCampaign.get(id)?.clicks ?? 0,
         costPerLead: cm.costPerLead,
@@ -272,7 +285,9 @@ export class CrmStatsService {
       revenuePending: revenue - revenuePaid,
       spend,
       metaSpend: metaSpendTotal,
-      manualSpend: spend - metaSpendTotal,
+      manualSpend: manualSpendTotal,
+      /** true: manual (IDR) costs are NOT in spend / cost per, because the Meta account is not IDR */
+      manualSeparate: mixed,
       spendCurrency: meta.currency,
       metaLastSyncAt: meta.lastSyncAt ? meta.lastSyncAt.toISOString() : null,
       costPerLead: safeDivide(spend, leads.length),

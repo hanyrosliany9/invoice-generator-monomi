@@ -1,11 +1,34 @@
-import { WIB_OFFSET_MS } from "../crm.utils";
+import { GraphApiError } from "../../instagram/instagram-graph.client";
 import { RESYNC_WINDOW_DAYS } from "./meta-ads.config";
 
 const DAY_MS = 86400000;
 
+export const DEFAULT_TIMEZONE = "Asia/Jakarta";
+
+/** A valid IANA zone, else WIB. */
+export function safeTimezone(tz: string | null | undefined): string {
+  if (!tz) return DEFAULT_TIMEZONE;
+  try {
+    new Intl.DateTimeFormat("en-CA", { timeZone: tz });
+    return tz;
+  } catch {
+    return DEFAULT_TIMEZONE;
+  }
+}
+
+/** "YYYY-MM-DD" of the calendar day containing `d` in `tz` (default WIB). */
+export function dateStringInTz(d: Date, tz: string | null | undefined = DEFAULT_TIMEZONE): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: safeTimezone(tz),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
 /** "YYYY-MM-DD" of the WIB calendar day containing `d`. */
 export function wibDateString(d: Date): string {
-  return new Date(d.getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10);
+  return dateStringInTz(d, DEFAULT_TIMEZONE);
 }
 
 export function addDaysToDateString(date: string, days: number): string {
@@ -18,18 +41,45 @@ export function dateOnly(s: string): Date {
 }
 
 /**
- * The days a run fetches (inclusive, WIB calendar days, ending today).
- * First run for an account: the last `backfillDays`. Later runs: the last 7
- * days, because Meta restates recent days.
+ * The days a run fetches (inclusive calendar days in the ad account's time
+ * zone, ending today).
+ *  - first run for an account (`lastRangeTo` null): the last `backfillDays`;
+ *  - later runs: from the earlier of the last day successfully read and
+ *    7 days ago (Meta restates recent days), so an outage never loses days,
+ *    but never further back than `backfillDays`.
  */
 export function computeSyncRange(
   now: Date,
   backfillDays: number,
-  firstRun: boolean,
+  lastRangeTo: string | null,
+  tz: string | null | undefined = DEFAULT_TIMEZONE,
 ): { since: string; until: string } {
-  const until = wibDateString(now);
-  const span = firstRun ? backfillDays : RESYNC_WINDOW_DAYS;
-  return { since: addDaysToDateString(until, -(span - 1)), until };
+  const until = dateStringInTz(now, tz);
+  const floor = addDaysToDateString(until, -(backfillDays - 1));
+  if (!lastRangeTo) return { since: floor, until };
+  const recent = addDaysToDateString(until, -(RESYNC_WINDOW_DAYS - 1));
+  const since = lastRangeTo < recent ? lastRangeTo : recent;
+  return { since: since < floor ? floor : since, until };
+}
+
+/** Splits a long range into consecutive chunks of at most `days` days. */
+export function chunkRange(since: string, until: string, days = 30): Array<{ since: string; until: string }> {
+  const out: Array<{ since: string; until: string }> = [];
+  let from = since;
+  while (from <= until) {
+    const end = addDaysToDateString(from, days - 1);
+    const to = end < until ? end : until;
+    out.push({ since: from, until: to });
+    from = addDaysToDateString(to, 1);
+  }
+  return out;
+}
+
+/** Graph throttling: the shared classification plus the Ads Insights / Marketing API 80000-80014 codes. */
+export function isAdsRateLimit(error: unknown): boolean {
+  if (!(error instanceof GraphApiError)) return false;
+  if (error.kind === "rate_limit") return true;
+  return error.code !== undefined && error.code >= 80000 && error.code <= 80014;
 }
 
 /** Meta returns money as a decimal string in the account currency. IDR -> integer. */
@@ -83,6 +133,7 @@ export interface AdAccountInfo {
   id: string;
   name: string;
   currency: string;
+  timezone?: string;
   /** Meta account_status; 1 = ACTIVE. */
   status: number;
 }

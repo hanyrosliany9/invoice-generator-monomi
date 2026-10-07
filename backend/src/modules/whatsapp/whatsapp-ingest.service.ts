@@ -603,7 +603,7 @@ export class WhatsAppIngestService {
     if (!leadId) {
       if (!this.shouldCreateLead(origin, ts, referral)) return false;
       const campaigns = await this.prisma.campaign.findMany({
-        select: { id: true, code: true, name: true, metaAdIds: true },
+        select: { id: true, code: true, name: true, metaAdIds: true, codeAuto: true },
       });
       await this.addSyncedAdMapping(campaigns, referral?.source_id ?? null);
       const match = matchCampaign(text, referral, campaigns);

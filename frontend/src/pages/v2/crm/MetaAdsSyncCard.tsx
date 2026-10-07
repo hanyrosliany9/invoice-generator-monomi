@@ -98,7 +98,7 @@ export function MetaAdsSyncCard() {
             <Row label={t('crm.metaAds.status', 'Status')}><StateBadge state={s.state} /></Row>
             <Row label={t('crm.metaAds.account', 'Ad account')}>
               {s.account
-                ? <span data-testid="meta-account">{s.account.name ? `${s.account.name} · ` : ''}<span className="font-mono">{s.account.id}</span>{s.account.currency ? ` · ${s.account.currency}` : ''}</span>
+                ? <span data-testid="meta-account">{s.account.name ? `${s.account.name} · ` : ''}<span className="font-mono">{s.account.id}</span>{s.account.currency ? ` · ${s.account.currency}` : ''}{s.account.timezone ? ` · ${s.account.timezone}` : ''}</span>
                 : <span className="text-text-tertiary">-</span>}
             </Row>
             <Row label={t('crm.metaAds.lastSync', 'Last sync')}>

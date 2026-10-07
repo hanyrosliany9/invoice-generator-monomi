@@ -1,4 +1,6 @@
 import { Logger } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { classifyError } from "../../instagram/instagram-graph.client";
 import { assertGraphCallNotDenied, ForbiddenGraphEndpointError } from "../../../common/meta/graph-denylist";
 import { AdClickService } from "../../ad-tracking/ad-click.service";
 import { parseTrackEvent } from "../../ad-tracking/track-event.payload";
@@ -13,12 +15,13 @@ import {
 import { WhatsAppIngestService } from "../../whatsapp/whatsapp-ingest.service";
 import { matchCampaign } from "../../whatsapp/whatsapp.utils";
 import { CrmCampaignsService } from "../crm-campaigns.service";
-import { campaignCostMetrics } from "../crm.utils";
+import { campaignCostMetrics, parseQuickAdd } from "../crm.utils";
 import { backfillMetaAttribution } from "./meta-ads.attribution";
 import { MetaAdsAdminService } from "./meta-ads-admin.service";
 import { LEASE_MS, MetaAdsSyncService } from "./meta-ads-sync.service";
 import { resolveMetaAdsConfig } from "./meta-ads.config";
 import {
+  chunkRange,
   computeSyncRange,
   discoverAdAccount,
   parseSpend,
@@ -70,7 +73,7 @@ const day = (campaign: "link" | "ctwa", date: string, spend: string, impressions
 });
 
 /** Fake Graph answering like the verified production account (MON-1, IDR). */
-function fakeMeta(opts: { currency?: string; insights?: InsightFixture[]; pageSize?: number } = {}) {
+function fakeMeta(opts: { currency?: string; timezone?: string; insights?: InsightFixture[]; pageSize?: number } = {}) {
   const graph = new FakeGraph();
   const state = {
     insights: opts.insights ?? [
@@ -87,8 +90,9 @@ function fakeMeta(opts: { currency?: string; insights?: InsightFixture[]; pageSi
       { id: "6900000000002", campaign_id: C_CTWA },
       { id: "6900000000003", campaign_id: C_CTWA },
     ],
-    accounts: [{ account_id: ACCT, name: "MON-1", account_status: 1, currency: opts.currency ?? "IDR" }] as any[],
+    accounts: [{ account_id: ACCT, name: "MON-1", account_status: 1, currency: opts.currency ?? "IDR", timezone_name: opts.timezone ?? "Asia/Jakarta" }] as any[],
     currency: opts.currency ?? "IDR",
+    timezone: opts.timezone ?? "Asia/Jakarta",
   };
   const paged = (all: any[], call: { url: string }, size: number) => {
     const p = q(call);
@@ -105,9 +109,12 @@ function fakeMeta(opts: { currency?: string; insights?: InsightFixture[]; pageSi
   const size = opts.pageSize ?? 2;
   graph.on("GET", /\/me\/adaccounts$/, (c: any) => paged(state.accounts, c, 25));
   graph.on("GET", new RegExp(`/act_${ACCT}$`), () => ({
-    json: { account_id: ACCT, name: "MON-1", currency: state.currency, account_status: 1 },
+    json: { account_id: ACCT, name: "MON-1", currency: state.currency, account_status: 1, timezone_name: state.timezone },
   }));
-  graph.on("GET", new RegExp(`/act_${ACCT}/insights$`), (c: any) => paged(state.insights, c, size));
+  graph.on("GET", new RegExp(`/act_${ACCT}/insights$`), (c: any) => {
+    const tr = JSON.parse(q(c).get("time_range")!);
+    return paged(state.insights.filter((i) => i.date_start >= tr.since && i.date_start <= tr.until), c, size);
+  });
   graph.on("GET", new RegExp(`/act_${ACCT}/campaigns$`), (c: any) => paged(state.campaigns, c, size));
   graph.on("GET", new RegExp(`/act_${ACCT}/ads$`), (c: any) => paged(state.ads, c, size));
   return { graph, state };
@@ -218,11 +225,27 @@ describe("Meta Ads sync", () => {
   // -------------------------------------------------------------------- utils
   describe("utils", () => {
     it("first run backfills BACKFILL_DAYS WIB days; later runs re-read the last 7", () => {
-      expect(computeSyncRange(NOW, 90, true)).toEqual({ since: "2026-07-10", until: "2026-10-07" });
-      expect(computeSyncRange(NOW, 30, true)).toEqual({ since: "2026-09-08", until: "2026-10-07" });
-      expect(computeSyncRange(NOW, 90, false)).toEqual({ since: "2026-10-01", until: "2026-10-07" });
+      expect(computeSyncRange(NOW, 90, null)).toEqual({ since: "2026-07-10", until: "2026-10-07" });
+      expect(computeSyncRange(NOW, 30, null)).toEqual({ since: "2026-09-08", until: "2026-10-07" });
+      // up to date: the last 7 days
+      expect(computeSyncRange(NOW, 90, "2026-10-07")).toEqual({ since: "2026-10-01", until: "2026-10-07" });
       // 23:00 UTC is already the next day in WIB
-      expect(computeSyncRange(new Date("2026-10-07T23:00:00Z"), 90, false).until).toBe("2026-10-08");
+      expect(computeSyncRange(new Date("2026-10-07T23:00:00Z"), 90, "2026-10-08").until).toBe("2026-10-08");
+      // the ad account's own zone decides the day (Los Angeles is still on the 7th)
+      expect(computeSyncRange(new Date("2026-10-08T03:00:00Z"), 90, "2026-10-08", "America/Los_Angeles").until).toBe("2026-10-07");
+      expect(computeSyncRange(NOW, 90, "2026-10-07", "Not/AZone").until).toBe("2026-10-07");
+    });
+
+    it("gap refill: an outage reaches back to the last day read, clamped to BACKFILL_DAYS, in 30-day chunks", () => {
+      const oct1 = new Date("2026-10-01T03:00:00Z");
+      expect(computeSyncRange(oct1, 90, "2026-09-19")).toEqual({ since: "2026-09-19", until: "2026-10-01" });
+      expect(computeSyncRange(NOW, 30, "2026-05-01")).toEqual({ since: "2026-09-08", until: "2026-10-07" }); // clamped
+      expect(chunkRange("2026-07-10", "2026-10-07", 30).map((c) => [c.since, c.until])).toEqual([
+        ["2026-07-10", "2026-08-08"],
+        ["2026-08-09", "2026-09-07"],
+        ["2026-09-08", "2026-10-07"],
+      ]);
+      expect(chunkRange("2026-10-01", "2026-10-07")).toEqual([{ since: "2026-10-01", until: "2026-10-07" }]);
     });
 
     it("code sanitising and uniqueness (max 24 chars, suffix when taken)", () => {
@@ -261,13 +284,14 @@ describe("Meta Ads sync", () => {
       expect(r).toMatchObject({ status: "SUCCESS", firstRun: true, range: { since: "2026-07-10", until: "2026-10-07" }, insightRows: 3, created: 2, ads: 3 });
 
       const insightCalls = graph.calls.filter((c) => c.path.endsWith("/insights"));
-      expect(insightCalls).toHaveLength(2); // 3 rows, page size 2 -> 2 pages
+      expect(insightCalls).toHaveLength(4); // 90 days = 3 chunks of 30 days; only the last has rows (3 rows, page size 2 -> 2 pages)
       const p = q(insightCalls[0]);
       expect(p.get("level")).toBe("campaign");
       expect(p.get("time_increment")).toBe("1");
       expect(p.get("fields")).toBe("campaign_id,campaign_name,spend,impressions,clicks,objective");
-      expect(JSON.parse(p.get("time_range")!)).toEqual({ since: "2026-07-10", until: "2026-10-07" });
-      expect(q(insightCalls[1]).get("after")).toBe("2");
+      expect(JSON.parse(p.get("time_range")!)).toEqual({ since: "2026-07-10", until: "2026-08-08" });
+      expect(JSON.parse(q(insightCalls[2]).get("time_range")!)).toEqual({ since: "2026-09-08", until: "2026-10-07" });
+      expect(q(insightCalls[3]).get("after")).toBe("2");
 
       expect(t.metaAdsInsightDaily).toHaveLength(3);
       const ctwa = t.metaAdsInsightDaily.find((x) => x.metaCampaignId === C_CTWA);
@@ -382,11 +406,12 @@ describe("Meta Ads sync", () => {
       expect(t.campaign.find((c) => c.metaCampaignName === "Paused with spend").status).toBe("PAUSED");
     });
 
-    it("makes codes unique against existing campaigns (case-insensitive)", async () => {
-      const { svc, t } = setup({}, { campaign: [{ id: "x", name: "Mine", code: "pb-camp-link", metaAdIds: [] }] });
+    it("makes codes unique against campaigns that are already linked to another Meta campaign (case-insensitive)", async () => {
+      const { svc, t } = setup({}, { campaign: [{ id: "x", name: "Mine", code: "pb-camp-link", metaAdIds: [], metaCampaignId: "999000111222" }] });
       await svc.run("MANUAL");
       const created = t.campaign.find((c) => c.metaCampaignId === C_LINK);
       expect(created.code).toBe("PB-CAMP-LINK-2");
+      expect(created.codeAuto).toBe(true);
     });
 
     it("a renamed Meta campaign updates the stored name, not the code or the CRM name", async () => {
@@ -458,12 +483,12 @@ describe("Meta Ads sync", () => {
         },
       );
       const r = await backfillMetaAttribution(prisma as any);
-      expect(r).toEqual({ clicks: 4, leads: 1 });
+      expect(r).toEqual({ clicks: 5, leads: 1 });
       expect(t.adClick.find((c) => c.id === "k1").campaignCode).toBe("PB-CAMP-LINK");
       expect(t.adClick.find((c) => c.id === "k4").campaignCode).toBe("PB-CAMP-LINK");
       expect(t.adClick.find((c) => c.id === "k5").campaignCode).toBeNull();
-      expect(t.adClick.find((c) => c.id === "k6").campaignCode).toBe("MANUAL");
-      expect(t.lead.find((l) => l.id === "l1")).toMatchObject({ campaignId: "c-link", campaignCode: "PB-CAMP-LINK" });
+      expect(t.adClick.find((c) => c.id === "k6").campaignCode).toBe("PB-CAMP-LINK"); // click codes are derived from the utm, so they follow the link
+      expect(t.lead.find((l) => l.id === "l1")).toMatchObject({ campaignId: "c-link", campaignCode: "PB-CAMP-LINK", campaignSource: "AUTO" });
       expect(t.lead.find((l) => l.id === "l2")).toMatchObject({ campaignId: "c-manual" });
       expect(t.lead.find((l) => l.id === "l3")).toMatchObject({ campaignId: null, campaignCode: "TYPED-UNKNOWN" });
       expect(t.lead.find((l) => l.id === "l4").campaignId).toBeNull();
@@ -588,9 +613,12 @@ describe("Meta Ads sync", () => {
         [12.35, "USD"],
       ]);
       const status = await new MetaAdsAdminService(prisma as any, svc).status();
-      expect(status.account).toEqual({ id: ACCT, name: "MON-1", currency: "USD" });
+      expect(status.account).toEqual({ id: ACCT, name: "MON-1", currency: "USD", timezone: "Asia/Jakarta" });
+      const link = (prisma.tables.campaign as any[]).find((c) => c.metaCampaignId === C_LINK);
+      (prisma.tables.campaignSpend as any[]).push({ id: "s1", campaignId: link.id, amount: 500000, dateFrom: new Date("2026-10-03"), dateTo: new Date("2026-10-03"), source: "MANUAL" });
       const list = await new CrmCampaignsService(prisma as any).list();
-      expect(list.find((c) => c.metaCampaignId === C_LINK)).toMatchObject({ metaSpend: 19.85, spendCurrency: "USD" });
+      // rupiah manual costs are kept apart, not added to dollars
+      expect(list.find((c) => c.metaCampaignId === C_LINK)).toMatchObject({ metaSpend: 19.85, spend: 19.85, manualSpend: 500000, manualSeparate: true, spendCurrency: "USD" });
     });
   });
 
@@ -677,6 +705,263 @@ describe("Meta Ads sync", () => {
       const campaigns = new CrmCampaignsService(prisma as any);
       const row = await campaigns.addSpend("c", { dateFrom: "2026-10-01", amount: 1000, source: "META" } as any, null);
       expect(row.source).toBe("MANUAL");
+    });
+  });
+});
+
+describe("Meta Ads sync: follow-ups", () => {
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  const metaRows = (ids = [C_LINK, C_CTWA]) =>
+    ids.map((id, i) => ({ id: `m${i}`, adAccountId: ACCT, metaCampaignId: id, name: id === C_LINK ? "PB-CAMP-LINK" : "PB-CAMP-01-CTWA", effectiveStatus: "ACTIVE", objective: "X", autoLinkDisabled: false }));
+
+  describe("gap refill after an outage", () => {
+    it("an outage from Sep 20 to Sep 30 is refilled by the next sync, not lost", async () => {
+      const upstream = Array.from({ length: 11 }, (_, i) => day("link", `2026-09-${String(20 + i).padStart(2, "0")}`, String(10000 + i)));
+      const { svc, graph, t, clock } = setup({ insights: upstream });
+      clock.now = new Date("2026-09-19T03:00:00.000Z"); // last good run: Sep 19
+      await svc.run("CRON");
+      expect(t.metaAdsInsightDaily).toHaveLength(0);
+      expect(t.metaAdsSyncState[0].lastRangeTo.toISOString().slice(0, 10)).toBe("2026-09-19");
+
+      graph.calls.length = 0;
+      clock.now = new Date("2026-10-01T03:00:00.000Z"); // back after 12 days (no run between)
+      const r = await svc.run("CRON");
+      expect(r).toMatchObject({ status: "SUCCESS", firstRun: false, range: { since: "2026-09-19", until: "2026-10-01" } });
+      const dates = t.metaAdsInsightDaily.map((x) => x.date.toISOString().slice(0, 10)).sort();
+      expect(dates).toEqual(upstream.map((u) => u.date_start));
+      expect(dates[0]).toBe("2026-09-20");
+      expect(dates[dates.length - 1]).toBe("2026-09-30");
+    });
+
+    it("never reaches back further than BACKFILL_DAYS, and reads long gaps in chunks", async () => {
+      const { svc, graph, clock } = setup({ insights: [] });
+      svc.env = () => ({ ...baseEnv, META_ADS_SYNC_BACKFILL_DAYS: "45" }) as any;
+      clock.now = new Date("2026-05-01T03:00:00.000Z");
+      await svc.run("CRON");
+      graph.calls.length = 0;
+      clock.now = NOW; // 159 days later
+      const r = await svc.run("CRON");
+      expect(r.range).toEqual({ since: "2026-08-24", until: "2026-10-07" });
+      const ranges = graph.calls.filter((c) => c.path.endsWith("/insights")).map((c) => JSON.parse(q(c).get("time_range")!));
+      expect(ranges).toEqual([
+        { since: "2026-08-24", until: "2026-09-22" },
+        { since: "2026-09-23", until: "2026-10-07" },
+      ]);
+    });
+  });
+
+  describe("an existing CRM campaign is linked, not duplicated", () => {
+    it("links an unlinked campaign with the same code (case-insensitive) or name, keeping its code and name", async () => {
+      const { svc, t } = setup(
+        {},
+        {
+          campaign: [
+            { id: "byCode", name: "Landing campaign", code: "pb-camp-link", metaAdIds: [], metaCampaignId: null },
+            { id: "byName", name: "pb-camp-01-ctwa", code: "WA-1", metaAdIds: [], metaCampaignId: null },
+          ],
+        },
+      );
+      const r = await svc.run("MANUAL");
+      expect(r.created).toBe(0);
+      expect(t.campaign).toHaveLength(2);
+      expect(t.campaign.find((c) => c.id === "byCode")).toMatchObject({ metaCampaignId: C_LINK, code: "pb-camp-link", name: "Landing campaign", metaCampaignName: "PB-CAMP-LINK" });
+      expect(t.campaign.find((c) => c.id === "byName")).toMatchObject({ metaCampaignId: C_CTWA, code: "WA-1" });
+    });
+
+    it("leads and clicks of the Meta campaign are attributed to the campaign it was linked to", async () => {
+      const { svc, t } = setup(
+        {},
+        {
+          campaign: [{ id: "byCode", name: "x", code: "PB-CAMP-LINK", metaAdIds: [], metaCampaignId: null }],
+          adClick: [{ id: "k1", utmCampaign: C_LINK, campaignCode: null, leadId: "l1" }],
+          lead: [{ id: "l1", campaignId: null, campaignCode: null }],
+        },
+      );
+      await svc.run("MANUAL");
+      expect(t.lead[0]).toMatchObject({ campaignId: "byCode", campaignSource: "AUTO" });
+      expect(t.adClick[0].campaignCode).toBe("PB-CAMP-LINK");
+    });
+  });
+
+  describe("attribution follows links, MANUAL never moves", () => {
+    function linkSetup() {
+      return setup(
+        {},
+        {
+          campaign: [
+            { id: "cA", name: "A", code: "A-CODE", metaAdIds: [], metaCampaignId: C_LINK },
+            { id: "cB", name: "B", code: "B-CODE", metaAdIds: [], metaCampaignId: null },
+          ],
+          metaAdsCampaign: metaRows(),
+          metaAdsAd: [{ adId: "AD1", adAccountId: ACCT, metaCampaignId: C_LINK }],
+          adClick: [
+            { id: "k1", utmCampaign: C_LINK, campaignCode: "A-CODE", leadId: "lAuto" },
+            { id: "k2", utmCampaign: C_LINK, campaignCode: "A-CODE", leadId: "lManual" },
+          ],
+          lead: [
+            { id: "lAuto", campaignId: "cA", campaignCode: "A-CODE", campaignSource: "AUTO" },
+            { id: "lManual", campaignId: "cA", campaignCode: "A-CODE", campaignSource: "MANUAL" },
+            { id: "lAd", campaignId: "cA", campaignCode: "A-CODE", campaignSource: "AUTO", adId: "AD1" },
+            { id: "lOther", campaignId: "cB", campaignCode: "B-CODE", campaignSource: "AUTO", adId: "OTHER" },
+          ],
+        },
+      );
+    }
+
+    it("unlink withdraws AUTO attribution (clicks, utm and ad-id leads) and keeps MANUAL", async () => {
+      const { svc, prisma, t } = linkSetup();
+      await new MetaAdsAdminService(prisma as any, svc).setLink("cA", null);
+      const lead = (id: string) => t.lead.find((l) => l.id === id);
+      expect(lead("lAuto")).toMatchObject({ campaignId: null, campaignCode: null });
+      expect(lead("lAd")).toMatchObject({ campaignId: null });
+      expect(lead("lManual")).toMatchObject({ campaignId: "cA", campaignSource: "MANUAL" });
+      expect(lead("lOther")).toMatchObject({ campaignId: "cB" });
+      expect(t.adClick.every((c) => c.campaignCode === null)).toBe(true);
+    });
+
+    it("re-link moves AUTO leads and clicks to the new campaign, MANUAL stays", async () => {
+      const { svc, prisma, t } = linkSetup();
+      const admin = new MetaAdsAdminService(prisma as any, svc);
+      await admin.setLink("cA", null);
+      await admin.setLink("cB", C_LINK);
+      const lead = (id: string) => t.lead.find((l) => l.id === id);
+      expect(lead("lAuto")).toMatchObject({ campaignId: "cB", campaignCode: "B-CODE", campaignSource: "AUTO" });
+      expect(lead("lAd")).toMatchObject({ campaignId: "cB" });
+      expect(lead("lManual")).toMatchObject({ campaignId: "cA", campaignCode: "A-CODE" });
+      expect(t.adClick.every((c) => c.campaignCode === "B-CODE")).toBe(true);
+    });
+
+    it("switching a CRM campaign from Meta A to Meta B withdraws A's AUTO attribution and attributes B's", async () => {
+      const { svc, prisma, t } = linkSetup();
+      t.adClick.push({ id: "k3", utmCampaign: C_CTWA, campaignCode: null, leadId: "lNew" });
+      t.lead.push({ id: "lNew", campaignId: null, campaignCode: null });
+      await new MetaAdsAdminService(prisma as any, svc).setLink("cA", C_CTWA);
+      expect(t.lead.find((l) => l.id === "lAuto")).toMatchObject({ campaignId: null });
+      expect(t.lead.find((l) => l.id === "lNew")).toMatchObject({ campaignId: "cA", campaignSource: "AUTO" });
+    });
+  });
+
+  describe("switching the Meta campaign", () => {
+    it("opts the previous Meta campaign out, so the next sync does not re-create it", async () => {
+      const { svc, prisma, t } = setup({}, { campaign: [{ id: "cA", name: "A", code: "A-CODE", metaAdIds: [], metaCampaignId: C_LINK }], metaAdsCampaign: metaRows() });
+      await new MetaAdsAdminService(prisma as any, svc).setLink("cA", C_CTWA);
+      expect(t.metaAdsCampaign.find((m) => m.metaCampaignId === C_LINK).autoLinkDisabled).toBe(true);
+      expect(t.metaAdsCampaign.find((m) => m.metaCampaignId === C_CTWA).autoLinkDisabled).toBe(false);
+      await svc.run("MANUAL");
+      expect(t.campaign).toHaveLength(1);
+      expect(t.campaign[0].metaCampaignId).toBe(C_CTWA);
+    });
+
+    it("answers 409 (not 500) when two admins link the same Meta campaign at once", async () => {
+      const { svc, prisma } = setup({}, { campaign: [{ id: "cA", name: "A", code: "A-CODE", metaAdIds: [] }], metaAdsCampaign: metaRows() });
+      jest.spyOn(prisma.campaign, "update").mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError("unique", { code: "P2002", clientVersion: "x" }));
+      await expect(new MetaAdsAdminService(prisma as any, svc).setLink("cA", C_LINK)).rejects.toMatchObject({ status: 409 });
+    });
+  });
+
+  describe("Ads throttling codes", () => {
+    it.each([80000, 80001, 80004, 80005, 80006, 80007, 80008, 80009, 80010, 80011, 80012, 80013, 80014])("code %i backs off", async (code) => {
+      const { svc, graph, t } = setup();
+      graph.on("GET", new RegExp(`/act_${ACCT}/insights$`), () => ({ status: 400, json: { error: { code, message: "Too many calls to this ad-account" } } }));
+      expect((await svc.run("CRON")).status).toBe("RATE_LIMITED");
+      expect(t.metaAdsSyncState[0].rateLimitedUntil).toBeTruthy();
+    });
+
+    it("does not change how the shared (Instagram) classifier sees these codes", () => {
+      expect(classifyError(400, 80000)).toBe("unknown");
+      expect(classifyError(400, 80004)).toBe("rate_limit");
+    });
+  });
+
+  describe("auto-generated codes", () => {
+    const refs = (autoCode: boolean) => [
+      { id: "p", code: "PROMO", name: "Promo", metaAdIds: [], codeAuto: autoCode },
+      { id: "o", code: "FB-OKT1", name: "Oktober", metaAdIds: ["6900000000009"] },
+    ];
+
+    it("an auto code never matches as a bare word in normal text (the Promo case)", () => {
+      expect(matchCampaign("🔥 Promo 🔥 halo kak, ada promo?", null, refs(true)).campaign).toBeNull();
+      expect(parseQuickAdd("🔥 Promo 🔥", [], ["PROMO"]).campaignCode).toBeNull();
+    });
+
+    it("but matches in the explicit forms", () => {
+      expect(matchCampaign("Halo [PROMO]", null, refs(true)).campaign?.id).toBe("p");
+      expect(matchCampaign("Halo kak\nKode kampanye: promo", null, refs(true)).campaign?.id).toBe("p");
+      expect(matchCampaign("Campaign code - PROMO", null, refs(true)).campaign?.id).toBe("p");
+      expect(matchCampaign("Kode kampanye: PROMOSI", null, refs(true)).campaign).toBeNull();
+    });
+
+    it("a staff-created code keeps matching as a bare word (and in a headline)", () => {
+      expect(matchCampaign("🔥 Promo 🔥", null, refs(false)).campaign?.id).toBe("p");
+      expect(matchCampaign("Hi", { headline: "Promo besar" } as any, refs(false)).reason).toBe("code_in_headline");
+      expect(matchCampaign("Hi", { headline: "Promo besar" } as any, refs(true)).campaign).toBeNull();
+    });
+
+    it("the explicit ad id wins over any code in the text", () => {
+      const m = matchCampaign("[PROMO] halo", { source_id: "6900000000009" } as any, refs(true));
+      expect(m).toMatchObject({ reason: "ad_id", code: "FB-OKT1" });
+    });
+
+    it("the Meta campaign id in utm_campaign wins over a code", async () => {
+      const restore = withEnv({ NODE_ENV: "test" });
+      try {
+        const prisma = new FakePrisma({
+          campaign: [
+            { id: "c1", name: "digits", code: "120254253291320085", metaAdIds: [], metaCampaignId: null },
+            { id: "c2", name: "PB", code: "PB-CAMP-LINK", metaAdIds: [], metaCampaignId: C_LINK },
+          ],
+          adClick: [],
+        });
+        const clicks = new AdClickService(prisma as any);
+        await clicks.recordEvent(
+          parseTrackEvent(
+            JSON.stringify({ visitId: "66666666-0000-4000-8000-000000000001", name: "PageView", eventId: "evt-0000000099", pageUrl: "https://link.monomiagency.com/", utm: { campaign: C_LINK } }),
+          )!,
+          { ip: "198.51.100.9", userAgent: "Mozilla/5.0" },
+        );
+        expect(prisma.tables.adClick[0].campaignCode).toBe("PB-CAMP-LINK");
+      } finally {
+        restore();
+      }
+    });
+
+    it("renaming the code by staff makes it a staff code", async () => {
+      const prisma = new FakePrisma({ campaign: [{ id: "c", name: "n", code: "PROMO", codeAuto: true, metaAdIds: [] }] });
+      const svc = new CrmCampaignsService(prisma as any);
+      await svc.update("c", { name: "renamed" } as any);
+      expect(prisma.tables.campaign[0].codeAuto).toBe(true);
+      await svc.update("c", { code: "PROMO-OKT" } as any);
+      expect(prisma.tables.campaign[0]).toMatchObject({ code: "PROMO-OKT", codeAuto: false });
+    });
+  });
+
+  describe("ad account time zone and lease", () => {
+    it("stores the zone, shows it, and decides the day by it", async () => {
+      const { svc, prisma, t, clock } = setup({ timezone: "America/Los_Angeles" });
+      clock.now = new Date("2026-10-08T03:00:00.000Z"); // Oct 8 in Jakarta, Oct 7 in Los Angeles
+      const r = await svc.run("MANUAL");
+      expect(r.range?.until).toBe("2026-10-07");
+      expect(t.metaAdsSyncState[0].timezoneName).toBe("America/Los_Angeles");
+      expect((await new MetaAdsAdminService(prisma as any, svc).status()).account).toMatchObject({ timezone: "America/Los_Angeles" });
+    });
+
+    it("renews the lease while paging (a long backfill outlives one lease period)", async () => {
+      const { svc, graph, t, clock } = setup();
+      const seen: number[] = [];
+      graph.on("GET", new RegExp(`/act_${ACCT}/insights$`), () => {
+        seen.push(t.metaAdsSyncState[0].leaseUntil.getTime());
+        clock.now = new Date(clock.now.getTime() + 15 * 60_000);
+        return { json: { data: [] } };
+      });
+      await svc.run("MANUAL");
+      expect(seen.length).toBe(3);
+      expect(seen[2]).toBeGreaterThan(seen[0]);
+      expect(seen[2]).toBeGreaterThan(clock.now.getTime() - 15 * 60_000); // never lapsed during the run
     });
   });
 });

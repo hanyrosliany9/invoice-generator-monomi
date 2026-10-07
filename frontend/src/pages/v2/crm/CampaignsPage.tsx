@@ -334,10 +334,16 @@ export default function CampaignsPage() {
                 <div className="mb-3 rounded-lg bg-bg-sunken px-3 py-2 text-sm" data-testid="spend-summary">
                   <div className="font-mono">{formatMoney(selected.spend, selected.spendCurrency)}</div>
                   <div className="text-xs text-text-tertiary">
-                    {t('crm.campaigns.spendSplit', 'Meta {{meta}} + other costs {{other}}', {
-                      meta: formatMoney(selected.metaSpend ?? 0, selected.spendCurrency),
-                      other: formatMoney(selected.manualSpend ?? 0, selected.spendCurrency),
-                    })}
+                    {selected.manualSeparate
+                      ? t('crm.campaigns.spendSplitSeparate', 'Meta {{meta}}. Other costs {{other}} are in rupiah and are not added to {{currency}}.', {
+                        meta: formatMoney(selected.metaSpend ?? 0, selected.spendCurrency),
+                        other: idr(selected.manualSpend ?? 0),
+                        currency: selected.spendCurrency ?? '',
+                      })
+                      : t('crm.campaigns.spendSplit', 'Meta {{meta}} + other costs {{other}}', {
+                        meta: formatMoney(selected.metaSpend ?? 0, selected.spendCurrency),
+                        other: formatMoney(selected.manualSpend ?? 0, selected.spendCurrency),
+                      })}
                     {(selected.impressions ?? 0) > 0 && <> · {t('crm.campaigns.imprClicks', '{{impr}} impr. · {{clicks}} clicks', { impr: compactNumber(selected.impressions ?? 0), clicks: compactNumber(selected.clicks ?? 0) })}</>}
                   </div>
                 </div>
@@ -357,7 +363,7 @@ export default function CampaignsPage() {
                         {s.note && <div className="text-xs text-text-tertiary">{s.note}</div>}
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
-                        <span className="font-mono">{formatMoney(s.amount, s.currency)}</span>
+                        <span className="font-mono">{formatMoney(s.amount, s.source === 'META' ? s.currency : 'IDR')}</span>
                         {s.readOnly ? <span className="inline-block w-8" aria-hidden /> : (
                           <Button
                             type="button" variant="ghost" size="icon-sm" className="text-text-tertiary"

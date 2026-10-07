@@ -167,20 +167,19 @@ export class AdClickService {
 
   private async resolveCampaignCode(utmCampaign: string | null): Promise<string | null> {
     if (!utmCampaign) return null;
-    const c = await this.prisma.campaign.findFirst({
-      where: { code: { equals: utmCampaign, mode: "insensitive" } },
-      select: { code: true },
-    });
-    if (c) return c.code; // an explicit code wins
-    // All digits = a Meta campaign id ({{campaign.id}} in the ad URL) of a linked campaign.
+    // All digits = a Meta campaign id ({{campaign.id}} in the ad URL) of a linked campaign: explicit, wins over a code.
     if (/^\d{5,25}$/.test(utmCampaign)) {
       const m = await this.prisma.campaign.findFirst({
         where: { metaCampaignId: utmCampaign },
         select: { code: true },
       });
-      return m?.code ?? null;
+      if (m) return m.code;
     }
-    return null;
+    const c = await this.prisma.campaign.findFirst({
+      where: { code: { equals: utmCampaign, mode: "insensitive" } },
+      select: { code: true },
+    });
+    return c?.code ?? null;
   }
 
   /**
@@ -575,6 +574,7 @@ export class AdClickService {
         if (campaign) {
           data.campaignId = campaign.id;
           data.campaignCode = campaign.code;
+          data.campaignSource = "AUTO";
         }
       }
       if (Object.keys(data).length) await tx.lead.update({ where: { id: leadId }, data });

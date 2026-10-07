@@ -261,6 +261,10 @@ export const formatMoney = (v: number | null | undefined, currency?: string | nu
   return `${currency} ${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+/** Compact money for KPI tiles in the Meta account currency (IDR: Rp 98 jt). */
+export const moneyCompact = (v: number | null | undefined, currency: string | null | undefined, lang: string): string =>
+  !currency || currency === 'IDR' ? idrCompact(v, lang) : formatMoney(v, currency);
+
 /** "3 hours ago" / "3 jam yang lalu" in the UI language. */
 export const timeAgo = (iso: string | null | undefined, lang: string, now: Date = new Date()): string => {
   if (!iso) return '';

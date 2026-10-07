@@ -1,4 +1,5 @@
 import { PrismaService } from "../../prisma/prisma.service";
+import { dateStringInTz } from "./meta-ads.utils";
 
 export interface MetaSpendAgg {
   amount: number;
@@ -8,13 +9,17 @@ export interface MetaSpendAgg {
 
 /**
  * Synced Meta spend per CRM campaign (through Campaign.metaCampaignId), for an
- * optional inclusive WIB date window ("YYYY-MM-DD"). The currency is the ad
+ * optional window of instants: its days are the calendar days in the ad
+ * account's time zone (the zone Meta reports its days in). The currency is the ad
  * account's (IDR for Monomi); manual entries are assumed to be in the same.
  */
 export async function loadMetaSpend(
   prisma: Pick<PrismaService, "campaign" | "metaAdsInsightDaily" | "metaAdsSyncState">,
-  opts: { from?: string; to?: string; campaignId?: string } = {},
+  opts: { range?: { from: Date; to: Date }; campaignId?: string } = {},
 ): Promise<{ byCampaign: Map<string, MetaSpendAgg>; currency: string; lastSyncAt: Date | null }> {
+  const tz = (await prisma.metaAdsSyncState.findUnique({ where: { id: "default" } }))?.timezoneName ?? null;
+  const from = opts.range ? dateStringInTz(opts.range.from, tz) : undefined;
+  const to = opts.range ? dateStringInTz(opts.range.to, tz) : undefined;
   const state = await prisma.metaAdsSyncState.findUnique({ where: { id: "default" } });
   const currency = state?.currency ?? "IDR";
   const byCampaign = new Map<string, MetaSpendAgg>();
@@ -28,11 +33,11 @@ export async function loadMetaSpend(
   const rows = await prisma.metaAdsInsightDaily.findMany({
     where: {
       metaCampaignId: { in: [...idToCampaign.keys()] },
-      ...(opts.from || opts.to
+      ...(from || to
         ? {
             date: {
-              ...(opts.from ? { gte: new Date(opts.from + "T00:00:00.000Z") } : {}),
-              ...(opts.to ? { lte: new Date(opts.to + "T00:00:00.000Z") } : {}),
+              ...(from ? { gte: new Date(from + "T00:00:00.000Z") } : {}),
+              ...(to ? { lte: new Date(to + "T00:00:00.000Z") } : {}),
             },
           }
         : {}),

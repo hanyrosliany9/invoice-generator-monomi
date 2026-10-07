@@ -168,7 +168,7 @@ describe("matchCampaign", () => {
     },
     { id: "c2", code: "IG-REELS", name: "Reels", metaAdIds: [] },
   ];
-  it("prefers the [CODE] in the first message", () => {
+  it("the explicit ad id wins over a [CODE] in the first message", () => {
     expect(
       matchCampaign(
         "Halo, mau tanya harga [ig-reels]",
@@ -176,9 +176,13 @@ describe("matchCampaign", () => {
         campaigns,
       ),
     ).toMatchObject({
-      campaign: { id: "c2" },
-      reason: "code_in_message",
+      campaign: { id: "c1" },
+      reason: "ad_id",
     });
+    // without an ad id the [CODE] still decides
+    expect(
+      matchCampaign("Halo, mau tanya harga [ig-reels]", null, campaigns),
+    ).toMatchObject({ campaign: { id: "c2" }, reason: "code_in_message" });
   });
   it("falls back to the Meta ad id, then the headline", () => {
     expect(
