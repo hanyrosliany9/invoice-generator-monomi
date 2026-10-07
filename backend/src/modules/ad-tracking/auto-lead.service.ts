@@ -50,9 +50,22 @@ export function autoLeadName(
  */
 export type AutoLeadOutcome = "created" | "attached" | "capped" | "disabled" | "bot" | "skipped";
 
+/** The most recent closed (Won / Lost) lead of a returning client. */
+export interface ReturningFrom {
+  id: string;
+  name: string;
+  stageType: "WON" | "LOST";
+}
+
 export type WaitingLeadOutcome =
-  | { outcome: "filled"; leadId: string }
+  | { outcome: "filled"; leadId: string; returningFrom?: ReturningFrom | null }
   | { outcome: "merged"; leadId: string; fromLeadId: string; placeholderDeleted: boolean };
+
+/** Where a waiting lead's number leads: an open lead to merge into, else a past (closed) lead. */
+export interface WaitingPhoneMatch {
+  mergeInto: { id: string; name: string } | null;
+  returningFrom: ReturningFrom | null;
+}
 
 export interface ResolveWaitingInput {
   /** WhatsApp number from the chat (normalised here). */
@@ -245,12 +258,45 @@ export class AutoLeadService {
   // ---------------------------------------------------------------------
 
   /**
+   * Other leads with this number: the most recent OPEN one (merge target),
+   * else the most recent Won / Lost one (a returning client: not merged into,
+   * the waiting lead becomes the new deal).
+   */
+  private async phoneMatchIn(db: Tx | PrismaService, phone: string, excludeId: string): Promise<WaitingPhoneMatch> {
+    const open = await db.lead.findFirst({
+      where: { phone, id: { not: excludeId }, stage: { type: "OPEN" } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true },
+    });
+    if (open) return { mergeInto: open, returningFrom: null };
+    const closed = await db.lead.findFirst({
+      where: { phone, id: { not: excludeId }, stage: { type: { in: ["WON", "LOST"] } } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, stage: { select: { type: true } } },
+    });
+    return {
+      mergeInto: null,
+      returningFrom: closed
+        ? { id: closed.id, name: closed.name, stageType: closed.stage.type as "WON" | "LOST" }
+        : null,
+    };
+  }
+
+  /** Quick-add preview: what saving this number on the waiting lead will do. */
+  async waitingPhoneMatch(waitingId: string, rawPhone: string): Promise<WaitingPhoneMatch | null> {
+    const phone = normalizePhone(rawPhone);
+    return phone ? this.phoneMatchIn(this.prisma, phone, waitingId) : null;
+  }
+
+  /**
    * The WhatsApp chat of a waiting lead arrived (quick-add with its Kode,
    * "Add phone", WhatsApp ingest):
-   *  a) the number has no other lead: it is filled into the waiting lead,
-   *     which stops waiting (its response clock starts now);
-   *  b) the number already belongs to a lead: the waiting lead is merged
-   *     into that one (see mergeInTx).
+   *  a) the number has no OPEN lead: it is filled into the waiting lead,
+   *     which stops waiting (its response clock starts now). When the number
+   *     only has Won / Lost leads (a returning client) the waiting lead stays
+   *     the new deal and gets a note pointing at the most recent closed lead;
+   *  b) the number belongs to an open lead (the most recent one when there
+   *     are several): the waiting lead is merged into it (see mergeInTx).
    */
   async resolveWaitingLead(waitingId: string, input: ResolveWaitingInput): Promise<WaitingLeadOutcome> {
     const phone = normalizePhone(input.phone);
@@ -259,12 +305,9 @@ export class AutoLeadService {
       const lead = await tx.lead.findUnique({ where: { id: waitingId } });
       if (!lead) throw new NotFoundException("Lead tidak ditemukan");
       if (!lead.awaitingWhatsapp) throw notWaiting();
-      const other = await tx.lead.findFirst({
-        where: { phone, id: { not: waitingId } },
-        orderBy: { createdAt: "desc" },
-        select: { id: true },
-      });
-      if (other) return this.mergeInTx(tx, lead, other.id, input.actorId, input);
+      const match = await this.phoneMatchIn(tx, phone, waitingId);
+      if (match.mergeInto) return this.mergeInTx(tx, lead, match.mergeInto.id, input.actorId, input);
+      const returningFrom = match.returningFrom;
 
       const now = new Date();
       const name = input.name?.trim();
@@ -292,7 +335,18 @@ export class AutoLeadService {
       await tx.leadActivity.create({
         data: { leadId: waitingId, type: "NOTE", body: "@lead.phoneFilled", actorId: input.actorId },
       });
-      return { outcome: "filled" as const, leadId: waitingId };
+      if (returningFrom) {
+        // "<leadId> <WON|LOST> <name>": the UI links the id (name last: free text)
+        await tx.leadActivity.create({
+          data: {
+            leadId: waitingId,
+            type: "NOTE",
+            body: `@lead.returningClient: ${returningFrom.id} ${returningFrom.stageType} ${returningFrom.name}`,
+            actorId: input.actorId,
+          },
+        });
+      }
+      return { outcome: "filled" as const, leadId: waitingId, returningFrom };
     });
   }
 

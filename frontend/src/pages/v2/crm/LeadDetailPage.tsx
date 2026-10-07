@@ -22,7 +22,8 @@ import {
 import { CrmShell, nativeSelectClass, textareaClass } from './CrmShell';
 import { useCrmAssignees, useCrmCampaigns, useCrmStages } from './crmHooks';
 import {
-  displayPhone, idr, isWaitingLead, parseActivityBody, toNumber, unescapeActivityText, useCrmLabels, waitingOutcomeText, waLink,
+  displayPhone, idr, isWaitingLead, parseActivityBody, parseReturningClient, returningClientText, toNumber, unescapeActivityText,
+  useCrmLabels, waitingOutcomeText, waLink,
 } from './crmUtils';
 import { CodeBadge, LostDialog, MoveStageMenu, SourceBadge, StageBadge, WaitingBadge } from './LeadParts';
 import { ConvertDialog } from './ConvertDialog';
@@ -89,7 +90,21 @@ function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
         );
       }
       break;
-    case 'NOTE': body = <>{parseActivityBody(a.body) ? activityText(a.body) : <>{t('crm.history.note', 'Note')}: {unescapeActivityText(a.body ?? '')}</>}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
+    case 'NOTE': {
+      const parsed = parseActivityBody(a.body);
+      const returning = parsed?.key === 'lead.returningClient' ? parseReturningClient(parsed.text) : null;
+      body = (
+        <>
+          {returning ? (
+            <Link className="underline underline-offset-2" to={`/crm/leads/${encodeURIComponent(returning.id)}`} data-testid="returning-client-link">
+              {returningClientText(t, returning)}
+            </Link>
+          ) : parsed ? activityText(a.body) : <>{t('crm.history.note', 'Note')}: {unescapeActivityText(a.body ?? '')}</>}
+          {who ? <span className="text-text-tertiary"> · {who}</span> : null}
+        </>
+      );
+      break;
+    }
     case 'CALL': body = <>{t('crm.history.call', 'Call')}: {unescapeActivityText(a.body ?? '')}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     case 'WHATSAPP': body = <>{parseActivityBody(a.body) ? activityText(a.body) : <>{t('crm.history.wa', 'WhatsApp message')}: {unescapeActivityText(a.body ?? '')}</>}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     case 'MEETING': body = <>{t('crm.history.meeting', 'Meeting')}: {unescapeActivityText(a.body ?? '')}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;

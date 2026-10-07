@@ -9779,7 +9779,7 @@
           },
           "lead-menunggu-wa": {
             "title": "Lead yang menunggu WhatsApp",
-            "body": "Saat seseorang mengisi form di landing page lalu menekan Lanjut ke WhatsApp, lead langsung muncul di papan dengan label Menunggu WhatsApp. Lead ini sudah berisi handle Instagram, nama brand, dan kategori, tetapi belum ada nomornya. Saat chat-nya masuk, tempel di Tambah lead seperti biasa: jendela menampilkan Cocok dengan lead dari landing page yang menunggu, dan menyimpan akan menambahkan nomor ke lead yang sama lalu membukanya. Jika nomor itu sudah milik lead lain, lead yang menunggu digabung ke lead tersebut. Nomor juga bisa diketik di Tambah nomor pada halaman lead, dan filter Menunggu WhatsApp di atas papan menampilkan semuanya.",
+            "body": "Saat seseorang mengisi form di landing page lalu menekan Lanjut ke WhatsApp, lead langsung muncul di papan dengan label Menunggu WhatsApp. Lead ini sudah berisi handle Instagram, nama brand, dan kategori, tetapi belum ada nomornya. Saat chat-nya masuk, tempel di Tambah lead seperti biasa: jendela menampilkan Cocok dengan lead dari landing page yang menunggu, dan menyimpan akan menambahkan nomor ke lead yang sama lalu membukanya. Jika nomor itu milik lead yang masih terbuka, lead yang menunggu digabung ke lead tersebut. Jika nomor itu hanya milik lead Menang atau Kalah (klien lama), lead yang menunggu menyimpan nomornya dan tetap di Baru sebagai deal baru, dengan tautan ke lead sebelumnya di riwayat. Nomor juga bisa diketik di Tambah nomor pada halaman lead, dan filter Menunggu WhatsApp di atas papan menampilkan semuanya.",
             "tip": "Lead yang menunggu tidak dihitung sebagai belum dibalas dan tidak masuk angka di samping Lead pada menu. Jika tidak ada pesan dalam 30 hari, lead pindah ke Kalah (Tidak pernah mengirim WhatsApp)."
           }
         }
@@ -10503,7 +10503,8 @@
       "phoneFilled": "Nomor WhatsApp ditambahkan, tidak menunggu lagi",
       "mergedFrom": "Lead landing page yang menunggu digabung ke sini · Kode",
       "mergedInto": "Duplikat: digabung ke lead",
-      "neverSentWhatsapp": "Ditutup: tidak pernah mengirim pesan WhatsApp"
+      "neverSentWhatsapp": "Ditutup: tidak pernah mengirim pesan WhatsApp",
+      "returningClientPlain": "Klien lama"
     },
     "lost": {
       "done": "Lead ditandai kalah.",
@@ -10894,7 +10895,9 @@
       "quickChipMerge": "Nomor ini sudah milik {{name}}: lead yang menunggu digabung ke sana.",
       "quickChipNeedPhone": "Isi nomor WhatsApp untuk melengkapi lead tersebut.",
       "quickSaveFill": "Lengkapi lead",
-      "quickSaveMerge": "Gabungkan ke lead lama"
+      "quickSaveMerge": "Gabungkan ke lead lama",
+      "returning": "Klien lama: lead sebelumnya {{name}} ({{stage}})",
+      "returningSub": "Lead yang menunggu tetap di Baru sebagai deal baru."
     }
   },
   "socialPublish": {

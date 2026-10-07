@@ -108,6 +108,11 @@ export class CrmLeadsService {
     const duplicate = parsed.phone ? await this.findDuplicate(parsed.phone) : null;
     // "Kode: K7QM2X" written by the landing page: link the chat to its ad click.
     const adClick = (await this.adClicks?.previewForText(text)) ?? null;
+    // the Kode's lead waits for this chat: merge target (open lead) or returning client
+    const waitingMatch =
+      adClick?.waitingLead && parsed.phone && this.autoLeads
+        ? await this.autoLeads.waitingPhoneMatch(adClick.waitingLead.id, parsed.phone)
+        : null;
     return {
       ...parsed,
       // the click's own campaign fills in when the chat names none
@@ -115,6 +120,7 @@ export class CrmLeadsService {
       campaignCode: parsed.campaignCode ?? adClick?.campaignCode?.toUpperCase() ?? null,
       duplicate,
       adClick,
+      waitingMatch,
       // "Instagram: @handle" line of the pre-filled message, else the click's answer
       instagram: extractInstagramHandle(text) ?? adClick?.instagramHandle ?? null,
     };
@@ -609,7 +615,14 @@ export class CrmLeadsService {
     try {
       if (input.existingLeadId) {
         if (input.existingLeadId === waiting.id) return waiting.id;
-        return (await this.autoLeads.mergeWaitingInto(waiting.id, input.existingLeadId, null)).leadId;
+        const existing = await this.prisma.lead.findUnique({
+          where: { id: input.existingLeadId },
+          select: { stage: { select: { type: true } } },
+        });
+        // merge only into an open lead; a Won / Lost one is a returning client (below)
+        if (existing?.stage.type === "OPEN") {
+          return (await this.autoLeads.mergeWaitingInto(waiting.id, input.existingLeadId, null)).leadId;
+        }
       }
       const phone = normalizePhone(`+${input.waId}`);
       if (!phone) return null;

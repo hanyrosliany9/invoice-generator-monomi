@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import en from '@/i18n/locales/en.json';
 import id from '@/i18n/locales/id.json';
 import {
-  displayPhone, isWaitingLead, leadContactLine, parseActivityBody, waDigits, waitingOutcomeText, waLink, type Tfn,
+  displayPhone, isWaitingLead, leadContactLine, parseActivityBody, parseReturningClient, returningClientText, waDigits,
+  waitingOutcomeText, waLink, type Tfn,
 } from './crmUtils';
 
 // Minimal i18n over the real locale files (key lookup, {{x}} interpolation).
@@ -32,7 +33,7 @@ describe('waiting leads (landing-page form, no WhatsApp yet)', () => {
     const idW = (id.crm as Record<string, unknown>).waiting;
     expect(flat(idW).sort()).toEqual(flat(enW).sort());
     for (const k of flat(enW)) expect(make('en')(`crm.waiting.${k}`, '')).not.toBe('');
-    for (const k of ['fromLandingForm', 'landingFormRepeat', 'phoneFilled', 'mergedFrom', 'mergedInto', 'neverSentWhatsapp']) {
+    for (const k of ['fromLandingForm', 'landingFormRepeat', 'phoneFilled', 'mergedFrom', 'mergedInto', 'neverSentWhatsapp', 'returningClientPlain']) {
       expect((en.crm.history as Record<string, unknown>)[k]).toBeTruthy();
       expect((id.crm.history as Record<string, unknown>)[k]).toBeTruthy();
     }
@@ -45,6 +46,20 @@ describe('waiting leads (landing-page form, no WhatsApp yet)', () => {
     const steps = (lang: typeof en) => (lang.guides.items as Record<string, { steps: Record<string, { title: string; body: string }> }>)['crm-leads-whatsapp'].steps;
     expect(steps(en)['lead-menunggu-wa'].body).toContain('Waiting for WhatsApp');
     expect(steps(id)['lead-menunggu-wa'].body).toContain('Menunggu WhatsApp');
+  });
+
+  it('returning client: parses the server note (link-safe id) and words it en + id', () => {
+    const parsed = parseActivityBody('@lead.returningClient: cmabc123 WON Rina Ayu (Kopi)');
+    expect(parsed?.key).toBe('lead.returningClient');
+    const r = parseReturningClient(parsed?.text);
+    expect(r).toEqual({ id: 'cmabc123', stageType: 'WON', name: 'Rina Ayu (Kopi)' });
+    expect(returningClientText(make('en'), r!)).toBe('Returning client: previous lead Rina Ayu (Kopi) (Won)');
+    expect(returningClientText(make('id'), { name: 'Rina', stageType: 'LOST' })).toBe('Klien lama: lead sebelumnya Rina (Kalah)');
+    expect(parseReturningClient('../../x WON a')).toBeNull();
+    expect(parseReturningClient('javascript:alert(1) LOST a')).toBeNull();
+    expect(parseReturningClient('abc OPEN a')).toBeNull();
+    expect(waitingOutcomeText(make('en'), { outcome: 'filled', leadId: 'L1', returningFrom: { id: 'L0', name: 'Rina', stageType: 'LOST' } }, 'Rina'))
+      .toBe('Number added to Rina. Returning client: previous lead Rina (Lost).');
   });
 
   it('banner text names the Kode', () => {

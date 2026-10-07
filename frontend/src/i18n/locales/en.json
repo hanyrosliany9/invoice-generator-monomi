@@ -9780,7 +9780,7 @@
           },
           "lead-menunggu-wa": {
             "title": "Leads that wait for WhatsApp",
-            "body": "When someone fills in the form on the landing page and taps Lanjut ke WhatsApp, a lead appears on the board at once with the badge Waiting for WhatsApp. It has the Instagram handle, the brand and the category, but no number yet. When their chat arrives, paste it in Add lead as usual: the window shows Matches waiting lead from the landing page, and saving puts the number on that same lead and opens it. If the number already belongs to another lead, the waiting lead is merged into that one. You can also type the number under Add phone on the lead page, and the filter Waiting for WhatsApp above the board lists them all.",
+            "body": "When someone fills in the form on the landing page and taps Lanjut ke WhatsApp, a lead appears on the board at once with the badge Waiting for WhatsApp. It has the Instagram handle, the brand and the category, but no number yet. When their chat arrives, paste it in Add lead as usual: the window shows Matches waiting lead from the landing page, and saving puts the number on that same lead and opens it. If the number belongs to an open lead, the waiting lead is merged into it. If it only belongs to Won or Lost leads (a returning client), the waiting lead keeps the number and stays in New as a new deal, with a link to the previous lead in its history. You can also type the number under Add phone on the lead page, and the filter Waiting for WhatsApp above the board lists them all.",
             "tip": "Waiting leads do not count as unanswered and are not in the number next to Leads in the menu. If no message arrives within 30 days, the lead moves to Lost (Never sent WhatsApp)."
           }
         }
@@ -10508,7 +10508,8 @@
       "phoneFilled": "WhatsApp number added, no longer waiting",
       "mergedFrom": "Waiting landing-page lead merged into this one · Kode",
       "mergedInto": "Duplicate: merged into lead",
-      "neverSentWhatsapp": "Closed: never sent the WhatsApp message"
+      "neverSentWhatsapp": "Closed: never sent the WhatsApp message",
+      "returningClientPlain": "Returning client"
     },
     "lost": {
       "done": "Lead marked as lost.",
@@ -10900,7 +10901,9 @@
       "quickChipMerge": "This number already belongs to {{name}}: the waiting lead is merged into it.",
       "quickChipNeedPhone": "Add the WhatsApp number to fill in that lead.",
       "quickSaveFill": "Fill in waiting lead",
-      "quickSaveMerge": "Merge into existing lead"
+      "quickSaveMerge": "Merge into existing lead",
+      "returning": "Returning client: previous lead {{name}} ({{stage}})",
+      "returningSub": "The waiting lead stays in New as a new deal."
     }
   },
   "socialPublish": {

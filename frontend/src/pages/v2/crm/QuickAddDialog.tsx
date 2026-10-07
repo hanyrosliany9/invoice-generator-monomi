@@ -15,7 +15,7 @@ import { useAuthStore } from '@/store/auth';
 import { apiErrorMessage, crmApi, type CreateLeadInput, type QuickAddParse } from '@/services/crm';
 import { nativeSelectClass, textareaClass } from './CrmShell';
 import { useCrmAssignees, useCrmCampaigns, useCrmStages } from './crmHooks';
-import { displayPhone, useCrmLabels, waitingOutcomeText } from './crmUtils';
+import { displayPhone, returningClientText, useCrmLabels, waitingOutcomeText } from './crmUtils';
 
 interface FormState {
   text: string;
@@ -97,6 +97,10 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   // The Kode belongs to a lead auto-created from the landing-page form that
   // waits for this chat: saving fills it in (or merges it into `dup`).
   const waiting = parsed?.adClick?.waitingLead ?? null;
+  // computed by the server for the pasted number: open lead to merge into, else a past client
+  const phoneUnchanged = !!parsed?.phone && form.phone.trim() === parsed.phone;
+  const mergeInto = phoneUnchanged ? (parsed?.waitingMatch?.mergeInto ?? null) : null;
+  const returningFrom = phoneUnchanged ? (parsed?.waitingMatch?.returningFrom ?? null) : null;
   const linkRef = parsed?.adClick && (parsed.adClick.available || waiting) ? parsed.adClick.ref : undefined;
 
   const createMut = useMutation({
@@ -219,10 +223,16 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                 <div className="text-xs text-text-secondary">
                   {!form.phone.trim()
                     ? t('crm.waiting.quickChipNeedPhone', 'Add the WhatsApp number to fill in that lead.')
-                    : dup
-                      ? t('crm.waiting.quickChipMerge', 'This number already belongs to {{name}}: the waiting lead is merged into it.', { name: dup.name })
+                    : mergeInto
+                      ? t('crm.waiting.quickChipMerge', 'This number already belongs to {{name}}: the waiting lead is merged into it.', { name: mergeInto.name })
                       : t('crm.waiting.quickChipFill', 'Saving adds this number to that lead. No new lead is created.')}
                 </div>
+                {returningFrom && form.phone.trim() && (
+                  <div className="mt-1.5 text-xs font-medium text-text-primary" data-testid="quick-returning-chip">
+                    {returningClientText(t, returningFrom)}
+                    <span className="font-normal text-text-secondary"> · {t('crm.waiting.returningSub', 'The waiting lead stays in New as a new deal.')}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -270,7 +280,7 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             </Button>
             <Button type="button" disabled={!canSave || stages.length === 0} onClick={() => save(false)}>
               {waiting
-                ? (dup ? t('crm.waiting.quickSaveMerge', 'Merge into existing lead') : t('crm.waiting.quickSaveFill', 'Fill in waiting lead'))
+                ? (mergeInto ? t('crm.waiting.quickSaveMerge', 'Merge into existing lead') : t('crm.waiting.quickSaveFill', 'Fill in waiting lead'))
                 : dup ? t('crm.quick.saveAnyway', 'Save anyway') : t('crm.quick.save', 'Save lead')}
             </Button>
           </div>

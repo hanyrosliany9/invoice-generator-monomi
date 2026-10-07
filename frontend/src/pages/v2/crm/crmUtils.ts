@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import type { LeadSource, LeadStage, MetaEventName, MetaEventStatus, WaitingOutcome } from '@/services/crm';
+import type { LeadSource, LeadStage, MetaEventName, MetaEventStatus, ReturningFrom, WaitingOutcome } from '@/services/crm';
 
 /** Default English names of the seeded stages: a renamed system stage shows its custom name. */
 const DEFAULT_STAGE_NAMES: Record<string, string> = {
@@ -105,6 +105,10 @@ export function useCrmLabels() {
       case 'lead.mergedFrom': return join(t('crm.history.mergedFrom', 'Waiting landing-page lead merged into this one · Kode'), rest);
       case 'lead.mergedInto': return join(t('crm.history.mergedInto', 'Duplicate: merged into lead'), rest);
       case 'lead.neverSentWhatsapp': return t('crm.history.neverSentWhatsapp', 'Closed: never sent the WhatsApp message');
+      case 'lead.returningClient': {
+        const r = parseReturningClient(rest);
+        return r ? returningClientText(t, r) : t('crm.history.returningClientPlain', 'Returning client');
+      }
       case 'lead.quotationCreated': return t('crm.history.quotationCreated', 'Quotation created');
       case 'lead.converted': {
         const parts = (rest ?? '').split(',').map((p) => p.trim()).filter(Boolean).map((p) => ({
@@ -134,8 +138,24 @@ export function parseActivityBody(body: string | null | undefined): { key: strin
 const ACTIVITY_KEYS = new Set([
   'wa.in', 'wa.monomi', 'wa.phoneApp', 'lead.converted', 'lead.quotationCreated', 'lead.adClickLinked',
   'lead.fromLandingForm', 'lead.landingFormRepeat', 'lead.phoneFilled', 'lead.mergedFrom', 'lead.mergedInto',
-  'lead.neverSentWhatsapp',
+  'lead.neverSentWhatsapp', 'lead.returningClient',
 ]);
+
+const LEAD_ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
+
+/** "@lead.returningClient: <leadId> <WON|LOST> <name>" -> parts (null when malformed; the id is link-safe). */
+export function parseReturningClient(text: string | null | undefined): ReturningFrom | null {
+  const m = text?.match(/^(\S+) (WON|LOST) ([\s\S]+)$/);
+  if (!m || !LEAD_ID_RE.test(m[1])) return null;
+  return { id: m[1], stageType: m[2] as 'WON' | 'LOST', name: m[3] };
+}
+
+/** "Returning client: previous lead Rina (Won)". */
+export const returningClientText = (t: Tfn, r: Pick<ReturningFrom, 'name' | 'stageType'>): string =>
+  t('crm.waiting.returning', 'Returning client: previous lead {{name}} ({{stage}})', {
+    name: r.name,
+    stage: r.stageType === 'WON' ? t('crm.stage.WON', 'Won') : t('crm.stage.LOST', 'Lost'),
+  });
 
 /** Lead from the landing-page form that still waits for its WhatsApp chat (no number yet). */
 export const isWaitingLead = (l: { awaitingWhatsapp?: boolean } | null | undefined): boolean => !!l?.awaitingWhatsapp;
@@ -149,7 +169,10 @@ export const leadContactLine = (l: { name?: string; phone: string | null; instag
 
 /** Toast after a waiting lead got its chat (quick-add, link code, add phone). */
 export function waitingOutcomeText(t: Tfn, o: WaitingOutcome, leadName: string): string {
-  if (o.outcome === 'filled') return t('crm.waiting.filled', 'Number added to {{name}}.', { name: leadName });
+  if (o.outcome === 'filled') {
+    const filled = t('crm.waiting.filled', 'Number added to {{name}}.', { name: leadName });
+    return o.returningFrom ? `${filled} ${returningClientText(t, o.returningFrom)}.` : filled;
+  }
   const merged = t('crm.waiting.merged', 'This number already had a lead: merged into {{name}}.', { name: leadName });
   const tail = o.placeholderDeleted
     ? t('crm.waiting.mergedDeleted', 'The waiting lead was removed (nothing had been done on it).')

@@ -436,7 +436,8 @@ describe("auto-created leads from the landing-page form", () => {
       expect(parsed.duplicate).toBeNull();
 
       const res: any = await leads.create({ name: "Rina", phone: parsed.phone, firstMessage: parsed.message, adClickRef: r.ref, assignedToId: "u1" } as any, "u1");
-      expect(res.waitingOutcome).toEqual({ outcome: "filled", leadId: waiting.id });
+      expect(res.waitingOutcome).toEqual({ outcome: "filled", leadId: waiting.id, returningFrom: null });
+      expect(parsed.waitingMatch).toEqual({ mergeInto: null, returningFrom: null });
       expect(res.id).toBe(waiting.id);
       expect(t.lead).toHaveLength(1);
       expect(t.lead[0]).toMatchObject({
@@ -543,6 +544,84 @@ describe("auto-created leads from the landing-page form", () => {
       expect(ctx.t.whatsAppContact[0].leadId).toBe(waiting.id);
       expect(ctx.t.leadActivity.some((a: any) => a.leadId === waiting.id && a.body?.startsWith("@wa.in: Halo Monomi"))).toBe(true);
       expect(ctx.t.metaEventOutbox.map((e: any) => e.eventName)).toEqual(["Lead"]);
+    });
+  });
+
+  describe("merge target is an OPEN lead; a past client is not merged into", () => {
+    const past = (id: string, stageId: string, daysAgo: number, name = id) => ({
+      id, name, phone: PHONE, stageId, source: "WHATSAPP_ORGANIC", createdAt: new Date(Date.now() - daysAgo * DAY),
+      instagramHandle: null, company: null, category: null,
+    });
+
+    it("open-lead merge: an open lead with the number takes the waiting lead (most recent of several)", async () => {
+      const { t, tap, leads } = setup({ leads: [past("L-open-old", "st-new", 9), past("L-open-new", "st-qual", 2)] });
+      const r = await tap({ i: 1000 });
+      const parsed: any = await leads.parseQuickAdd(`+62 812 3456 7890
+Kode: ${r.ref}`);
+      expect(parsed.waitingMatch).toEqual({ mergeInto: { id: "L-open-new", name: "L-open-new" }, returningFrom: null });
+      const res: any = await leads.create({ phone: PHONE, adClickRef: r.ref } as any, "u1");
+      expect(res.waitingOutcome).toMatchObject({ outcome: "merged", leadId: "L-open-new", placeholderDeleted: true });
+      expect(r.click.leadId).toBe("L-open-new");
+      expect(autoLeadsOf(t)).toHaveLength(0);
+    });
+
+    it.each([
+      ["Won", "st-won", "WON"],
+      ["Lost", "st-lost", "LOST"],
+    ])("%s-only number: the waiting lead gets the phone and a returning-client note; the closed lead is untouched", async (_label, stageId, type) => {
+      const { t, tap, leads } = setup({ leads: [past("L-old-closed", stageId, 200, "Rina Lama"), past("L-older-closed", stageId, 400, "Rina Dulu")] });
+      const r = await tap({ i: 1010 + (type === "WON" ? 0 : 1), instagram: "rina.again" });
+      const waiting = autoLeadsOf(t)[0];
+      const parsed: any = await leads.parseQuickAdd(`Rina +62 812 3456 7890
+Kode: ${r.ref}`);
+      expect(parsed.waitingMatch).toEqual({ mergeInto: null, returningFrom: { id: "L-old-closed", name: "Rina Lama", stageType: type } });
+
+      const res: any = await leads.create({ name: "Rina", phone: PHONE, firstMessage: `Halo lagi
+Kode: ${r.ref}`, adClickRef: r.ref } as any, "u1");
+      expect(res.waitingOutcome).toEqual({
+        outcome: "filled",
+        leadId: waiting.id,
+        returningFrom: { id: "L-old-closed", name: "Rina Lama", stageType: type },
+      });
+      expect(t.lead.find((l: any) => l.id === waiting.id)).toMatchObject({ phone: PHONE, awaitingWhatsapp: false, stageId: "st-new" });
+      expect(r.click.leadId).toBe(waiting.id);
+      expect(t.leadActivity.find((a: any) => a.leadId === waiting.id && a.body?.startsWith("@lead.returningClient"))).toMatchObject({
+        type: "NOTE",
+        body: `@lead.returningClient: L-old-closed ${type} Rina Lama`,
+      });
+      // the past lead keeps its stage, handle and history
+      expect(t.lead.find((l: any) => l.id === "L-old-closed")).toMatchObject({ stageId, instagramHandle: null });
+      expect(t.leadActivity.filter((a: any) => a.leadId === "L-old-closed")).toHaveLength(0);
+      expect(t.metaEventOutbox.filter((e: any) => e.eventName !== "Lead")).toHaveLength(0);
+    });
+
+    it("mixed: one open and one Won lead with the number -> merges into the open lead", async () => {
+      const { t, tap, leads } = setup({ leads: [past("L-open", "st-new", 30), past("L-won", "st-won", 1)] });
+      const r = await tap({ i: 1020 });
+      const res: any = await leads.create({ phone: PHONE, adClickRef: r.ref } as any, "u1");
+      expect(res.waitingOutcome).toMatchObject({ outcome: "merged", leadId: "L-open" });
+      expect(r.click.leadId).toBe("L-open");
+      expect(t.lead.find((l: any) => l.id === "L-won").stageId).toBe("st-won");
+      expect(t.leadActivity.some((a: any) => a.body?.startsWith("@lead.returningClient"))).toBe(false);
+    });
+
+    it("'Add phone' and WhatsApp ingest follow the same rule (a Won lead is not merged into)", async () => {
+      const ctx = setup({ leads: [past("L-won", "st-won", 60, "Old Client")] });
+      await ctx.tap({ i: 1030 });
+      const [a] = autoLeadsOf(ctx.t);
+      const res: any = await ctx.leads.addPhone(a.id, "0812-3456-7890", "u1");
+      expect(res.waitingOutcome).toMatchObject({ outcome: "filled", leadId: a.id, returningFrom: { id: "L-won", stageType: "WON" } });
+
+      const r2 = await ctx.tap({ i: 1031, instagram: "second.one" });
+      const b = autoLeadsOf(ctx.t).find((l: any) => l.awaitingWhatsapp);
+      ctx.t.lead.find((l: any) => l.id === "L-won").phone = "+6285711112222";
+      const id = await ctx.leads.matchWaitingLeadFromChat({
+        text: `Halo
+Kode: ${r2.ref}`, waId: "6285711112222", name: "Old Client", activityBody: "@wa.in: Halo", existingLeadId: "L-won",
+      });
+      expect(id).toBe(b.id);
+      expect(ctx.t.lead.find((l: any) => l.id === b.id)).toMatchObject({ phone: "+6285711112222", awaitingWhatsapp: false });
+      expect(ctx.t.lead.find((l: any) => l.id === "L-won").stageId).toBe("st-won");
     });
   });
 

@@ -220,12 +220,17 @@ serialised per handle (transaction-scoped advisory lock).
 click code**, **Add phone** on the waiting lead, or a WhatsApp Cloud API message
 carrying the Kode; one shared parser):
 
-* **(a) the number has no other lead:** it is normalised and filled into the
+* **(a) the number has no open lead:** it is normalised and filled into the
   waiting lead, which stops waiting (`firstContactAt` = now, so the response
   clock starts here); the pasted message becomes its first WhatsApp activity;
   a person's name from the chat replaces the placeholder name; quick-add opens
-  that lead. No new lead, no `LeadSubmitted`.
-* **(b) the number already has a lead:** that (existing) lead is kept. The
+  that lead. No new lead, no `LeadSubmitted`. **Returning client:** when the
+  number only has Won / Lost leads, they are not merged into; the waiting lead
+  keeps the number and stays in New as a new deal, with an
+  `@lead.returningClient` history entry linking to the most recent closed lead
+  (quick-add shows "Returning client: previous lead <name> (Won/Lost)").
+* **(b) the number belongs to an open (not Won / Lost) lead:** that lead is
+  kept (the most recent one when several are open). The
   clicks, their click-time `Lead` rows, the Instagram handle, brand, category and
   campaign move to it when it has none, and it becomes a Website lead (unless it
   is a Click-to-WhatsApp lead). The waiting lead is deleted when no staff member

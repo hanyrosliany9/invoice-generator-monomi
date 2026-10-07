@@ -111,8 +111,11 @@ export interface LeadAdClick {
 }
 
 /** What happened when a waiting lead's chat / number arrived. */
+/** Most recent Won / Lost lead of a returning client (not merged into). */
+export interface ReturningFrom { id: string; name: string; stageType: 'WON' | 'LOST' }
+
 export type WaitingOutcome =
-  | { outcome: 'filled'; leadId: string }
+  | { outcome: 'filled'; leadId: string; returningFrom?: ReturningFrom | null }
   | { outcome: 'merged'; leadId: string; fromLeadId: string; placeholderDeleted: boolean };
 
 export interface LeadDetail extends Lead {
@@ -195,6 +198,8 @@ export interface QuickAddParse {
   } | null;
   /** "Instagram: @handle" line of the chat, else the ad click's answer. */
   instagram: string | null;
+  /** For a waiting lead + the chat's number: the open lead it merges into, else a past (Won / Lost) lead. */
+  waitingMatch?: { mergeInto: { id: string; name: string } | null; returningFrom: ReturningFrom | null } | null;
 }
 
 export type TrackingState = 'OFF' | 'INCOMPLETE' | 'INVALID' | 'READY';
