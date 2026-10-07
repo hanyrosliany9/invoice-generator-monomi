@@ -27,6 +27,7 @@ import {
   exportAPAgingExcel,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation                                                         */
@@ -170,6 +171,7 @@ export default function APAgingPageV2() {
           ]}
           actions={
             <div className="flex flex-wrap items-center gap-2">
+              <GuideHelpLink slug="akuntansi-lanjutan" anchor="aging-hutang" />
               <div className="flex items-center gap-2">
                 <div className="w-[150px]">
                   <MonomiDatePicker value={fromDate} onChange={(d) => d && setFromDate(d)} placeholder={t('common.fromDate', 'Dari')} />

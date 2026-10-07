@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/select';
 import { useAuthStore } from '@/store/auth';
 import { reportsService } from '@/services/reports';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const toNumber = (v: unknown): number => {
   if (v === null || v === undefined) return 0;
@@ -134,6 +135,7 @@ export default function MonthlyBusinessReportPageV2() {
           ]}
           actions={
             <div className="flex items-center gap-2">
+              <GuideHelpLink slug="laporan-bisnis" anchor="bulanan" />
               <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
                 <SelectTrigger size="sm" className="bg-bg-sunken border-border-subtle min-w-[120px]">
                   <SelectValue />

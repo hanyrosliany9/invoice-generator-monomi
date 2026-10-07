@@ -135,7 +135,7 @@ export default function CrmSettingsPage() {
         title={t('crm.settings.title', 'CRM settings')}
         description={t('crm.settings.subtitle', 'Response-time target and pipeline stages.')}
         breadcrumbs={[{ label: t('crm.leads.title', 'Leads'), href: '/crm/leads' }, { label: t('crm.settings.title', 'CRM settings') }]}
-        actions={<GuideHelpLink slug="crm-whatsapp-setup" />}
+        actions={<GuideHelpLink slug="crm-pengaturan" />}
       />
       <div className="space-y-5">
         <GlassPanel padding="none" className="p-5">

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -119,6 +119,12 @@ export function PortalInstagramCard({ clientId }: { clientId: string }) {
                 {t('portal.instagram.noInsights', 'Izin statistik belum diberikan. Hubungkan ulang dan izinkan akses insights.')}
               </div>
             )}
+            <Link
+              to="/bantuan/instagram-portal"
+              className="mt-1 inline-block text-xs text-text-tertiary underline underline-offset-2 hover:text-text-primary"
+            >
+              {t('guides.ui.helpClient', 'Bantuan')}
+            </Link>
           </div>
           <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmOpen(true)} className="text-text-secondary">
             <Unlink className="h-4 w-4" />
@@ -157,14 +163,22 @@ export function PortalInstagramCard({ clientId }: { clientId: string }) {
                   {t('portal.instagram.permRevoke', 'Anda bisa memutuskan kapan saja di sini atau di pengaturan Instagram.')}
                 </li>
               </ul>
-              <a
-                href={`${ADMIN_URL}/privacy`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-xs text-text-tertiary underline underline-offset-2 hover:text-text-primary"
-              >
-                {t('portal.instagram.privacy', 'Kebijakan privasi')}
-              </a>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <a
+                  href={`${ADMIN_URL}/privacy`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block text-xs text-text-tertiary underline underline-offset-2 hover:text-text-primary"
+                >
+                  {t('portal.instagram.privacy', 'Kebijakan privasi')}
+                </a>
+                <Link
+                  to="/bantuan/instagram-portal"
+                  className="inline-block text-xs text-text-tertiary underline underline-offset-2 hover:text-text-primary"
+                >
+                  {t('guides.ui.helpClient', 'Bantuan')}
+                </Link>
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">

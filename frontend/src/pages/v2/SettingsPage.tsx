@@ -57,6 +57,7 @@ import {
   type SystemSettings,
 } from '@/services/settings';
 import { authService } from '@/services/auth';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 // ──────────────────────────────────────────────────────────────
 // Section vocabulary — a stable list, ordered by who-cares-most.
@@ -1488,6 +1489,18 @@ const useRegisterDirty = (isDirty: boolean) => {
   }, [ref, isDirty]);
 };
 
+/** Step of the guide pengaturan-aplikasi that explains each section (deep link of the "?" button). */
+const settingsAnchor: Record<SectionId, string> = {
+  profile: 'profil',
+  security: 'keamanan',
+  company: 'perusahaan',
+  banks: 'rekening',
+  invoicing: 'invoice',
+  notifications: 'notifikasi',
+  backup: 'cadangan',
+  mobile: 'aplikasi',
+};
+
 export default function SettingsPageV2() {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
@@ -1647,6 +1660,7 @@ export default function SettingsPageV2() {
             'settingsPage.subtitle',
             'Manage your personal account, company identity, and system settings.',
           )}
+          actions={<GuideHelpLink slug="pengaturan-aplikasi" anchor={settingsAnchor[activeSection]} />}
         />
 
         {/* Two-column layout: nav rail (320px) + content area.

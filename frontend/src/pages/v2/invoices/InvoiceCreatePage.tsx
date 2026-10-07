@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/monomi/PageHeader';
 import { UserChip } from '@/components/monomi/UserChip';
 import { useAuthStore } from '@/store/auth';
 import { InvoiceForm } from './InvoiceForm';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — must match the rest of v2 so the active state reads as   */
@@ -65,6 +66,7 @@ export default function InvoiceCreatePageV2() {
           description={reimbursablesOnly
             ? t('invoiceCreate.descReimbursable', 'Bill the client for outstanding reimbursable costs on this project.')
             : t('invoiceCreate.desc', 'Create a new invoice for a client — select project, fill in details, and save as draft.')}
+          actions={<GuideHelpLink slug="invoice-manual" anchor="klien-proyek" />}
         />
 
         <InvoiceForm

@@ -36,6 +36,7 @@ import { projectService, type Project } from '@/services/projects';
 import { calendarEventsService, type CalendarEvent } from '@/services/calendar-events';
 import { cn } from '@/lib/utils';
 import { weekdayShortLabels } from '@/pages/v2/calendar/contentPlannerUtils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — mirrors the established v2 ordering and adds the two    */
@@ -280,15 +281,18 @@ export default function CalendarPageV2() {
             'A single view for invoice due dates, quotation expiries, project deadlines, and team events.',
           )}
           actions={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/calendar/content')}
-            >
-              <ImageIcon className="h-4 w-4" />
-              {t('calendarPage.openContent', 'Content Calendar')}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
+            <>
+              <GuideHelpLink slug="kalender-proyek" anchor="bulan" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/calendar/content')}
+              >
+                <ImageIcon className="h-4 w-4" />
+                {t('calendarPage.openContent', 'Content Calendar')}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </>
           }
         />
 

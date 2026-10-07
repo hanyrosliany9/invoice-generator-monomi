@@ -54,6 +54,7 @@ import { ReportUtils } from '@/features/reports/services/reportUtils';
 import { reportsService } from '@/services/reports';
 import type { SocialMediaReport, ReportStatus } from '@/features/reports/types/report.types';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — adds Reports to keep parity with the rest of v2.         */
@@ -252,6 +253,7 @@ export default function ReportsPageV2() {
           )}
           actions={
             <div className="flex items-center gap-2">
+              <GuideHelpLink slug="laporan-bisnis" anchor="katalog" />
               <Button
                 variant="outline"
                 size="sm"

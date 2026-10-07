@@ -38,6 +38,7 @@ import {
   processMonthlyECL,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
@@ -181,6 +182,7 @@ export default function ECLProvisionPageV2() {
         description={t('accounting.eclProvision.description', 'Expected Credit Loss provision for receivables under PSAK 71.')}
         actions={
           <div className="flex items-center gap-2">
+            <GuideHelpLink slug="akuntansi-lanjutan" anchor="ecl" />
             <Button
               variant="outline"
               size="sm"

@@ -47,6 +47,7 @@ import type { Locale } from 'date-fns/locale';
 import { projectService } from '@/services/projects';
 import { calendarEventsService, type CalendarEvent, type CreateCalendarEventRequest } from '@/services/calendar-events';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — "Projects" highlighted; calendars appear as siblings.   */
@@ -303,6 +304,7 @@ export default function ProjectCalendarPage() {
           }
           actions={
             <div className="flex items-center gap-2">
+              <GuideHelpLink slug="kalender-proyek" anchor="proyek" />
               <Button
                 variant="outline"
                 size="sm"

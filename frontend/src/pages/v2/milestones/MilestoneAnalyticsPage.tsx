@@ -88,6 +88,7 @@ import {
   type MilestoneMetric,
 } from '@/services/milestones';
 import { projectService, type Project } from '@/services/projects';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
@@ -434,6 +435,7 @@ export default function MilestoneAnalyticsPageV2() {
           ]}
           actions={
             <div className="flex items-center gap-2">
+              <GuideHelpLink slug="analitik-milestone" anchor="ringkasan" />
               <Button
                 variant="ghost"
                 size="sm"

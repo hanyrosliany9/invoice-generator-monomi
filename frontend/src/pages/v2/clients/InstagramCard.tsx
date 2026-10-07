@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 import { InstagramAvatar, InstagramDisconnectDialog, InstagramIcon } from '@/components/instagram/InstagramDisconnectDialog';
 import {
   instagramReasonText,
@@ -128,14 +129,17 @@ export function InstagramCard({ clientId, isInternal }: { clientId: string; isIn
               {t('instagram.cardHint', 'Hubungkan akun Bisnis/Kreator untuk menyinkronkan insights setiap hari dan mengisi laporan bulanan otomatis.')}
             </p>
           </div>
-          {conn && (
-            <Badge
-              variant="outline"
-              className={cn('h-6 border-transparent px-2.5 text-xs', active ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')}
-            >
-              {statusLabel[conn.status] ?? conn.status}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {conn && (
+              <Badge
+                variant="outline"
+                className={cn('h-6 border-transparent px-2.5 text-xs', active ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')}
+              >
+                {statusLabel[conn.status] ?? conn.status}
+              </Badge>
+            )}
+            <GuideHelpLink slug="instagram-klien" anchor="kartu" />
+          </div>
         </div>
 
         {isLoading ? (

@@ -31,6 +31,7 @@ import {
   getChartOfAccounts, type ChartOfAccount,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar                                                            */
@@ -257,9 +258,12 @@ export default function AdjustingEntryWizardV2() {
           title={t('accounting.adjustingWizard.title')}
           description={t('accounting.adjustingWizard.description')}
           actions={
-            <Button variant="ghost" size="sm" onClick={handleCancel}>
-              <ArrowLeft className="h-4 w-4" /> {t('accounting.adjustingWizard.back')}
-            </Button>
+            <>
+              <GuideHelpLink slug="akuntansi-lanjutan" anchor="jurnal-penyesuaian" />
+              <Button variant="ghost" size="sm" onClick={handleCancel}>
+                <ArrowLeft className="h-4 w-4" /> {t('accounting.adjustingWizard.back')}
+              </Button>
+            </>
           }
         />
 

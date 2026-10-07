@@ -38,6 +38,7 @@ import {
   type TrialBalance,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const TYPE_LABEL: Record<string, string> = {
   ASSET: 'Aset',
@@ -160,6 +161,7 @@ export default function TrialBalancePageV2() {
           description={t('accounting.trialBalance.description')}
           actions={
             <div className="flex items-center gap-2">
+              <GuideHelpLink slug="akuntansi-lanjutan" anchor="neraca-saldo" />
               <Button
                 variant="ghost"
                 size="sm"

@@ -36,6 +36,7 @@ import {
   getChartOfAccounts, getGeneralLedger,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar — same shape as other v2 pages so navigation reads as one */
@@ -172,18 +173,21 @@ export default function GeneralLedgerPageV2() {
           title={t('accounting.generalLedger.title')}
           description={t('accounting.generalLedger.description')}
           actions={
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Download className="h-4 w-4" />
-                  {t('accounting.generalLedger.export', 'Export')}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleExport('pdf')}>PDF</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('excel')}>Excel</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              <GuideHelpLink slug="akuntansi-lanjutan" anchor="buku-besar" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <Download className="h-4 w-4" />
+                    {t('accounting.generalLedger.export', 'Export')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExport('pdf')}>PDF</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('excel')}>Excel</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           }
         />
 

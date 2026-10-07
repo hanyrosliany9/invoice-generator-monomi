@@ -34,6 +34,7 @@ import {
   type CashFlowStatement,
 } from '@/services/accounting';
 import { cn } from '@/lib/utils';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 /* ------------------------------------------------------------------ */
 /*  Each transaction row aggregates cashIn − cashOut into a single    */
@@ -262,6 +263,7 @@ export default function CashFlowStatementPageV2() {
           description={t('accounting.cashFlow.description')}
           actions={
             <div className="flex items-center gap-2">
+              <GuideHelpLink slug="akuntansi-lanjutan" anchor="arus-kas" />
               <Button
                 variant="ghost"
                 size="sm"

@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAuthStore } from '@/store/auth';
 import { getPurchases, markPurchasePaid, exportPurchasesPDF, exportPurchasesExcel, type PurchaseRow } from '@/services/accounting';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 const toNumber = (v: unknown): number => {
   if (v === null || v === undefined) return 0;
@@ -150,6 +151,7 @@ export default function PurchaseReportPageV2() {
           ]}
           actions={
             <div className="flex flex-wrap items-center gap-2">
+              <GuideHelpLink slug="akuntansi-lanjutan" anchor="laporan-pembelian" />
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <Download className="h-4 w-4" />
                 PDF

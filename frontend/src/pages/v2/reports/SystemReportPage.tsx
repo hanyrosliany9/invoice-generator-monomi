@@ -39,6 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/store/auth';
 import { reportsService } from '@/services/reports';
+import { GuideHelpLink } from '@/components/guides/GuideHelpLink';
 
 type Slug = 'revenue' | 'payment' | 'clients' | 'projects';
 
@@ -167,6 +168,7 @@ export default function SystemReportPageV2() {
       <PageHeader
         title={t(meta.titleKey, meta.titleFallback)}
         description={t(meta.descKey, meta.descFallback)}
+        actions={<GuideHelpLink slug="laporan-bisnis" anchor={validSlug === 'payment' ? 'pembayaran' : validSlug === 'clients' ? 'klien' : validSlug === 'projects' ? 'proyek' : 'pendapatan'} />}
       />
 
       {query.isLoading ? (
