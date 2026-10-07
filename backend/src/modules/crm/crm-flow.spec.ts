@@ -6,6 +6,8 @@ function makeDb() {
   const stages = [
     { id: "st-new", key: "NEW", name: "New", order: 1, type: "OPEN", metaEvent: null, isActive: true },
     { id: "st-q", key: "QUALIFIED", name: "Qualified", order: 2, type: "OPEN", metaEvent: "QualifiedLead", isActive: true },
+    { id: "st-meet", key: "MEETING", name: "Meeting", order: 3, type: "OPEN", metaEvent: null, isActive: true },
+    { id: "st-prop", key: "PROPOSAL", name: "Proposal", order: 4, type: "OPEN", metaEvent: null, isActive: true },
     { id: "st-won", key: "WON", name: "Won", order: 5, type: "WON", metaEvent: "Purchase", isActive: true },
     { id: "st-lost", key: "LOST", name: "Lost", order: 6, type: "LOST", metaEvent: null, isActive: true },
   ];
@@ -25,7 +27,15 @@ function makeDb() {
     stages, leads, outbox, activities,
     leadStage: {
       findUnique: async ({ where }: any) => stages.find((s) => s.id === where.id) ?? null,
-      findFirst: async ({ where }: any) => stages.find((s) => s.type === where.type && s.isActive) ?? null,
+      findFirst: async ({ where }: any) =>
+        [...stages]
+          .sort((a, b) => a.order - b.order)
+          .find(
+            (s) =>
+              s.isActive &&
+              (where.type === undefined || s.type === where.type) &&
+              (where.metaEvent === undefined || s.metaEvent === where.metaEvent),
+          ) ?? null,
     },
     lead: {
       findUnique: async ({ where }: any) => { const l = leads.find((x) => x.id === where.id); return l ? { ...l } : null; },
@@ -58,6 +68,11 @@ function makeDb() {
         return { count };
       },
     },
+    adClick: {
+      findFirst: async ({ where }: any) =>
+        db.adClicks.find((c: any) => c.leadId === where.leadId && c.linkedVia === where.linkedVia) ?? null,
+    },
+    adClicks: [] as any[],
     $transaction: async (fn: any) => fn(db),
   };
   return db;
@@ -131,7 +146,74 @@ describe("CrmFlowService", () => {
     });
   });
 
+  describe("implied QualifiedLead", () => {
+    const qualified = (db: any) => db.outbox.filter((o: any) => o.eventName === "QualifiedLead");
+
+    it("New -> Proposal (convert) queues QualifiedLead once", async () => {
+      await flow.changeStage("L1", "st-prop", "u1", { note: "@lead.quotationCreated" });
+      expect(qualified(db)).toHaveLength(1);
+      expect(db.activities[0].metaEvent).toBe("QualifiedLead");
+      await flow.changeStage("L1", "st-meet", "u1");
+      await flow.changeStage("L1", "st-prop", "u1");
+      expect(qualified(db)).toHaveLength(1);
+    });
+
+    it("New -> Won queues QualifiedLead then Purchase", async () => {
+      await flow.changeStage("L1", "st-won", "u1");
+      expect(db.outbox.map((o: any) => o.eventName)).toEqual(["QualifiedLead", "Purchase"]);
+      expect(db.outbox[0].eventTime.getTime()).toBeLessThanOrEqual(db.outbox[1].eventTime.getTime());
+      expect(db.activities[0].metaEvent).toBe("Purchase");
+    });
+
+    it("Qualified -> Proposal does not duplicate", async () => {
+      await flow.changeStage("L1", "st-q", "u1");
+      await flow.changeStage("L1", "st-prop", "u1");
+      expect(qualified(db)).toHaveLength(1);
+      expect(db.activities[1].metaEvent).toBeNull();
+    });
+
+    it("a SKIP_SENT_BEFORE_MERGE marker counts as already queued", async () => {
+      db.outbox.push({ dedupeKey: "L1:QualifiedLead", leadId: "L1", eventName: "QualifiedLead", status: "SKIPPED" });
+      await flow.changeStage("L1", "st-prop", "u1");
+      expect(qualified(db)).toHaveLength(1);
+    });
+
+    it("moves to Lost, or to stages before Qualified, send nothing", async () => {
+      await flow.changeStage("L1", "st-lost", "u1");
+      expect(db.outbox).toHaveLength(0);
+      db.leads[0].stageId = "st-q";
+      await flow.changeStage("L1", "st-new", "u1");
+      expect(db.outbox).toHaveLength(0);
+    });
+
+    it("a pipeline with no (active) Qualified-event stage does nothing", async () => {
+      db.stages.find((s: any) => s.id === "st-q").isActive = false;
+      await flow.changeStage("L1", "st-prop", "u1");
+      expect(qualified(db)).toHaveLength(0);
+      db.stages.find((s: any) => s.id === "st-q").isActive = true;
+      db.stages.find((s: any) => s.id === "st-q").metaEvent = null;
+      await flow.changeStage("L1", "st-won", "u1");
+      expect(qualified(db)).toHaveLength(0);
+    });
+
+    it("quotation approved / invoice paid on an open lead also queues QualifiedLead", async () => {
+      await flow.onInvoicePaid("I1");
+      expect(db.outbox.map((o: any) => o.eventName).sort()).toEqual(["Purchase", "QualifiedLead"]);
+    });
+
+    it("a website-route lead gets a website QualifiedLead row", async () => {
+      db.leads[0].ctwaClid = null;
+      db.adClicks.push({ id: "AC1", leadId: "L1", linkedVia: "KODE" });
+      await flow.changeStage("L1", "st-prop", "u1");
+      expect(qualified(db)[0]).toMatchObject({
+        route: "WEBSITE", adClickId: "AC1", status: "PENDING_CONFIG", dedupeKey: "L1:QualifiedLead",
+      });
+      expect(qualified(db)[0].payload).toMatchObject({ event_name: "QualifiedLead", lead_id: "L1" });
+    });
+  });
+
   describe("Purchase hooks", () => {
+    const purchase = () => db.outbox.find((o: any) => o.eventName === "Purchase");
     it("quotation approved: moves the lead to Won and queues ONE Purchase with the quotation total", async () => {
       await flow.onQuotationApproved("Q1");
       expect(db.leads[0].stageId).toBe("st-won");
@@ -159,19 +241,19 @@ describe("CrmFlowService", () => {
     it("refreshes the value of an unsent Purchase created from a manual Won move", async () => {
       db.leads[0].quotationId = null;
       await flow.changeStage("L1", "st-won", "u1"); // value = lead estimate 5M
-      expect(Number(db.outbox[0].value)).toBe(5_000_000);
+      expect(Number(purchase().value)).toBe(5_000_000);
       db.leads[0].quotationId = "Q1";
       await flow.onQuotationApproved("Q1");
-      expect(db.outbox).toHaveLength(1);
-      expect(Number(db.outbox[0].value)).toBe(12_000_000);
+      expect(db.outbox.filter((o: any) => o.eventName === "Purchase")).toHaveLength(1);
+      expect(Number(purchase().value)).toBe(12_000_000);
     });
 
     it("does not touch a Purchase that was already sent", async () => {
       await flow.onQuotationApproved("Q1");
-      db.outbox[0].status = "SENT";
+      purchase().status = "SENT";
       await flow.onInvoicePaid("I1");
-      expect(Number(db.outbox[0].value)).toBe(12_000_000);
-      expect(db.outbox[0].status).toBe("SENT");
+      expect(Number(purchase().value)).toBe(12_000_000);
+      expect(purchase().status).toBe("SENT");
     });
 
     it("ignores invoices without a quotation and never throws", async () => {

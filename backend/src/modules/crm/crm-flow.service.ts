@@ -36,6 +36,21 @@ export class CrmFlowService {
     });
   }
 
+  /**
+   * True when moving to `toStage` skips past the QualifiedLead stage: a WON
+   * stage, or an OPEN stage ordered after it. False for LOST, for stages at or
+   * before it, and when no active stage carries the QualifiedLead event.
+   */
+  private async impliesQualifiedLead(toStage: { id: string; type: LeadStageType; order: number; metaEvent: string | null }) {
+    if (toStage.type === "LOST" || toStage.metaEvent === "QualifiedLead") return false;
+    const qualified = await this.prisma.leadStage.findFirst({
+      where: { metaEvent: "QualifiedLead", isActive: true },
+      orderBy: { order: "asc" },
+    });
+    if (!qualified || qualified.id === toStage.id) return false;
+    return toStage.type === "WON" || (toStage.type === "OPEN" && toStage.order > qualified.order);
+  }
+
   /** Value attached to a Purchase event: the linked quotation total, else the lead estimate. */
   private async purchaseValue(lead: { quotationId: string | null; estimatedValue: Prisma.Decimal | number }): Promise<number> {
     if (lead.quotationId) {
@@ -72,6 +87,8 @@ export class CrmFlowService {
     const value =
       toStage.metaEvent === "Purchase" ? await this.purchaseValue(lead) : null;
 
+    const impliesQualified = await this.impliesQualifiedLead(toStage);
+
     return this.prisma.$transaction(async (tx) => {
       const now = new Date();
       const updated = await tx.lead.update({
@@ -85,6 +102,11 @@ export class CrmFlowService {
         },
       });
       let metaEvent: string | null = null;
+      // Skipping past Qualified (e.g. New -> Convert / Won) still reports the
+      // qualified signal once; queued first so it precedes any Purchase.
+      if (impliesQualified && (await this.outbox.queueEvent(tx, updated, "QualifiedLead", { eventTime: now }))) {
+        metaEvent = "QualifiedLead";
+      }
       if (this.isMetaEvent(toStage.metaEvent)) {
         const created = await this.outbox.queueEvent(tx, updated, toStage.metaEvent, {
           value,
