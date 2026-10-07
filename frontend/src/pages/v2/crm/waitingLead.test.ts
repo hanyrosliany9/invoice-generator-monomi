@@ -33,7 +33,7 @@ describe('waiting leads (landing-page form, no WhatsApp yet)', () => {
     const idW = (id.crm as Record<string, unknown>).waiting;
     expect(flat(idW).sort()).toEqual(flat(enW).sort());
     for (const k of flat(enW)) expect(make('en')(`crm.waiting.${k}`, '')).not.toBe('');
-    for (const k of ['fromLandingForm', 'landingFormRepeat', 'phoneFilled', 'mergedFrom', 'mergedInto', 'neverSentWhatsapp', 'returningClientPlain']) {
+    for (const k of ['fromLandingForm', 'landingFormRepeat', 'phoneFilled', 'mergedFrom', 'mergedInto', 'neverSentWhatsapp', 'returningClientPlain', 'formSkipped']) {
       expect((en.crm.history as Record<string, unknown>)[k]).toBeTruthy();
       expect((id.crm.history as Record<string, unknown>)[k]).toBeTruthy();
     }

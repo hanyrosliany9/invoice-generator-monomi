@@ -10532,8 +10532,9 @@
         "quotation": "penawaran draft"
       },
       "adClickLinked": "Terhubung ke klik iklan landing page",
-      "fromLandingForm": "Isi form di landing page · Kode",
-      "landingFormRepeat": "Isi form landing page lagi · Kode",
+      "fromLandingForm": "Klik WhatsApp di landing page · Kode",
+      "landingFormRepeat": "Klik WhatsApp di landing page lagi · Kode",
+      "formSkipped": "(form dilewati)",
       "phoneFilled": "Nomor WhatsApp ditambahkan, tidak menunggu lagi",
       "mergedFrom": "Lead landing page yang menunggu digabung ke sini · Kode",
       "mergedInto": "Duplikat: digabung ke lead",

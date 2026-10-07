@@ -60,6 +60,15 @@ function Section({ title, children, className }: { title: string; children: Reac
   );
 }
 
+/** A landing-page tap whose sheet answers (Instagram, brand, category) were all left empty.
+ *  Only the newest click's answers are on the lead, so older taps are not annotated. */
+function formSkipped(parsed: { key: string; text: string | null }, lead: LeadDetail): boolean {
+  if (parsed.key !== 'lead.fromLandingForm' && parsed.key !== 'lead.landingFormRepeat') return false;
+  const click = lead.adClick;
+  if (!click || !parsed.text || click.ref !== parsed.text.trim()) return false;
+  return !click.instagramHandle && !click.brandName && !click.category;
+}
+
 function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
   const { t, stageLabel, sourceLabel, formatDateTime, activityText } = useCrmLabels();
   const who = a.actor?.name;
@@ -100,6 +109,7 @@ function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
               {returningClientText(t, returning)}
             </Link>
           ) : parsed ? activityText(a.body) : <>{t('crm.history.note', 'Note')}: {unescapeActivityText(a.body ?? '')}</>}
+          {parsed && formSkipped(parsed, lead) ? <span className="text-text-tertiary"> {t('crm.history.formSkipped', '(form skipped)')}</span> : null}
           {who ? <span className="text-text-tertiary"> · {who}</span> : null}
         </>
       );

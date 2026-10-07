@@ -99,8 +99,8 @@ export function useCrmLabels() {
       case 'wa.monomi': return join(t('crm.history.waMonomi', 'Replied from the Monomi inbox'), rest);
       case 'wa.phoneApp': return join(t('crm.history.waPhoneApp', 'Replied from the phone (WhatsApp Business)'), rest);
       case 'lead.adClickLinked': return join(t('crm.history.adClickLinked', 'Linked to landing page ad click'), rest);
-      case 'lead.fromLandingForm': return join(t('crm.history.fromLandingForm', 'Form filled in on the landing page · Kode'), rest);
-      case 'lead.landingFormRepeat': return join(t('crm.history.landingFormRepeat', 'Filled in the landing page form again · Kode'), rest);
+      case 'lead.fromLandingForm': return join(t('crm.history.fromLandingForm', 'Tapped WhatsApp on the landing page · Kode'), rest);
+      case 'lead.landingFormRepeat': return join(t('crm.history.landingFormRepeat', 'Tapped WhatsApp on the landing page again · Kode'), rest);
       case 'lead.phoneFilled': return t('crm.history.phoneFilled', 'WhatsApp number added, no longer waiting');
       case 'lead.mergedFrom': return join(t('crm.history.mergedFrom', 'Waiting landing-page lead merged into this one · Kode'), rest);
       case 'lead.mergedInto': return join(t('crm.history.mergedInto', 'Duplicate: merged into lead'), rest);

@@ -10537,8 +10537,9 @@
         "quotation": "draft quotation"
       },
       "adClickLinked": "Linked to landing page ad click",
-      "fromLandingForm": "Form filled in on the landing page · Kode",
-      "landingFormRepeat": "Filled in the landing page form again · Kode",
+      "fromLandingForm": "Tapped WhatsApp on the landing page · Kode",
+      "landingFormRepeat": "Tapped WhatsApp on the landing page again · Kode",
+      "formSkipped": "(form skipped)",
       "phoneFilled": "WhatsApp number added, no longer waiting",
       "mergedFrom": "Waiting landing-page lead merged into this one · Kode",
       "mergedInto": "Duplicate: merged into lead",
