@@ -9776,6 +9776,11 @@
             "title": "Chat dari landing page membawa Kode",
             "body": "Chat yang berawal dari landing page diakhiri baris seperti “Kode: K7QM2X” dan sering ada baris “Instagram: @nama”. Tempel seluruh chat seperti biasa: kodenya ditemukan sendiri dan jendela menampilkan “Terhubung ke klik iklan” beserta handle Instagram. Lead lalu disimpan sebagai lead Website dengan kampanye yang benar. Kalau lupa menempelnya, buka lead dan ketik kodenya di Hubungkan kode klik iklan.",
             "tip": "Satu kode hanya bisa dihubungkan ke satu lead. Tanpa kode, lead tetap tersimpan, hanya saja tidak bisa dilaporkan ke Meta sebagai lead website."
+          },
+          "lead-menunggu-wa": {
+            "title": "Lead yang menunggu WhatsApp",
+            "body": "Saat seseorang mengisi form di landing page lalu menekan Lanjut ke WhatsApp, lead langsung muncul di papan dengan label Menunggu WhatsApp. Lead ini sudah berisi handle Instagram, nama brand, dan kategori, tetapi belum ada nomornya. Saat chat-nya masuk, tempel di Tambah lead seperti biasa: jendela menampilkan Cocok dengan lead dari landing page yang menunggu, dan menyimpan akan menambahkan nomor ke lead yang sama lalu membukanya. Jika nomor itu sudah milik lead lain, lead yang menunggu digabung ke lead tersebut. Nomor juga bisa diketik di Tambah nomor pada halaman lead, dan filter Menunggu WhatsApp di atas papan menampilkan semuanya.",
+            "tip": "Lead yang menunggu tidak dihitung sebagai belum dibalas dan tidak masuk angka di samping Lead pada menu. Jika tidak ada pesan dalam 30 hari, lead pindah ke Kalah (Tidak pernah mengirim WhatsApp)."
           }
         }
       },
@@ -10492,7 +10497,13 @@
         "project": "proyek",
         "quotation": "penawaran draft"
       },
-      "adClickLinked": "Terhubung ke klik iklan landing page"
+      "adClickLinked": "Terhubung ke klik iklan landing page",
+      "fromLandingForm": "Isi form di landing page · Kode",
+      "landingFormRepeat": "Isi form landing page lagi · Kode",
+      "phoneFilled": "Nomor WhatsApp ditambahkan, tidak menunggu lagi",
+      "mergedFrom": "Lead landing page yang menunggu digabung ke sini · Kode",
+      "mergedInto": "Duplikat: digabung ke lead",
+      "neverSentWhatsapp": "Ditutup: tidak pernah mengirim pesan WhatsApp"
     },
     "lost": {
       "done": "Lead ditandai kalah.",
@@ -10544,7 +10555,9 @@
       "campaign": "Kampanye",
       "firstChat": "Chat pertama",
       "linked": "Terkait",
-      "instagram": "Instagram"
+      "instagram": "Instagram",
+      "brand": "Brand",
+      "category": "Kategori"
     },
     "follow": {
       "title": "Tindak lanjut",
@@ -10837,7 +10850,9 @@
       "loadFailed": "Tidak bisa memuat status pelacakan.",
       "noPixel": "Landing page tidak membutuhkan Meta Pixel. Satu script tag di bawah ini adalah seluruh integrasinya: mencatat kunjungan dan ketukan WhatsApp, lalu Monomi mengirim event ke Meta dari server.",
       "pageViews48h": "Kunjungan halaman, 48 jam terakhir",
-      "qualifiedSent": "Qualified terkirim ke Meta"
+      "qualifiedSent": "Qualified terkirim ke Meta",
+      "autoLeads7d": "Lead dari form, 7 hari terakhir",
+      "autoLeadsLine": "{{n}} · {{waiting}} masih menunggu WhatsApp"
     },
     "adClick": {
       "title": "Klik iklan",
@@ -10857,7 +10872,29 @@
       "linkedToast": "Klik iklan terhubung.",
       "notFound": "Tidak ada klik iklan dengan kode itu.",
       "taken": "Kode itu sudah terhubung ke lead lain.",
-      "invalid": "Isi kode 6 karakter, mis. K7QM2X."
+      "invalid": "Isi kode 6 karakter, mis. K7QM2X.",
+      "linkAnother": "Hubungkan kode lain",
+      "otherTaps": "Tap sebelumnya"
+    },
+    "waiting": {
+      "badge": "Menunggu WhatsApp",
+      "badgeTitle": "Sudah isi form di landing page. Nomornya masuk saat pesan WhatsApp dengan Kode-nya datang.",
+      "filter": "{{n}} menunggu WhatsApp",
+      "banner": "Belum ada nomor — menunggu pesan WhatsApp dengan Kode {{ref}}",
+      "bannerSub": "Saat chat-nya masuk, tempel di Tambah lead (Ctrl+Shift+L): lead ini mendapat nomornya dan tidak ada lead baru.",
+      "addPhone": "Tambah nomor",
+      "addPhoneSave": "Simpan nomor",
+      "noPhone": "Belum ada nomor",
+      "filled": "Nomor ditambahkan ke {{name}}.",
+      "merged": "Nomor ini sudah punya lead: digabung ke {{name}}.",
+      "mergedDeleted": "Lead yang menunggu dihapus (belum ada aktivitas di dalamnya).",
+      "mergedKept": "Lead yang menunggu disimpan sebagai Kalah (Duplikat).",
+      "quickChip": "Cocok dengan lead dari landing page yang menunggu ({{who}})",
+      "quickChipFill": "Simpan menambahkan nomor ini ke lead tersebut. Tidak ada lead baru.",
+      "quickChipMerge": "Nomor ini sudah milik {{name}}: lead yang menunggu digabung ke sana.",
+      "quickChipNeedPhone": "Isi nomor WhatsApp untuk melengkapi lead tersebut.",
+      "quickSaveFill": "Lengkapi lead",
+      "quickSaveMerge": "Gabungkan ke lead lama"
     }
   },
   "socialPublish": {

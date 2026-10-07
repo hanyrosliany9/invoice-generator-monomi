@@ -88,6 +88,11 @@ export function TrackingSettingsCard() {
             <Row label={t('crm.tracking.linked', 'Linked to leads')}>
               {t('crm.tracking.linkedLine', '{{n}} in the last 7 days · {{total}} in total', { n: s.linked7d, total: s.linkedTotal })}
             </Row>
+            <Row label={t('crm.tracking.autoLeads7d', 'Leads created from the form, last 7 days')}>
+              <span data-testid="tracking-auto-leads">
+                {t('crm.tracking.autoLeadsLine', '{{n}} · {{waiting}} still waiting for WhatsApp', { n: s.autoLeads7d ?? 0, waiting: s.waitingNow ?? 0 })}
+              </span>
+            </Row>
             <Row label={t('crm.tracking.qualifiedSent', 'Qualified sent to Meta')}><span className="font-mono">{s.qualifiedSent}</span></Row>
             <Row label={t('crm.tracking.events', 'Events to Meta')}>
               <span className="font-mono text-xs">

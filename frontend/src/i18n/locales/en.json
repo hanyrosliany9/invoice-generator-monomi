@@ -9777,6 +9777,11 @@
             "title": "Chats from the landing page carry a Kode",
             "body": "A chat that starts from the landing page ends with a line like “Kode: K7QM2X” and often an “Instagram: @name” line. Paste the whole chat as usual: the code is found by itself and the window shows “Linked to ad click” with the Instagram handle. The lead is then saved as a Website lead with the right campaign. If you forgot to paste it, open the lead and type the code under Link ad click code.",
             "tip": "A code links to one lead only. Without it the lead is still saved, it just cannot report back to Meta as a website lead."
+          },
+          "lead-menunggu-wa": {
+            "title": "Leads that wait for WhatsApp",
+            "body": "When someone fills in the form on the landing page and taps Lanjut ke WhatsApp, a lead appears on the board at once with the badge Waiting for WhatsApp. It has the Instagram handle, the brand and the category, but no number yet. When their chat arrives, paste it in Add lead as usual: the window shows Matches waiting lead from the landing page, and saving puts the number on that same lead and opens it. If the number already belongs to another lead, the waiting lead is merged into that one. You can also type the number under Add phone on the lead page, and the filter Waiting for WhatsApp above the board lists them all.",
+            "tip": "Waiting leads do not count as unanswered and are not in the number next to Leads in the menu. If no message arrives within 30 days, the lead moves to Lost (Never sent WhatsApp)."
           }
         }
       },
@@ -10497,7 +10502,13 @@
         "project": "project",
         "quotation": "draft quotation"
       },
-      "adClickLinked": "Linked to landing page ad click"
+      "adClickLinked": "Linked to landing page ad click",
+      "fromLandingForm": "Form filled in on the landing page · Kode",
+      "landingFormRepeat": "Filled in the landing page form again · Kode",
+      "phoneFilled": "WhatsApp number added, no longer waiting",
+      "mergedFrom": "Waiting landing-page lead merged into this one · Kode",
+      "mergedInto": "Duplicate: merged into lead",
+      "neverSentWhatsapp": "Closed: never sent the WhatsApp message"
     },
     "lost": {
       "done": "Lead marked as lost.",
@@ -10549,7 +10560,9 @@
       "campaign": "Campaign",
       "firstChat": "First chat",
       "linked": "Linked",
-      "instagram": "Instagram"
+      "instagram": "Instagram",
+      "brand": "Brand",
+      "category": "Category"
     },
     "follow": {
       "title": "Follow-up",
@@ -10843,7 +10856,9 @@
       "loadFailed": "Could not load the tracking status.",
       "noPixel": "The landing page does not need the Meta Pixel. The one script tag below is the whole integration: it records visits and WhatsApp taps, and Monomi sends the events to Meta from the server.",
       "pageViews48h": "Page views, last 48 hours",
-      "qualifiedSent": "Qualified sent to Meta"
+      "qualifiedSent": "Qualified sent to Meta",
+      "autoLeads7d": "Leads created from the form, last 7 days",
+      "autoLeadsLine": "{{n}} · {{waiting}} still waiting for WhatsApp"
     },
     "adClick": {
       "title": "Ad click",
@@ -10863,7 +10878,29 @@
       "linkedToast": "Ad click linked.",
       "notFound": "No ad click with that code.",
       "taken": "That code is already linked to another lead.",
-      "invalid": "Enter the 6-character code, e.g. K7QM2X."
+      "invalid": "Enter the 6-character code, e.g. K7QM2X.",
+      "linkAnother": "Link another code",
+      "otherTaps": "Earlier taps"
+    },
+    "waiting": {
+      "badge": "Waiting for WhatsApp",
+      "badgeTitle": "Filled in the landing page form. The lead gets its number when the WhatsApp message with its Kode arrives.",
+      "filter": "{{n}} waiting for WhatsApp",
+      "banner": "No phone yet — waiting for the WhatsApp message with Kode {{ref}}",
+      "bannerSub": "When the chat arrives, paste it in Add lead (Ctrl+Shift+L): this lead gets the number and no new lead is made.",
+      "addPhone": "Add phone",
+      "addPhoneSave": "Save number",
+      "noPhone": "No phone yet",
+      "filled": "Number added to {{name}}.",
+      "merged": "This number already had a lead: merged into {{name}}.",
+      "mergedDeleted": "The waiting lead was removed (nothing had been done on it).",
+      "mergedKept": "The waiting lead was kept as Lost (Duplicate).",
+      "quickChip": "Matches waiting lead from the landing page ({{who}})",
+      "quickChipFill": "Saving adds this number to that lead. No new lead is created.",
+      "quickChipMerge": "This number already belongs to {{name}}: the waiting lead is merged into it.",
+      "quickChipNeedPhone": "Add the WhatsApp number to fill in that lead.",
+      "quickSaveFill": "Fill in waiting lead",
+      "quickSaveMerge": "Merge into existing lead"
     }
   },
   "socialPublish": {

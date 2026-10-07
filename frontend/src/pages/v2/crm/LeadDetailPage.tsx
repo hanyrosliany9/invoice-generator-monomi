@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { CalendarClock, ChevronDown, MessageCircle, MoreHorizontal, Pencil, Repeat, Trash2, XCircle } from 'lucide-react';
+import { CalendarClock, ChevronDown, Hourglass, MessageCircle, MoreHorizontal, Pencil, Repeat, Trash2, XCircle } from 'lucide-react';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,8 +21,10 @@ import {
 } from '@/services/crm';
 import { CrmShell, nativeSelectClass, textareaClass } from './CrmShell';
 import { useCrmAssignees, useCrmCampaigns, useCrmStages } from './crmHooks';
-import { displayPhone, idr, parseActivityBody, toNumber, unescapeActivityText, useCrmLabels, waLink } from './crmUtils';
-import { CodeBadge, LostDialog, MoveStageMenu, SourceBadge, StageBadge } from './LeadParts';
+import {
+  displayPhone, idr, isWaitingLead, parseActivityBody, toNumber, unescapeActivityText, useCrmLabels, waitingOutcomeText, waLink,
+} from './crmUtils';
+import { CodeBadge, LostDialog, MoveStageMenu, SourceBadge, StageBadge, WaitingBadge } from './LeadParts';
 import { ConvertDialog } from './ConvertDialog';
 import { AdClickSection } from './AdClickSection';
 import { LeadWhatsAppPanel } from './whatsapp/LeadWhatsAppPanel';
@@ -87,7 +89,7 @@ function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
         );
       }
       break;
-    case 'NOTE': body = <>{t('crm.history.note', 'Note')}: {unescapeActivityText(a.body ?? '')}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
+    case 'NOTE': body = <>{parseActivityBody(a.body) ? activityText(a.body) : <>{t('crm.history.note', 'Note')}: {unescapeActivityText(a.body ?? '')}</>}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     case 'CALL': body = <>{t('crm.history.call', 'Call')}: {unescapeActivityText(a.body ?? '')}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     case 'WHATSAPP': body = <>{parseActivityBody(a.body) ? activityText(a.body) : <>{t('crm.history.wa', 'WhatsApp message')}: {unescapeActivityText(a.body ?? '')}</>}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
     case 'MEETING': body = <>{t('crm.history.meeting', 'Meeting')}: {unescapeActivityText(a.body ?? '')}{who ? <span className="text-text-tertiary"> · {who}</span> : null}</>; break;
@@ -103,6 +105,57 @@ function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
       <div className="font-mono text-[11px] text-text-tertiary">{formatDateTime(a.createdAt)}</div>
       <div className="mt-0.5 break-words text-sm text-text-primary">{body}</div>
     </li>
+  );
+}
+
+/**
+ * A lead auto-created from the landing-page form has no number until its
+ * WhatsApp chat arrives. Pasting that chat in quick-add fills it in; this
+ * field does the same with just the number (fill in, or merge into the lead
+ * that already has it).
+ */
+function WaitingBanner({ lead, onResolved }: { lead: LeadDetail; onResolved: (d: LeadDetail) => void }) {
+  const { t } = useCrmLabels();
+  const [phone, setPhone] = useState('');
+  const mut = useMutation({
+    mutationFn: () => crmApi.addPhone(lead.id, phone.trim()),
+    onSuccess: (d) => { setPhone(''); onResolved(d); },
+    onError: (err) => toast.error(apiErrorMessage(err, t('crm.errors.save', 'Could not save.'))),
+  });
+  const canSave = phone.replace(/\D/g, '').length >= 8 && !mut.isPending;
+  return (
+    <div data-testid="waiting-banner" className="mb-4 rounded-lg border border-info/40 bg-info/10 p-3 text-sm">
+      <div className="flex items-start gap-2.5">
+        <Hourglass aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-text-primary">
+            {t('crm.waiting.banner', 'No phone yet — waiting for the WhatsApp message with Kode {{ref}}', { ref: lead.adClick?.ref ?? '—' })}
+          </p>
+          <p className="mt-0.5 text-xs text-text-secondary">
+            {t('crm.waiting.bannerSub', 'When the chat arrives, paste it in Add lead (Ctrl+Shift+L): this lead gets the number and no new lead is made.')}
+          </p>
+          <form
+            className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"
+            onSubmit={(e) => { e.preventDefault(); if (canSave) mut.mutate(); }}
+          >
+            <div className="min-w-0 space-y-1 sm:w-64">
+              <Label htmlFor="waiting-add-phone" className="text-xs">{t('crm.waiting.addPhone', 'Add phone')}</Label>
+              <Input
+                id="waiting-add-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                maxLength={40}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+62 812-3456-7890"
+              />
+            </div>
+            <Button type="submit" variant="outline" disabled={!canSave}>{t('crm.waiting.addPhoneSave', 'Save number')}</Button>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -134,6 +187,16 @@ export default function LeadDetailPage() {
     qc.invalidateQueries({ queryKey: ['crm', 'badges'] });
   };
   const onErr = (fb: string) => (err: unknown) => toast.error(apiErrorMessage(err, fb));
+  /** A waiting lead got its number: stay here, or open the lead it was merged into. */
+  const onWaitingResolved = (d: LeadDetail) => {
+    if (d.waitingOutcome) toast.success(waitingOutcomeText(t, d.waitingOutcome, d.name));
+    if (d.id !== id) {
+      qc.invalidateQueries({ queryKey: ['crm'] });
+      navigate(`/crm/leads/${d.id}`);
+      return;
+    }
+    onData(d);
+  };
 
   const moveMut = useMutation({
     mutationFn: (stageId: string) => crmApi.moveStage(id, stageId),
@@ -207,6 +270,7 @@ export default function LeadDetailPage() {
             <StageBadge stage={lead.stage} />
             <SourceBadge source={lead.source} />
             {lead.campaignCode && <CodeBadge code={lead.campaignCode} />}
+            {isWaitingLead(lead) && <WaitingBadge />}
             {lead.isUncontacted && (
               <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">
                 {t('crm.lead.waitingFor', 'No reply for {{time}}', { time: formatWait(lead.waitingMinutes) })}
@@ -215,9 +279,13 @@ export default function LeadDetailPage() {
           </div>
           <h1 className="break-words font-display text-4xl font-normal leading-[1.05] tracking-[-0.012em] sm:text-[44px]">{lead.name}</h1>
           <p className="mt-2 text-sm text-text-secondary">
-            <span className="font-mono">{displayPhone(lead.phone)}</span>
-            {lead.company ? <> · {lead.company}</> : null}
-            {lead.email ? <> · {lead.email}</> : null}
+            {[
+              lead.phone ? <span key="p" className="font-mono">{displayPhone(lead.phone)}</span> : (
+                <span key="p" className="text-text-tertiary">{t('crm.waiting.noPhone', 'No phone yet')}</span>
+              ),
+              lead.company && lead.company !== lead.name ? <span key="c">{lead.company}</span> : null,
+              lead.email ? <span key="e">{lead.email}</span> : null,
+            ].filter(Boolean).map((n, i) => <Fragment key={i}>{i > 0 ? ' · ' : ''}{n}</Fragment>)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -251,6 +319,8 @@ export default function LeadDetailPage() {
           </DropdownMenu>
         </div>
       </div>
+
+      {isWaitingLead(lead) && <WaitingBanner lead={lead} onResolved={onWaitingResolved} />}
 
       {lead.stage.type === 'LOST' && lead.lostReason && (
         <p className="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
@@ -350,6 +420,18 @@ export default function LeadDetailPage() {
                   </dd>
                 </>
               )}
+              {lead.company && (
+                <>
+                  <dt className="text-text-tertiary">{t('crm.info.brand', 'Brand')}</dt>
+                  <dd className="min-w-0 break-words" data-testid="lead-brand">{lead.company}</dd>
+                </>
+              )}
+              {lead.category && (
+                <>
+                  <dt className="text-text-tertiary">{t('crm.info.category', 'Category')}</dt>
+                  <dd className="min-w-0 break-words" data-testid="lead-category">{lead.category}</dd>
+                </>
+              )}
               <dt className="text-text-tertiary">{t('crm.info.firstChat', 'First chat')}</dt>
               <dd>{formatDateTime(lead.firstContactAt)}</dd>
               {(lead.client || lead.project || lead.quotation) && (
@@ -366,7 +448,7 @@ export default function LeadDetailPage() {
           </Section>
 
           <Section title={t('crm.adClick.title', 'Ad click')}>
-            <AdClickSection lead={lead} onData={onData} />
+            <AdClickSection lead={lead} onData={onData} onWaitingResolved={onWaitingResolved} />
           </Section>
 
           <Section title={t('crm.follow.title', 'Follow-up')}>

@@ -42,6 +42,11 @@ export interface Lead {
   campaignCode: string | null;
   /** Normalised Instagram handle without @ (landing page answer or the pasted chat). */
   instagramHandle?: string | null;
+  /** Landing-page answer (fashion category); the brand name is kept in `company`. */
+  category?: string | null;
+  /** Auto-created from the landing-page form: no WhatsApp message / phone yet. */
+  awaitingWhatsapp?: boolean;
+  autoCreated?: boolean;
   firstMessage: string | null;
   stageId: string;
   stage: LeadStage;
@@ -105,9 +110,19 @@ export interface LeadAdClick {
   category: string | null;
 }
 
+/** What happened when a waiting lead's chat / number arrived. */
+export type WaitingOutcome =
+  | { outcome: 'filled'; leadId: string }
+  | { outcome: 'merged'; leadId: string; fromLeadId: string; placeholderDeleted: boolean };
+
 export interface LeadDetail extends Lead {
   ctwaClid?: string | null;
+  /** The newest landing-page click linked to the lead. */
   adClick: LeadAdClick | null;
+  /** Codes of earlier taps linked to the same lead. */
+  otherAdClickRefs?: string[];
+  /** Set on the response of quick-add / link code / add phone when a waiting lead was resolved. */
+  waitingOutcome?: WaitingOutcome;
   /** The website Lead event sent when the WhatsApp button was tapped. */
   adClickEvent: { status: MetaEventStatus; eventTime: string; sentAt: string | null; lastError: string | null } | null;
   client: { id: string; name: string } | null;
@@ -133,6 +148,8 @@ export interface LeadFilters {
   source?: LeadSource;
   followUp?: 'due' | 'overdue' | 'today';
   uncontacted?: boolean;
+  /** Only leads from the landing-page form still waiting for their WhatsApp chat. */
+  awaiting?: boolean;
   q?: string;
   limit?: number;
 }
@@ -171,7 +188,11 @@ export interface QuickAddParse {
   campaign: CampaignRef | null;
   duplicate: DuplicateLead | null;
   /** Ad click matched by the "Kode:" in the text (null when none / unknown). */
-  adClick: { ref: string; createdAt: string; pageUrl: string | null; campaignCode: string | null; instagramHandle: string | null; available: boolean } | null;
+  adClick: {
+    ref: string; createdAt: string; pageUrl: string | null; campaignCode: string | null; instagramHandle: string | null; available: boolean;
+    /** The click's lead was auto-created at the tap and still waits for this chat. */
+    waitingLead: { id: string; name: string; instagramHandle: string | null } | null;
+  } | null;
   /** "Instagram: @handle" line of the chat, else the ad click's answer. */
   instagram: string | null;
 }
@@ -194,6 +215,10 @@ export interface TrackingSummary {
   qualifiedSent: number;
   linked7d: number;
   linkedTotal: number;
+  /** CRM leads auto-created from the landing-page form in the last 7 days. */
+  autoLeads7d?: number;
+  /** Those still waiting for their WhatsApp chat (all time). */
+  waitingNow?: number;
   events: Record<MetaEventStatus, number>;
   lastSentAt: string | null;
   lastFailed: { at: string; eventName: string; error: string | null } | null;
@@ -298,6 +323,8 @@ export interface CrmStats {
 export interface CrmBadges {
   uncontacted: number;
   followUpsDue: number;
+  /** Landing-page leads waiting for their chat (not part of `total`: nothing to answer yet). */
+  awaitingWhatsapp?: number;
   total: number;
   thresholdMinutes: number;
 }
@@ -339,6 +366,8 @@ export const crmApi = {
     unwrap(await api.post('/crm/leads/bulk', { ids, ...d })),
   linkAdClick: async (id: string, code: string): Promise<LeadDetail> =>
     unwrap(await api.post(`/crm/leads/${id}/ad-click`, { code })),
+  addPhone: async (id: string, phone: string): Promise<LeadDetail> =>
+    unwrap(await api.post(`/crm/leads/${id}/phone`, { phone })),
   trackingSummary: async (): Promise<TrackingSummary> => unwrap(await api.get('/crm/tracking/summary')),
   trackingSendNow: async (): Promise<{ enabled: boolean; sent: number; failed: number; skipped: number }> =>
     unwrap(await api.post('/crm/tracking/send-now')),

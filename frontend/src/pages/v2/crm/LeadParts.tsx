@@ -1,6 +1,6 @@
 import { forwardRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRightLeft, Check, MessageCircle, XCircle } from 'lucide-react';
+import { ArrowRightLeft, Check, Hourglass, MessageCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { Lead, LeadStage } from '@/services/crm';
-import { displayPhone, idr, sourceTone, toNumber, useCrmLabels } from './crmUtils';
+import { idr, isWaitingLead, leadContactLine, sourceTone, toNumber, useCrmLabels } from './crmUtils';
 import { getInitials } from '@/utils/initials';
 
 export const StageBadge = ({ stage, className }: { stage: LeadStage; className?: string }) => {
@@ -36,6 +36,21 @@ export const SourceBadge = ({ source, className }: { source: Lead['source']; cla
 export const CodeBadge = ({ code }: { code: string }) => (
   <span className="inline-flex items-center rounded-md bg-bg-sunken px-2 py-0.5 font-mono text-[11px] text-text-secondary">{code}</span>
 );
+
+/** "Waiting for WhatsApp": a landing-page lead with no chat / number yet. */
+export const WaitingBadge = ({ className }: { className?: string }) => {
+  const { t } = useCrmLabels();
+  return (
+    <span
+      data-testid="waiting-badge"
+      title={t('crm.waiting.badgeTitle', 'Filled in the landing page form. The lead gets its number when the WhatsApp message with its Kode arrives.')}
+      className={cn('inline-flex items-center gap-1 rounded-md bg-info/15 px-2 py-0.5 text-[11px] font-medium text-info', className)}
+    >
+      <Hourglass aria-hidden className="h-3 w-3" />
+      {t('crm.waiting.badge', 'Waiting for WhatsApp')}
+    </span>
+  );
+};
 
 /** Amber pill "22 min" for unanswered leads, quiet text otherwise. */
 export const WaitPill = ({ lead }: { lead: Lead }) => {
@@ -140,8 +155,9 @@ export const LeadCard = ({
           </div>
         </div>
       </div>
-      {lead.phone && <div className="mt-1 font-mono text-xs text-text-secondary">{displayPhone(lead.phone)}</div>}
+      {leadContactLine(lead) && <div className="mt-1 truncate font-mono text-xs text-text-secondary">{leadContactLine(lead)}</div>}
       <div className="mt-2 flex flex-wrap gap-1.5">
+        {isWaitingLead(lead) && <WaitingBadge />}
         <SourceBadge source={lead.source} />
         {lead.campaignCode && <CodeBadge code={lead.campaignCode} />}
       </div>

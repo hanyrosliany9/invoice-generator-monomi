@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import type { LeadSource, LeadStage, MetaEventName, MetaEventStatus } from '@/services/crm';
+import type { LeadSource, LeadStage, MetaEventName, MetaEventStatus, WaitingOutcome } from '@/services/crm';
 
 /** Default English names of the seeded stages: a renamed system stage shows its custom name. */
 const DEFAULT_STAGE_NAMES: Record<string, string> = {
   NEW: 'New', QUALIFIED: 'Qualified', MEETING: 'Meeting', PROPOSAL: 'Proposal', WON: 'Won', LOST: 'Lost',
 };
 
-type Tfn = (key: string, fallback: string, opts?: Record<string, unknown>) => string;
+export type Tfn = (key: string, fallback: string, opts?: Record<string, unknown>) => string;
 
 export function useCrmLabels() {
   const { t: rawT, i18n } = useTranslation();
@@ -99,6 +99,12 @@ export function useCrmLabels() {
       case 'wa.monomi': return join(t('crm.history.waMonomi', 'Replied from the Monomi inbox'), rest);
       case 'wa.phoneApp': return join(t('crm.history.waPhoneApp', 'Replied from the phone (WhatsApp Business)'), rest);
       case 'lead.adClickLinked': return join(t('crm.history.adClickLinked', 'Linked to landing page ad click'), rest);
+      case 'lead.fromLandingForm': return join(t('crm.history.fromLandingForm', 'Form filled in on the landing page · Kode'), rest);
+      case 'lead.landingFormRepeat': return join(t('crm.history.landingFormRepeat', 'Filled in the landing page form again · Kode'), rest);
+      case 'lead.phoneFilled': return t('crm.history.phoneFilled', 'WhatsApp number added, no longer waiting');
+      case 'lead.mergedFrom': return join(t('crm.history.mergedFrom', 'Waiting landing-page lead merged into this one · Kode'), rest);
+      case 'lead.mergedInto': return join(t('crm.history.mergedInto', 'Duplicate: merged into lead'), rest);
+      case 'lead.neverSentWhatsapp': return t('crm.history.neverSentWhatsapp', 'Closed: never sent the WhatsApp message');
       case 'lead.quotationCreated': return t('crm.history.quotationCreated', 'Quotation created');
       case 'lead.converted': {
         const parts = (rest ?? '').split(',').map((p) => p.trim()).filter(Boolean).map((p) => ({
@@ -125,7 +131,31 @@ export function parseActivityBody(body: string | null | undefined): { key: strin
   return m && ACTIVITY_KEYS.has(m[1]) ? { key: m[1], text: m[2] ? m[2] : null } : null;
 }
 
-const ACTIVITY_KEYS = new Set(['wa.in', 'wa.monomi', 'wa.phoneApp', 'lead.converted', 'lead.quotationCreated', 'lead.adClickLinked']);
+const ACTIVITY_KEYS = new Set([
+  'wa.in', 'wa.monomi', 'wa.phoneApp', 'lead.converted', 'lead.quotationCreated', 'lead.adClickLinked',
+  'lead.fromLandingForm', 'lead.landingFormRepeat', 'lead.phoneFilled', 'lead.mergedFrom', 'lead.mergedInto',
+  'lead.neverSentWhatsapp',
+]);
+
+/** Lead from the landing-page form that still waits for its WhatsApp chat (no number yet). */
+export const isWaitingLead = (l: { awaitingWhatsapp?: boolean } | null | undefined): boolean => !!l?.awaitingWhatsapp;
+
+/** Card / row subtitle: the number, else "@handle" for a lead that has none yet. */
+export const leadContactLine = (l: { name?: string; phone: string | null; instagramHandle?: string | null }): string => {
+  const line = l.phone ? displayPhone(l.phone) : l.instagramHandle ? `@${l.instagramHandle}` : '';
+  // an auto-created lead may already be named "@handle": do not say it twice
+  return line === l.name ? '' : line;
+};
+
+/** Toast after a waiting lead got its chat (quick-add, link code, add phone). */
+export function waitingOutcomeText(t: Tfn, o: WaitingOutcome, leadName: string): string {
+  if (o.outcome === 'filled') return t('crm.waiting.filled', 'Number added to {{name}}.', { name: leadName });
+  const merged = t('crm.waiting.merged', 'This number already had a lead: merged into {{name}}.', { name: leadName });
+  const tail = o.placeholderDeleted
+    ? t('crm.waiting.mergedDeleted', 'The waiting lead was removed (nothing had been done on it).')
+    : t('crm.waiting.mergedKept', 'The waiting lead was kept as Lost (Duplicate).');
+  return `${merged} ${tail}`;
+}
 
 /** Plain activity text: the server escapes a leading "@" typed by people as "\@" (crm.utils escapeActivityText). */
 export const unescapeActivityText = (body: string): string => (body.startsWith('\\@') ? body.slice(1) : body);

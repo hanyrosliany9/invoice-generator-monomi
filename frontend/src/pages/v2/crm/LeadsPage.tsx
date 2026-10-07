@@ -19,9 +19,9 @@ import {
 } from '@/services/crm';
 import { CrmShell, nativeSelectClass } from './CrmShell';
 import { useCrmAssignees, useCrmBadges, useCrmCampaigns, useCrmStages } from './crmHooks';
-import { useCrmLabels, displayPhone, idr, toNumber } from './crmUtils';
+import { useCrmLabels, idr, isWaitingLead, leadContactLine, toNumber } from './crmUtils';
 import { LeadBoard } from './LeadBoard';
-import { LeadCard, LostDialog, SourceBadge, StageBadge, WaitPill, CodeBadge, MoveStageMenu, MoveButton } from './LeadParts';
+import { LeadCard, LostDialog, SourceBadge, StageBadge, WaitPill, CodeBadge, MoveStageMenu, MoveButton, WaitingBadge } from './LeadParts';
 import { openQuickAdd } from './quickAddBus';
 
 type ViewMode = 'board' | 'list';
@@ -59,6 +59,7 @@ export default function LeadsPage() {
   const [assignee, setAssignee] = useState('');
   const [uncontacted, setUncontacted] = useState(false);
   const [followUp, setFollowUp] = useState(false);
+  const [awaiting, setAwaiting] = useState(false);
   const [mobileStage, setMobileStage] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [lostTarget, setLostTarget] = useState<Lead | null>(null);
@@ -73,8 +74,9 @@ export default function LeadsPage() {
     assignee: assignee || undefined,
     uncontacted: uncontacted || undefined,
     followUp: followUp ? 'due' : undefined,
+    awaiting: awaiting || undefined,
     limit: 500,
-  }), [q, campaignId, assignee, uncontacted, followUp]);
+  }), [q, campaignId, assignee, uncontacted, followUp, awaiting]);
 
   const leadsQ = useQuery({
     queryKey: ['crm', 'leads', filters],
@@ -133,8 +135,9 @@ export default function LeadsPage() {
   const mobileLeads = leads.filter((l) => l.stageId === activeStageId);
   const unanswered = badges.data?.uncontacted ?? 0;
   const followUpsDue = badges.data?.followUpsDue ?? 0;
+  const waitingCount = badges.data?.awaitingWhatsapp ?? 0;
   const loading = leadsQ.isLoading || stages.length === 0;
-  const filtered = !!(q || campaignId || assignee || uncontacted || followUp);
+  const filtered = !!(q || campaignId || assignee || uncontacted || followUp || awaiting);
 
   const toggleSel = (id: string) =>
     setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -201,6 +204,11 @@ export default function LeadsPage() {
         <button type="button" aria-pressed={followUp} onClick={() => setFollowUp((v) => !v)} className={chip(followUp)}>
           {t('crm.leads.followUpsToday', '{{count}} follow-ups today', { count: followUpsDue })}
         </button>
+        {(waitingCount > 0 || awaiting) && (
+          <button type="button" aria-pressed={awaiting} onClick={() => setAwaiting((v) => !v)} className={chip(awaiting)} data-testid="filter-awaiting">
+            {t('crm.waiting.filter', '{{n}} waiting for WhatsApp', { n: waitingCount })}
+          </button>
+        )}
       </div>
 
       {isMobile && unanswered > 0 && !uncontacted && (
@@ -301,8 +309,8 @@ export default function LeadsPage() {
                         <Link to={`/crm/leads/${l.id}`} className="font-medium text-text-primary hover:underline">{l.name}</Link>
                         <WaitPill lead={l} />
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2 font-mono text-xs text-text-secondary">
-                        {displayPhone(l.phone)} <SourceBadge source={l.source} />
+                      <div className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-xs text-text-secondary">
+                        {leadContactLine(l)} {isWaitingLead(l) && <WaitingBadge />} <SourceBadge source={l.source} />
                       </div>
                     </td>
                     <td className="px-3 py-2.5"><StageBadge stage={l.stage} /></td>

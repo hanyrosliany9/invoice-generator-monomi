@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { AlertTriangle, Link2, Sparkles } from 'lucide-react';
+import { AlertTriangle, Hourglass, Link2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,7 @@ import { useAuthStore } from '@/store/auth';
 import { apiErrorMessage, crmApi, type CreateLeadInput, type QuickAddParse } from '@/services/crm';
 import { nativeSelectClass, textareaClass } from './CrmShell';
 import { useCrmAssignees, useCrmCampaigns, useCrmStages } from './crmHooks';
-import { displayPhone, useCrmLabels } from './crmUtils';
+import { displayPhone, useCrmLabels, waitingOutcomeText } from './crmUtils';
 
 interface FormState {
   text: string;
@@ -94,6 +94,11 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   });
   useEffect(() => { if (form.phone.replace(/\D/g, '').length < 8) setDup(null); }, [form.phone]);
 
+  // The Kode belongs to a lead auto-created from the landing-page form that
+  // waits for this chat: saving fills it in (or merges it into `dup`).
+  const waiting = parsed?.adClick?.waitingLead ?? null;
+  const linkRef = parsed?.adClick && (parsed.adClick.available || waiting) ? parsed.adClick.ref : undefined;
+
   const createMut = useMutation({
     mutationFn: (vars: { another: boolean; allowDuplicate?: boolean }) => {
       const body: CreateLeadInput = {
@@ -103,7 +108,7 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
         campaignCode: !form.campaignId && parsed?.campaignCode ? parsed.campaignCode : undefined,
         assignedToId: form.assignedToId || undefined,
         firstMessage: parsed?.message ?? (form.text.trim() || undefined),
-        adClickRef: parsed?.adClick?.available ? parsed.adClick.ref : undefined,
+        adClickRef: linkRef,
         instagramHandle: parsed?.instagram ?? undefined,
         allowDuplicate: vars.allowDuplicate || undefined,
       };
@@ -111,6 +116,14 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     },
     onSuccess: (lead, vars) => {
       qc.invalidateQueries({ queryKey: ['crm'] });
+      if (lead.waitingOutcome) {
+        // no new lead: the waiting one was filled in / merged — open it
+        toast.success(waitingOutcomeText(t, lead.waitingOutcome, lead.name));
+        if (vars.another) { reset(); return; }
+        onOpenChange(false);
+        navigate(`/crm/leads/${lead.id}`);
+        return;
+      }
       toast.success(t('crm.quick.saved', 'Lead {{name}} added.', { name: lead.name }), {
         action: { label: t('crm.quick.open', 'Open'), onClick: () => navigate(`/crm/leads/${lead.id}`) },
       });
@@ -119,11 +132,12 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     onError: (err) => toast.error(apiErrorMessage(err, t('crm.quick.error', 'Could not save the lead.'))),
   });
 
-  const canSave = (form.phone.trim() !== '' || form.name.trim() !== '') && !createMut.isPending;
+  const canSave = (waiting ? form.phone.trim() !== '' : (form.phone.trim() !== '' || form.name.trim() !== '')) && !createMut.isPending;
   const save = (another: boolean) => {
     if (!canSave) return;
-    createMut.mutate({ another, allowDuplicate: !!dup });
+    createMut.mutate({ another, allowDuplicate: !waiting && !!dup });
   };
+  const waitingWho = waiting ? (waiting.instagramHandle ? `@${waiting.instagramHandle}` : waiting.name) : '';
 
   const detectedCampaign = parsed?.campaign
     ?? (parsed?.campaignCode ? { id: '', code: parsed.campaignCode, name: t('crm.quick.unknownCode', 'unknown code') } : null);
@@ -197,7 +211,23 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             </div>
           </div>
 
-          {parsed?.adClick && (
+          {waiting && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-info/40 bg-info/10 p-3 text-sm" data-testid="quick-waiting-chip">
+              <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-info" aria-hidden />
+              <div className="min-w-0">
+                <div className="font-medium text-text-primary">{t('crm.waiting.quickChip', 'Matches waiting lead from the landing page ({{who}})', { who: waitingWho })}</div>
+                <div className="text-xs text-text-secondary">
+                  {!form.phone.trim()
+                    ? t('crm.waiting.quickChipNeedPhone', 'Add the WhatsApp number to fill in that lead.')
+                    : dup
+                      ? t('crm.waiting.quickChipMerge', 'This number already belongs to {{name}}: the waiting lead is merged into it.', { name: dup.name })
+                      : t('crm.waiting.quickChipFill', 'Saving adds this number to that lead. No new lead is created.')}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {parsed?.adClick && !waiting && (
             parsed.adClick.available ? (
               <div className="flex items-start gap-2.5 rounded-lg border border-success/40 bg-success/10 p-3 text-sm" data-testid="quick-adclick-chip">
                 <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
@@ -214,7 +244,7 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             )
           )}
 
-          {dup && (
+          {dup && !waiting && (
             <div role="alert" className="flex items-start gap-2.5 rounded-lg border border-warning/50 bg-warning/10 p-3 text-sm text-warning">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
@@ -239,7 +269,9 @@ export function QuickAddDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               {t('crm.quick.saveAnother', 'Save & add another')}
             </Button>
             <Button type="button" disabled={!canSave || stages.length === 0} onClick={() => save(false)}>
-              {dup ? t('crm.quick.saveAnyway', 'Save anyway') : t('crm.quick.save', 'Save lead')}
+              {waiting
+                ? (dup ? t('crm.waiting.quickSaveMerge', 'Merge into existing lead') : t('crm.waiting.quickSaveFill', 'Fill in waiting lead'))
+                : dup ? t('crm.quick.saveAnyway', 'Save anyway') : t('crm.quick.save', 'Save lead')}
             </Button>
           </div>
         </DialogFooter>

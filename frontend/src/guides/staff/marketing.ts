@@ -61,6 +61,7 @@ export const marketingGuides: GuideDef[] = [
       { id: 'link-iklan-website', href: '/crm/campaigns' },
       ...steps('crm-leads-whatsapp', [['biaya-iklan', '/crm/campaigns'], ['tambah-lead', '/crm/leads']]),
       { id: 'kode-chat', href: '/crm/leads' },
+      { id: 'lead-menunggu-wa', href: '/crm/leads' },
       ...steps('crm-leads-whatsapp', [
         ['papan', '/crm/leads'], ['daftar', '/crm/leads'], ['tindak-lanjut', '/crm/leads'],
         ['pindah-tahap', '/crm/leads'], ['konversi', '/crm/leads'], ['hasil', '/crm/leads'], ['dasbor', '/crm/dashboard'],
