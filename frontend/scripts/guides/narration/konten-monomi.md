@@ -1,6 +1,6 @@
 # Narasi / Narration: Konten Monomi sendiri
 
-Video: `konten-monomi.bc064e09.mp4` (1280x900, 00:35.8, silent). Guide slug: `konten-monomi`.
+Video: `konten-monomi.1d3f64eb.mp4` (1280x900, 00:35.8, silent). Guide slug: `konten-monomi`.
 
 Timestamps are mm:ss.s in the video. Each step has a window (from when the step starts until the next one starts) and a word budget at a calm speaking pace
 (Indonesian about 2.4 words/second, English about 2.6). The drafts are written to fit; shorten them or leave pauses rather than speed up.
@@ -20,12 +20,12 @@ Pembukaan (opsional, sebelum 00:00) / Opening (optional, before 00:00):
 
 ## Langkah 2 / Step 2: Isi profil Instagram
 
-- Window: 00:08.6 - 00:22.0 (13.4 s)
+- Window: 00:08.6 - 00:22.1 (13.4 s)
 - ID (19 of max 31 words): Isi profil Instagram. Pada bagian Profil Instagram, isi username dan bio. Lakukan hal yang sama untuk TikTok, lalu simpan.
 - EN (23 of max 33 words): Fill in the Instagram profile. In the Instagram Profile section fill in the username and bio. Do the same for TikTok, then save.
 
 ## Langkah 3 / Step 3: Rencanakan konten di Kalender Konten
 
-- Window: 00:22.0 - 00:35.8 (13.8 s)
-- ID (25 of max 32 words): Rencanakan konten di Kalender Konten. Pilih Monomi di Kalender Konten. Profil yang baru diisi tampil di tab Instagram, dan konten dibuat seperti untuk klien lain.
+- Window: 00:22.1 - 00:35.8 (13.7 s)
+- ID (25 of max 31 words): Rencanakan konten di Kalender Konten. Pilih Monomi di Kalender Konten. Profil yang baru diisi tampil di tab Instagram, dan konten dibuat seperti untuk klien lain.
 - EN (30 of max 34 words): Plan posts in Content Calendar. Choose Monomi in Content Calendar. The profile you just filled in shows on the Instagram tab, and posts are created like for any other client.

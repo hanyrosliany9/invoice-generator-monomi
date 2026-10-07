@@ -175,43 +175,267 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "durationSec": 79.4,
     "version": "7601fc91"
   },
-  "dashboard-navigasi": {
-    "mp4": "dashboard-navigasi.2cd31ac3.mp4",
-    "poster": "dashboard-navigasi.2cd31ac3.webp",
+  "crm-leads-whatsapp": {
+    "mp4": "crm-leads-whatsapp.7211b213.mp4",
+    "poster": "crm-leads-whatsapp.7211b213.webp",
     "vtt": {
-      "id": "dashboard-navigasi.167fd7f3.id.vtt",
-      "en": "dashboard-navigasi.6b934910.en.vtt"
+      "id": "crm-leads-whatsapp.3625f627.id.vtt",
+      "en": "crm-leads-whatsapp.7e60c2cf.en.vtt"
     },
     "chaptersVtt": {
-      "id": "dashboard-navigasi.d940f868.chapters.id.vtt",
-      "en": "dashboard-navigasi.0ce0ea57.chapters.en.vtt"
+      "id": "crm-leads-whatsapp.21d289a1.chapters.id.vtt",
+      "en": "crm-leads-whatsapp.a70ee487.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "kampanye",
+        "start": 0,
+        "end": 11.44
+      },
+      {
+        "step": "pesan-iklan",
+        "start": 11.44,
+        "end": 20.86
+      },
+      {
+        "step": "link-iklan-website",
+        "start": 20.86,
+        "end": 30.75
+      },
+      {
+        "step": "biaya-iklan",
+        "start": 30.75,
+        "end": 41.9
+      },
+      {
+        "step": "tambah-lead",
+        "start": 41.9,
+        "end": 57.72
+      },
+      {
+        "step": "kode-chat",
+        "start": 57.72,
+        "end": 69.78
+      },
+      {
+        "step": "lead-menunggu-wa",
+        "start": 69.78,
+        "end": 83.61
+      },
+      {
+        "step": "papan",
+        "start": 83.61,
+        "end": 96.6
+      },
+      {
+        "step": "daftar",
+        "start": 96.6,
+        "end": 105.42
+      },
+      {
+        "step": "tindak-lanjut",
+        "start": 105.42,
+        "end": 116.33
+      },
+      {
+        "step": "pindah-tahap",
+        "start": 116.33,
+        "end": 128.03
+      },
+      {
+        "step": "konversi",
+        "start": 128.03,
+        "end": 139.32
+      },
+      {
+        "step": "hasil",
+        "start": 139.32,
+        "end": 152.24
+      },
+      {
+        "step": "dasbor",
+        "start": 152.24,
+        "end": 166.43
+      }
+    ],
+    "w": 1280,
+    "h": 800,
+    "durationSec": 166.4,
+    "version": "7211b213"
+  },
+  "crm-whatsapp-inbox": {
+    "mp4": "crm-whatsapp-inbox.daa4e56c.mp4",
+    "poster": "crm-whatsapp-inbox.daa4e56c.webp",
+    "vtt": {
+      "id": "crm-whatsapp-inbox.d257aa16.id.vtt",
+      "en": "crm-whatsapp-inbox.97ebceb2.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "crm-whatsapp-inbox.73d5bb83.chapters.id.vtt",
+      "en": "crm-whatsapp-inbox.80285dbc.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "buka-inbox",
+        "start": 0,
+        "end": 9.31
+      },
+      {
+        "step": "filter",
+        "start": 9.31,
+        "end": 16.47
+      },
+      {
+        "step": "lead-otomatis",
+        "start": 16.47,
+        "end": 27.77
+      },
+      {
+        "step": "balas",
+        "start": 27.81,
+        "end": 43.23
+      },
+      {
+        "step": "balasan-cepat",
+        "start": 43.27,
+        "end": 55.15
+      },
+      {
+        "step": "dari-hp",
+        "start": 55.19,
+        "end": 64.49
+      },
+      {
+        "step": "jendela-24-jam",
+        "start": 64.49,
+        "end": 76.81
+      },
+      {
+        "step": "template",
+        "start": 76.81,
+        "end": 89.13
+      },
+      {
+        "step": "tetapkan",
+        "start": 89.13,
+        "end": 103.51
+      },
+      {
+        "step": "tab-lead",
+        "start": 103.51,
+        "end": 117.75
+      },
+      {
+        "step": "di-hp",
+        "start": 117.79,
+        "end": 127.03
+      },
+      {
+        "step": "pengaturan",
+        "start": 127.07,
+        "end": 140.6
+      }
+    ],
+    "w": 1280,
+    "h": 800,
+    "durationSec": 140.6,
+    "version": "daa4e56c"
+  },
+  "crm-whatsapp-setup": {
+    "mp4": "crm-whatsapp-setup.a1f881bc.mp4",
+    "poster": "crm-whatsapp-setup.a1f881bc.webp",
+    "vtt": {
+      "id": "crm-whatsapp-setup.d9946e21.id.vtt",
+      "en": "crm-whatsapp-setup.1b5bb818.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "crm-whatsapp-setup.7e7116a3.chapters.id.vtt",
+      "en": "crm-whatsapp-setup.389ad04d.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "aturan-keselamatan",
+        "start": 0,
+        "end": 10.51
+      },
+      {
+        "step": "lokasi-token",
+        "start": 10.55,
+        "end": 19.85
+      },
+      {
+        "step": "kartu-status",
+        "start": 19.89,
+        "end": 28.71
+      },
+      {
+        "step": "webhook",
+        "start": 28.75,
+        "end": 40.82
+      },
+      {
+        "step": "capi",
+        "start": 40.82,
+        "end": 49.03
+      },
+      {
+        "step": "hubungkan",
+        "start": 49.03,
+        "end": 59
+      },
+      {
+        "step": "pelacakan-landing-page",
+        "start": 59,
+        "end": 68.94
+      },
+      {
+        "step": "sinkronisasi-meta-ads",
+        "start": 68.94,
+        "end": 78.83
+      }
+    ],
+    "w": 1280,
+    "h": 800,
+    "durationSec": 78.8,
+    "version": "a1f881bc"
+  },
+  "dashboard-navigasi": {
+    "mp4": "dashboard-navigasi.ad84b00a.mp4",
+    "poster": "dashboard-navigasi.ad84b00a.webp",
+    "vtt": {
+      "id": "dashboard-navigasi.13e0a782.id.vtt",
+      "en": "dashboard-navigasi.85172f6c.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "dashboard-navigasi.d1896c9e.chapters.id.vtt",
+      "en": "dashboard-navigasi.c8864d5f.chapters.en.vtt"
     },
     "chapters": [
       {
         "step": "dashboard",
         "start": 0,
-        "end": 9.21
+        "end": 9.2
       },
       {
         "step": "menu",
-        "start": 9.21,
-        "end": 18.37
+        "start": 9.2,
+        "end": 21.45
       },
       {
         "step": "palet",
-        "start": 18.37,
-        "end": 30.2
+        "start": 21.45,
+        "end": 33.78
       },
       {
         "step": "bahasa",
-        "start": 30.2,
-        "end": 40.6
+        "start": 33.78,
+        "end": 44.2
       }
     ],
     "w": 1280,
     "h": 820,
-    "durationSec": 40.6,
-    "version": "2cd31ac3"
+    "durationSec": 44.2,
+    "version": "ad84b00a"
   },
   "deck-klien": {
     "mp4": "deck-klien.f55cddd1.mp4",
@@ -454,57 +678,57 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "version": "88c8f336"
   },
   "klien-baru": {
-    "mp4": "klien-baru.ad8c6f9d.mp4",
-    "poster": "klien-baru.ad8c6f9d.webp",
+    "mp4": "klien-baru.ee81973a.mp4",
+    "poster": "klien-baru.ee81973a.webp",
     "vtt": {
-      "id": "klien-baru.2400b4ed.id.vtt",
-      "en": "klien-baru.cfaf16f8.en.vtt"
+      "id": "klien-baru.44568692.id.vtt",
+      "en": "klien-baru.73fb1756.en.vtt"
     },
     "chaptersVtt": {
-      "id": "klien-baru.8ad76c19.chapters.id.vtt",
-      "en": "klien-baru.f0274c02.chapters.en.vtt"
+      "id": "klien-baru.7a57306f.chapters.id.vtt",
+      "en": "klien-baru.85644c2d.chapters.en.vtt"
     },
     "chapters": [
       {
         "step": "daftar",
         "start": 0,
-        "end": 9.28
+        "end": 9.26
       },
       {
         "step": "identitas",
-        "start": 9.28,
-        "end": 26.35
+        "start": 9.26,
+        "end": 26.25
       },
       {
         "step": "kontak",
-        "start": 26.35,
-        "end": 46.77
+        "start": 26.25,
+        "end": 46.61
       },
       {
         "step": "profil",
-        "start": 46.77,
-        "end": 58.5
+        "start": 46.61,
+        "end": 58.35
       },
       {
         "step": "riwayat",
-        "start": 58.5,
-        "end": 67.87
+        "start": 58.35,
+        "end": 67.72
       },
       {
         "step": "riwayat-invoice",
-        "start": 67.87,
-        "end": 77.93
+        "start": 67.72,
+        "end": 77.78
       },
       {
         "step": "ubah",
-        "start": 77.93,
-        "end": 89.63
+        "start": 77.78,
+        "end": 89.53
       }
     ],
     "w": 1280,
     "h": 820,
-    "durationSec": 89.6,
-    "version": "ad8c6f9d"
+    "durationSec": 89.5,
+    "version": "ee81973a"
   },
   "kolaborasi-media": {
     "mp4": "kolaborasi-media.e8c4510c.mp4",
@@ -560,15 +784,15 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "version": "e8c4510c"
   },
   "konten-monomi": {
-    "mp4": "konten-monomi.bc064e09.mp4",
-    "poster": "konten-monomi.bc064e09.webp",
+    "mp4": "konten-monomi.1d3f64eb.mp4",
+    "poster": "konten-monomi.1d3f64eb.webp",
     "vtt": {
-      "id": "konten-monomi.e83d3f6a.id.vtt",
-      "en": "konten-monomi.bc3945ae.en.vtt"
+      "id": "konten-monomi.8b3a3ac3.id.vtt",
+      "en": "konten-monomi.02004595.en.vtt"
     },
     "chaptersVtt": {
-      "id": "konten-monomi.bc39d7d2.chapters.id.vtt",
-      "en": "konten-monomi.739f1ef0.chapters.en.vtt"
+      "id": "konten-monomi.6f360132.chapters.id.vtt",
+      "en": "konten-monomi.4ba64d97.chapters.en.vtt"
     },
     "chapters": [
       {
@@ -579,18 +803,18 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
       {
         "step": "profil-instagram",
         "start": 8.63,
-        "end": 21.99
+        "end": 22.07
       },
       {
         "step": "planner-monomi",
-        "start": 21.99,
+        "start": 22.07,
         "end": 35.8
       }
     ],
     "w": 1280,
     "h": 900,
     "durationSec": 35.8,
-    "version": "bc064e09"
+    "version": "1d3f64eb"
   },
   "laporan-bulanan": {
     "mp4": "laporan-bulanan.44bd4f86.mp4",
@@ -957,15 +1181,15 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "version": "7bb38808"
   },
   "perencana-konten": {
-    "mp4": "perencana-konten.601af68f.mp4",
-    "poster": "perencana-konten.601af68f.webp",
+    "mp4": "perencana-konten.4cf26c33.mp4",
+    "poster": "perencana-konten.4cf26c33.webp",
     "vtt": {
-      "id": "perencana-konten.a57a10a3.id.vtt",
-      "en": "perencana-konten.bf7e6a94.en.vtt"
+      "id": "perencana-konten.bb83410f.id.vtt",
+      "en": "perencana-konten.43c35f4f.en.vtt"
     },
     "chaptersVtt": {
-      "id": "perencana-konten.5bd261ec.chapters.id.vtt",
-      "en": "perencana-konten.b188f7ae.chapters.en.vtt"
+      "id": "perencana-konten.acb959f8.chapters.id.vtt",
+      "en": "perencana-konten.526c764b.chapters.en.vtt"
     },
     "chapters": [
       {
@@ -981,58 +1205,124 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
       {
         "step": "buat-konten",
         "start": 18.75,
-        "end": 30.84
+        "end": 31.11
       },
       {
         "step": "media-jadwal",
-        "start": 30.84,
-        "end": 43.63
+        "start": 31.11,
+        "end": 43.8
       },
       {
         "step": "detail-aksi",
-        "start": 43.63,
-        "end": 56.07
+        "start": 43.8,
+        "end": 56.24
       },
       {
         "step": "terbitkan",
-        "start": 56.07,
-        "end": 67.37
+        "start": 56.24,
+        "end": 63.31
       },
       {
         "step": "seret",
-        "start": 67.37,
-        "end": 78.27
+        "start": 63.31,
+        "end": 74.21
       },
       {
         "step": "aksi-massal",
-        "start": 78.27,
-        "end": 89.4
+        "start": 74.21,
+        "end": 85.47
       },
       {
         "step": "pratinjau-ig",
-        "start": 89.4,
-        "end": 100.3
+        "start": 85.47,
+        "end": 96.37
       },
       {
         "step": "highlights",
-        "start": 100.3,
-        "end": 110.05
+        "start": 96.37,
+        "end": 106.12
       },
       {
         "step": "pratinjau-tiktok",
-        "start": 110.05,
-        "end": 120.58
+        "start": 106.12,
+        "end": 116.65
       },
       {
         "step": "bagikan",
-        "start": 120.58,
-        "end": 133.43
+        "start": 116.65,
+        "end": 129.53
       }
     ],
     "w": 1280,
     "h": 900,
-    "durationSec": 133.4,
-    "version": "601af68f"
+    "durationSec": 129.5,
+    "version": "4cf26c33"
+  },
+  "pintasan-keyboard": {
+    "mp4": "pintasan-keyboard.552e4180.mp4",
+    "poster": "pintasan-keyboard.552e4180.webp",
+    "vtt": {
+      "id": "pintasan-keyboard.c8846957.id.vtt",
+      "en": "pintasan-keyboard.2aa11cac.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "pintasan-keyboard.f319c869.chapters.id.vtt",
+      "en": "pintasan-keyboard.21d99596.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "bantuan",
+        "start": 0,
+        "end": 10.77
+      },
+      {
+        "step": "media",
+        "start": 10.77,
+        "end": 23.98
+      },
+      {
+        "step": "deck",
+        "start": 24.02,
+        "end": 29.85
+      },
+      {
+        "step": "presentasi",
+        "start": 29.85,
+        "end": 42.33
+      }
+    ],
+    "w": 1280,
+    "h": 800,
+    "durationSec": 42.3,
+    "version": "552e4180"
+  },
+  "pintasan-klien": {
+    "mp4": "pintasan-klien.22e1c5b2.mp4",
+    "poster": "pintasan-klien.22e1c5b2.webp",
+    "vtt": {
+      "id": "pintasan-klien.12dad02f.id.vtt",
+      "en": "pintasan-klien.f1a965c9.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "pintasan-klien.8dafbdfc.chapters.id.vtt",
+      "en": "pintasan-klien.9e2f6523.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "bantuan",
+        "start": 0,
+        "end": 13.43
+      },
+      {
+        "step": "foto",
+        "start": 13.43,
+        "end": 27.33
+      }
+    ],
+    "w": 1280,
+    "h": 800,
+    "durationSec": 27.3,
+    "version": "22e1c5b2"
   },
   "piutang-pembayaran": {
     "mp4": "piutang-pembayaran.dd74fd67.mp4",
@@ -1078,42 +1368,42 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "version": "dd74fd67"
   },
   "portal-klien": {
-    "mp4": "portal-klien.c5b1b875.mp4",
-    "poster": "portal-klien.c5b1b875.webp",
+    "mp4": "portal-klien.a0827615.mp4",
+    "poster": "portal-klien.a0827615.webp",
     "vtt": {
-      "id": "portal-klien.5becccae.id.vtt",
-      "en": "portal-klien.1eeb8891.en.vtt"
+      "id": "portal-klien.a0ad5eb8.id.vtt",
+      "en": "portal-klien.5060acc8.en.vtt"
     },
     "chaptersVtt": {
-      "id": "portal-klien.8402d749.chapters.id.vtt",
-      "en": "portal-klien.c4ac62f8.chapters.en.vtt"
+      "id": "portal-klien.51f56e86.chapters.id.vtt",
+      "en": "portal-klien.2ea40469.chapters.en.vtt"
     },
     "chapters": [
       {
         "step": "kartu",
         "start": 0,
-        "end": 10.29
+        "end": 10.2
       },
       {
         "step": "tambah-kontak",
-        "start": 10.29,
-        "end": 21.58
+        "start": 10.2,
+        "end": 21.49
       },
       {
         "step": "aktif-undang",
-        "start": 21.58,
-        "end": 32.49
+        "start": 21.49,
+        "end": 32.4
       },
       {
         "step": "dilihat-klien",
-        "start": 32.53,
-        "end": 43.9
+        "start": 32.44,
+        "end": 43.8
       }
     ],
     "w": 1280,
     "h": 900,
-    "durationSec": 43.9,
-    "version": "c5b1b875"
+    "durationSec": 43.8,
+    "version": "a0827615"
   },
   "production-hub": {
     "mp4": "production-hub.5b4c1732.mp4",
@@ -1210,6 +1500,59 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "h": 820,
     "durationSec": 105.4,
     "version": "50acddac"
+  },
+  "publikasi-otomatis": {
+    "mp4": "publikasi-otomatis.21943fce.mp4",
+    "poster": "publikasi-otomatis.21943fce.webp",
+    "vtt": {
+      "id": "publikasi-otomatis.ea97daad.id.vtt",
+      "en": "publikasi-otomatis.6c1ca0c7.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "publikasi-otomatis.e44cce2b.chapters.id.vtt",
+      "en": "publikasi-otomatis.6db98949.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "nyalakan",
+        "start": 0,
+        "end": 38.91
+      },
+      {
+        "step": "syarat",
+        "start": 38.91,
+        "end": 48.25
+      },
+      {
+        "step": "status",
+        "start": 48.25,
+        "end": 60.41
+      },
+      {
+        "step": "terbit",
+        "start": 60.41,
+        "end": 72.49
+      },
+      {
+        "step": "gagal",
+        "start": 72.49,
+        "end": 85.9
+      },
+      {
+        "step": "terbitkan-sekarang",
+        "start": 85.9,
+        "end": 95.27
+      },
+      {
+        "step": "koneksi",
+        "start": 95.27,
+        "end": 107.6
+      }
+    ],
+    "w": 1280,
+    "h": 978,
+    "durationSec": 107.6,
+    "version": "21943fce"
   },
   "quotation": {
     "mp4": "quotation.e9abcb9b.mp4",
