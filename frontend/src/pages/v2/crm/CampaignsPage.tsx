@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Check, Copy, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/monomi/PageHeader';
 import { GlassPanel } from '@/components/monomi/GlassPanel';
 import { EmptyState } from '@/components/monomi/EmptyState';
@@ -22,8 +22,10 @@ import {
   apiErrorMessage, crmApi, type Campaign, type CampaignPlatform, type CampaignStatus,
 } from '@/services/crm';
 import { CrmShell, nativeSelectClass, textareaClass } from './CrmShell';
-import { buildAdLink, idr, useCrmLabels, wibDateStr } from './crmUtils';
+import { buildAdLink, buildUniversalAdLink, formatMoney, idr, timeAgo, useCrmLabels, wibDateStr } from './crmUtils';
 import { CodeBadge } from './LeadParts';
+
+const compactNumber = (n: number): string => n.toLocaleString('en', { notation: 'compact', maximumFractionDigits: 1 });
 
 /** 'YYYY-MM-DD' <-> local Date for the app date picker (unambiguous "7 October 2026" display). */
 const ymdToDate = (v: string): Date | undefined => (v ? new Date(`${v.slice(0, 10)}T00:00:00`) : undefined);
@@ -36,7 +38,7 @@ export const buildPrefill = (template: string | null, code: string, fallback: st
 };
 
 export default function CampaignsPage() {
-  const { t, formatDate } = useCrmLabels();
+  const { t, formatDate, uiLang: lang } = useCrmLabels();
   const qc = useQueryClient();
   const campaignsQ = useQuery({ queryKey: ['crm', 'campaigns'], queryFn: crmApi.campaigns });
   const campaigns = campaignsQ.data ?? [];
@@ -46,6 +48,23 @@ export default function CampaignsPage() {
   const [copied, setCopied] = useState(false);
   const [adLinkCopied, setAdLinkCopied] = useState(false);
   const trackingQ = useQuery({ queryKey: ['crm', 'tracking'], queryFn: crmApi.trackingSummary, retry: false });
+  const metaQ = useQuery({ queryKey: ['crm', 'meta-ads', 'status'], queryFn: crmApi.metaAdsStatus, retry: false, staleTime: 30_000 });
+  const metaCampaignsQ = useQuery({ queryKey: ['crm', 'meta-ads', 'campaigns'], queryFn: crmApi.metaAdsCampaigns, retry: false, staleTime: 30_000 });
+  const metaStatus = metaQ.data;
+  const syncedLine = metaStatus && metaStatus.state === 'READY'
+    ? (metaStatus.lastSuccessAt
+      ? t('crm.campaigns.synced', 'Synced from Meta · last sync {{ago}}', { ago: timeAgo(metaStatus.lastSuccessAt, lang) })
+      : t('crm.campaigns.syncedNever', 'Meta sync has not run yet'))
+    : null;
+  const linkMut = useMutation({
+    mutationFn: ({ id, metaCampaignId }: { id: string; metaCampaignId: string | null }) => crmApi.setMetaLink(id, metaCampaignId),
+    onSuccess: (_c, v) => {
+      toast.success(v.metaCampaignId ? t('crm.campaigns.metaLink.saved', 'Linked to the Meta campaign.') : t('crm.campaigns.metaLink.unlinked', 'Unlinked from Meta.'));
+      qc.invalidateQueries({ queryKey: ['crm'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err, t('crm.errors.save', 'Could not save.'))),
+  });
+  const [adLinkVariant, setAdLinkVariant] = useState<'universal' | 'code' | null>(null);
 
   useEffect(() => {
     if (!selectedId && campaigns.length > 0) setSelectedId(campaigns[0].id);
@@ -87,9 +106,10 @@ export default function CampaignsPage() {
     }
   };
 
-  const copyAdLink = async (link: string) => {
+  const copyAdLink = async (link: string, variant: 'universal' | 'code') => {
     try {
       await navigator.clipboard.writeText(link);
+      setAdLinkVariant(variant);
       setAdLinkCopied(true);
       setTimeout(() => setAdLinkCopied(false), 2000);
       toast.success(t('crm.campaigns.adLink.copied', 'Ad link copied.'));
@@ -132,9 +152,12 @@ export default function CampaignsPage() {
         />
       ) : (
         <div className="space-y-5">
+          {syncedLine && (
+            <p className="flex items-center gap-1.5 text-xs text-text-secondary" data-testid="synced-line"><RefreshCw className="h-3.5 w-3.5 shrink-0" /> {syncedLine}</p>
+          )}
           {/* Desktop table */}
-          <GlassPanel padding="none" className="hidden overflow-hidden md:block">
-            <table className="w-full text-sm">
+          <GlassPanel padding="none" className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-bg-sunken text-left text-[11px] uppercase tracking-wider text-text-tertiary">
                 <tr>
                   <th className="px-4 py-3">{t('crm.campaigns.col.campaign', 'Campaign')}</th>
@@ -142,6 +165,8 @@ export default function CampaignsPage() {
                   <th className="px-4 py-3 text-right">{t('crm.campaigns.col.leads', 'Leads')}</th>
                   <th className="px-4 py-3 text-right">{t('crm.campaigns.col.won', 'Won')}</th>
                   <th className="px-4 py-3 text-right">{t('crm.campaigns.col.spend', 'Ad spend')}</th>
+                  <th className="px-4 py-3 text-right">{t('crm.campaigns.col.costLead', 'Cost / lead')}</th>
+                  <th className="px-4 py-3 text-right">{t('crm.campaigns.col.costQualified', 'Cost / Qualified')}</th>
                   <th className="px-4 py-3 text-right">{t('crm.campaigns.col.costClient', 'Cost / client')}</th>
                 </tr>
               </thead>
@@ -161,8 +186,17 @@ export default function CampaignsPage() {
                     <td className="px-4 py-3"><CodeBadge code={c.code} /></td>
                     <td className="px-4 py-3 text-right font-mono">{c.leads}</td>
                     <td className="px-4 py-3 text-right font-mono">{c.won}</td>
-                    <td className="px-4 py-3 text-right font-mono">{idr(c.spend)}</td>
-                    <td className="px-4 py-3 text-right font-mono">{idr(c.costPerClient)}</td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {formatMoney(c.spend, c.spendCurrency)}
+                      {(c.impressions ?? 0) > 0 && (
+                        <div className="font-sans text-[11px] text-text-tertiary">
+                          {t('crm.campaigns.imprClicks', '{{impr}} impr. · {{clicks}} clicks', { impr: compactNumber(c.impressions ?? 0), clicks: compactNumber(c.clicks ?? 0) })}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">{formatMoney(c.costPerLead, c.spendCurrency)}</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatMoney(c.costPerQualified, c.spendCurrency)}</td>
+                    <td className="px-4 py-3 text-right font-mono">{formatMoney(c.costPerClient, c.spendCurrency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -184,10 +218,13 @@ export default function CampaignsPage() {
                   <CodeBadge code={c.code} />
                 </div>
                 <div className="mt-0.5 text-xs text-text-tertiary">{statusText(c.status)} · {platformText(c.platform)}</div>
-                <dl className="mt-3 grid grid-cols-4 gap-2 text-xs">
+                <dl className="mt-3 grid grid-cols-3 gap-x-2 gap-y-2.5 text-xs">
                   <div><dt className="text-text-tertiary">{t('crm.campaigns.col.leads', 'Leads')}</dt><dd className="font-mono text-sm">{c.leads}</dd></div>
                   <div><dt className="text-text-tertiary">{t('crm.campaigns.col.won', 'Won')}</dt><dd className="font-mono text-sm">{c.won}</dd></div>
-                  <div className="col-span-2"><dt className="text-text-tertiary">{t('crm.campaigns.col.costClient', 'Cost / client')}</dt><dd className="font-mono text-sm">{idr(c.costPerClient)}</dd></div>
+                  <div className="min-w-0"><dt className="text-text-tertiary">{t('crm.campaigns.col.spend', 'Ad spend')}</dt><dd className="break-words font-mono text-xs">{formatMoney(c.spend, c.spendCurrency)}</dd></div>
+                  <div className="min-w-0"><dt className="text-text-tertiary">{t('crm.campaigns.col.costLead', 'Cost / lead')}</dt><dd className="break-words font-mono text-xs">{formatMoney(c.costPerLead, c.spendCurrency)}</dd></div>
+                  <div className="min-w-0"><dt className="text-text-tertiary">{t('crm.campaigns.col.costQualified', 'Cost / Qualified')}</dt><dd className="break-words font-mono text-xs">{formatMoney(c.costPerQualified, c.spendCurrency)}</dd></div>
+                  <div className="min-w-0"><dt className="text-text-tertiary">{t('crm.campaigns.col.costClient', 'Cost / client')}</dt><dd className="break-words font-mono text-xs">{formatMoney(c.costPerClient, c.spendCurrency)}</dd></div>
                 </dl>
               </button>
             ))}
@@ -228,17 +265,53 @@ export default function CampaignsPage() {
                   {t('crm.campaigns.prefillHelp', 'Paste it in Meta Ads Manager → Ad → Message → "Pre-filled message". The code at the end links each lead to this campaign.')}
                 </p>
                 <div className="mt-5 border-t border-border-subtle pt-4">
-                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.adLink.title', 'Website ad link (landing page)')}</div>
-                  <code className="block break-all rounded-lg border border-border-subtle bg-bg-sunken p-3 text-xs" data-testid="ad-link">
-                    {buildAdLink(trackingQ.data?.landingPageUrl, selected.code)}
+                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.adLink.universalTitle', 'Ad link for Meta ads (one link for every ad)')}</div>
+                  <code className="block break-all rounded-lg border border-border-subtle bg-bg-sunken p-3 text-xs" data-testid="ad-link-universal">
+                    {buildUniversalAdLink(trackingQ.data?.landingPageUrl)}
                   </code>
                   <div className="mt-3">
-                    <Button type="button" variant="outline" className="gap-2" onClick={() => copyAdLink(buildAdLink(trackingQ.data?.landingPageUrl, selected.code))}>
-                      {adLinkCopied ? <Check /> : <Copy />} {adLinkCopied ? t('crm.campaigns.copiedShort', 'Copied') : t('crm.campaigns.adLink.copy', 'Copy ad link')}
+                    <Button type="button" variant="outline" className="gap-2" onClick={() => copyAdLink(buildUniversalAdLink(trackingQ.data?.landingPageUrl), 'universal')}>
+                      {adLinkCopied && adLinkVariant === 'universal' ? <Check /> : <Copy />} {adLinkCopied && adLinkVariant === 'universal' ? t('crm.campaigns.copiedShort', 'Copied') : t('crm.campaigns.adLink.copy', 'Copy ad link')}
                     </Button>
                   </div>
                   <p className="mt-3 text-xs text-text-tertiary">
-                    {t('crm.campaigns.adLink.help', "Paste it as the ad's Website URL in Ads Manager (or in the URL parameters). Meta replaces {{adId}} with the ad's id; the campaign code lets every chat be linked back to this campaign.", { adId: '{{ad.id}}' })}
+                    {t('crm.campaigns.adLink.universalHelp', "Works for every ad: paste it once as the ad's Website URL (or in the URL parameters) in Ads Manager. Meta fills in {{campaignId}} and {{adId}} for each ad, so every landing visit is linked to its campaign automatically.", { campaignId: '{{campaign.id}}', adId: '{{ad.id}}' })}
+                  </p>
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-xs text-text-tertiary hover:text-text-primary">{t('crm.campaigns.adLink.title', 'Link with this campaign code (other channels)')}</summary>
+                    <code className="mt-2 block break-all rounded-lg border border-border-subtle bg-bg-sunken p-3 text-xs" data-testid="ad-link">
+                      {buildAdLink(trackingQ.data?.landingPageUrl, selected.code)}
+                    </code>
+                    <div className="mt-3">
+                      <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => copyAdLink(buildAdLink(trackingQ.data?.landingPageUrl, selected.code), 'code')}>
+                        {adLinkCopied && adLinkVariant === 'code' ? <Check /> : <Copy />} {adLinkCopied && adLinkVariant === 'code' ? t('crm.campaigns.copiedShort', 'Copied') : t('crm.campaigns.adLink.copyCode', 'Copy link with code')}
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-text-tertiary">{t('crm.campaigns.adLink.help', 'For links outside Meta (Instagram bio, newsletter, other ad networks): the campaign code travels as utm_campaign.')}</p>
+                  </details>
+                </div>
+                <div className="mt-5 border-t border-border-subtle pt-4">
+                  <Label htmlFor="meta-link" className="mb-1 block text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.metaLink.title', 'Meta campaign')}</Label>
+                  <select
+                    id="meta-link"
+                    className={cn(nativeSelectClass, 'w-full')}
+                    value={selected.metaCampaignId ?? ''}
+                    disabled={linkMut.isPending}
+                    onChange={(e) => linkMut.mutate({ id: selected.id, metaCampaignId: e.target.value || null })}
+                  >
+                    <option value="">{t('crm.campaigns.metaLink.none', 'Not linked to a Meta campaign')}</option>
+                    {(metaCampaignsQ.data ?? []).map((m) => (
+                      <option key={m.metaCampaignId} value={m.metaCampaignId} disabled={!!m.linkedCampaignId && m.linkedCampaignId !== selected.id}>
+                        {m.name} · {m.metaCampaignId}{m.linkedCampaignId && m.linkedCampaignId !== selected.id ? ` (${t('crm.campaigns.metaLink.takenBy', 'linked to {{code}}', { code: m.linkedCampaignCode ?? '' })})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-text-tertiary">
+                    {selected.metaCampaignId
+                      ? t('crm.campaigns.metaLink.linkedHelp', 'Spend of Meta campaign "{{name}}" syncs into this campaign, and landing visits from its ads are linked to it. Choose "Not linked" to stop.', { name: selected.metaCampaignName ?? selected.metaCampaignId })
+                      : (metaCampaignsQ.data ?? []).length === 0
+                        ? t('crm.campaigns.metaLink.empty', 'No Meta campaigns known yet. Run "Sync now" in CRM settings.')
+                        : t('crm.campaigns.metaLink.help', 'Link this campaign to its Meta campaign to pull the ad spend automatically.')}
                   </p>
                 </div>
                 {(selected.startDate || selected.endDate || selected.budget) && (
@@ -256,28 +329,48 @@ export default function CampaignsPage() {
               <GlassPanel padding="none" className="p-5">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-sm font-semibold">{t('crm.campaigns.spendTitle', 'Ad spend')}</h2>
-                  <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => setSpendOpen(true)}><Plus /> {t('crm.campaigns.logSpend', 'Log spend')}</Button>
+                  <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => setSpendOpen(true)}><Plus /> {t('crm.campaigns.logSpend', 'Log other costs')}</Button>
                 </div>
-                <ul className="divide-y divide-border-subtle">
+                <div className="mb-3 rounded-lg bg-bg-sunken px-3 py-2 text-sm" data-testid="spend-summary">
+                  <div className="font-mono">{formatMoney(selected.spend, selected.spendCurrency)}</div>
+                  <div className="text-xs text-text-tertiary">
+                    {t('crm.campaigns.spendSplit', 'Meta {{meta}} + other costs {{other}}', {
+                      meta: formatMoney(selected.metaSpend ?? 0, selected.spendCurrency),
+                      other: formatMoney(selected.manualSpend ?? 0, selected.spendCurrency),
+                    })}
+                    {(selected.impressions ?? 0) > 0 && <> · {t('crm.campaigns.imprClicks', '{{impr}} impr. · {{clicks}} clicks', { impr: compactNumber(selected.impressions ?? 0), clicks: compactNumber(selected.clicks ?? 0) })}</>}
+                  </div>
+                </div>
+                <ul className="max-h-96 divide-y divide-border-subtle overflow-y-auto">
                   {(spendQ.data ?? []).map((s) => (
                     <li key={s.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                      <div>
-                        <div>{s.dateFrom.slice(0, 10) === s.dateTo.slice(0, 10) ? formatDate(s.dateFrom) : `${formatDate(s.dateFrom)} – ${formatDate(s.dateTo)}`}</div>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span>{s.dateFrom.slice(0, 10) === s.dateTo.slice(0, 10) ? formatDate(s.dateFrom) : `${formatDate(s.dateFrom)} – ${formatDate(s.dateTo)}`}</span>
+                          {s.source === 'META' && (
+                            <span className="rounded bg-brand-cream/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" data-testid="meta-badge">{t('crm.campaigns.metaBadge', 'Meta')}</span>
+                          )}
+                        </div>
+                        {s.source === 'META' && (s.impressions ?? 0) > 0 && (
+                          <div className="text-xs text-text-tertiary">{t('crm.campaigns.imprClicks', '{{impr}} impr. · {{clicks}} clicks', { impr: compactNumber(s.impressions ?? 0), clicks: compactNumber(s.clicks ?? 0) })}</div>
+                        )}
                         {s.note && <div className="text-xs text-text-tertiary">{s.note}</div>}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono">{idr(s.amount)}</span>
-                        <Button
-                          type="button" variant="ghost" size="icon-sm" className="text-text-tertiary"
-                          aria-label={t('crm.campaigns.deleteSpend', 'Delete spend entry')}
-                          onClick={() => { if (window.confirm(t('crm.campaigns.deleteSpendConfirm', 'Delete this spend entry?'))) delSpendMut.mutate(s.id); }}
-                        ><Trash2 /></Button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span className="font-mono">{formatMoney(s.amount, s.currency)}</span>
+                        {s.readOnly ? <span className="inline-block w-8" aria-hidden /> : (
+                          <Button
+                            type="button" variant="ghost" size="icon-sm" className="text-text-tertiary"
+                            aria-label={t('crm.campaigns.deleteSpend', 'Delete spend entry')}
+                            onClick={() => { if (window.confirm(t('crm.campaigns.deleteSpendConfirm', 'Delete this spend entry?'))) delSpendMut.mutate(s.id); }}
+                          ><Trash2 /></Button>
+                        )}
                       </div>
                     </li>
                   ))}
                   {spendQ.data?.length === 0 && <li className="py-6 text-center text-sm text-text-tertiary">{t('crm.campaigns.noSpend', 'No spend logged yet.')}</li>}
                 </ul>
-                <p className="mt-3 text-xs text-text-tertiary">{t('crm.campaigns.metaSpend', 'Pulled automatically from Meta once our permissions are approved.')}</p>
+                <p className="mt-3 text-xs text-text-tertiary">{t('crm.campaigns.metaSpend', 'Meta ad spend syncs automatically. Use "Log other costs" for anything else (creative, studio, agency fees).')}</p>
               </GlassPanel>
             </div>
           )}
@@ -399,17 +492,17 @@ function SpendDialog({ campaign, onClose, onSaved }: { campaign: Campaign; onClo
     mutationFn: () => crmApi.addSpend(campaign.id, {
       dateFrom: f.dateFrom, dateTo: f.dateTo || f.dateFrom, amount: Number(f.amount), note: f.note.trim() || undefined,
     }),
-    onSuccess: () => { toast.success(t('crm.campaigns.spendSaved', 'Spend logged.')); onSaved(); },
+    onSuccess: () => { toast.success(t('crm.campaigns.spendSaved', 'Cost logged.')); onSaved(); },
     onError: (err) => toast.error(apiErrorMessage(err, t('crm.errors.save', 'Could not save.'))),
   });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF((p) => ({ ...p, [k]: e.target.value }));
   const valid = f.dateFrom && Number(f.amount) > 0 && (!f.dateTo || f.dateTo >= f.dateFrom);
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-md" srTitle={t('crm.campaigns.logSpend', 'Log spend')}>
+      <DialogContent className="max-w-md" srTitle={t('crm.campaigns.logSpend', 'Log other costs')}>
         <DialogHeader>
-          <DialogTitle>{t('crm.campaigns.logSpend', 'Log spend')} · {campaign.code}</DialogTitle>
-          <DialogDescription>{t('crm.campaigns.spendHint', 'Enter the ad spend for a day or a date range.')}</DialogDescription>
+          <DialogTitle>{t('crm.campaigns.logSpend', 'Log other costs')} · {campaign.code}</DialogTitle>
+          <DialogDescription>{t('crm.campaigns.spendHint', 'Costs that are not synced from Meta, for a day or a date range. Meta ad spend is added automatically.')}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5"><Label htmlFor="sp-from">{t('crm.campaigns.from', 'From')}</Label><MonomiDatePicker value={ymdToDate(f.dateFrom)} onChange={(d) => d && setF((p) => ({ ...p, dateFrom: dateToYmd(d), dateTo: p.dateTo && p.dateTo < dateToYmd(d) ? dateToYmd(d) : p.dateTo }))} /></div>

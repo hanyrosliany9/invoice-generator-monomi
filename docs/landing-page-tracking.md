@@ -132,7 +132,8 @@ or a known crawler/tool are acknowledged but nothing is stored or sent.
 `ad_clicks` is one row per visit (created by the visit's first event; later
 events update it): `visitId`, `utm*`, `fbclid`, `fbc`, `fbp`, `clientIp`,
 `userAgent`, `campaignCode` (the `utm_campaign` matched case-insensitively to a
-CRM campaign code), `instagramHandle`, `brandName`, `category`, and once-per-visit
+CRM campaign code, or, when it is all digits, to the CRM campaign linked to that
+Meta campaign id, see "Meta Ads sync" below), `instagramHandle`, `brandName`, `category`, and once-per-visit
 markers `pageViewAt` / `viewContentAt` / `engagedAt`. Only the **first**
 `PageView`, `ViewContent` and `EngagedVisit` of a visit are sent to Meta. A
 WhatsApp tap fills `ref` / `eventId` on the visit row (a second tap in the same
@@ -324,6 +325,9 @@ lead page as an `@handle` link, and in the quick-add chip); an
 | `PUBLIC_TRACK_MAX_AUTO_LEADS_PER_HOUR` | `60` | global cap on CRM leads auto-created from landing-page taps per hour (all instances, Redis); above it the tap is stored without a lead and a warning is logged; `0` = off |
 | `AUTO_LEAD_STALE_DAYS` | `30` | waiting leads with no phone after this many days move to Lost ("Never sent WhatsApp") in the nightly job |
 | `META_GRAPH_VERSION` | `v26.0` | shared with the other Meta features |
+| `META_AD_ACCOUNT_ID` | unset | Meta Ads sync: numeric ad account id, with or without `act_`. Unset = use the token's ad account when it sees exactly one active account, else the sync card says Incomplete |
+| `META_ADS_SYNC_ENABLED` | `true` | Meta Ads sync on/off (it needs `META_SYSTEM_USER_TOKEN`, shared with auto-publishing, with `ads_read`) |
+| `META_ADS_SYNC_BACKFILL_DAYS` | `90` | history pulled by the first sync run (1-365) |
 | `META_WEB_CAPI_GRAPH_BASE_URL` | unset | DEV ONLY fake Graph server, ignored in production |
 
 States (shown in CRM settings, never fatal at boot): **OFF**, **INCOMPLETE**
@@ -331,6 +335,33 @@ States (shown in CRM settings, never fatal at boot): **OFF**, **INCOMPLETE**
 **READY**. While not READY, visits and taps are still stored and linked and
 outbox events wait as `PENDING_CONFIG`; nothing is sent. `docker-compose.prod.yml`
 passes them through; set them in the VPS `.env` (never commit the token).
+
+### Meta Ads sync: spend and attribution by Meta campaign id
+
+CRM settings > **Meta Ads sync** pulls ad spend from the Marketing API with the
+same system user token as auto-publishing (`ads_read`; appsecret_proof and the
+shared Graph denylist apply). Every 3 hours (and on **Sync now**) it reads
+`act_<id>/insights?level=campaign&time_increment=1` (first run: the last
+`META_ADS_SYNC_BACKFILL_DAYS`, later runs: the last 7 days, because Meta restates
+recent days), `act_<id>/campaigns` and `act_<id>/ads` into `meta_ads_insights_daily`
+(integer IDR per campaign per day, unique on campaign + date, so re-running never
+doubles), `meta_ads_campaigns` and `meta_ads_ads` (ad id -> campaign id). A DB
+lease keeps overlapping runs apart; Graph rate-limit errors (codes 4, 17, 32, 613)
+back the sync off (15 min, doubling, max 3 h). Manual spend entries stay as they
+are ("Log other costs") and are added to the synced spend.
+
+Every Meta campaign that is active or has spend and is not linked yet gets a CRM
+campaign (code = sanitised name, max 24 characters, `-2` suffix if taken; rename
+the code any time, a Meta rename only updates the stored Meta name). Admins can
+link / unlink a CRM campaign to a Meta campaign on the Campaigns page; an unlinked
+Meta campaign is not auto-created again.
+
+Attribution: a landing visit whose `utm_campaign` is all digits and equals a
+linked `metaCampaignId` is stored with that campaign's code (a code typed into
+`utm_campaign` still wins). Each sync also fills the campaign of earlier clicks
+and of their leads, but only where the campaign is still empty (a campaign set by
+staff is never overwritten). A Click-to-WhatsApp referral's `source_id` (ad id)
+is mapped to its campaign through the synced ads map.
 
 ## 4. Edge rate limit (Cloudflare WAF)
 
@@ -379,8 +410,13 @@ loosen it if real visitors are hit.
    measurement needs a verified domain.
 7. Campaign: Conversion location **Website**, the dataset above, optimise for
    **Lead** first; switch to **QualifiedLead** when it arrives steadily (about 50
-   a week). Use CRM Campaigns > **Copy ad link** as the ad's Website URL
-   (`...?utm_source=meta&utm_medium=paid&utm_campaign=<CODE>&utm_content={{ad.id}}`).
+   a week). Use CRM Campaigns > **Copy ad link** as the ad's Website URL (or in
+   the URL parameters). It is ONE universal link for every ad:
+   `<LANDING_PAGE_URL>/?utm_source=meta&utm_medium=paid&utm_campaign={{campaign.id}}&utm_content={{ad.id}}`.
+   Ads Manager fills in `{{campaign.id}}` and `{{ad.id}}` per ad, and the
+   synced Meta campaign id resolves to its CRM campaign (see below). The old
+   per-code link (`utm_campaign=<CODE>`) is still offered under it for channels
+   outside Meta.
 
 ## 6. Known limits and a later improvement
 

@@ -15,6 +15,7 @@ import { CrmShell, nativeSelectClass } from './CrmShell';
 import { useCrmLabels } from './crmUtils';
 import { WhatsAppSettingsCard } from './whatsapp/WhatsAppSettingsCard';
 import { TrackingSettingsCard } from './TrackingSettingsCard';
+import { MetaAdsSyncCard } from './MetaAdsSyncCard';
 
 function StageRow({
   stage, index, last, onMove,
@@ -168,6 +169,8 @@ export default function CrmSettingsPage() {
         </GlassPanel>
 
         <TrackingSettingsCard />
+
+        <MetaAdsSyncCard />
 
         <WhatsAppSettingsCard />
       </div>

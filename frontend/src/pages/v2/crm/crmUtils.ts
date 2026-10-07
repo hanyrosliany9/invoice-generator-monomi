@@ -123,7 +123,7 @@ export function useCrmLabels() {
     }
   };
 
-  return { t, stageLabel, sourceLabel, metaStatusLabel, metaRouteLabel, formatWait, formatDateTime, formatDate, activityText };
+  return { t, uiLang: i18n.language ?? 'id', stageLabel, sourceLabel, metaStatusLabel, metaRouteLabel, formatWait, formatDateTime, formatDate, activityText };
 }
 
 const join = (label: string, text: string | null) => (text ? `${label}: ${text}` : label);
@@ -245,3 +245,30 @@ const DEFAULT_LANDING_URL = 'https://link.monomiagency.com';
  */
 export const buildAdLink = (base: string | null | undefined, code: string): string =>
   `${(base || DEFAULT_LANDING_URL).replace(/\/+$/, '')}/?utm_source=meta&utm_medium=paid&utm_campaign=${encodeURIComponent(code)}&utm_content={{ad.id}}`;
+
+/**
+ * ONE link for every Meta ad: Ads Manager fills {{campaign.id}} and {{ad.id}}
+ * per ad, and the synced Meta campaign id resolves to its CRM campaign.
+ * Both placeholders must stay literal.
+ */
+export const buildUniversalAdLink = (base: string | null | undefined): string =>
+  `${(base || DEFAULT_LANDING_URL).replace(/\/+$/, '')}/?utm_source=meta&utm_medium=paid&utm_campaign={{campaign.id}}&utm_content={{ad.id}}`;
+
+/** Money in the Meta account currency: IDR as "Rp 1.234", others as "USD 12.34". */
+export const formatMoney = (v: number | null | undefined, currency?: string | null): string => {
+  if (v === null || v === undefined) return '-';
+  if (!currency || currency === 'IDR') return idr(v);
+  return `${currency} ${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+/** "3 hours ago" / "3 jam yang lalu" in the UI language. */
+export const timeAgo = (iso: string | null | undefined, lang: string, now: Date = new Date()): string => {
+  if (!iso) return '';
+  const sec = Math.round((new Date(iso).getTime() - now.getTime()) / 1000);
+  const rtf = new Intl.RelativeTimeFormat(lang.startsWith('en') ? 'en' : 'id', { numeric: 'auto' });
+  const abs = Math.abs(sec);
+  if (abs < 60) return rtf.format(0, 'minute');
+  if (abs < 3600) return rtf.format(Math.round(sec / 60), 'minute');
+  if (abs < 86400) return rtf.format(Math.round(sec / 3600), 'hour');
+  return rtf.format(Math.round(sec / 86400), 'day');
+};

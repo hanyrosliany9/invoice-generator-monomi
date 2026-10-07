@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { crmApi, type CrmStats } from '@/services/crm';
 import { CrmShell, nativeSelectClass } from './CrmShell';
 import { useCrmCampaigns, useCrmStages } from './crmHooks';
-import { idr, idrCompact, useCrmLabels, wibDateStr } from './crmUtils';
+import { formatMoney, idrCompact, timeAgo, useCrmLabels, wibDateStr } from './crmUtils';
 import { CodeBadge } from './LeadParts';
 
 type Period = 'thisMonth' | 'lastMonth' | 'last30' | 'last90' | 'thisYear';
@@ -30,7 +30,7 @@ function rangeFor(p: Period, now = new Date()): { from: string; to: string } {
 }
 
 export default function CrmDashboardPage() {
-  const { t, stageLabel, formatWait, sourceLabel, formatDate } = useCrmLabels();
+  const { t, stageLabel, formatWait, sourceLabel, formatDate, uiLang } = useCrmLabels();
   const lang = (typeof document !== 'undefined' && document.documentElement.lang) || 'id';
   const [period, setPeriod] = useState<Period>('thisMonth');
   const [campaignId, setCampaignId] = useState('');
@@ -91,13 +91,33 @@ export default function CrmDashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)}</div>
       ) : (
         <div className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {s.metaLastSyncAt && (
+            <p className="text-xs text-text-secondary" data-testid="dash-synced">
+              {t('crm.dash.syncedFrom', 'Ad spend includes data synced from Meta · last sync {{ago}}', { ago: timeAgo(s.metaLastSyncAt, uiLang) })}
+            </p>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard label={t('crm.dash.kpi.leads', 'New leads')} value={s.leads} delta={leadsDelta} />
             <StatCard label={t('crm.dash.kpi.won', 'Clients won')} value={s.won} sublabel={t('crm.dash.kpi.conversion', '{{pct}}% conversion', { pct: s.conversionPct })} />
             <StatCard
               label={t('crm.dash.kpi.revenue', 'Revenue from leads')}
               value={idrCompact(s.revenue, lang)}
               sublabel={t('crm.dash.kpi.revenueHint', 'Paid invoices + approved quotations')}
+            />
+            <StatCard
+              label={t('crm.dash.kpi.spend', 'Ad spend')}
+              value={s.spendCurrency && s.spendCurrency !== 'IDR' ? formatMoney(s.spend, s.spendCurrency) : idrCompact(s.spend, lang)}
+              sublabel={t('crm.dash.kpi.spendHint', 'Meta {{meta}} · other costs {{other}}', {
+                meta: idrCompact(s.metaSpend ?? 0, lang),
+                other: idrCompact(s.manualSpend ?? s.spend, lang),
+              })}
+            />
+            <StatCard
+              label={t('crm.dash.kpi.costLead', 'Cost per lead')}
+              value={s.costPerLead === null ? '-' : idrCompact(s.costPerLead, lang)}
+              sublabel={s.leads > 0
+                ? t('crm.dash.kpi.costLeadHint', 'Ad spend {{spend}} ÷ {{n}} leads', { spend: idrCompact(s.spend, lang), n: s.leads })
+                : t('crm.dash.kpi.costNone', 'Ad spend {{spend}}', { spend: idrCompact(s.spend, lang) })}
             />
             <StatCard
               label={t('crm.dash.kpi.costClient', 'Cost per client')}
@@ -166,7 +186,7 @@ export default function CrmDashboardPage() {
           <GlassPanel padding="none" className="overflow-hidden">
             <h2 className="p-5 pb-3 text-sm font-semibold">{t('crm.dash.byCampaign', 'By campaign')}</h2>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-sm">
+              <table className="w-full min-w-[860px] text-sm">
                 <thead className="bg-bg-sunken text-left text-[11px] uppercase tracking-wider text-text-tertiary">
                   <tr>
                     <th className="px-5 py-2.5">{t('crm.campaigns.col.campaign', 'Campaign')}</th>
@@ -174,7 +194,9 @@ export default function CrmDashboardPage() {
                     <th className="px-3 py-2.5 text-right">{t('crm.dash.col.qualified', 'Qualified')}</th>
                     <th className="px-3 py-2.5 text-right">{t('crm.campaigns.col.won', 'Won')}</th>
                     <th className="px-3 py-2.5 text-right">{t('crm.dash.col.revenue', 'Revenue')}</th>
+                    <th className="px-3 py-2.5 text-right">{t('crm.dash.col.spend', 'Ad spend')}</th>
                     <th className="px-3 py-2.5 text-right">{t('crm.dash.col.costLead', 'Cost / lead')}</th>
+                    <th className="px-3 py-2.5 text-right">{t('crm.dash.col.costQualified', 'Cost / Qualified')}</th>
                     <th className="px-5 py-2.5 text-right">{t('crm.campaigns.col.costClient', 'Cost / client')}</th>
                   </tr>
                 </thead>
@@ -185,9 +207,11 @@ export default function CrmDashboardPage() {
                       <td className="px-3 py-2.5 text-right font-mono">{c.leads}</td>
                       <td className="px-3 py-2.5 text-right font-mono">{c.qualified}</td>
                       <td className="px-3 py-2.5 text-right font-mono">{c.won}</td>
-                      <td className="px-3 py-2.5 text-right font-mono">{idr(c.revenue)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono">{idr(c.costPerLead)}</td>
-                      <td className="px-5 py-2.5 text-right font-mono">{idr(c.costPerClient)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono">{formatMoney(c.revenue)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono">{formatMoney(c.spend, s.spendCurrency)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono">{formatMoney(c.costPerLead, s.spendCurrency)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono">{formatMoney(c.costPerQualified, s.spendCurrency)}</td>
+                      <td className="px-5 py-2.5 text-right font-mono">{formatMoney(c.costPerClient, s.spendCurrency)}</td>
                     </tr>
                   ))}
                   {s.noCampaign.leads > 0 && (
@@ -196,11 +220,11 @@ export default function CrmDashboardPage() {
                       <td className="px-3 py-2.5 text-right font-mono">{s.noCampaign.leads}</td>
                       <td className="px-3 py-2.5 text-right">-</td>
                       <td className="px-3 py-2.5 text-right font-mono">{s.noCampaign.won}</td>
-                      <td className="px-3 py-2.5 text-right">-</td><td className="px-3 py-2.5 text-right">-</td><td className="px-5 py-2.5 text-right">-</td>
+                      <td className="px-3 py-2.5 text-right">-</td><td className="px-3 py-2.5 text-right">-</td><td className="px-3 py-2.5 text-right">-</td><td className="px-3 py-2.5 text-right">-</td><td className="px-5 py-2.5 text-right">-</td>
                     </tr>
                   )}
                   {s.byCampaign.length === 0 && s.noCampaign.leads === 0 && (
-                    <tr><td colSpan={7} className="px-5 py-8 text-center text-text-tertiary">{t('crm.dash.noData', 'No leads in this period.')}</td></tr>
+                    <tr><td colSpan={9} className="px-5 py-8 text-center text-text-tertiary">{t('crm.dash.noData', 'No leads in this period.')}</td></tr>
                   )}
                 </tbody>
               </table>

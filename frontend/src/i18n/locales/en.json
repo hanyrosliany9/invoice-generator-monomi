@@ -9715,8 +9715,8 @@
         "steps": {
           "kampanye": {
             "title": "Create a campaign for each ad",
-            "body": "Open Marketing > CRM > Campaigns and click New campaign (1). Give it a name and a unique code such as FB-OKT1. Add the budget and dates if you know them. Each row of the table (2) shows the leads, the clients won, the ad spend and the cost per client.",
-            "tip": "Use one code per ad so the dashboard can compare ads fairly."
+            "body": "Open Marketing > CRM > Campaigns. Campaigns of your Meta ads appear here by themselves after the first sync, with the code taken from the ad campaign name (rename the code if you like). To add one by hand, click New campaign (1) and give it a name and a unique code such as FB-OKT1. Each row of the table (2) shows the leads, the clients won, the ad spend synced from Meta and the cost per lead, per Qualified lead and per client.",
+            "tip": "A WhatsApp (click-to-WhatsApp) ad still needs its code in the pre-filled message below. Use one code per ad campaign so the dashboard can compare fairly."
           },
           "pesan-iklan": {
             "title": "Copy the ad message with the campaign code",
@@ -9745,13 +9745,13 @@
           },
           "dasbor": {
             "title": "Read the dashboard",
-            "body": "Open CRM Dashboard: new leads, clients won, revenue and cost per client (1), the sales funnel, the response speed, and a table per campaign (2) with leads, revenue, cost per lead and cost per client. Pick a period and a campaign at the top.",
+            "body": "Open CRM Dashboard: new leads, clients won, revenue, ad spend (synced from Meta plus other costs), cost per lead and cost per client (1), the sales funnel, the response speed, and a table per campaign (2) with leads, revenue, spend, cost per lead, cost per Qualified lead and cost per client. Pick a period and a campaign at the top.",
             "tip": "Response speed is compared with the target you set in CRM settings."
           },
           "biaya-iklan": {
-            "title": "Log the ad spend",
-            "body": "Click Log spend on the campaign. Pick the day, or the first and last day of a range, from the calendar (1), type the amount in rupiah (2) and click Save (3). Cost per lead and cost per client on the dashboard are calculated from these entries.",
-            "tip": "Log a whole week at once with a date range. A wrong entry can be deleted with the bin icon next to it."
+            "title": "Ad spend syncs from Meta",
+            "body": "You no longer type the ad spend of Meta ads: it is pulled from Meta every 3 hours (the table says \"Synced from Meta, last sync ...\") and each day shows a Meta label in the campaign's spend list. Only costs that Meta does not know, such as creative, studio or agency fees, are logged by hand: click Log other costs on the campaign, pick the day or the first and last day of a range (1), type the amount in rupiah (2) and click Save (3). Both are added up in the cost per lead and cost per client.",
+            "tip": "Your own entries can be deleted with the bin icon; synced Meta days cannot be edited. If the numbers look old, an admin can click Sync now in CRM settings."
           },
           "daftar": {
             "title": "List view and bulk actions",
@@ -9769,9 +9769,9 @@
             "tip": "The History records the conversion and the quotation, in your language."
           },
           "link-iklan-website": {
-            "title": "Website ads: copy the ad link",
-            "body": "If the ad sends people to the landing page first, select the campaign and click Copy ad link. In Meta Ads Manager paste it as the ad's Website URL. The campaign code inside the link lets every chat that starts from the landing page be linked back to this campaign.",
-            "tip": "Do not change the link itself: Meta fills in the ad id by itself."
+            "title": "Website ads: one link for every ad",
+            "body": "If the ad sends people to the landing page first, select any campaign and click Copy ad link. It is one universal link that works for every Meta ad: in Meta Ads Manager paste it once as the ad's Website URL (or in the URL parameters). Meta fills in the campaign id and the ad id for each ad by itself, so every landing visit and chat is linked to the right campaign without a code. A second, per-code link under it is only for places outside Meta.",
+            "tip": "Do not change the link: Meta fills in the campaign id and the ad id by itself."
           },
           "kode-chat": {
             "title": "Chats from the landing page carry a Kode",
@@ -9952,6 +9952,11 @@
             "title": "Set up the ad campaign for website events",
             "body": "Create the campaign with Conversion location: Website and choose the dataset (Pixel) of the landing page. Start by optimising for Lead. When QualifiedLead events come in steadily (roughly 50 a week), make a new ad set that optimises for QualifiedLead. Staff keep working as usual: paste each chat into New lead and move the stages.",
             "tip": "Meta only accepts events up to 7 days old; older ones are skipped automatically and marked as such on the lead."
+          },
+          "sinkronisasi-meta-ads": {
+            "title": "Meta Ads sync: ad spend into the CRM",
+            "body": "The Meta Ads sync card in CRM settings shows the ad account (name and id), the last sync, and a Sync now button. It reuses the same Meta system user token as auto-publishing, which needs the ads_read permission on the ad account, and runs by itself every 3 hours. If the token sees exactly one active ad account, it is used automatically. If it sees none or several, the card says Incomplete: ask the developer/admin to set META_AD_ACCOUNT_ID (the numeric ad account id, with or without act_) in the server environment and restart. META_ADS_SYNC_ENABLED=false turns the sync off, and META_ADS_SYNC_BACKFILL_DAYS (default 90) is how much history the first run pulls. If Meta asks us to slow down the card shows the next try time. The environment names are in Technical details (admin).",
+            "tip": "Meta restates recent days, so each run re-reads the last 7 days. Spend entered by hand is never touched."
           }
         }
       }
@@ -10248,7 +10253,9 @@
         "leads": "Leads",
         "won": "Won",
         "spend": "Ad spend",
-        "costClient": "Cost / client"
+        "costClient": "Cost / client",
+        "costLead": "Cost / lead",
+        "costQualified": "Cost / Qualified"
       },
       "more": "Campaign actions",
       "edit": "Edit",
@@ -10261,11 +10268,11 @@
       "prefillHelp": "Paste it in Meta Ads Manager → Ad → Message → \"Pre-filled message\". The code at the end links each lead to this campaign.",
       "budget": "Budget",
       "spendTitle": "Ad spend",
-      "logSpend": "Log spend",
+      "logSpend": "Log other costs",
       "deleteSpend": "Delete spend entry",
       "deleteSpendConfirm": "Delete this spend entry?",
       "noSpend": "No spend logged yet.",
-      "metaSpend": "Pulled automatically from Meta once our permissions are approved.",
+      "metaSpend": "Meta ad spend syncs automatically. Use \"Log other costs\" for anything else (creative, studio, agency fees).",
       "saved": "Campaign saved.",
       "dialogTitle": "Campaign",
       "editTitle": "Edit campaign",
@@ -10277,8 +10284,8 @@
       "end": "End",
       "statusLabel": "Status",
       "prefillLabel": "Pre-filled message",
-      "spendSaved": "Spend logged.",
-      "spendHint": "Enter the ad spend for a day or a date range.",
+      "spendSaved": "Cost logged.",
+      "spendHint": "Costs that are not synced from Meta, for a day or a date range. Meta ad spend is added automatically.",
       "from": "From",
       "to": "To",
       "amount": "Amount",
@@ -10288,8 +10295,26 @@
       "adLink": {
         "copy": "Copy ad link",
         "copied": "Ad link copied.",
-        "title": "Website ad link (landing page)",
-        "help": "Paste it as the ad's Website URL in Ads Manager (or in the URL parameters). Meta replaces {{adId}} with the ad's id; the campaign code lets every chat be linked back to this campaign."
+        "title": "Link with this campaign code (other channels)",
+        "help": "For links outside Meta (Instagram bio, newsletter, other ad networks): the campaign code travels as utm_campaign.",
+        "universalTitle": "Ad link for Meta ads (one link for every ad)",
+        "universalHelp": "Works for every ad: paste it once as the ad's Website URL (or in the URL parameters) in Ads Manager. Meta fills in {{campaignId}} and {{adId}} for each ad, so every landing visit is linked to its campaign automatically.",
+        "copyCode": "Copy link with code"
+      },
+      "synced": "Synced from Meta · last sync {{ago}}",
+      "syncedNever": "Meta sync has not run yet",
+      "imprClicks": "{{impr}} impr. · {{clicks}} clicks",
+      "metaBadge": "Meta",
+      "spendSplit": "Meta {{meta}} + other costs {{other}}",
+      "metaLink": {
+        "title": "Meta campaign",
+        "none": "Not linked to a Meta campaign",
+        "takenBy": "linked to {{code}}",
+        "saved": "Linked to the Meta campaign.",
+        "unlinked": "Unlinked from Meta.",
+        "linkedHelp": "Spend of Meta campaign \"{{name}}\" syncs into this campaign, and landing visits from its ads are linked to it. Choose \"Not linked\" to stop.",
+        "empty": "No Meta campaigns known yet. Run \"Sync now\" in CRM settings.",
+        "help": "Link this campaign to its Meta campaign to pull the ad spend automatically."
       }
     },
     "errors": {
@@ -10350,7 +10375,11 @@
         "revenueHint": "Paid invoices + approved quotations",
         "costClient": "Cost per client",
         "costHint": "Ad spend {{spend}} ÷ {{n}} won",
-        "costNone": "Ad spend {{spend}}"
+        "costNone": "Ad spend {{spend}}",
+        "spend": "Ad spend",
+        "spendHint": "Meta {{meta}} · other costs {{other}}",
+        "costLead": "Cost per lead",
+        "costLeadHint": "Ad spend {{spend}} ÷ {{n}} leads"
       },
       "funnel": "Sales funnel",
       "dropPre": "Most leads drop off at",
@@ -10364,7 +10393,9 @@
       "col": {
         "qualified": "Qualified",
         "revenue": "Revenue",
-        "costLead": "Cost / lead"
+        "costLead": "Cost / lead",
+        "spend": "Ad spend",
+        "costQualified": "Cost / Qualified"
       },
       "noCampaign": "No campaign",
       "noData": "No leads in this period.",
@@ -10372,7 +10403,8 @@
       "lost_one": "{{count}} lead marked as lost.",
       "lost_other": "{{count}} leads marked as lost.",
       "unansweredCount_one": "{{count}} lead",
-      "unansweredCount_other": "{{count}} leads"
+      "unansweredCount_other": "{{count}} leads",
+      "syncedFrom": "Ad spend includes data synced from Meta · last sync {{ago}}"
     },
     "leads": {
       "campaign": "Campaign",
@@ -10905,6 +10937,46 @@
       "quickSaveMerge": "Merge into existing lead",
       "returning": "Returning client: previous lead {{name}} ({{stage}})",
       "returningSub": "The waiting lead stays in New as a new deal."
+    },
+    "metaAds": {
+      "title": "Meta Ads sync",
+      "subtitle": "Pulls the ad spend of every Meta campaign every 3 hours, so cost per lead and cost per client need no typing.",
+      "stateReady": "Ready: spend syncs from Meta",
+      "stateOff": "Off: ad spend is entered by hand",
+      "stateIncomplete": "Incomplete: not syncing",
+      "stateInvalid": "Invalid: not syncing",
+      "status": "Status",
+      "account": "Ad account",
+      "lastSync": "Last sync",
+      "lastRun": "Last attempt",
+      "nextTry": "Next try",
+      "range": "Days read last time",
+      "campaigns": "Meta campaigns",
+      "campaignsLine": "{{meta}} known · {{linked}} linked to a CRM campaign",
+      "never": "Never",
+      "last": {
+        "SUCCESS": "Succeeded",
+        "FAILED": "Failed",
+        "RATE_LIMITED": "Meta asked us to slow down",
+        "INCOMPLETE": "Ad account not chosen",
+        "SKIPPED": "Skipped"
+      },
+      "incompletePlain": "The sync cannot tell which ad account to use. Ask the developer/admin to finish the setup.",
+      "offPlain": "The sync is off. You can still log ad spend by hand on the Campaigns page.",
+      "invalidPlain": "The sync is not set up correctly on the server yet. Ask the developer/admin to fix it.",
+      "failedPlain": "The last sync failed. Spend already stored is kept. It retries automatically.",
+      "techDetails": "Technical details (admin)",
+      "techEnv": "Server settings used: {{vars}}. Change them in the server environment and restart the backend.",
+      "syncNow": "Sync now",
+      "syncing": "Syncing…",
+      "auto": "Runs automatically every 3 hours.",
+      "loadFailed": "Could not load the Meta Ads sync status.",
+      "syncDone": "Synced: {{rows}} days of spend read, {{created}} new campaigns.",
+      "syncBusy": "A sync is already running. Try again in a minute.",
+      "syncRateLimited": "Meta asked us to slow down. The sync will try again later by itself.",
+      "syncIncomplete": "The ad account could not be chosen. See the card for details.",
+      "syncSkipped": "The sync is not set up on the server, nothing was synced.",
+      "syncFailed": "The sync failed. See the card for details."
     }
   },
   "socialPublish": {

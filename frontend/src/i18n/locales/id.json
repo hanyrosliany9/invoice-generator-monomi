@@ -9714,8 +9714,8 @@
         "steps": {
           "kampanye": {
             "title": "Buat kampanye untuk setiap iklan",
-            "body": "Buka Marketing > CRM > Kampanye lalu klik Kampanye baru (1). Beri nama dan kode unik, misalnya FB-OKT1. Isi anggaran dan tanggal jika sudah ada. Setiap baris tabel (2) menampilkan lead, klien yang menang, biaya iklan, dan biaya per klien.",
-            "tip": "Pakai satu kode per iklan supaya dasbor bisa membandingkan iklan dengan adil."
+            "body": "Buka Marketing > CRM > Kampanye. Kampanye dari iklan Meta Anda muncul sendiri setelah sinkronisasi pertama, dengan kode diambil dari nama kampanye iklan (kode boleh diganti). Untuk menambah manual, klik Kampanye baru (1) lalu beri nama dan kode unik, misalnya FB-OKT1. Setiap baris tabel (2) menampilkan lead, klien yang menang, biaya iklan yang disinkronkan dari Meta, serta biaya per lead, per lead Qualified, dan per klien.",
+            "tip": "Iklan WhatsApp (click-to-WhatsApp) tetap memerlukan kodenya di pesan otomatis di bawah. Pakai satu kode per kampanye iklan supaya dasbor bisa membandingkan dengan adil."
           },
           "pesan-iklan": {
             "title": "Salin pesan iklan beserta kode kampanye",
@@ -9744,13 +9744,13 @@
           },
           "dasbor": {
             "title": "Baca dasbor",
-            "body": "Buka Dasbor CRM: lead baru, klien menang, pendapatan, dan biaya per klien (1), corong penjualan, kecepatan respons, serta tabel per kampanye (2) berisi lead, pendapatan, biaya per lead, dan biaya per klien. Pilih periode dan kampanye di bagian atas.",
+            "body": "Buka Dasbor CRM: lead baru, klien menang, pendapatan, biaya iklan (sinkron dari Meta ditambah biaya lain), biaya per lead, dan biaya per klien (1), corong penjualan, kecepatan respons, serta tabel per kampanye (2) berisi lead, pendapatan, biaya, biaya per lead, biaya per lead Qualified, dan biaya per klien. Pilih periode dan kampanye di bagian atas.",
             "tip": "Kecepatan respons dibandingkan dengan target yang Anda atur di pengaturan CRM."
           },
           "biaya-iklan": {
-            "title": "Catat biaya iklan",
-            "body": "Klik Catat biaya pada kampanye. Pilih tanggal, atau hari pertama dan terakhir rentang, dari kalender (1), isi jumlah dalam rupiah (2), lalu klik Simpan (3). Biaya per lead dan biaya per klien di dasbor dihitung dari catatan ini.",
-            "tip": "Catat satu minggu sekaligus dengan rentang tanggal. Catatan yang salah bisa dihapus dengan ikon tempat sampah di sampingnya."
+            "title": "Biaya iklan tersinkron dari Meta",
+            "body": "Biaya iklan Meta tidak perlu diketik lagi: diambil dari Meta tiap 3 jam (tabel menulis \"Disinkronkan dari Meta, sinkron terakhir ...\") dan setiap harinya berlabel Meta di daftar biaya kampanye. Hanya biaya yang tidak diketahui Meta, seperti kreatif, studio, atau fee agensi, yang dicatat manual: klik Catat biaya lain pada kampanye, pilih tanggal, atau hari pertama dan terakhir rentang (1), isi jumlah dalam rupiah (2), lalu klik Simpan (3). Keduanya dijumlahkan dalam biaya per lead dan biaya per klien.",
+            "tip": "Catatan Anda bisa dihapus dengan ikon tempat sampah; hari-hari dari Meta tidak bisa diubah. Jika angka terlihat lama, admin bisa klik Sinkronkan sekarang di pengaturan CRM."
           },
           "daftar": {
             "title": "Tampilan daftar dan aksi massal",
@@ -9768,9 +9768,9 @@
             "tip": "Riwayat mencatat konversi dan penawarannya, dalam bahasa Anda."
           },
           "link-iklan-website": {
-            "title": "Iklan website: salin link iklan",
-            "body": "Jika iklan mengarahkan orang ke landing page dulu, pilih kampanye lalu klik Salin link iklan. Di Meta Ads Manager, tempel sebagai URL Website iklan. Kode kampanye di dalam link membuat setiap chat yang berawal dari landing page bisa dihubungkan kembali ke kampanye ini.",
-            "tip": "Jangan ubah linknya: Meta mengisi id iklan dengan sendirinya."
+            "title": "Iklan website: satu link untuk semua iklan",
+            "body": "Jika iklan mengarahkan orang ke landing page dulu, pilih kampanye mana saja lalu klik Salin link iklan. Itu satu link universal yang berlaku untuk semua iklan Meta: di Meta Ads Manager tempel sekali sebagai URL Website iklan (atau di URL parameters). Meta mengisi id kampanye dan id iklan untuk tiap iklan, jadi setiap kunjungan dan chat dari landing page terhubung ke kampanye yang benar tanpa kode. Link kedua per kode di bawahnya hanya untuk tempat di luar Meta.",
+            "tip": "Jangan ubah linknya: Meta mengisi id kampanye dan id iklan dengan sendirinya."
           },
           "kode-chat": {
             "title": "Chat dari landing page membawa Kode",
@@ -9951,6 +9951,11 @@
             "title": "Atur kampanye iklan untuk event website",
             "body": "Buat kampanye dengan Conversion location: Website dan pilih dataset (Pixel) landing page. Mulai dengan optimasi Lead. Saat event QualifiedLead masuk stabil (kira-kira 50 per minggu), buat ad set baru yang dioptimalkan untuk QualifiedLead. Tim bekerja seperti biasa: tempel tiap chat ke Lead baru dan pindahkan tahapnya.",
             "tip": "Meta hanya menerima event paling lama 7 hari; yang lebih lama dilewati otomatis dan ditandai di lead."
+          },
+          "sinkronisasi-meta-ads": {
+            "title": "Sinkronisasi Meta Ads: biaya iklan ke CRM",
+            "body": "Kartu Sinkronisasi Meta Ads di pengaturan CRM menampilkan akun iklan (nama dan id), sinkron terakhir, dan tombol Sinkronkan sekarang. Kartu ini memakai token system user Meta yang sama dengan publikasi otomatis, yang butuh izin ads_read pada akun iklan, dan berjalan sendiri tiap 3 jam. Jika token hanya melihat satu akun iklan aktif, akun itu dipakai otomatis. Jika tidak ada atau lebih dari satu, kartu menulis Belum lengkap: minta developer/admin mengisi META_AD_ACCOUNT_ID (id akun iklan berupa angka, dengan atau tanpa act_) di environment server lalu restart. META_ADS_SYNC_ENABLED=false mematikan sinkronisasi, dan META_ADS_SYNC_BACKFILL_DAYS (bawaan 90) adalah banyaknya riwayat yang diambil pada jalan pertama. Jika Meta meminta kita melambat, kartu menampilkan waktu percobaan berikutnya. Nama environment ada di Detail teknis (admin).",
+            "tip": "Meta merevisi hari-hari terbaru, jadi tiap jalan membaca ulang 7 hari terakhir. Biaya yang diketik manual tidak pernah disentuh."
           }
         }
       }
@@ -10247,7 +10252,9 @@
         "leads": "Lead",
         "won": "Menang",
         "spend": "Biaya iklan",
-        "costClient": "Biaya / klien"
+        "costClient": "Biaya / klien",
+        "costLead": "Biaya / lead",
+        "costQualified": "Biaya / Qualified"
       },
       "more": "Aksi kampanye",
       "edit": "Ubah",
@@ -10260,11 +10267,11 @@
       "prefillHelp": "Tempel di Meta Ads Manager → Iklan → Pesan → \"Pesan otomatis\". Kode di akhir pesan menghubungkan setiap lead ke kampanye ini.",
       "budget": "Anggaran",
       "spendTitle": "Biaya iklan",
-      "logSpend": "Catat biaya",
+      "logSpend": "Catat biaya lain",
       "deleteSpend": "Hapus catatan biaya",
       "deleteSpendConfirm": "Hapus catatan biaya ini?",
       "noSpend": "Belum ada biaya yang dicatat.",
-      "metaSpend": "Diambil otomatis dari Meta setelah izin kami disetujui.",
+      "metaSpend": "Biaya iklan Meta disinkronkan otomatis. Pakai \"Catat biaya lain\" untuk biaya lainnya (kreatif, studio, fee agensi).",
       "saved": "Kampanye disimpan.",
       "dialogTitle": "Kampanye",
       "editTitle": "Ubah kampanye",
@@ -10277,7 +10284,7 @@
       "statusLabel": "Status",
       "prefillLabel": "Pesan otomatis",
       "spendSaved": "Biaya dicatat.",
-      "spendHint": "Isi biaya iklan untuk satu hari atau rentang tanggal.",
+      "spendHint": "Biaya yang tidak disinkronkan dari Meta, untuk satu hari atau rentang tanggal. Biaya iklan Meta ditambahkan otomatis.",
       "from": "Dari",
       "to": "Sampai",
       "amount": "Jumlah",
@@ -10287,8 +10294,26 @@
       "adLink": {
         "copy": "Salin link iklan",
         "copied": "Link iklan disalin.",
-        "title": "Link iklan website (landing page)",
-        "help": "Tempel sebagai URL Website iklan di Ads Manager (atau di parameter URL). Meta mengganti {{adId}} dengan id iklan; kode kampanye membuat setiap chat bisa dihubungkan kembali ke kampanye ini."
+        "title": "Link dengan kode kampanye ini (kanal lain)",
+        "help": "Untuk link di luar Meta (bio Instagram, newsletter, jaringan iklan lain): kode kampanye dibawa sebagai utm_campaign.",
+        "universalTitle": "Link iklan untuk iklan Meta (satu link untuk semua iklan)",
+        "universalHelp": "Berlaku untuk semua iklan: tempel sekali sebagai Website URL iklan (atau di URL parameters) di Ads Manager. Meta mengisi {{campaignId}} dan {{adId}} untuk tiap iklan, jadi setiap kunjungan landing page otomatis terhubung ke kampanyenya.",
+        "copyCode": "Salin link dengan kode"
+      },
+      "synced": "Disinkronkan dari Meta · sinkron terakhir {{ago}}",
+      "syncedNever": "Sinkronisasi Meta belum pernah berjalan",
+      "imprClicks": "{{impr}} tayang · {{clicks}} klik",
+      "metaBadge": "Meta",
+      "spendSplit": "Meta {{meta}} + biaya lain {{other}}",
+      "metaLink": {
+        "title": "Kampanye Meta",
+        "none": "Tidak terhubung ke kampanye Meta",
+        "takenBy": "terhubung ke {{code}}",
+        "saved": "Terhubung ke kampanye Meta.",
+        "unlinked": "Hubungan dengan Meta dilepas.",
+        "linkedHelp": "Biaya kampanye Meta \"{{name}}\" disinkronkan ke kampanye ini, dan kunjungan landing page dari iklannya terhubung ke sini. Pilih \"Tidak terhubung\" untuk menghentikan.",
+        "empty": "Belum ada kampanye Meta yang dikenal. Jalankan \"Sinkronkan sekarang\" di pengaturan CRM.",
+        "help": "Hubungkan kampanye ini ke kampanye Meta-nya agar biaya iklan terambil otomatis."
       }
     },
     "errors": {
@@ -10349,7 +10374,11 @@
         "revenueHint": "Invoice lunas + penawaran disetujui",
         "costClient": "Biaya per klien",
         "costHint": "Biaya iklan {{spend}} ÷ {{n}} menang",
-        "costNone": "Biaya iklan {{spend}}"
+        "costNone": "Biaya iklan {{spend}}",
+        "spend": "Biaya iklan",
+        "spendHint": "Meta {{meta}} · biaya lain {{other}}",
+        "costLead": "Biaya per lead",
+        "costLeadHint": "Biaya iklan {{spend}} ÷ {{n}} lead"
       },
       "funnel": "Corong penjualan",
       "dropPre": "Kebanyakan lead berhenti di",
@@ -10363,13 +10392,16 @@
       "col": {
         "qualified": "Dikualifikasi",
         "revenue": "Pendapatan",
-        "costLead": "Biaya / lead"
+        "costLead": "Biaya / lead",
+        "spend": "Biaya iklan",
+        "costQualified": "Biaya / Qualified"
       },
       "noCampaign": "Tanpa kampanye",
       "noData": "Tidak ada lead pada periode ini.",
       "bySource": "Per sumber",
       "lost_other": "{{count}} lead ditandai kalah.",
-      "unansweredCount_other": "{{count}} lead"
+      "unansweredCount_other": "{{count}} lead",
+      "syncedFrom": "Biaya iklan memuat data dari Meta · sinkron terakhir {{ago}}"
     },
     "leads": {
       "campaign": "Kampanye",
@@ -10899,6 +10931,46 @@
       "quickSaveMerge": "Gabungkan ke lead lama",
       "returning": "Klien lama: lead sebelumnya {{name}} ({{stage}})",
       "returningSub": "Lead yang menunggu tetap di Baru sebagai deal baru."
+    },
+    "metaAds": {
+      "title": "Sinkronisasi Meta Ads",
+      "subtitle": "Mengambil biaya iklan setiap kampanye Meta tiap 3 jam, jadi biaya per lead dan per klien tidak perlu diketik.",
+      "stateReady": "Siap: biaya disinkronkan dari Meta",
+      "stateOff": "Mati: biaya iklan diisi manual",
+      "stateIncomplete": "Belum lengkap: tidak menyinkronkan",
+      "stateInvalid": "Tidak valid: tidak menyinkronkan",
+      "status": "Status",
+      "account": "Akun iklan",
+      "lastSync": "Sinkron terakhir",
+      "lastRun": "Percobaan terakhir",
+      "nextTry": "Coba lagi",
+      "range": "Hari yang dibaca terakhir kali",
+      "campaigns": "Kampanye Meta",
+      "campaignsLine": "{{meta}} dikenal · {{linked}} terhubung ke kampanye CRM",
+      "never": "Belum pernah",
+      "last": {
+        "SUCCESS": "Berhasil",
+        "FAILED": "Gagal",
+        "RATE_LIMITED": "Meta meminta kita melambat",
+        "INCOMPLETE": "Akun iklan belum dipilih",
+        "SKIPPED": "Dilewati"
+      },
+      "incompletePlain": "Sinkronisasi belum tahu akun iklan mana yang dipakai. Minta developer/admin menyelesaikan pengaturannya.",
+      "offPlain": "Sinkronisasi mati. Biaya iklan tetap bisa dicatat manual di halaman Kampanye.",
+      "invalidPlain": "Sinkronisasi belum diatur dengan benar di server. Minta developer/admin memperbaikinya.",
+      "failedPlain": "Sinkronisasi terakhir gagal. Biaya yang sudah tersimpan tetap aman. Akan dicoba lagi otomatis.",
+      "techDetails": "Detail teknis (admin)",
+      "techEnv": "Pengaturan server yang dipakai: {{vars}}. Ubah di environment server lalu restart backend.",
+      "syncNow": "Sinkronkan sekarang",
+      "syncing": "Menyinkronkan…",
+      "auto": "Berjalan otomatis tiap 3 jam.",
+      "loadFailed": "Gagal memuat status sinkronisasi Meta Ads.",
+      "syncDone": "Tersinkron: {{rows}} hari biaya dibaca, {{created}} kampanye baru.",
+      "syncBusy": "Sinkronisasi sedang berjalan. Coba lagi sebentar lagi.",
+      "syncRateLimited": "Meta meminta kita melambat. Sinkronisasi akan dicoba lagi nanti secara otomatis.",
+      "syncIncomplete": "Akun iklan belum bisa dipilih. Lihat kartu untuk detailnya.",
+      "syncSkipped": "Sinkronisasi belum diatur di server, tidak ada yang disinkronkan.",
+      "syncFailed": "Sinkronisasi gagal. Lihat kartu untuk detailnya."
     }
   },
   "socialPublish": {

@@ -260,10 +260,24 @@ export interface Campaign {
   /** Meta ad ids (Click-to-WhatsApp referral source_id) mapped to this campaign. */
   metaAdIds?: string[];
   leads: number;
+  qualified?: number;
   won: number;
+  /** Combined: synced Meta spend + manually logged other costs. */
   spend: number;
+  manualSpend?: number;
+  metaSpend?: number;
+  impressions?: number;
+  clicks?: number;
+  /** Currency of the Meta account (IDR for Monomi). */
+  spendCurrency?: string;
   costPerLead: number | null;
+  costPerQualified?: number | null;
   costPerClient: number | null;
+  /** Linked Meta (Ads) campaign: its spend syncs automatically. */
+  metaCampaignId?: string | null;
+  metaCampaignName?: string | null;
+  metaStatus?: string | null;
+  metaObjective?: string | null;
 }
 
 export interface CampaignInput {
@@ -286,6 +300,49 @@ export interface CampaignSpend {
   amount: number;
   note: string | null;
   source: 'MANUAL' | 'META';
+  /** Synced Meta days cannot be edited or deleted. */
+  readOnly?: boolean;
+  currency?: string;
+  impressions?: number;
+  clicks?: number;
+}
+
+export type MetaAdsState = 'OFF' | 'INCOMPLETE' | 'INVALID' | 'READY';
+
+export interface MetaAdsStatus {
+  state: MetaAdsState;
+  problems: string[];
+  message: string | null;
+  account: { id: string; name: string | null; currency: string | null } | null;
+  accountConfigured: boolean;
+  backfillDays: number;
+  lastRunAt: string | null;
+  lastSuccessAt: string | null;
+  lastStatus: 'SUCCESS' | 'FAILED' | 'RATE_LIMITED' | 'INCOMPLETE' | 'SKIPPED' | null;
+  lastTrigger: 'CRON' | 'MANUAL' | null;
+  lastError: string | null;
+  rateLimitedUntil: string | null;
+  running: boolean;
+  range: { from: string; to: string } | null;
+  metaCampaigns: number;
+  linkedCampaigns: number;
+  env: string[];
+}
+
+export interface MetaAdsSyncResult {
+  status: 'SUCCESS' | 'FAILED' | 'RATE_LIMITED' | 'INCOMPLETE' | 'SKIPPED' | 'BUSY';
+  message?: string;
+  insightRows?: number;
+  created?: number;
+}
+
+export interface MetaCampaignOption {
+  metaCampaignId: string;
+  name: string;
+  effectiveStatus: string | null;
+  objective: string | null;
+  linkedCampaignId: string | null;
+  linkedCampaignCode: string | null;
 }
 
 export interface FunnelStep {
@@ -311,7 +368,12 @@ export interface CrmStats {
   revenuePaid: number;
   revenuePending: number;
   spend: number;
+  metaSpend?: number;
+  manualSpend?: number;
+  spendCurrency?: string;
+  metaLastSyncAt?: string | null;
   costPerLead: number | null;
+  costPerQualified?: number | null;
   costPerClient: number | null;
   costPerPayingClient: number | null;
   payingClients: number;
@@ -320,7 +382,8 @@ export interface CrmStats {
   bySource: Array<{ source: LeadSource; leads: number; won: number }>;
   byCampaign: Array<{
     campaignId: string; name: string; code: string; leads: number; qualified: number; won: number;
-    revenue: number; spend: number; costPerLead: number | null; costPerClient: number | null;
+    revenue: number; spend: number; metaSpend?: number; impressions?: number; clicks?: number;
+    costPerLead: number | null; costPerQualified?: number | null; costPerClient: number | null;
   }>;
   noCampaign: { leads: number; won: number };
   funnel: FunnelStep[];
@@ -403,6 +466,12 @@ export const crmApi = {
   addSpend: async (campaignId: string, d: { dateFrom: string; dateTo?: string; amount: number; note?: string }): Promise<CampaignSpend> =>
     unwrap(await api.post(`/crm/campaigns/${campaignId}/spend`, d)),
   deleteSpend: async (id: string): Promise<void> => { await api.delete(`/crm/spend/${id}`); },
+
+  metaAdsStatus: async (): Promise<MetaAdsStatus> => unwrap(await api.get('/crm/meta-ads/status')),
+  metaAdsSync: async (): Promise<MetaAdsSyncResult> => unwrap(await api.post('/crm/meta-ads/sync')),
+  metaAdsCampaigns: async (): Promise<MetaCampaignOption[]> => unwrap(await api.get('/crm/meta-ads/campaigns')),
+  setMetaLink: async (campaignId: string, metaCampaignId: string | null): Promise<Campaign> =>
+    unwrap(await api.put(`/crm/campaigns/${campaignId}/meta-link`, { metaCampaignId })),
 };
 
 /** Best human-readable message from an axios error. */

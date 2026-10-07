@@ -23,6 +23,7 @@ export const adminGuides: GuideDef[] = [
     ]).concat([
       // text-only steps (no screenshot): landing-page tracking
       { id: 'pelacakan-landing-page', href: '/crm/settings' },
+      { id: 'sinkronisasi-meta-ads', href: '/crm/settings' },
       { id: 'domain-verifikasi', href: '/crm/settings' },
       { id: 'kampanye-website', href: '/crm/campaigns' },
     ]),
