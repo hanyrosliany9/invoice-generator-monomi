@@ -9759,7 +9759,7 @@
           },
           "pindah-tahap": {
             "title": "Pindahkan lead ke tahap lain",
-            "body": "Klik Pindah tahap (1) lalu pilih tahap baru (2). Hanya dua tahap yang dilaporkan ke Meta: Dikualifikasi (QualifiedLead) dan Menang (Purchase, beserta nilainya). Rapat dan Penawaran tidak dikirim. Kalah meminta alasan singkat. Setiap perpindahan tercatat di Riwayat beserta siapa dan kapan. Event hanya dikirim untuk lead yang bisa dicocokkan ke iklan: lead dengan Kode landing page sekarang, dan chat Click-to-WhatsApp setelah koneksi WhatsApp aktif.",
+            "body": "Klik Pindah tahap (1) lalu pilih tahap baru (2). Hanya dua tahap yang dilaporkan ke Meta: Dikualifikasi (QualifiedLead) dan Menang (Purchase, beserta nilainya). Meeting dan Penawaran tidak dikirim. Kalah meminta alasan singkat. Setiap perpindahan tercatat di Riwayat beserta siapa dan kapan. Event hanya dikirim untuk lead yang bisa dicocokkan ke iklan: lead dengan Kode landing page sekarang, dan chat Click-to-WhatsApp setelah koneksi WhatsApp aktif.",
             "tip": "Saat penawaran disetujui atau invoice dibayar, lead pindah ke Menang dengan sendirinya dan mengirim Purchase."
           },
           "hasil": {
