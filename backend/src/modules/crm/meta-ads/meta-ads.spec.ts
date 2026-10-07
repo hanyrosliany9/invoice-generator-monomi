@@ -965,3 +965,53 @@ describe("Meta Ads sync: follow-ups", () => {
     });
   });
 });
+
+describe("follow-up migration backfill (campaignSource)", () => {
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it("the SQL marks every lead with a campaign MANUAL and never AUTO", () => {
+    const sqlText = require("fs").readFileSync(
+      require("path").join(__dirname, "../../../../prisma/migrations/20261009100000_meta_ads_followups/migration.sql"),
+      "utf8",
+    ) as string;
+    const statements = sqlText.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
+    expect(statements).toContain(`UPDATE "leads" SET "campaignSource" = 'MANUAL' WHERE "campaignId" IS NOT NULL`);
+    expect(statements).not.toContain("'AUTO'");
+  });
+
+  it("state after the migration: staff-moved auto lead and auto-created lead stay put, the lead without a campaign is attributed", async () => {
+    // what the backfill leaves: every lead WITH a campaign is MANUAL, the one without is NULL
+    const { svc, prisma, t } = setup(
+      {},
+      {
+        campaign: [{ id: "staffPick", name: "Staff pick", code: "STAFF", metaAdIds: [], metaCampaignId: null }],
+        adClick: [
+          { id: "k1", utmCampaign: C_LINK, campaignCode: null, leadId: "movedByStaff" },
+          { id: "k2", utmCampaign: C_LINK, campaignCode: null, leadId: "noCampaign" },
+          { id: "k3", utmCampaign: C_LINK, campaignCode: null, leadId: "autoCreated" },
+        ],
+        lead: [
+          // auto-created from a tap, later moved to another campaign by staff
+          { id: "movedByStaff", campaignId: "staffPick", campaignCode: "STAFF", campaignSource: "MANUAL", autoCreated: true, adId: "AD1", ctwaClid: "c" },
+          { id: "noCampaign", campaignId: null, campaignCode: null, campaignSource: null },
+          // auto-created with a campaign: safe default MANUAL
+          { id: "autoCreated", campaignId: "staffPick", campaignCode: "STAFF", campaignSource: "MANUAL", autoCreated: true },
+        ],
+      },
+    );
+    await svc.run("MANUAL"); // creates PB-CAMP-LINK, links C_LINK, attributes
+    const link = t.campaign.find((c) => c.metaCampaignId === C_LINK);
+    const lead = (id: string) => t.lead.find((l) => l.id === id);
+    expect(lead("noCampaign")).toMatchObject({ campaignId: link.id, campaignSource: "AUTO" });
+    expect(lead("movedByStaff")).toMatchObject({ campaignId: "staffPick", campaignSource: "MANUAL" });
+    expect(lead("autoCreated")).toMatchObject({ campaignId: "staffPick", campaignSource: "MANUAL" });
+    // and a later re-link/unlink never moves them either
+    await new MetaAdsAdminService(prisma as any, svc).setLink(link.id, null);
+    expect(lead("movedByStaff").campaignId).toBe("staffPick");
+    expect(lead("autoCreated").campaignId).toBe("staffPick");
+  });
+});

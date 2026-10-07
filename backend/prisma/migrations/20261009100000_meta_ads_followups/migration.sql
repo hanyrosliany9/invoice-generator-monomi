@@ -11,9 +11,8 @@ ALTER TABLE "meta_ads_sync_state" ADD COLUMN     "timezoneName" TEXT;
 CREATE INDEX "ad_clicks_utmCampaign_idx" ON "ad_clicks"("utmCampaign");
 
 
--- Backfill: a campaign set by the server from a landing-page tap (auto-created lead
--- with a click and ad id) is AUTO; every other existing assignment is MANUAL (when unsure, MANUAL).
-UPDATE "leads" SET "campaignSource" = CASE
-  WHEN "autoCreated" = true OR ("adId" IS NOT NULL AND "ctwaClid" IS NOT NULL) THEN 'AUTO'
-  ELSE 'MANUAL' END
-WHERE "campaignId" IS NOT NULL;
+-- Backfill: nothing records who set an existing lead's campaign (a later manual change
+-- is indistinguishable from the original attribution), so EVERY lead that already has a
+-- campaign becomes MANUAL (never moved by the Meta sync). Leads without a campaign stay
+-- NULL: attribution may still fill them in (and then marks them AUTO).
+UPDATE "leads" SET "campaignSource" = 'MANUAL' WHERE "campaignId" IS NOT NULL;
