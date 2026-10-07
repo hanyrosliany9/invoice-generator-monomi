@@ -60,7 +60,7 @@ describe("route selection", () => {
         { id: "L-web", ctwaClid: null },
         { id: "L-none", ctwaClid: null },
       ],
-      clicks: [{ id: "c1", ref: REF, eventId: "e", createdAt: new Date(), leadId: "L-web" }],
+      clicks: [{ id: "c1", ref: REF, eventId: "e", createdAt: new Date(), leadId: "L-web", linkedVia: "KODE" }],
     });
     await outbox.queueEvent(prisma as any, { id: "L-ctwa", ctwaClid: "ARA" }, "QualifiedLead");
     await outbox.queueEvent(prisma as any, { id: "L-web", ctwaClid: null }, "QualifiedLead");
@@ -74,7 +74,7 @@ describe("route selection", () => {
   it("a website lead's LeadSubmitted is not queued (the Lead went out at click time)", async () => {
     const { prisma, outbox, t } = setup({
       leads: [{ id: "L-web", ctwaClid: null }],
-      clicks: [{ id: "c1", ref: REF, eventId: "e", createdAt: new Date(), leadId: "L-web" }],
+      clicks: [{ id: "c1", ref: REF, eventId: "e", createdAt: new Date(), leadId: "L-web", linkedVia: "KODE" }],
     });
     expect(await outbox.queueEvent(prisma as any, { id: "L-web", ctwaClid: null }, "LeadSubmitted")).toBe(false);
     expect(t.metaEventOutbox).toHaveLength(0);

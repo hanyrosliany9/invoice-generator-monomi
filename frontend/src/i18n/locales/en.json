@@ -10881,7 +10881,8 @@
       "taken": "That code is already linked to another lead.",
       "invalid": "Enter the 6-character code, e.g. K7QM2X.",
       "linkAnother": "Link another code",
-      "otherTaps": "Earlier taps"
+      "otherTaps": "Earlier taps",
+      "unconfirmedTaps": "Tapped again on the landing page with the same Instagram (not confirmed, not used for Meta): {{refs}}. Link the code from their chat to confirm it."
     },
     "waiting": {
       "badge": "Waiting for WhatsApp",

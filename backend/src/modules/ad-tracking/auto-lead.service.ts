@@ -11,7 +11,7 @@ import { Lead, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { escapeActivityText, normalizePhone, waIdFromPhone } from "../crm/crm.utils";
 import { AdTrackingConfig, resolveAdTrackingConfig } from "./ad-tracking.config";
-import { attachClickInTx, rerouteToWebsiteInTx } from "./click-link";
+import { attachClickInTx, confirmKodeInTx, rerouteToWebsiteInTx } from "./click-link";
 import { InMemoryTrackCounters, TrackCounters } from "./track-limits";
 import { isBotUserAgent } from "./track-utils";
 
@@ -26,6 +26,12 @@ const STALE_BATCH = 500;
 export const LOST_REASON_DUPLICATE = "Duplicate";
 /** lostReason of a waiting lead that never sent the WhatsApp message (no Meta event). */
 export const LOST_REASON_NEVER_SENT_WHATSAPP = "Never sent WhatsApp";
+/** Marker row on a merge target: the merged placeholder already sent / queued this event. */
+export const SKIP_SENT_BEFORE_MERGE =
+  "SKIP_SENT_BEFORE_MERGE: already sent or queued for the merged landing-page lead of this person";
+/** Stage events a merge carries over (sent or still going to be sent). */
+const CARRY_EVENTS = ["QualifiedLead", "Purchase"];
+const CARRY_STATUSES = ["PENDING_CONFIG", "QUEUED", "SENT"] as const;
 
 /** Display name of an auto-created lead: brand, else "@handle", else "Website visitor · <Kode>". */
 export function autoLeadName(
@@ -79,6 +85,8 @@ export interface ResolveWaitingInput {
   waId?: string | null;
   /** Owner for a filled-in lead that has none (quick-add's owner field). */
   assignedToId?: string | null;
+  /** The Kode the chat carried (quick-add / ingest): its click is confirmed (KODE). */
+  confirmedRef?: string | null;
   actorId: string | null;
 }
 
@@ -145,26 +153,16 @@ export class AutoLeadService {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`auto-lead:${handle}`})::bigint)`;
   }
 
-  /** Brand / category from the landing page onto a lead that has none. */
-  private async fillLandingAnswers(
-    tx: Tx,
-    leadId: string,
-    src: { brandName?: string | null; company?: string | null; category?: string | null },
-  ): Promise<void> {
-    const brand = src.brandName ?? src.company ?? null;
-    if (brand) {
-      await tx.lead.updateMany({ where: { id: leadId, company: null }, data: { company: brand } });
-    }
-    if (src.category) {
-      await tx.lead.updateMany({ where: { id: leadId, category: null }, data: { category: src.category } });
-    }
-  }
-
   /**
    * A gated tap (see AdClickService.leadSkipReason): create a waiting lead,
    * or link the tap to an open lead with the same Instagram handle. Called
    * after the click is stored, outside its transaction, so any failure here
    * leaves the click stored and linkable by staff.
+   *
+   * The handle link is UNVERIFIED (anyone can type a public handle): the
+   * click is attached as HANDLE, which only adds a "tapped again" note. It
+   * never carries the lead's events and never changes the lead's fields,
+   * until the chat or staff confirm its Kode (confirmKodeInTx).
    */
   async createForTap(
     clickId: string,
@@ -189,9 +187,7 @@ export class AutoLeadService {
           select: { id: true },
         });
         if (existing) {
-          if (!(await attachClickInTx(tx, click, existing.id, now))) return "skipped" as const;
-          await this.fillLandingAnswers(tx, existing.id, click);
-          await tx.lead.update({ where: { id: existing.id }, data: { lastContactAt: now } });
+          if (!(await attachClickInTx(tx, click, existing.id, "HANDLE", now))) return "skipped" as const;
           await tx.leadActivity.create({
             data: { leadId: existing.id, type: "NOTE", body: `@lead.landingFormRepeat: ${click.ref}` },
           });
@@ -230,7 +226,7 @@ export class AutoLeadService {
         },
       });
       // Raced with a manual link of the same code: roll the new lead back.
-      if (!(await attachClickInTx(tx, click, lead.id, now))) {
+      if (!(await attachClickInTx(tx, click, lead.id, "AUTO_CREATE", now))) {
         throw new Error("ad click was linked concurrently");
       }
       // Same opening row as a manual lead, but no Meta event: the click-time
@@ -335,6 +331,7 @@ export class AutoLeadService {
       await tx.leadActivity.create({
         data: { leadId: waitingId, type: "NOTE", body: "@lead.phoneFilled", actorId: input.actorId },
       });
+      if (input.confirmedRef) await confirmKodeInTx(tx, input.confirmedRef, waitingId);
       if (returningFrom) {
         // "<leadId> <WON|LOST> <name>": the UI links the id (name last: free text)
         await tx.leadActivity.create({
@@ -350,14 +347,26 @@ export class AutoLeadService {
     });
   }
 
-  /** Manual "Link ad click code" on another lead: merge the waiting lead holding that code into it. */
-  async mergeWaitingInto(waitingId: string, targetId: string, actorId: string | null): Promise<WaitingLeadOutcome> {
+  /**
+   * Merge the waiting lead holding a Kode into a chosen lead: the manual
+   * "Link ad click code" field, or a WhatsApp chat from a number whose open
+   * lead is `targetId`. The Kode's click is confirmed (KODE) on the target.
+   */
+  async mergeWaitingInto(
+    waitingId: string,
+    targetId: string,
+    actorId: string | null,
+    opts: { confirmedRef?: string | null; activityBody?: string | null } = {},
+  ): Promise<WaitingLeadOutcome> {
     if (waitingId === targetId) throw notWaiting();
     return this.prisma.$transaction(async (tx) => {
       const lead = await tx.lead.findUnique({ where: { id: waitingId } });
       if (!lead) throw new NotFoundException("Lead tidak ditemukan");
       if (!lead.awaitingWhatsapp) throw notWaiting();
-      return this.mergeInTx(tx, lead, targetId, actorId, null);
+      return this.mergeInTx(tx, lead, targetId, actorId, {
+        confirmedRef: opts.confirmedRef ?? null,
+        activityBody: opts.activityBody ?? null,
+      });
     });
   }
 
@@ -375,7 +384,7 @@ export class AutoLeadService {
     placeholder: Lead,
     targetId: string,
     actorId: string | null,
-    input: Pick<ResolveWaitingInput, "message" | "activityBody" | "waId"> & { phone?: string } | null,
+    input: (Pick<ResolveWaitingInput, "message" | "activityBody" | "waId" | "confirmedRef"> & { phone?: string }) | null,
   ): Promise<WaitingLeadOutcome> {
     const target = await tx.lead.findUnique({ where: { id: targetId } });
     if (!target) throw new NotFoundException("Lead tidak ditemukan");
@@ -413,7 +422,34 @@ export class AutoLeadService {
       data.waId = input?.waId ?? waIdFromPhone(phone);
     }
     await tx.lead.update({ where: { id: targetId }, data });
-    if (clicks.length) await rerouteToWebsiteInTx(tx, targetId, clicks[clicks.length - 1].id);
+    // the Kode the chat carried is confirmed on the target; clicks keep how
+    // they were linked (a HANDLE click stays unable to carry events)
+    if (input?.confirmedRef) await confirmKodeInTx(tx, input.confirmedRef, targetId);
+    if (clicks.length) await rerouteToWebsiteInTx(tx, targetId);
+
+    // Stage events the placeholder already sent / queued are not sent again
+    // for the same person: a marker row takes the target's dedupe key.
+    const carried = await tx.metaEventOutbox.findMany({
+      where: { leadId: placeholder.id, eventName: { in: CARRY_EVENTS }, status: { in: [...CARRY_STATUSES] } },
+      select: { eventName: true, route: true, adClickId: true },
+    });
+    if (carried.length) {
+      await tx.metaEventOutbox.createMany({
+        data: carried.map((e) => ({
+          leadId: targetId,
+          route: e.route,
+          adClickId: e.route === "WEBSITE" ? e.adClickId : null,
+          eventName: e.eventName,
+          eventTime: now,
+          currency: "IDR",
+          status: "SKIPPED" as const,
+          lastError: SKIP_SENT_BEFORE_MERGE,
+          payload: { event_name: e.eventName, carried_from_lead: placeholder.id },
+          dedupeKey: `${targetId}:${e.eventName}`,
+        })),
+        skipDuplicates: true,
+      });
+    }
 
     const refs = clicks.map((c) => c.ref).filter(Boolean).join(", ");
     await tx.leadActivity.create({
@@ -463,9 +499,11 @@ export class AutoLeadService {
 
   /**
    * Waiting leads still without a phone after AUTO_LEAD_STALE_DAYS move to
-   * the first Lost stage with reason "Never sent WhatsApp". The record is
-   * kept; no Meta event is queued (the stage change bypasses the outbox).
-   * Returns the number of leads closed.
+   * the first Lost stage with reason "Never sent WhatsApp". Only leads nobody
+   * is working on: still in the first open stage (New) and without any
+   * staff-made activity (note, call, stage move, assignment, follow-up). The
+   * record is kept; no Meta event is queued (the stage change bypasses the
+   * outbox). Returns the number of leads closed.
    */
   async closeStale(now: Date = new Date(), days?: number): Promise<number> {
     const staleDays = days ?? this.config().autoLeadStaleDays;
@@ -474,19 +512,32 @@ export class AutoLeadService {
       where: { type: "LOST", isActive: true },
       orderBy: { order: "asc" },
     });
-    if (!lost) return 0;
+    const first = await this.prisma.leadStage.findFirst({
+      where: { type: "OPEN", isActive: true },
+      orderBy: { order: "asc" },
+    });
+    if (!lost || !first) return 0;
     let closed = 0;
+    let afterId: string | null = null;
     for (let guard = 0; guard < 20; guard += 1) {
-      const rows = await this.prisma.lead.findMany({
-        where: { awaitingWhatsapp: true, phone: null, createdAt: { lt: cutoff }, stage: { type: "OPEN" } },
+      const rows: Array<{ id: string; stageId: string }> = await this.prisma.lead.findMany({
+        where: {
+          awaitingWhatsapp: true,
+          phone: null,
+          stageId: first.id,
+          createdAt: { lt: cutoff },
+          ...(afterId ? { id: { gt: afterId } } : {}),
+        },
         select: { id: true, stageId: true },
-        orderBy: { createdAt: "asc" },
+        orderBy: { id: "asc" },
         take: STALE_BATCH,
       });
       for (const row of rows) {
         const done = await this.prisma.$transaction(async (tx) => {
+          const staffMade = await tx.leadActivity.count({ where: { leadId: row.id, actorId: { not: null } } });
+          if (staffMade > 0) return false;
           const res = await tx.lead.updateMany({
-            where: { id: row.id, awaitingWhatsapp: true, phone: null },
+            where: { id: row.id, awaitingWhatsapp: true, phone: null, stageId: first.id },
             data: {
               stageId: lost.id,
               lostReason: LOST_REASON_NEVER_SENT_WHATSAPP,
@@ -510,6 +561,7 @@ export class AutoLeadService {
         if (done) closed += 1;
       }
       if (rows.length < STALE_BATCH) break;
+      afterId = rows[rows.length - 1].id;
     }
     return closed;
   }

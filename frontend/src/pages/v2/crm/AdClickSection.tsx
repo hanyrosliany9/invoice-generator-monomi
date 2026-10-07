@@ -82,6 +82,13 @@ export function AdClickSection({
     </form>
   );
 
+  const unconfirmed = lead.unconfirmedAdClickRefs ?? [];
+  const unconfirmedNote = unconfirmed.length > 0 && (
+    <p className="mt-3 text-xs text-text-tertiary" data-testid="adclick-unconfirmed">
+      {t('crm.adClick.unconfirmedTaps', 'Tapped again on the landing page with the same Instagram (not confirmed, not used for Meta): {{refs}}. Link the code from their chat to confirm it.', { refs: unconfirmed.join(', ') })}
+    </p>
+  );
+
   if (click) {
     const others = lead.otherAdClickRefs ?? [];
     return (
@@ -119,6 +126,7 @@ export function AdClickSection({
             </>
           )}
         </dl>
+        {unconfirmedNote}
         <details className="mt-3 text-sm">
           <summary className="cursor-pointer text-xs text-text-tertiary hover:text-text-primary">{t('crm.adClick.linkAnother', 'Link another code')}</summary>
           <div className="mt-2">{linkForm}</div>
@@ -127,5 +135,5 @@ export function AdClickSection({
     );
   }
 
-  return linkForm;
+  return <>{linkForm}{unconfirmedNote}</>;
 }

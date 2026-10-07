@@ -124,6 +124,8 @@ export interface LeadDetail extends Lead {
   adClick: LeadAdClick | null;
   /** Codes of earlier taps linked to the same lead. */
   otherAdClickRefs?: string[];
+  /** Taps that only matched by Instagram handle (unverified; never used for Meta events until their Kode is confirmed). */
+  unconfirmedAdClickRefs?: string[];
   /** Set on the response of quick-add / link code / add phone when a waiting lead was resolved. */
   waitingOutcome?: WaitingOutcome;
   /** The website Lead event sent when the WhatsApp button was tapped. */

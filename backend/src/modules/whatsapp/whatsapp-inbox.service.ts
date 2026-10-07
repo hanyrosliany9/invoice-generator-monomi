@@ -1,6 +1,7 @@
 import {
   BadGatewayException,
   BadRequestException,
+  Optional,
   ConflictException,
   HttpException,
   HttpStatus,
@@ -10,7 +11,7 @@ import {
 } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { normalizePhone } from "../crm/crm.utils";
+import { CrmLeadsService } from "../crm/crm-leads.service";
 import { GraphApiError } from "./whatsapp-graph.client";
 import {
   TemplateInfo,
@@ -87,6 +88,7 @@ export class WhatsAppInboxService {
     private readonly prisma: PrismaService,
     private readonly api: WhatsAppApiService,
     private readonly ingest: WhatsAppIngestService,
+    @Optional() private readonly leads?: CrmLeadsService,
   ) {}
 
   private decorate(c: ConvRow, now = new Date()) {
@@ -567,36 +569,29 @@ export class WhatsAppInboxService {
     return this.get(id);
   }
 
-  async linkLead(id: string, leadId: string | null) {
+  async linkLead(id: string, leadId: string | null, actorId: string | null = null) {
     const conv = await this.load(id);
     if (leadId) {
       const lead = await this.prisma.lead.findUnique({
         where: { id: leadId },
-        select: { id: true, waId: true, phone: true, awaitingWhatsapp: true },
+        select: { id: true, waId: true, awaitingWhatsapp: true },
       });
       if (!lead) throw new NotFoundException("Lead tidak ditemukan");
+      let target = leadId;
+      if (lead.awaitingWhatsapp) {
+        // A landing-page lead waiting for its chat: same rule as quick-add
+        // (fill the number in, or merge into the open lead that has it). It
+        // never ends up without a phone and no longer waiting; on refusal
+        // nothing is linked.
+        if (!this.leads) throw new BadRequestException("CRM tidak aktif");
+        target = await this.leads.resolveWaitingFromConversation(leadId, conv.contact.waId, actorId);
+      } else if (!lead.waId) {
+        await this.prisma.lead.update({ where: { id: leadId }, data: { waId: conv.contact.waId } });
+      }
       await this.prisma.whatsAppContact.update({
         where: { id: conv.contact.id },
-        data: { leadId },
+        data: { leadId: target },
       });
-      const data: Prisma.LeadUpdateInput = {};
-      if (!lead.waId) data.waId = conv.contact.waId;
-      if (lead.awaitingWhatsapp) {
-        // a landing-page lead waiting for its chat: this conversation is it
-        data.awaitingWhatsapp = false;
-        data.firstContactAt = new Date();
-        data.firstResponseAt = null;
-        const phone = lead.phone ? null : normalizePhone(`+${conv.contact.waId}`);
-        if (phone) {
-          const taken = await this.prisma.lead.findFirst({
-            where: { phone, id: { not: leadId } },
-            select: { id: true },
-          });
-          if (!taken) data.phone = phone;
-        }
-      }
-      if (Object.keys(data).length)
-        await this.prisma.lead.update({ where: { id: leadId }, data });
     } else {
       await this.prisma.whatsAppContact.update({
         where: { id: conv.contact.id },

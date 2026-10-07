@@ -212,9 +212,18 @@ at once. Timeline: "Lead created (Website)" + `@lead.fromLandingForm: <Kode>`.
 `Lead` already covers it), and nothing external happens (no outbound WhatsApp).
 
 **Same Instagram handle.** If an open (not Won/Lost) lead already has the
-handle, no new lead is made: the click is linked to that lead (brand / category
-filled in when empty) with an `@lead.landingFormRepeat: <Kode>` note. Creation is
-serialised per handle (transaction-scoped advisory lock).
+handle, no new lead is made: the click is linked to that lead with an
+`@lead.landingFormRepeat: <Kode>` note. Creation is serialised per handle
+(transaction-scoped advisory lock). Anyone can type a public handle, so this
+link is **unverified**: `ad_clicks.linkedVia = HANDLE`. A HANDLE click never
+changes the lead's fields and never carries the lead's Meta events, and
+pending events never move onto it; the lead page lists it as "tapped again
+(not confirmed)". When the chat or staff confirm its Kode it becomes `KODE`.
+
+**Which click carries a lead's website events** (its IP, user agent, `fbc` /
+`fbp` go out with the lead's hashed phone / name): the newest `KODE` click
+(Kode confirmed by the chat or staff), else the `AUTO_CREATE` click (the tap
+that created the lead); never a `HANDLE` click.
 
 **When the chat arrives** (quick-add with the Kode, the lead page's **Link ad
 click code**, **Add phone** on the waiting lead, or a WhatsApp Cloud API message
@@ -235,10 +244,16 @@ carrying the Kode; one shared parser):
   campaign move to it when it has none, and it becomes a Website lead (unless it
   is a Click-to-WhatsApp lead). The waiting lead is deleted when no staff member
   touched it; otherwise it moves to Lost with reason `Duplicate` (no Meta event).
+  A `QualifiedLead` / `Purchase` the placeholder already sent or queued is
+  carried over as a `SKIPPED` marker on the target
+  (`SKIP_SENT_BEFORE_MERGE`), so the same person is not reported twice.
   Staff see which of the two happened.
 
 The quick-add dialog shows "Matches waiting lead from the landing page
-(@handle)" when the pasted Kode belongs to a waiting lead.
+(@handle)" when the pasted Kode belongs to a waiting lead. Linking a WhatsApp
+inbox conversation to a waiting lead follows the same rule (a conversation
+without a valid number is refused). A WhatsApp message with the Kode never
+touches a Won / Lost lead of the same number.
 
 **Metrics.** Waiting leads have no wait clock, do not count as "unanswered >
 15 min", are left out of the response-time stats and of the menu badge total
@@ -248,7 +263,9 @@ first response; moving it to Won/Lost ends the waiting state.
 
 **Cleanup.** The nightly job (03:20, with the click retention) moves waiting
 leads still without a phone after `AUTO_LEAD_STALE_DAYS` (default 30) to the
-first Lost stage with reason `Never sent WhatsApp`. The record is kept; no Meta
+first Lost stage with reason `Never sent WhatsApp`, but only leads nobody is
+working on: still in the first (New) stage and without any staff-made activity
+(note, call, stage move, assignment, follow-up). The record is kept; no Meta
 event is queued.
 
 **Stage events while the phone is unknown.** `QualifiedLead` / `Purchase` of a

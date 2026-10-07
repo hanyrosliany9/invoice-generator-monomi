@@ -152,6 +152,7 @@ const DEFAULTS: Record<string, () => Row> = {
     engagedAt: null,
     leadId: null,
     linkedAt: null,
+    linkedVia: null,
     campaignCode: null,
     pageUrl: null,
     meta: null,

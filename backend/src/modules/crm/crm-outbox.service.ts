@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { eventClickId } from "../ad-tracking/click-link";
 
 export const META_EVENTS = ["LeadSubmitted", "QualifiedLead", "Purchase"] as const;
 export type MetaEventName = (typeof META_EVENTS)[number];
@@ -73,14 +74,10 @@ export class CrmOutboxService {
     opts: { value?: number | null; eventTime?: Date } = {},
   ): Promise<boolean> {
     const eventTime = opts.eventTime ?? new Date();
-    // a lead may hold several landing-page clicks: the newest carries its events
-    const click = lead.ctwaClid
-      ? null
-      : ((await db.adClick?.findFirst({
-          where: { leadId: lead.id },
-          orderBy: { createdAt: "desc" },
-          select: { id: true },
-        })) ?? null);
+    // a lead may hold several landing-page clicks: only a confirmed (KODE) or
+    // the lead-creating (AUTO_CREATE) click carries events, never a HANDLE one
+    const clickId = lead.ctwaClid || !db.adClick ? null : await eventClickId({ adClick: db.adClick }, lead.id);
+    const click = clickId ? { id: clickId } : null;
     const route = chooseRoute(lead, !!click);
     // The website Lead was already sent when the WhatsApp button was tapped.
     if (route === "WEBSITE" && eventName === "LeadSubmitted") return false;

@@ -142,8 +142,8 @@ export class WhatsAppController {
 
   @Post("conversations/:id/lead")
   @HttpCode(200)
-  linkLead(@Param("id") id: string, @Body() dto: LinkConversationLeadDto) {
-    return this.inbox.linkLead(id, dto.leadId ?? null);
+  linkLead(@Param("id") id: string, @Body() dto: LinkConversationLeadDto, @Req() req: any) {
+    return this.inbox.linkLead(id, dto.leadId ?? null, this.uid(req));
   }
 
   @Get("leads/:leadId/conversation")

@@ -10875,7 +10875,8 @@
       "taken": "Kode itu sudah terhubung ke lead lain.",
       "invalid": "Isi kode 6 karakter, mis. K7QM2X.",
       "linkAnother": "Hubungkan kode lain",
-      "otherTaps": "Tap sebelumnya"
+      "otherTaps": "Tap sebelumnya",
+      "unconfirmedTaps": "Tap lagi di landing page dengan Instagram yang sama (belum dikonfirmasi, tidak dipakai untuk Meta): {{refs}}. Hubungkan kode dari chat-nya untuk mengonfirmasi."
     },
     "waiting": {
       "badge": "Menunggu WhatsApp",

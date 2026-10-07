@@ -9,6 +9,7 @@ import { normalizePhone } from "../crm/crm.utils";
 import { WhatsAppApiService } from "../whatsapp/whatsapp-api.service";
 import { WhatsAppGraphClient } from "../whatsapp/whatsapp-graph.client";
 import { WhatsAppIngestService } from "../whatsapp/whatsapp-ingest.service";
+import { WhatsAppInboxService } from "../whatsapp/whatsapp-inbox.service";
 import {
   FakeGraph,
   FakePrisma,
@@ -25,6 +26,7 @@ import {
   AutoLeadService,
   LOST_REASON_DUPLICATE,
   LOST_REASON_NEVER_SENT_WHATSAPP,
+  SKIP_SENT_BEFORE_MERGE,
 } from "./auto-lead.service";
 import { PublicTrackController } from "./public-track.controller";
 import { createPublicTrackBody, createPublicTrackCors } from "./public-track.http";
@@ -351,7 +353,10 @@ describe("auto-created leads from the landing-page form", () => {
       expect(t.lead).toHaveLength(1);
       const lead = t.lead[0];
       expect(t.adClick.filter((c: any) => c.leadId === lead.id)).toHaveLength(2);
-      expect(lead).toMatchObject({ company: "Kopi Senja", category: "Menswear" }); // filled because empty
+      // unverified tap: it never changes the lead's fields
+      expect(lead).toMatchObject({ company: null, category: null });
+      expect(t.adClick.find((c: any) => c.ref === refFor(501)).linkedVia).toBe("HANDLE");
+      expect(t.adClick.find((c: any) => c.ref === refFor(500)).linkedVia).toBe("AUTO_CREATE");
       expect(t.leadActivity.some((a: any) => a.leadId === lead.id && a.body === `@lead.landingFormRepeat: ${refFor(501)}`)).toBe(true);
       expect(t.metaEventOutbox.filter((e: any) => e.eventName === "Lead").every((e: any) => e.leadId === lead.id)).toBe(true);
     });
@@ -622,6 +627,191 @@ Kode: ${r2.ref}`, waId: "6285711112222", name: "Old Client", activityBody: "@wa.
       expect(id).toBe(b.id);
       expect(ctx.t.lead.find((l: any) => l.id === b.id)).toMatchObject({ phone: "+6285711112222", awaitingWhatsapp: false });
       expect(ctx.t.lead.find((l: any) => l.id === "L-won").stageId).toBe("st-won");
+    });
+  });
+
+  describe("verifier fixes", () => {
+    const ATTACKER_UA = "Mozilla/5.0 (X11; Linux x86_64) AttackerBrowser/9.9 Chrome/129.0 Safari/537.36";
+    const fakeGraph = () =>
+      new FakeGraph().on("POST", new RegExp(`/${PIXEL}/events$`), (c: any) => ({ json: { events_received: c.body.data.length } }));
+    const phoneLead = (over: Record<string, unknown> = {}) => ({
+      id: "L-phone", name: "Budi", phone: PHONE, instagramHandle: "budi.shop", stageId: "st-new", source: "WHATSAPP_ORGANIC",
+      createdAt: new Date(Date.now() - DAY), company: null, category: null, ...over,
+    });
+
+    it("handle dedup cannot hijack a customer's Meta events: Purchase uses the original click's ip / ua / fbp", async () => {
+      const ctx = setup();
+      // the real customer: tap -> waiting lead -> chat with the Kode fills the phone
+      const real = await ctx.tap({ i: 1100, instagram: "verify_brand.id", ip: "198.51.100.10" });
+      const lead = autoLeadsOf(ctx.t)[0];
+      await ctx.leads.create({ name: "Rina Ayu", phone: PHONE, adClickRef: real.ref } as any, "u1");
+      expect(real.click.linkedVia).toBe("KODE");
+      // an anonymous visitor types the same public handle from another device
+      const evil = await ctx.tap({ i: 1101, instagram: "@Verify_Brand.ID", brandName: "Attacker", ip: "203.0.113.77", ua: ATTACKER_UA });
+      evil.click.fbp = "fb.1.1700000000000.6666666666";
+      expect(evil.click).toMatchObject({ leadId: lead.id, linkedVia: "HANDLE" });
+      expect(ctx.t.lead.find((l: any) => l.id === lead.id)).toMatchObject({ company: null, name: "Rina Ayu" });
+      await ctx.leads.moveStage(lead.id, "st-qual", "u1");
+      await ctx.leads.moveStage(lead.id, "st-won", "u1");
+      const stageRows = ctx.t.metaEventOutbox.filter((e: any) => e.leadId === lead.id && e.eventName !== "Lead");
+      expect(stageRows.map((e: any) => [e.eventName, e.adClickId])).toEqual([
+        ["QualifiedLead", real.click.id],
+        ["Purchase", real.click.id],
+      ]);
+      const detail: any = await ctx.leads.get(lead.id);
+      expect(detail.adClick.ref).toBe(real.ref);
+      expect(detail.unconfirmedAdClickRefs).toEqual([evil.ref]);
+
+      const graph = fakeGraph();
+      await new WebCapiService(ctx.prisma as any, new WhatsAppGraphClient(graph.fetch as any)).run();
+      const purchase = graph.calls.map((c) => c.body.data[0]).find((e: any) => e.event_name === "Purchase");
+      expect(purchase.user_data).toMatchObject({
+        client_ip_address: "198.51.100.10",
+        client_user_agent: UA,
+        fbp: "fb.1.1759900000000.1234567890",
+        ph: [sha256("6281234567890")],
+      });
+      expect(JSON.stringify(purchase)).not.toMatch(/203\.0\.113\.77|AttackerBrowser|6666666666/);
+    });
+
+    it("a lead whose only clicks are HANDLE taps gets no website events from them; earlier events never move onto them", async () => {
+      const { t, tap, leads, outbox, prisma } = setup({ leads: [phoneLead()] });
+      await leads.moveStage("L-phone", "st-qual", "u1"); // before the tap: business-messaging row
+      await tap({ i: 1110, instagram: "budi.shop" });
+      expect(t.adClick.find((c: any) => c.ref === refFor(1110)).linkedVia).toBe("HANDLE");
+      expect(t.metaEventOutbox.find((e: any) => e.eventName === "QualifiedLead")).toMatchObject({ route: "BUSINESS_MESSAGING", adClickId: null });
+      expect(await outbox.queueEvent(prisma as any, { id: "L-phone", ctwaClid: null }, "Purchase")).toBe(true);
+      expect(t.metaEventOutbox.find((e: any) => e.eventName === "Purchase")).toMatchObject({ route: "BUSINESS_MESSAGING", adClickId: null });
+      expect(((await leads.get("L-phone")) as any).adClick).toBeNull();
+    });
+
+    it("a Kode confirmed by staff (or the chat) upgrades a HANDLE tap to KODE; pending events move onto it", async () => {
+      const { t, tap, leads } = setup({ leads: [phoneLead()] });
+      const r = await tap({ i: 1120, instagram: "budi.shop" });
+      await leads.moveStage("L-phone", "st-qual", "u1");
+      await leads.linkAdClick("L-phone", r.ref, "u1");
+      expect(r.click.linkedVia).toBe("KODE");
+      expect(t.metaEventOutbox.find((e: any) => e.eventName === "QualifiedLead")).toMatchObject({ route: "WEBSITE", adClickId: r.click.id });
+    });
+
+    it("WhatsApp ingest: a Kode chat from a number whose only lead is Won fills the waiting lead and never touches the Won lead", async () => {
+      restore = ((prev) => {
+        const r = withEnv({ ...Object.fromEntries(WA_ENV_KEYS.map((k) => [k, undefined])), ...waEnv() });
+        return () => { r(); prev(); };
+      })(restore);
+      jest.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      const old = new Date(Date.now() - 200 * DAY);
+      const ctx = setup({
+        leads: [{ id: "L-won", name: "Old Client", phone: "+6285711112222", waId: "6285711112222", stageId: "st-won", source: "WHATSAPP_ORGANIC", createdAt: old, firstResponseAt: old, company: null, category: null, instagramHandle: null }],
+      });
+      const r = await ctx.tap({ i: 1130, instagram: "back.again" });
+      const waiting = autoLeadsOf(ctx.t)[0];
+      const api = new WhatsAppApiService(ctx.prisma as any, new WhatsAppGraphClient(new FakeGraph().fetch as any));
+      const ingest = new WhatsAppIngestService(ctx.prisma as any, ctx.leads, api);
+      await ingest.processPayload(
+        messagesPayload({
+          contacts: [{ wa_id: "6285711112222", profile: { name: "Old Client" } }],
+          messages: [{ from: "6285711112222", id: "wamid.K1", timestamp: unixAgo(1), type: "text", text: { body: `Halo lagi\nKode: ${r.ref}` } }],
+        }),
+      );
+      const won = ctx.t.lead.find((l: any) => l.id === "L-won");
+      expect(won.lastContactAt.getTime()).toBe(old.getTime());
+      expect(ctx.t.leadActivity.filter((a: any) => a.leadId === "L-won")).toHaveLength(0);
+      expect(ctx.t.lead.find((l: any) => l.id === waiting.id)).toMatchObject({ phone: "+6285711112222", awaitingWhatsapp: false });
+      expect(ctx.t.whatsAppContact[0].leadId).toBe(waiting.id);
+      expect(ctx.t.leadActivity.filter((a: any) => a.leadId === waiting.id && a.type === "WHATSAPP").map((a: any) => a.body)).toEqual([`@wa.in: Halo lagi Kode: ${r.ref}`]);
+      expect(ctx.t.leadActivity.some((a: any) => a.leadId === waiting.id && a.body?.startsWith("@lead.returningClient: L-won WON"))).toBe(true);
+      expect(r.click.linkedVia).toBe("KODE");
+    });
+
+    it("stale cleanup only closes untouched waiting leads still in New (no stage move, note or assignment by staff)", async () => {
+      const { t, tap, autoLeads, leads } = setup();
+      for (const i of [1140, 1141, 1142, 1143]) await tap({ i });
+      const [untouched, moved, noted, assigned] = autoLeadsOf(t);
+      await leads.moveStage(moved.id, "st-qual", "u1");
+      await leads.moveStage(moved.id, "st-new", "u1"); // back in New, but touched by staff
+      await leads.addActivity(noted.id, "NOTE", "Sent them a DM on Instagram", "u1");
+      t.user.push({ id: "u1", name: "Staff", isActive: true });
+      await leads.assign(assigned.id, "u1", "u1");
+      for (const l of autoLeadsOf(t)) l.createdAt = new Date(Date.now() - 40 * DAY);
+      expect(await autoLeads.closeStale()).toBe(1);
+      expect(t.lead.find((l: any) => l.id === untouched.id)).toMatchObject({ stageId: "st-lost", lostReason: LOST_REASON_NEVER_SENT_WHATSAPP });
+      for (const l of [moved, noted, assigned]) {
+        const row = t.lead.find((x: any) => x.id === l.id);
+        expect(row.lostReason ?? null).toBeNull();
+        expect(row.awaitingWhatsapp).toBe(true);
+      }
+      // a waiting lead staff moved on (not in New) is not closed either
+      const qual = autoLeadsOf(t).find((l: any) => l.id === moved.id);
+      qual.stageId = "st-qual";
+      t.leadActivity = t.leadActivity.filter((a: any) => a.leadId !== moved.id || !a.actorId);
+      expect(await autoLeads.closeStale()).toBe(0);
+    });
+
+    it("inbox: linking a conversation to a waiting lead applies the quick-add rule (open lead -> merge, Won -> fill + returning, bad number -> refused)", async () => {
+      const ctx = setup({
+        leads: [
+          { id: "L-open", name: "Open One", phone: "+6281300000001", stageId: "st-new", source: "OTHER", createdAt: new Date(Date.now() - DAY), instagramHandle: null, company: null, category: null },
+          { id: "L-won", name: "Won One", phone: "+6281300000002", stageId: "st-won", source: "OTHER", createdAt: new Date(Date.now() - 9 * DAY), instagramHandle: null, company: null, category: null },
+        ],
+      });
+      const conv = (n: number, waId: string) => {
+        ctx.t.whatsAppContact.push({ id: `ct${n}`, waId, phone: null, leadId: null, profileName: "X", phoneBookName: null });
+        ctx.t.whatsAppConversation.push({ id: `cv${n}`, contactId: `ct${n}`, unreadCount: 0, status: "OPEN", assignedToId: null, lastReadReceiptFor: null, lastMessageAt: new Date(), lastMessagePreview: "Halo", lastInboundAt: new Date(), freeEntryUntil: null });
+      };
+      conv(1, "6281300000001");
+      conv(2, "6281300000002");
+      conv(3, "12");
+      for (const i of [1150, 1151, 1152]) await ctx.tap({ i });
+      const [w1, w2, w3] = autoLeadsOf(ctx.t);
+      const api = new WhatsAppApiService(ctx.prisma as any, new WhatsAppGraphClient(new FakeGraph().fetch as any));
+      const inbox = new WhatsAppInboxService(ctx.prisma as any, api, new WhatsAppIngestService(ctx.prisma as any, ctx.leads, api), ctx.leads);
+
+      await inbox.linkLead("cv1", w1.id, "u1");
+      expect(ctx.t.lead.some((l: any) => l.id === w1.id)).toBe(false); // untouched placeholder merged away
+      expect(ctx.t.whatsAppContact.find((c: any) => c.id === "ct1").leadId).toBe("L-open");
+
+      await inbox.linkLead("cv2", w2.id, "u1");
+      expect(ctx.t.lead.find((l: any) => l.id === w2.id)).toMatchObject({ phone: "+6281300000002", awaitingWhatsapp: false, stageId: "st-new" });
+      expect(ctx.t.leadActivity.some((a: any) => a.leadId === w2.id && a.body?.startsWith("@lead.returningClient: L-won WON"))).toBe(true);
+      expect(ctx.t.whatsAppContact.find((c: any) => c.id === "ct2").leadId).toBe(w2.id);
+
+      await expect(inbox.linkLead("cv3", w3.id, "u1")).rejects.toThrow(/tidak valid/);
+      expect(ctx.t.lead.find((l: any) => l.id === w3.id)).toMatchObject({ phone: null, awaitingWhatsapp: true });
+      expect(ctx.t.whatsAppContact.find((c: any) => c.id === "ct3").leadId).toBeNull();
+    });
+
+    it("merge carries over a QualifiedLead the placeholder already sent: the target does not send it again", async () => {
+      const older = { id: "L-old", name: "Rina", phone: PHONE, stageId: "st-new", source: "OTHER", createdAt: new Date(Date.now() - 5 * DAY), instagramHandle: null, company: null, category: null };
+      const { t, tap, leads, outbox, prisma } = setup({ leads: [older] });
+      const r = await tap({ i: 1160 });
+      const placeholder = autoLeadsOf(t)[0];
+      await leads.moveStage(placeholder.id, "st-qual", "u1");
+      const sent = t.metaEventOutbox.find((e: any) => e.leadId === placeholder.id && e.eventName === "QualifiedLead");
+      sent.status = "SENT";
+      const res: any = await leads.create({ phone: PHONE, adClickRef: r.ref } as any, "u1");
+      expect(res.waitingOutcome).toMatchObject({ outcome: "merged", leadId: "L-old", placeholderDeleted: false });
+      expect(t.metaEventOutbox.find((e: any) => e.leadId === "L-old" && e.eventName === "QualifiedLead")).toMatchObject({
+        status: "SKIPPED",
+        lastError: SKIP_SENT_BEFORE_MERGE,
+        dedupeKey: "L-old:QualifiedLead",
+      });
+      expect(await outbox.queueEvent(prisma as any, { id: "L-old", ctwaClid: null }, "QualifiedLead")).toBe(false);
+      await leads.moveStage("L-old", "st-qual", "u1");
+      expect(t.metaEventOutbox.filter((e: any) => e.eventName === "QualifiedLead" && e.status !== "SKIPPED")).toHaveLength(1);
+      // nothing was carried for an event the placeholder never had
+      expect(t.metaEventOutbox.filter((e: any) => e.leadId === "L-old" && e.eventName === "Purchase")).toHaveLength(0);
+    });
+
+    it("merge does not carry over a FAILED / SKIPPED placeholder event (the target may still send it)", async () => {
+      const older = { id: "L-old", name: "Rina", phone: PHONE, stageId: "st-new", source: "OTHER", createdAt: new Date(Date.now() - 5 * DAY), instagramHandle: null, company: null, category: null };
+      const { t, tap, leads } = setup({ leads: [older] });
+      const r = await tap({ i: 1170 });
+      const placeholder = autoLeadsOf(t)[0];
+      await leads.moveStage(placeholder.id, "st-qual", "u1");
+      t.metaEventOutbox.find((e: any) => e.leadId === placeholder.id && e.eventName === "QualifiedLead").status = "FAILED";
+      await leads.create({ phone: PHONE, adClickRef: r.ref } as any, "u1");
+      expect(t.metaEventOutbox.filter((e: any) => e.leadId === "L-old" && e.eventName === "QualifiedLead")).toHaveLength(0);
     });
   });
 

@@ -572,8 +572,9 @@ export class WhatsAppIngestService {
         });
         contact.leadId = matched;
       }
-      // filled in: the message is already on the lead's timeline
-      if (matched && !leadId) return false;
+      // handled (filled in, or merged into the open lead; the message is on
+      // that lead's timeline): never touch a Won / Lost lead of the number
+      if (matched) return false;
     }
     if (!leadId) {
       if (!this.shouldCreateLead(origin, ts, referral)) return false;

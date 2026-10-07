@@ -17,7 +17,7 @@ import {
 } from "./web-capi.payload";
 import { extractRefCode, normalizeRefCode } from "./ref-code";
 import { AutoLeadService } from "./auto-lead.service";
-import { attachClickInTx } from "./click-link";
+import { attachClickInTx, confirmKodeInTx } from "./click-link";
 
 /** Unlinked WhatsApp taps (rows with a ref) are kept this long for linking. */
 export const AD_CLICK_RETENTION_DAYS = 30;
@@ -507,17 +507,21 @@ export class AdClickService {
   }
 
   /**
-   * Atomically attaches a click to a lead (see attachClickInTx). Returns the
-   * click, or null when the code is unknown or already linked to another
-   * lead. A lead may hold several clicks.
+   * The Kode was confirmed for this lead (pasted chat / staff): attaches its
+   * click as KODE (see attachClickInTx), or upgrades the lead's own HANDLE /
+   * AUTO_CREATE click to KODE. Returns the click, or null when the code is
+   * unknown or already linked to another lead. A lead may hold several clicks.
    */
   async linkInTx(tx: Tx, rawRef: string, leadId: string) {
     const ref = normalizeRefCode(rawRef);
     if (!ref) return null;
     const click = await tx.adClick.findUnique({ where: { ref } });
     if (!click || (click.leadId && click.leadId !== leadId)) return null;
-    if (click.leadId === leadId) return click;
-    if (!(await attachClickInTx(tx, click, leadId))) return null;
+    if (click.leadId === leadId) {
+      await confirmKodeInTx(tx, ref, leadId);
+      return click;
+    }
+    if (!(await attachClickInTx(tx, click, leadId, "KODE"))) return null;
     return { ...click, leadId };
   }
 
@@ -540,7 +544,11 @@ export class AdClickService {
         select: { leadId: true },
       });
       if (!before) return "not_found" as const;
-      if (before.leadId === leadId) return "linked" as const;
+      if (before.leadId === leadId) {
+        // staff confirm a tap already on this lead (e.g. an unverified HANDLE tap)
+        await confirmKodeInTx(tx, ref, leadId);
+        return "linked" as const;
+      }
       if (before.leadId) return "taken" as const;
       const click = await this.linkInTx(tx, ref, leadId);
       if (!click) return "taken" as const;

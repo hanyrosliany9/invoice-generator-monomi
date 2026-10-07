@@ -226,6 +226,7 @@ export class CrmLeadsService {
           orderBy: { createdAt: "desc" },
           select: {
             id: true,
+            linkedVia: true,
             ref: true,
             createdAt: true,
             linkedAt: true,
@@ -246,10 +247,14 @@ export class CrmLeadsService {
     });
     if (!lead) throw new NotFoundException("Lead tidak ditemukan");
     const threshold = await this.settings.getThresholdMinutes();
-    // The newest click carries the lead's website events; older taps are listed.
+    // The event click (newest KODE, else AUTO_CREATE) is shown; other taps are
+    // listed, unverified HANDLE taps apart ("tapped again", not confirmed).
     const { adClicks = [], ...rest } = lead;
-    const latest = adClicks[0] ?? null;
-    const adClick = latest ? (({ id: _id, ...c }) => c)(latest) : null;
+    const latest =
+      adClicks.find((c) => c.linkedVia === "KODE") ??
+      [...adClicks].reverse().find((c) => c.linkedVia === "AUTO_CREATE") ??
+      null;
+    const adClick = latest ? (({ id: _id, linkedVia: _via, ...c }) => c)(latest) : null;
     // The website Lead event is sent at click time and belongs to the click, not the lead.
     const adClickEvent = latest
       ? ((await this.prisma.metaEventOutbox.findFirst({
@@ -260,7 +265,14 @@ export class CrmLeadsService {
     return {
       ...this.decorate(rest, threshold),
       adClick,
-      otherAdClickRefs: adClicks.slice(1).map((c) => c.ref).filter((r): r is string => !!r),
+      otherAdClickRefs: adClicks
+        .filter((c) => c !== latest && c.linkedVia !== "HANDLE")
+        .map((c) => c.ref)
+        .filter((r): r is string => !!r),
+      unconfirmedAdClickRefs: adClicks
+        .filter((c) => c.linkedVia === "HANDLE")
+        .map((c) => c.ref)
+        .filter((r): r is string => !!r),
       adClickEvent,
       thresholdMinutes: threshold,
     };
@@ -348,6 +360,7 @@ export class CrmLeadsService {
         name: dto.name ?? null,
         message: dto.firstMessage ?? null,
         assignedToId: dto.assignedToId ?? actorId,
+        confirmedRef: clickPreview.ref,
         actorId,
       });
       return { ...(await this.get(waitingOutcome.leadId)), waitingOutcome };
@@ -559,7 +572,9 @@ export class CrmLeadsService {
     if (!ref) throw new BadRequestException("Kode tidak valid");
     const preview = await this.adClicks.preview(ref);
     if (preview?.waitingLead && preview.waitingLead.id !== id && this.autoLeads) {
-      const waitingOutcome = await this.autoLeads.mergeWaitingInto(preview.waitingLead.id, id, actorId);
+      const waitingOutcome = await this.autoLeads.mergeWaitingInto(preview.waitingLead.id, id, actorId, {
+        confirmedRef: ref,
+      });
       return { ...(await this.get(id)), waitingOutcome };
     }
     const result = await this.adClicks.linkLead(id, ref, actorId);
@@ -594,6 +609,24 @@ export class CrmLeadsService {
   }
 
   /**
+   * Inbox: staff link a WhatsApp conversation to a waiting lead. Same rule as
+   * quick-add: the conversation's number fills the lead in, or the lead is
+   * merged into the open lead that has the number. Returns the resulting lead
+   * id (the conversation is linked to it).
+   */
+  async resolveWaitingFromConversation(leadId: string, waId: string, actorId: string | null): Promise<string> {
+    if (!this.autoLeads) throw new BadRequestException("Pelacakan landing page tidak aktif");
+    const phone = normalizePhone(`+${waId}`);
+    if (!phone) {
+      throw new BadRequestException(
+        "Nomor percakapan ini tidak valid, jadi tidak bisa dipakai untuk lead yang menunggu WhatsApp.",
+      );
+    }
+    const r = await this.autoLeads.resolveWaitingLead(leadId, { phone, waId, actorId });
+    return r.leadId;
+  }
+
+  /**
    * WhatsApp Cloud API ingest: a customer message carrying a "Kode:" whose
    * click belongs to a waiting lead. Without a lead for the number, the
    * waiting lead gets the number (no new lead, no LeadSubmitted); with one,
@@ -621,7 +654,12 @@ export class CrmLeadsService {
         });
         // merge only into an open lead; a Won / Lost one is a returning client (below)
         if (existing?.stage.type === "OPEN") {
-          return (await this.autoLeads.mergeWaitingInto(waiting.id, input.existingLeadId, null)).leadId;
+          return (
+            await this.autoLeads.mergeWaitingInto(waiting.id, input.existingLeadId, null, {
+              confirmedRef: ref,
+              activityBody: input.activityBody,
+            })
+          ).leadId;
         }
       }
       const phone = normalizePhone(`+${input.waId}`);
@@ -632,6 +670,7 @@ export class CrmLeadsService {
         name: input.name,
         message: input.text.slice(0, 4000),
         activityBody: input.activityBody,
+        confirmedRef: ref,
         actorId: null,
       });
       return r.leadId;

@@ -985,6 +985,17 @@ model MetaEventOutbox {
 // purged after 48 h, unlinked taps after 30 days; on linked rows clientIp,
 // userAgent, fbclid, fbc and fbp are nulled after AD_CLICK_PII_RETENTION_DAYS
 // (default 90). The qualifier answers below stay in Monomi.
+// How a landing-page click got attached to its lead. Only KODE and
+// AUTO_CREATE clicks may carry the lead's website stage events (their IP, user
+// agent and Meta ids go out with the lead's hashed phone / name); a HANDLE
+// click (an unverified tap that only named the same Instagram handle) never
+// does, until a WhatsApp chat or staff confirm its Kode (it then becomes KODE).
+enum AdClickLinkVia {
+  AUTO_CREATE // the tap that auto-created the lead
+  KODE // its Kode was confirmed by the WhatsApp chat or by staff
+  HANDLE // unverified: matched an open lead by Instagram handle only
+}
+
 model AdClick {
   id           String    @id @default(cuid())
   // Landing-page visit this row belongs to (first-party id from the snippet).
@@ -1024,6 +1035,7 @@ model AdClick {
   leadId       String? // one lead may hold several clicks; a click belongs to at most one lead
   lead         Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
   linkedAt     DateTime?
+  linkedVia    AdClickLinkVia? // null while unlinked
 
   metaEvents MetaEventOutbox[]
 
