@@ -92,6 +92,10 @@ services:
       - META_IG_USER_ID=${META_IG_USER_ID:-}
       - META_SYSTEM_APP_SECRET=${META_SYSTEM_APP_SECRET:-}
       - META_AUTOPUBLISH_ENABLED=${META_AUTOPUBLISH_ENABLED:-true}
+      # Meta Ads sync (ad spend into CRM campaigns); reuses the system user token above
+      - META_AD_ACCOUNT_ID=${META_AD_ACCOUNT_ID:-}
+      - META_ADS_SYNC_ENABLED=${META_ADS_SYNC_ENABLED:-true}
+      - META_ADS_SYNC_BACKFILL_DAYS=${META_ADS_SYNC_BACKFILL_DAYS:-90}
 
       # WhatsApp inbox + Conversions API (optional — app boots without them).
       # A partial/invalid set never blocks boot: WhatsApp is disabled and the

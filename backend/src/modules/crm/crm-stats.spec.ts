@@ -47,12 +47,20 @@ describe("parseRange", () => {
 });
 
 describe("CrmStatsService.stats", () => {
-  function build(leads: any[], spends: any[]) {
+  function build(leads: any[], spends: any[], metaLinked: any[] = [], metaDaily: any[] = []) {
     const prisma: any = {
       leadStage: { findMany: jest.fn(async () => stages) },
       lead: { findMany: jest.fn(async () => leads), count: jest.fn(async (a: any) => (a.where?.firstResponseAt === null ? 3 : 7)) },
       campaignSpend: { findMany: jest.fn(async () => spends) },
-      campaign: { findMany: jest.fn(async () => [{ id: "c1", name: "October Video Promo", code: "FB-OKT1" }, { id: "c2", name: "Reels", code: "IG-R" }]) },
+      campaign: {
+        findMany: jest.fn(async (a: any) =>
+          a?.where?.metaCampaignId
+            ? metaLinked
+            : [{ id: "c1", name: "October Video Promo", code: "FB-OKT1" }, { id: "c2", name: "Reels", code: "IG-R" }],
+        ),
+      },
+      metaAdsSyncState: { findUnique: jest.fn(async () => null) },
+      metaAdsInsightDaily: { findMany: jest.fn(async () => metaDaily) },
     };
     const settings: any = { getThresholdMinutes: jest.fn(async () => 15) };
     return new CrmStatsService(prisma, settings);
@@ -128,5 +136,24 @@ describe("CrmStatsService.stats", () => {
     const s = await build([], []).stats({ from: "2026-10-01", to: "2026-10-31" });
     expect(s).toMatchObject({ leads: 0, won: 0, conversionPct: 0, costPerLead: null, costPerClient: null, dropOff: null });
     expect(s.response.avgMinutes).toBeNull();
+  });
+
+  it("adds synced Meta spend (daily rows in the WIB window) to manual entries", async () => {
+    const metaLinked = [{ id: "c1", metaCampaignId: "120254253291320085" }];
+    const metaDaily = [
+      { metaCampaignId: "120254253291320085", amount: 600_000, impressions: 1000, clicks: 40 },
+      { metaCampaignId: "120254253291320085", amount: 400_000, impressions: 500, clicks: 10 },
+    ];
+    const s = await build(leads, spends, metaLinked, metaDaily).stats({ from: "2026-10-01", to: "2026-10-31" });
+    expect(s.metaSpend).toBe(1_000_000);
+    expect(s.manualSpend).toBeCloseTo(4_000_000);
+    expect(s.spend).toBeCloseTo(5_000_000);
+    expect(s.costPerLead).toBeCloseTo(5_000_000 / 6);
+    expect(s.costPerQualified).toBeCloseTo(5_000_000 / 4);
+    const c1 = s.byCampaign.find((c) => c.code === "FB-OKT1")!;
+    expect(c1).toMatchObject({ spend: 4_000_000, metaSpend: 1_000_000, impressions: 1500, clicks: 50 });
+    expect(c1.costPerLead).toBeCloseTo(800_000);
+    expect(c1.costPerQualified).toBeCloseTo(1_000_000);
+    expect(c1.costPerClient).toBeCloseTo(2_000_000);
   });
 });

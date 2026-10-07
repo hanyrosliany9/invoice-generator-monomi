@@ -193,6 +193,37 @@ export function safeDivide(a: number, b: number): number | null {
   return b > 0 ? a / b : null;
 }
 
+/** Highest pipeline step a lead ever reached (never counting Lost), or null. */
+export function maxReachedOrder(l: {
+  stage: { type: string; order: number };
+  activities: Array<{ toStage: { order: number; type: string } | null }>;
+}): number | null {
+  const orders: number[] = [];
+  if (l.stage.type !== "LOST") orders.push(l.stage.order);
+  for (const a of l.activities) {
+    if (a.toStage && a.toStage.type !== "LOST") orders.push(a.toStage.order);
+  }
+  return orders.length ? Math.max(...orders) : null;
+}
+
+/**
+ * Cost per lead / Qualified lead / client from combined spend (synced Meta
+ * spend + manually logged other costs). null when the denominator is 0.
+ */
+export function campaignCostMetrics(
+  manualSpend: number,
+  metaSpend: number,
+  counts: { leads: number; qualified: number; won: number },
+) {
+  const spend = manualSpend + metaSpend;
+  return {
+    spend,
+    costPerLead: safeDivide(spend, counts.leads),
+    costPerQualified: safeDivide(spend, counts.qualified),
+    costPerClient: safeDivide(spend, counts.won),
+  };
+}
+
 export interface FunnelStageInput {
   id: string;
   key: string | null;

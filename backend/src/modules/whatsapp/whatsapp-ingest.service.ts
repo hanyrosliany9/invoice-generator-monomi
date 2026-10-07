@@ -527,6 +527,30 @@ export class WhatsAppIngestService {
     return leadId;
   }
 
+  /**
+   * The Meta Ads sync stores ad id -> campaign id. When the referral's ad is
+   * known there and its campaign is linked to a CRM campaign, let that
+   * campaign claim the ad id (matchCampaign step 2).
+   */
+  private async addSyncedAdMapping(
+    campaigns: Array<{ id: string; metaAdIds: string[] }>,
+    sourceId: string | null,
+  ): Promise<void> {
+    if (!sourceId || !/^\d{5,25}$/.test(sourceId)) return;
+    try {
+      const ad = await this.prisma.metaAdsAd.findUnique({ where: { adId: sourceId } });
+      if (!ad) return;
+      const crm = await this.prisma.campaign.findFirst({
+        where: { metaCampaignId: ad.metaCampaignId },
+        select: { id: true },
+      });
+      const target = crm && campaigns.find((c) => c.id === crm.id);
+      if (target && !target.metaAdIds.includes(sourceId)) target.metaAdIds = [...target.metaAdIds, sourceId];
+    } catch {
+      // the ad map is a bonus: never block ingesting a message
+    }
+  }
+
   private shouldCreateLead(
     origin: WhatsAppOrigin,
     ts: Date,
@@ -581,6 +605,7 @@ export class WhatsAppIngestService {
       const campaigns = await this.prisma.campaign.findMany({
         select: { id: true, code: true, name: true, metaAdIds: true },
       });
+      await this.addSyncedAdMapping(campaigns, referral?.source_id ?? null);
       const match = matchCampaign(text, referral, campaigns);
       const id = await this.leads.createFromWhatsApp({
         waId: contact.waId,

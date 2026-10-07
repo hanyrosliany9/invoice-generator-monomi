@@ -16,6 +16,7 @@ import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { CrmCampaignsService } from "./crm-campaigns.service";
 import { CrmLeadsService } from "./crm-leads.service";
 import { CrmSettingsService } from "./crm-settings.service";
+import { MetaAdsAdminService } from "./meta-ads/meta-ads-admin.service";
 import { CrmStatsService } from "./crm-stats.service";
 import {
   AddLeadPhoneDto,
@@ -41,6 +42,7 @@ import {
   UpdateCrmSettingsDto,
   UpdateLeadDto,
   UpdateSpendDto,
+  SetMetaLinkDto,
   UpdateStageDto,
 } from "./dto/crm.dto";
 
@@ -59,6 +61,7 @@ export class CrmController {
     private readonly campaigns: CrmCampaignsService,
     private readonly settings: CrmSettingsService,
     private readonly stats: CrmStatsService,
+    private readonly metaAds: MetaAdsAdminService,
   ) {}
 
   private uid(req: any): string | null {
@@ -249,6 +252,12 @@ export class CrmController {
     return this.campaigns.remove(id);
   }
 
+  @Put("campaigns/:id/meta-link")
+  @ApiOperation({ summary: "Link a CRM campaign to a Meta campaign (or unlink with null)" })
+  setMetaLink(@Param("id") id: string, @Body() dto: SetMetaLinkDto) {
+    return this.metaAds.setLink(id, dto.metaCampaignId);
+  }
+
   @Get("campaigns/:id/spend")
   listSpend(@Param("id") id: string) {
     return this.campaigns.listSpend(id);
@@ -267,5 +276,26 @@ export class CrmController {
   @Delete("spend/:id")
   removeSpend(@Param("id") id: string) {
     return this.campaigns.removeSpend(id);
+  }
+
+  // ---- Meta Ads sync ---------------------------------------------------
+
+  @Get("meta-ads/status")
+  @ApiOperation({ summary: "Meta Ads sync status (admin)" })
+  metaAdsStatus() {
+    return this.metaAds.status();
+  }
+
+  @Post("meta-ads/sync")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Sync ad spend from Meta now" })
+  metaAdsSync() {
+    return this.metaAds.syncNow();
+  }
+
+  @Get("meta-ads/campaigns")
+  @ApiOperation({ summary: "Meta campaigns known from the last syncs (for the link dropdown)" })
+  metaAdsCampaigns() {
+    return this.metaAds.listMetaCampaigns();
   }
 }

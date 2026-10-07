@@ -10,6 +10,9 @@ import { CrmCoreModule } from "./crm-core.module";
 import { CrmLeadsService } from "./crm-leads.service";
 import { CrmSettingsService } from "./crm-settings.service";
 import { CrmStatsService } from "./crm-stats.service";
+import { MetaGraphClient } from "../social-publishing/meta-graph.client";
+import { MetaAdsAdminService } from "./meta-ads/meta-ads-admin.service";
+import { MetaAdsSyncService } from "./meta-ads/meta-ads-sync.service";
 
 /**
  * CRM phase A: leads, pipeline stages, campaigns + spend, stats, Meta event
@@ -19,7 +22,15 @@ import { CrmStatsService } from "./crm-stats.service";
 @Module({
   imports: [PrismaModule, CrmCoreModule, AdTrackingModule, ClientsModule, ProjectsModule, QuotationsModule],
   controllers: [CrmController],
-  providers: [CrmLeadsService, CrmCampaignsService, CrmSettingsService, CrmStatsService],
+  providers: [
+    CrmLeadsService,
+    CrmCampaignsService,
+    CrmSettingsService,
+    CrmStatsService,
+    MetaGraphClient,
+    MetaAdsSyncService,
+    MetaAdsAdminService,
+  ],
   exports: [CrmLeadsService, CrmSettingsService],
 })
 export class CrmModule {}

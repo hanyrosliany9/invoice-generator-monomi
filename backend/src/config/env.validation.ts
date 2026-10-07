@@ -263,6 +263,22 @@ export class EnvironmentVariables {
   @IsOptional()
   META_GRAPH_BASE_URL?: string;
 
+  // Meta Ads sync (ad spend per campaign into the CRM). Reuses the system user
+  // token / app secret above. Validated in depth by
+  // modules/crm/meta-ads/meta-ads.config.ts: a bad value turns the sync INVALID
+  // (card in CRM settings says why), it never fails boot.
+  @IsString()
+  @IsOptional()
+  META_AD_ACCOUNT_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  META_ADS_SYNC_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  META_ADS_SYNC_BACKFILL_DAYS?: string;
+
   // WhatsApp Business Platform inbox + Conversions API (optional; all unset =
   // feature off). Validated in depth by modules/whatsapp/whatsapp.config.ts:
   // a partial or invalid value (placeholder/short verify token, missing app

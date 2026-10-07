@@ -18,6 +18,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
 } from "class-validator";
 import {
   CampaignPlatform,
@@ -430,4 +431,11 @@ export class StatsQueryDto {
 
   @IsOptional() @Transform(emptyToUndefined) @IsString()
   campaignId?: string;
+}
+
+export class SetMetaLinkDto {
+  /** Numeric Meta campaign id, or null to unlink. */
+  @ValidateIf((_, v) => v !== null)
+  @IsString() @Matches(/^\d{5,25}$/, { message: "ID kampanye Meta harus berupa angka" })
+  metaCampaignId: string | null;
 }

@@ -75,6 +75,8 @@ function setup(opts: { counters?: TrackCounters; leads?: any[]; stages?: any[] }
     campaign: [{ id: "cmp1", code: "FB-OKT1", name: "Oktober 1", metaAdIds: [] }],
     crmSettings: [{ id: "default", responseThresholdMinutes: 15 }],
     campaignSpend: [],
+    metaAdsSyncState: [],
+    metaAdsInsightDaily: [],
     // seeded rows get the DB defaults a real insert would have
     lead: (opts.leads ?? []).map((l) => ({
       firstContactAt: l.createdAt ?? new Date(),

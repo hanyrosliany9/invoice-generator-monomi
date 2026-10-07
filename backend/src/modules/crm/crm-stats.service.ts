@@ -1,11 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { loadMetaSpend } from "./meta-ads/meta-ads-spend";
+import { wibDateString } from "./meta-ads/meta-ads.utils";
 import { CrmSettingsService } from "./crm-settings.service";
 import {
   WIB_OFFSET_MS,
   average,
   buildFunnel,
+  campaignCostMetrics,
   findDropOff,
+  maxReachedOrder as maxReachedOrderOf,
   median,
   minutesBetween,
   prorateSpend,
@@ -104,12 +108,7 @@ export class CrmStatsService {
   }
 
   private maxReachedOrder(l: LeadRow): number | null {
-    const orders: number[] = [];
-    if (l.stage.type !== "LOST") orders.push(l.stage.order);
-    for (const a of l.activities) {
-      if (a.toStage && a.toStage.type !== "LOST") orders.push(a.toStage.order);
-    }
-    return orders.length ? Math.max(...orders) : null;
+    return maxReachedOrderOf(l);
   }
 
   async stats(params: { from?: string; to?: string; campaignId?: string }) {
@@ -171,6 +170,18 @@ export class CrmStatsService {
       spendByCampaign.set(s.campaignId, (spendByCampaign.get(s.campaignId) ?? 0) + part);
     }
 
+    // synced Meta spend (daily rows, WIB days) adds to the manual entries
+    const meta = await loadMetaSpend(this.prisma, {
+      from: wibDateString(range.from),
+      to: wibDateString(range.to),
+      campaignId: params.campaignId,
+    });
+    for (const [cid, m] of meta.byCampaign) {
+      spend += m.amount;
+      spendByCampaign.set(cid, (spendByCampaign.get(cid) ?? 0) + m.amount);
+    }
+    const metaSpendTotal = [...meta.byCampaign.values()].reduce((s, m) => s + m.amount, 0);
+
     // waiting leads (no chat yet) have nothing to answer
     const responseMinutes = leads
       .filter((l) => l.firstResponseAt && !l.awaitingWhatsapp)
@@ -218,22 +229,29 @@ export class CrmStatsService {
       const cl = revenues.filter((r) => r.l.campaignId === id);
       const sp = spendByCampaign.get(id) ?? 0;
       const wonN = cl.filter((r) => r.l.stage.type === "WON").length;
+      const qualifiedN = qualifiedStage
+        ? cl.filter((r) => {
+            const m = this.maxReachedOrder(r.l);
+            return m !== null && m >= qualifiedStage.order;
+          }).length
+        : 0;
+      const metaSp = meta.byCampaign.get(id)?.amount ?? 0;
+      const cm = campaignCostMetrics(sp - metaSp, metaSp, { leads: cl.length, qualified: qualifiedN, won: wonN });
       return {
         campaignId: id,
         name: c?.name ?? "-",
         code: c?.code ?? "-",
         leads: cl.length,
-        qualified: qualifiedStage
-          ? cl.filter((r) => {
-              const m = this.maxReachedOrder(r.l);
-              return m !== null && m >= qualifiedStage.order;
-            }).length
-          : 0,
+        qualified: qualifiedN,
         won: wonN,
         revenue: cl.reduce((s, r) => s + r.revenue, 0),
         spend: sp,
-        costPerLead: safeDivide(sp, cl.length),
-        costPerClient: safeDivide(sp, wonN),
+        metaSpend: metaSp,
+        impressions: meta.byCampaign.get(id)?.impressions ?? 0,
+        clicks: meta.byCampaign.get(id)?.clicks ?? 0,
+        costPerLead: cm.costPerLead,
+        costPerQualified: cm.costPerQualified,
+        costPerClient: cm.costPerClient,
       };
     }).sort((a, b) => b.leads - a.leads);
 
@@ -253,7 +271,12 @@ export class CrmStatsService {
       revenuePaid,
       revenuePending: revenue - revenuePaid,
       spend,
+      metaSpend: metaSpendTotal,
+      manualSpend: spend - metaSpendTotal,
+      spendCurrency: meta.currency,
+      metaLastSyncAt: meta.lastSyncAt ? meta.lastSyncAt.toISOString() : null,
       costPerLead: safeDivide(spend, leads.length),
+      costPerQualified: safeDivide(spend, reached("QUALIFIED")),
       costPerClient: safeDivide(spend, won.length),
       costPerPayingClient: safeDivide(spend, payingClients),
       payingClients,

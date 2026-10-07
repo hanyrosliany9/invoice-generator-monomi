@@ -821,6 +821,11 @@ model Campaign {
   status         CampaignStatus   @default(ACTIVE)
   prefillMessage String?          @db.Text
   metaAdIds      String[]         @default([]) // Meta ad ids (CTWA referral.source_id) mapped to this campaign
+  // Linked Meta (Facebook/Instagram Ads) campaign: spend syncs from the Marketing API.
+  metaCampaignId   String?          @unique
+  metaCampaignName String?
+  metaStatus       String? // Meta effective_status (ACTIVE, PAUSED, ARCHIVED...)
+  metaObjective    String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -6712,4 +6717,76 @@ model InstagramDataDeletionRequest {
   completedAt      DateTime?
 
   @@map("instagram_data_deletion_requests")
+}
+
+// ---------------------------------------------------------------------------
+// Meta Ads sync (Marketing API insights -> CRM campaign spend)
+// ---------------------------------------------------------------------------
+
+/// Singleton ("default"): sync lease, per-account status, rate-limit backoff.
+model MetaAdsSyncState {
+  id                  String    @id @default("default")
+  adAccountId         String? // digits, no act_
+  accountName         String?
+  currency            String?
+  leaseOwner          String?
+  leaseUntil          DateTime?
+  lastRunAt           DateTime?
+  lastSuccessAt       DateTime?
+  lastStatus          String? // SUCCESS | FAILED | RATE_LIMITED | SKIPPED
+  lastError           String?
+  lastTrigger         String? // CRON | MANUAL
+  backfilledAccountId String? // account whose first-run backfill completed
+  rateLimitedUntil    DateTime?
+  rateLimitStrikes    Int       @default(0)
+  lastRangeFrom       DateTime? @db.Date
+  lastRangeTo         DateTime? @db.Date
+  updatedAt           DateTime  @updatedAt
+
+  @@map("meta_ads_sync_state")
+}
+
+model MetaAdsCampaign {
+  id               String   @id @default(cuid())
+  adAccountId      String
+  metaCampaignId   String   @unique
+  name             String
+  status           String?
+  effectiveStatus  String?
+  objective        String?
+  // set when staff unlink it: the sync must not auto-create a CRM campaign again
+  autoLinkDisabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([adAccountId])
+  @@map("meta_ads_campaigns")
+}
+
+/// ad id -> campaign id (CTWA referral.source_id attribution).
+model MetaAdsAd {
+  adId           String   @id
+  adAccountId    String
+  metaCampaignId String
+  updatedAt      DateTime @updatedAt
+
+  @@index([metaCampaignId])
+  @@map("meta_ads_ads")
+}
+
+/// One row per Meta campaign per day. Integer IDR (or amount in `currency`).
+model MetaAdsInsightDaily {
+  id             String   @id @default(cuid())
+  adAccountId    String
+  metaCampaignId String
+  date           DateTime @db.Date
+  amount         Decimal  @db.Decimal(18, 2)
+  currency       String   @default("IDR")
+  impressions    Int      @default(0)
+  clicks         Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@unique([metaCampaignId, date])
+  @@index([date])
+  @@map("meta_ads_insights_daily")
 }

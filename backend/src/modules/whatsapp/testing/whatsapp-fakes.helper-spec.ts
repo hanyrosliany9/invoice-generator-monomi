@@ -62,7 +62,8 @@ const UNIQUE: Record<string, string[]> = {
   whatsAppWebhookEvent: ["payloadHash"],
   metaEventOutbox: ["dedupeKey"],
   adClick: ["ref", "eventId", "visitKey"],
-  campaign: ["code"],
+  campaign: ["code", "metaCampaignId"],
+  metaAdsCampaign: ["metaCampaignId"],
 };
 
 const DEFAULTS: Record<string, () => Row> = {
@@ -388,8 +389,26 @@ export class FakePrisma {
     }
   }
 
+  /** Prisma compound unique selectors ("metaCampaignId_date": {...}) -> plain field filters. */
+  private flattenCompound(where: Row): Row {
+    const out: Row = {};
+    for (const [k, v] of Object.entries(where ?? {})) {
+      if (
+        /^[a-zA-Z]+(_[a-zA-Z]+)+$/.test(k) &&
+        v &&
+        typeof v === "object" &&
+        !(v instanceof Date) &&
+        !Array.isArray(v)
+      )
+        Object.assign(out, v);
+      else out[k] = v;
+    }
+    return out;
+  }
+
   private findUniqueRow(model: string, where: Row): Row | undefined {
-    return this.table(model).find((r) => this.matches(model, r, where));
+    const w = this.flattenCompound(where);
+    return this.table(model).find((r) => this.matches(model, r, w));
   }
 
   private delegate(model: string) {
@@ -474,7 +493,7 @@ export class FakePrisma {
         }
         return self._pick(
           model,
-          create({ ...args.where, ...args.create }),
+          create({ ...self.flattenCompound(args.where), ...args.create }),
           args,
         );
       },
@@ -520,6 +539,11 @@ export class FakePrisma {
           const g: Row = {};
           args.by.forEach((b: string, i: number) => (g[b] = vals[i]));
           if (args._count) g._count = { _all: rs.length };
+          if (args._sum) {
+            g._sum = {};
+            for (const k of Object.keys(args._sum))
+              g._sum[k] = rs.reduce((a, r) => a + Number(r[k] ?? 0), 0);
+          }
           return g;
         });
       },

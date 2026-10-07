@@ -171,7 +171,16 @@ export class AdClickService {
       where: { code: { equals: utmCampaign, mode: "insensitive" } },
       select: { code: true },
     });
-    return c?.code ?? null;
+    if (c) return c.code; // an explicit code wins
+    // All digits = a Meta campaign id ({{campaign.id}} in the ad URL) of a linked campaign.
+    if (/^\d{5,25}$/.test(utmCampaign)) {
+      const m = await this.prisma.campaign.findFirst({
+        where: { metaCampaignId: utmCampaign },
+        select: { code: true },
+      });
+      return m?.code ?? null;
+    }
+    return null;
   }
 
   /**
