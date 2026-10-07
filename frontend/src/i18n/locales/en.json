@@ -8720,7 +8720,8 @@
           },
           "bagian-data": {
             "title": "Choose how to fill in the data",
-            "body": "A section is one table of numbers with its charts. There are three ways: upload a file, type in a table, or headline numbers."
+            "body": "A section is one table of numbers with its charts. There are four ways: upload a file, type in a table, headline numbers, or Ambil dari Instagram (pull from Instagram). The fourth only appears when this report's client already has synced Instagram data.",
+            "tip": "Ambil dari Instagram shows a preview of the sections built from the synced data for the report month (daily table, top content, headline numbers). Tick the ones you want, then add them. Headline numbers based on less than 80% of the month's days are skipped unless you tick Sertakan metrik dengan data tidak lengkap (include incomplete data). Adding a section the report already has replaces it after a confirmation."
           },
           "unggah-file": {
             "title": "Way 1: upload a CSV or Excel file",
@@ -8846,7 +8847,7 @@
           },
           "planner-monomi": {
             "title": "Plan posts in Content Calendar",
-            "body": "Choose Monomi in Content Calendar. The profile you just filled in shows on the Instagram tab (1), and posts are created like for any other client."
+            "body": "Choose Monomi in Content Calendar. The profile you just filled in shows on the Instagram tab (1), and posts are created like for any other client. Admin only: Monomi's own posts can also be published automatically to Instagram and Facebook; see the guide Auto-publishing to Instagram and Facebook (Publikasi otomatis ke Instagram dan Facebook)."
           }
         }
       },
@@ -9160,7 +9161,7 @@
           },
           "materai": {
             "title": "The stamp-duty reminder",
-            "body": "For invoices above Rp 5.000.000 the invoice page shows a Materai diperlukan warning (1): stick a Rp 10.000 stamp on the printed copy before sending it to the client. The line in the summary (2) reads Belum diterapkan.",
+            "body": "For invoices of Rp 5.000.000 or more the invoice page shows a Materai diperlukan warning (1): stick a Rp 10.000 stamp on the printed copy before sending it to the client. The line in the summary (2) reads Belum diterapkan.",
             "tip": "Sticking the stamp is a manual step on paper. The app only reminds you and records that the stamp was applied."
           },
           "materai-tempel": {
@@ -9170,7 +9171,7 @@
           "pdf": {
             "title": "Print or download the PDF",
             "body": "In the Tindakan lainnya menu choose Pratinjau PDF (1). The document opens in a preview window with a Unduh button. Print from here when a stamp must be applied.",
-            "tip": "Print first, stick the stamp, and only then send it when the invoice is above Rp 5.000.000."
+            "tip": "Print first, stick the stamp, then send it to the client when the invoice value is Rp 5.000.000 or more."
           },
           "kirim": {
             "title": "Send the invoice",
@@ -9606,7 +9607,8 @@
           },
           "menu": {
             "title": "Use the side menu",
-            "body": "The menu is grouped: Workspace (Klien (1), Proyek, Quotation, Invoice), Marketing, Produksi (Shot List (2)), Akuntansi, and a last group holding Panduan (3) and Pengaturan. Menu items that do not match your role are hidden."
+            "body": "The menu is grouped: Workspace (Klien (1), Proyek, Quotation, Invoice), Marketing, Produksi (Shot List (2)), Akuntansi, and a last group holding Panduan (3) and Pengaturan. Menu items that do not match your role are hidden. Admins also see a CRM group under Marketing with Inbox, Lead, Kampanye, and Dasbor CRM, with count badges for messages and leads that need attention.",
+            "tip": "Need more room? Click Sembunyikan sidebar (Hide sidebar) at the bottom of the menu or press Ctrl+B (Cmd+B on a Mac) to collapse the menu; repeat to expand it again."
           },
           "palet": {
             "title": "Search quickly with Ctrl+K",
@@ -9741,7 +9743,7 @@
           "konversi": {
             "title": "Convert to client and quotation",
             "body": "When the lead is ready, click Convert to Client & Create Quotation. Keep Create draft quotation ticked (1), check the amount (2) and confirm (3). A client is created (or matched by the WhatsApp number) together with a project and a draft quotation filled with the estimate.",
-            "tip": "Move the lead to Qualified first, before converting, so Meta receives the Qualified lead signal. Converting moves the lead straight to Proposal, and Proposal itself sends nothing to Meta. Untick the quotation if you only want the client and the project."
+            "tip": "Converting (or moving the lead to Won) automatically sends the Qualified signal (QualifiedLead) to Meta if it was not sent yet, so there is no need to move the lead to Qualified first. Proposal itself sends nothing. Untick the quotation if you only want the client and the project."
           },
           "dasbor": {
             "title": "Read the dashboard",
@@ -9760,7 +9762,7 @@
           },
           "pindah-tahap": {
             "title": "Move a lead to another stage",
-            "body": "Click Move stage (1) and choose the new stage (2). Only two stages are reported to Meta: Qualified (QualifiedLead) and Won (Purchase, with the value). Meeting and Proposal are not sent. Lost asks for a short reason. Every move is recorded in the History with who did it and when. Events are only sent for leads that can be matched to an ad: leads with a landing page Kode now, and Click-to-WhatsApp chats once the WhatsApp connection is live.",
+            "body": "Click Move stage (1) and choose the new stage (2). Only two stages are reported to Meta: Qualified (QualifiedLead) and Won (Purchase, with the value). Meeting and Proposal send no event of their own, but moving a lead past Qualified (or to Won) sends QualifiedLead once if that stage was skipped. Lost asks for a short reason and sends nothing. Every move is recorded in the History with who did it and when. Events are only sent for leads that can be matched to an ad: leads with a landing page Kode now, and Click-to-WhatsApp chats once the WhatsApp connection is live.",
             "tip": "When the quotation is approved or the invoice is paid, the lead moves to Won on its own and sends Purchase."
           },
           "hasil": {

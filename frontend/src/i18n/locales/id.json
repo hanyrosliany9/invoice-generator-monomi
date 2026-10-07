@@ -8719,7 +8719,8 @@
           },
           "bagian-data": {
             "title": "Pilih cara mengisi data",
-            "body": "Satu bagian adalah satu tabel angka beserta grafiknya. Ada tiga cara: unggah file, ketik di tabel, atau angka utama."
+            "body": "Satu bagian adalah satu tabel angka beserta grafiknya. Ada empat cara: unggah file, ketik di tabel, angka utama, atau Ambil dari Instagram. Pilihan keempat hanya muncul bila klien laporan ini sudah punya data Instagram yang tersinkron.",
+            "tip": "Ambil dari Instagram menampilkan pratinjau bagian yang dibuat dari data tersinkron bulan laporan (tabel harian, konten teratas, angka utama). Centang yang diinginkan lalu tambahkan. Angka utama yang datanya kurang dari 80% hari dalam sebulan dilewati kecuali Anda mencentang Sertakan metrik dengan data tidak lengkap. Menambah ulang bagian yang sudah ada menggantinya setelah konfirmasi."
           },
           "unggah-file": {
             "title": "Cara 1: unggah file CSV atau Excel",
@@ -8845,7 +8846,7 @@
           },
           "planner-monomi": {
             "title": "Rencanakan konten di Kalender Konten",
-            "body": "Pilih Monomi di Kalender Konten. Profil yang baru diisi tampil di tab Instagram (1), dan konten dibuat seperti untuk klien lain."
+            "body": "Pilih Monomi di Kalender Konten. Profil yang baru diisi tampil di tab Instagram (1), dan konten dibuat seperti untuk klien lain. Khusus admin: konten Monomi sendiri juga bisa terbit otomatis ke Instagram dan Facebook; caranya ada di panduan Publikasi otomatis ke Instagram dan Facebook."
           }
         }
       },
@@ -9159,7 +9160,7 @@
           },
           "materai": {
             "title": "Pengingat materai",
-            "body": "Untuk invoice di atas Rp 5.000.000, halaman invoice menampilkan peringatan Materai diperlukan (1): tempel materai Rp 10.000 pada cetakan sebelum dikirim ke klien. Barisnya di ringkasan (2) bertuliskan Belum diterapkan.",
+            "body": "Untuk invoice bernilai Rp 5.000.000 atau lebih, halaman invoice menampilkan peringatan Materai diperlukan (1): tempel materai Rp 10.000 pada cetakan sebelum dikirim ke klien. Barisnya di ringkasan (2) bertuliskan Belum diterapkan.",
             "tip": "Penempelan materai dilakukan manual di kertas. Aplikasi hanya mengingatkan dan mencatat bahwa materai sudah ditempel."
           },
           "materai-tempel": {
@@ -9169,7 +9170,7 @@
           "pdf": {
             "title": "Cetak atau unduh PDF",
             "body": "Di menu Tindakan lainnya pilih Pratinjau PDF (1). Dokumen terbuka di jendela pratinjau dengan tombol Unduh. Cetak dari sini bila materai harus ditempel.",
-            "tip": "Cetak dulu, tempel materai, baru kirim ke klien bila nilai invoice di atas Rp 5.000.000."
+            "tip": "Cetak dulu, tempel materai, baru kirim ke klien bila nilai invoice Rp 5.000.000 atau lebih."
           },
           "kirim": {
             "title": "Kirim invoice",
@@ -9605,7 +9606,8 @@
           },
           "menu": {
             "title": "Gunakan menu samping",
-            "body": "Menu dikelompokkan: Workspace (Klien (1), Proyek, Quotation, Invoice), Marketing, Produksi (Shot List (2)), Akuntansi, dan grup terakhir yang berisi Panduan (3) dan Pengaturan. Menu yang tidak sesuai peran Anda disembunyikan."
+            "body": "Menu dikelompokkan: Workspace (Klien (1), Proyek, Quotation, Invoice), Marketing, Produksi (Shot List (2)), Akuntansi, dan grup terakhir yang berisi Panduan (3) dan Pengaturan. Menu yang tidak sesuai peran Anda disembunyikan. Admin juga melihat grup CRM di Marketing berisi Inbox, Lead, Kampanye, dan Dasbor CRM, dengan angka penanda untuk pesan dan lead yang butuh perhatian.",
+            "tip": "Perlu layar lebih lebar? Klik Sembunyikan sidebar di bagian bawah menu atau tekan Ctrl+B (Cmd+B di Mac) untuk menciutkan menu; ulangi untuk melebarkannya lagi."
           },
           "palet": {
             "title": "Cari cepat dengan Ctrl+K",
@@ -9740,7 +9742,7 @@
           "konversi": {
             "title": "Konversi menjadi klien dan penawaran",
             "body": "Saat lead siap, klik Konversi ke Klien & Buat Penawaran. Biarkan Buat draf penawaran tercentang (1), periksa nilainya (2), lalu konfirmasi (3). Klien dibuat (atau dicocokkan lewat nomor WhatsApp) bersama proyek dan draf penawaran berisi estimasi nilai.",
-            "tip": "Pindahkan lead ke Dikualifikasi dulu sebelum konversi, supaya Meta menerima sinyal lead Dikualifikasi. Konversi langsung memindahkan lead ke Penawaran, dan tahap Penawaran sendiri tidak mengirim apa pun ke Meta. Hilangkan centang penawaran jika hanya butuh klien dan proyek."
+            "tip": "Konversi (atau memindahkan lead ke Menang) otomatis mengirim sinyal Dikualifikasi (QualifiedLead) ke Meta bila belum pernah terkirim, jadi tidak perlu memindahkan lead ke Dikualifikasi lebih dulu. Tahap Penawaran sendiri tidak mengirim apa pun. Hilangkan centang penawaran jika hanya butuh klien dan proyek."
           },
           "dasbor": {
             "title": "Baca dasbor",
@@ -9759,7 +9761,7 @@
           },
           "pindah-tahap": {
             "title": "Pindahkan lead ke tahap lain",
-            "body": "Klik Pindah tahap (1) lalu pilih tahap baru (2). Hanya dua tahap yang dilaporkan ke Meta: Dikualifikasi (QualifiedLead) dan Menang (Purchase, beserta nilainya). Meeting dan Penawaran tidak dikirim. Kalah meminta alasan singkat. Setiap perpindahan tercatat di Riwayat beserta siapa dan kapan. Event hanya dikirim untuk lead yang bisa dicocokkan ke iklan: lead dengan Kode landing page sekarang, dan chat Click-to-WhatsApp setelah koneksi WhatsApp aktif.",
+            "body": "Klik Pindah tahap (1) lalu pilih tahap baru (2). Hanya dua tahap yang dilaporkan ke Meta: Dikualifikasi (QualifiedLead) dan Menang (Purchase, beserta nilainya). Meeting dan Penawaran tidak mengirim event sendiri, tetapi memindahkan lead melewati Dikualifikasi (atau ke Menang) mengirim QualifiedLead satu kali bila tahap itu terlewat. Kalah meminta alasan singkat dan tidak mengirim apa pun. Setiap perpindahan tercatat di Riwayat beserta siapa dan kapan. Event hanya dikirim untuk lead yang bisa dicocokkan ke iklan: lead dengan Kode landing page sekarang, dan chat Click-to-WhatsApp setelah koneksi WhatsApp aktif.",
             "tip": "Saat penawaran disetujui atau invoice dibayar, lead pindah ke Menang dengan sendirinya dan mengirim Purchase."
           },
           "hasil": {
