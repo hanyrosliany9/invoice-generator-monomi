@@ -19,9 +19,10 @@ Needs a local stack: Postgres + Redis (`docker compose -f docker-compose.develop
 a backend and the Vite dev server.
 
 ```bash
-# 1. backend on a free port. Point R2_* at dummies so nothing can reach real storage.
+# 1. backend on a free port. Point R2_* at dummies so nothing can reach real storage. The capture backend needs
+#    R2_ENDPOINT to be this https URL (an unroutable dummy host that the capture's media stub also recognises).
 cd backend
-R2_ENDPOINT=http://127.0.0.1:9 R2_PUBLIC_URL=https://media-demo.invalid \
+R2_ENDPOINT=https://dev-not-used.r2.cloudflarestorage.com R2_PUBLIC_URL=https://media-demo.invalid \
 R2_ACCESS_KEY_ID=demo R2_SECRET_ACCESS_KEY=demo R2_BUCKET_NAME=demo R2_ACCOUNT_ID=demo \
 PORT=5131 FRONTEND_URL=http://localhost:5211 npx nest start > /tmp/backend.log 2>&1 &
 
@@ -68,6 +69,13 @@ run, handy while writing a flow), `--clean-only`.
 | `crm-publish` | publikasi-otomatis (auto-publishing to Instagram / Facebook on the Monomi content calendar) |
 | `crm-setup` | crm-whatsapp-setup (the admin WhatsApp settings card; one run per server state, see below) |
 | `shortcuts` | pintasan-keyboard, pintasan-klien (the `?` overlay, lightbox key tooltip, deck shortcuts dialog, presentation hint; the tables are rendered from `src/shortcuts/registry.ts`) |
+| `instagram` | instagram-klien (client page card: not connected, connected, Sync sekarang, expired token, "Ambil dari Instagram" in the report builder, disconnect dialog) and instagram-portal (the client's own card on the portal Reports tab, phone viewport) |
+| `invoice-manual` | invoice-manual (/invoices/new without a quotation: client and project, items, PPN, materai above Rp 5.000.000, payment info, save as draft) |
+| `settings` | pengaturan-aplikasi (every /settings section; read-only, nothing is saved, the APK and the backup are never downloaded). Standalone |
+| `crm-settings` | crm-pengaturan (/crm/settings: response target, stage rename / colour / order / switch / new stage, Meta events). It edits the settings through the UI and puts the stage rows and the target back in `finally`. Standalone |
+| `calendar` | kalender-proyek (/calendar and a project's calendar with a demo event) |
+| `reports-misc` | laporan-bisnis (/reports, the monthly business report, the four system reports) and analitik-milestone (/milestones; `seed-extra.mjs` adds a quotation with DP 30% / Pelunasan 70% terms, the first stage invoiced and paid) |
+| `accounting-adv` | akuntansi-lanjutan (general ledger, trial balance, cash flow, receivables / payables aging, purchase report, adjusting entry wizard, ECL dialog; `seed-extra.mjs` adds opening capital and three purchases). Read-only: the ECL dialog is cancelled |
 
 Staff logins are rate limited (5 per minute), so the capture signs in once through the UI
 and reuses that session (`storageState`) for every browser context. The sign-in runs in its own unrecorded context

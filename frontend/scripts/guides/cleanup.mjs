@@ -72,6 +72,7 @@ export async function cleanup({ quiet = false } = {}) {
     await run('decks', 'DELETE FROM decks WHERE title LIKE $1');
     await run('content items', `DELETE FROM content_calendar_items WHERE caption LIKE $1
       OR "clientId" IN (SELECT id FROM clients WHERE name LIKE $1 AND "isInternal" = false)`);
+    await run('calendar events', `DELETE FROM calendar_events WHERE title LIKE $1 OR "projectId" IN ${DP}`);
     await run('reports', 'DELETE FROM social_media_reports WHERE title LIKE $1');
     await run('projects', `DELETE FROM projects WHERE id IN ${DP}`);
     await run('portal login rows', `DELETE FROM client_portal_login_codes WHERE email LIKE 'demo.%@contoh.co.id'`, []);

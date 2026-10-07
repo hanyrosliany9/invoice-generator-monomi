@@ -37,6 +37,8 @@ const FLOWS = [
   'sales', 'finance', 'production', 'tools', 'shortcuts',
   // CRM / WhatsApp / auto-publishing: standalone flows (own demo data, see seed-crm.mjs)
   'crm', 'crm-inbox', 'crm-publish', 'crm-setup',
+  // Instagram, manual invoice, settings, CRM settings, calendars, reports/milestones, advanced accounting
+  'instagram', 'invoice-manual', 'settings', 'crm-settings', 'calendar', 'reports-misc', 'accounting-adv',
 ];
 
 // Login is rate-limited (5 per minute), so sign in through the UI once and

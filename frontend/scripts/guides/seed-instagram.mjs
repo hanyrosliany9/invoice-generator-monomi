@@ -24,9 +24,9 @@ export async function seedInstagram(clientId, { username = 'kopisenja.demo', mon
     await db.query(
       `INSERT INTO instagram_connections (id, "clientId", "igUserId", "igScopedUserId", username, "accountType", "profilePictureUrl", "followersCount", "mediaCount",
          "accessTokenEnc", "tokenExpiresAt", "tokenRefreshedAt", scopes, status, "lastSyncAt", "connectedBy", "activeIgUserId", "createdAt", "updatedAt")
-       VALUES ($1,$2,$3,$3,$4,'BUSINESS',NULL,4820,236,NULL,$5,$6,$7,'ACTIVE',$6,'admin@monomi.id',$3,$8,$6)`,
+       VALUES ($1,$2,$3,$3,$4,'BUSINESS',NULL,4820,236,NULL,$5,$6,$7,'ACTIVE',$9,'admin@monomi.id',$3,$8,$6)`,
       [id, clientId, IG_USER_ID, username, new Date(Date.now() + 55 * 86400e3), new Date(), ['instagram_business_basic', 'instagram_business_manage_insights'],
-        new Date(Date.now() - 6 * 86400e3)],
+        new Date(Date.now() - 6 * 86400e3), new Date(Date.now() - 7 * 3600e3)],
     );
     // One row per day of the report month up to today (WIB).
     const today = wib(now);
@@ -78,6 +78,17 @@ export async function removeInstagram(clientId) {
   await db.connect();
   try {
     await db.query('DELETE FROM instagram_connections WHERE "clientId" = $1 OR "igUserId" = $2', [clientId, IG_USER_ID]);
+  } finally {
+    await db.end();
+  }
+}
+
+/** Puts the demo connection into another state (EXPIRED, ERROR, ...) with an optional last-error text, or back to ACTIVE. */
+export async function setInstagramStatus(clientId, status, lastError = null) {
+  const db = new pg.Client({ connectionString: cfg.dbUrl });
+  await db.connect();
+  try {
+    await db.query('UPDATE instagram_connections SET status = $2::"InstagramConnectionStatus", "lastError" = $3 WHERE "clientId" = $1', [clientId, status, lastError]);
   } finally {
     await db.end();
   }
