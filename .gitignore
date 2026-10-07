@@ -221,3 +221,7 @@ frontend/public/*
 !backend/src/modules/pdf/assets/company-logo.png
 .aider*
 backups/
+
+# Landing pages (Cloudflare Worker static assets) ship their own images
+!landing/**/*.webp
+!landing/**/*.png

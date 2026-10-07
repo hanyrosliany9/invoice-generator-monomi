@@ -1,0 +1,9 @@
+# link.monomiagency.com — "Public Session Chap. 1" landing page for Meta ads.
+# Static-assets-only Cloudflare Worker. The custom domain link.monomiagency.com is
+# attached in the Cloudflare dashboard (Worker > Settings > Domains); no routes here.
+name = "monomi-links"
+compatibility_date = "2026-09-26"
+account_id = "209896b6231b1f8246620be3ab526b3f"
+
+[assets]
+directory = "./site"
