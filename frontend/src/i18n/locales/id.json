@@ -9740,7 +9740,7 @@
           "konversi": {
             "title": "Konversi menjadi klien dan penawaran",
             "body": "Saat lead siap, klik Konversi ke Klien & Buat Penawaran. Biarkan Buat draf penawaran tercentang (1), periksa nilainya (2), lalu konfirmasi (3). Klien dibuat (atau dicocokkan lewat nomor WhatsApp) bersama proyek dan draf penawaran berisi estimasi nilai.",
-            "tip": "Hilangkan centang penawaran jika hanya butuh klien dan proyek."
+            "tip": "Pindahkan lead ke Dikualifikasi dulu sebelum konversi, supaya Meta menerima sinyal lead Dikualifikasi. Konversi langsung memindahkan lead ke Penawaran, dan tahap Penawaran sendiri tidak mengirim apa pun ke Meta. Hilangkan centang penawaran jika hanya butuh klien dan proyek."
           },
           "dasbor": {
             "title": "Baca dasbor",
@@ -9759,8 +9759,8 @@
           },
           "pindah-tahap": {
             "title": "Pindahkan lead ke tahap lain",
-            "body": "Klik Pindah tahap (1) lalu pilih tahap baru (2). Dikualifikasi dan Menang dilaporkan ke Meta secara otomatis, Kalah meminta alasan singkat. Setiap perpindahan tercatat di Riwayat beserta siapa dan kapan.",
-            "tip": "Saat penawaran disetujui atau invoice dibayar, lead pindah ke Menang dengan sendirinya."
+            "body": "Klik Pindah tahap (1) lalu pilih tahap baru (2). Hanya dua tahap yang dilaporkan ke Meta: Dikualifikasi (QualifiedLead) dan Menang (Purchase, beserta nilainya). Rapat dan Penawaran tidak dikirim. Kalah meminta alasan singkat. Setiap perpindahan tercatat di Riwayat beserta siapa dan kapan. Event hanya dikirim untuk lead yang bisa dicocokkan ke iklan: lead dengan Kode landing page sekarang, dan chat Click-to-WhatsApp setelah koneksi WhatsApp aktif.",
+            "tip": "Saat penawaran disetujui atau invoice dibayar, lead pindah ke Menang dengan sendirinya dan mengirim Purchase."
           },
           "hasil": {
             "title": "Apa yang dibuat oleh konversi",
@@ -9769,8 +9769,8 @@
           },
           "link-iklan-website": {
             "title": "Iklan website: satu link untuk semua iklan",
-            "body": "Jika iklan mengarahkan orang ke landing page dulu, pilih kampanye mana saja lalu klik Salin link iklan. Itu satu link universal yang berlaku untuk semua iklan Meta: di Meta Ads Manager tempel sekali sebagai URL Website iklan (atau di URL parameters). Meta mengisi id kampanye dan id iklan untuk tiap iklan, jadi setiap kunjungan dan chat dari landing page terhubung ke kampanye yang benar tanpa kode. Link kedua per kode di bawahnya hanya untuk tempat di luar Meta.",
-            "tip": "Jangan ubah linknya: Meta mengisi id kampanye dan id iklan dengan sendirinya."
+            "body": "Jika iklan mengarahkan orang ke landing page dulu, pilih kampanye mana saja lalu klik Salin link iklan. Itu menyalin link lengkap yang berlaku untuk semua iklan Meta. Di Meta Ads Manager, pisahkan jadi dua. URL Website: alamat bersihnya https://link.monomiagency.com/ (atau https://link.monomiagency.com/#catalog untuk langsung membuka bagian Catalog). Di Tracking > URL parameters, tempel bagian setelah tanda ? dari link yang disalin: utm_source=meta&utm_medium=paid&utm_campaign={{campaign.id}}&utm_content={{ad.id}}. Meta mengisi id kampanye dan id iklan untuk tiap iklan, jadi setiap kunjungan dan chat dari landing page terhubung ke kampanye yang benar tanpa kode. Biarkan dataset Website events (monomi-pixel-01) tetap tercentang. Atur Browser add-ons ke None. Jangan tambahkan tombol WhatsApp bawaan Meta: tombol itu melewati form di halaman dan Kode-nya. Link kedua per kode di bawahnya hanya untuk tempat di luar Meta.",
+            "tip": "Jangan ubah parameternya: Meta mengisi id kampanye dan id iklan dengan sendirinya."
           },
           "kode-chat": {
             "title": "Chat dari landing page membawa Kode",
@@ -9779,7 +9779,7 @@
           },
           "lead-menunggu-wa": {
             "title": "Lead yang menunggu WhatsApp",
-            "body": "Saat seseorang mengisi form di landing page lalu menekan Lanjut ke WhatsApp, lead langsung muncul di papan dengan label Menunggu WhatsApp. Lead ini sudah berisi handle Instagram, nama brand, dan kategori, tetapi belum ada nomornya. Saat chat-nya masuk, tempel di Tambah lead seperti biasa: jendela menampilkan Cocok dengan lead dari landing page yang menunggu, dan menyimpan akan menambahkan nomor ke lead yang sama lalu membukanya. Jika nomor itu milik lead yang masih terbuka, lead yang menunggu digabung ke lead tersebut. Jika nomor itu hanya milik lead Menang atau Kalah (klien lama), lead yang menunggu menyimpan nomornya dan tetap di Baru sebagai deal baru, dengan tautan ke lead sebelumnya di riwayat. Nomor juga bisa diketik di Tambah nomor pada halaman lead, dan filter Menunggu WhatsApp di atas papan menampilkan semuanya.",
+            "body": "Saat seseorang menekan Lanjut ke WhatsApp di form landing page, lead langsung muncul di papan dengan label Menunggu WhatsApp. Pertanyaan di form (Instagram, brand, kategori) sifatnya opsional. Kalau pengunjung mengisinya, lead menampilkannya. Kalau dilewati, lead bernama \"Website visitor · Kode XXXXXX\" dan riwayatnya tertulis \"Klik WhatsApp di landing page · Kode XXXXXX (form dilewati)\". Dua-duanya belum ada nomornya. Saat chat-nya masuk, tempel di Tambah lead seperti biasa: jendela menampilkan Cocok dengan lead dari landing page yang menunggu, dan menyimpan akan menambahkan nomor ke lead yang sama lalu membukanya. Jika nomor itu milik lead yang masih terbuka, lead yang menunggu digabung ke lead tersebut. Jika nomor itu hanya milik lead Menang atau Kalah (klien lama), lead yang menunggu menyimpan nomornya dan tetap di Baru sebagai deal baru, dengan tautan ke lead sebelumnya di riwayat. Nomor juga bisa diketik di Tambah nomor pada halaman lead, dan filter Menunggu WhatsApp di atas papan menampilkan semuanya.",
             "tip": "Lead yang menunggu tidak dihitung sebagai belum dibalas dan tidak masuk angka di samping Lead pada menu. Jika tidak ada pesan dalam 30 hari, lead pindah ke Kalah (Tidak pernah mengirim WhatsApp)."
           }
         }
@@ -9939,17 +9939,17 @@
           },
           "pelacakan-landing-page": {
             "title": "Pelacakan landing page: token dan script",
-            "body": "Landing page tidak memuat Meta Pixel: satu script tag adalah seluruh integrasinya, dan Monomi mengirim event ke Meta dari server. Di Meta Events Manager buka dataset (Pixel) landing page > Settings > Conversions API > Generate access token. Berikan token dan Pixel ID langsung ke developer/admin (jangan ditempel di chat): keduanya diatur di server. Lalu salin script tag dari kartu Pelacakan landing page dan pasang tepat sebelum </body> di landing page. Kartu menampilkan status dan jumlahnya; kalau sudah Siap, event dikirim.",
+            "body": "Landing page tidak memuat Meta Pixel: satu script tag adalah seluruh integrasinya, dan Monomi mengirim event ke Meta dari server. Di Meta Events Manager buka dataset (Pixel) landing page > Settings > Conversions API > Generate access token. Berikan token dan Pixel ID langsung ke developer/admin (jangan ditempel di chat): keduanya diatur di server. Lalu salin script tag dari kartu Pelacakan landing page dan pasang tepat sebelum </body> di landing page. Kartu menampilkan status dan jumlahnya; kalau sudah Siap, event dikirim. Landing page juga diedit langsung di Cloudflare, jadi script tag dan atribut data-monomi-skip pada tombol WhatsApp-nya harus tetap ada saat halaman diubah (lihat landing/public-session/README.md).",
             "tip": "Coba dulu lewat Test events di Events Manager: developer bisa mengatur kode uji supaya belum ada yang dihitung sampai Anda puas."
           },
           "domain-verifikasi": {
             "title": "Verifikasi domain landing page",
-            "body": "Di Meta Business Settings > Brand safety > Domains, tambahkan link.monomiagency.com lalu verifikasi. Landing page masih punya placeholder PASTE_META_DOMAIN_CODE di tag facebook-domain-verification: ganti dengan kode yang ditampilkan Meta.",
-            "tip": "Tanpa domain terverifikasi, Meta bisa membatasi event dari halaman itu yang dihitung."
+            "body": "Di Meta Business Settings > Brand safety > Domains, tambahkan monomiagency.com. Domain utama ini sudah mencakup link.monomiagency.com dan subdomain lainnya. Pilih metode DNS TXT record, lalu tambahkan TXT record di Cloudflare DNS (Name @, isi = nilai yang ditampilkan Meta). Setelah itu klik Verify di Meta.",
+            "tip": "Sudah terverifikasi untuk Monomi. Langkah ini hanya perlu diulang kalau domain berubah."
           },
           "kampanye-website": {
             "title": "Atur kampanye iklan untuk event website",
-            "body": "Buat kampanye dengan Conversion location: Website dan pilih dataset (Pixel) landing page. Mulai dengan optimasi Lead. Saat event QualifiedLead masuk stabil (kira-kira 50 per minggu), buat ad set baru yang dioptimalkan untuk QualifiedLead. Tim bekerja seperti biasa: tempel tiap chat ke Lead baru dan pindahkan tahapnya.",
+            "body": "Buat kampanye dengan Conversion location: Website dan pilih dataset monomi-pixel-01. Optimasi untuk Lead. Di iklan, isi URL Website dengan https://link.monomiagency.com/, tempel utm_source=meta&utm_medium=paid&utm_campaign={{campaign.id}}&utm_content={{ad.id}} di Tracking > URL parameters, dan atur Browser add-ons ke None. Saat event QualifiedLead masuk stabil (kira-kira 50 per minggu), buat ad set baru yang dioptimalkan untuk QualifiedLead. Tim bekerja seperti biasa: tempel tiap chat ke Lead baru dan pindahkan tahapnya.",
             "tip": "Meta hanya menerima event paling lama 7 hari; yang lebih lama dilewati otomatis dan ditandai di lead."
           },
           "sinkronisasi-meta-ads": {
