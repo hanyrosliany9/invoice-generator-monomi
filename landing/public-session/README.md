@@ -32,6 +32,14 @@ Rules when editing:
 - Keep passing `meta: { instagram, brandName, category }` to `openWhatsApp`: the CRM names
   the auto-created lead after the brand (else `@handle`) and dedups on the handle. The
   server clamps brand to 80 and category to 40 characters and shows them as plain text.
+- The page sells two services: Public Session and the Catalog Photoshoot section
+  (`#catalog`, images in `site/assets/catalog/`). Catalog buttons carry
+  `data-service="catalog"` (or `id="catWaBtn"`) so the sheet pre-selects "Catalog Photoshoot"
+  and the WhatsApp text starts from `WA_CAT_BASE`; the chosen service is passed as
+  `meta.service`. Ads for the catalog can link to `https://link.monomiagency.com/#catalog`.
+- The live page may be edited and deployed straight from the Cloudflare dashboard. Before
+  deploying from this folder, compare `site/index.html` with the live page and pull any newer
+  live version (and its new assets) into the repo first, or the newer live changes are wiped.
 - Keep facts (price, dates, terms, FAQ answers) in sync with the SOW.
 - The page origin must be listed in `PUBLIC_TRACK_ALLOWED_ORIGINS` on the VPS, or the CRM
   rejects its events with 403.

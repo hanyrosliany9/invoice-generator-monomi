@@ -252,6 +252,72 @@
     html{scroll-behavior:auto}
     *{animation-duration:.001s!important;transition-duration:.001s!important}
   }
+
+  /* ── catalog section: visually separate service ── */
+  .cat-zone{background:var(--ink);color:var(--on-ink);border-radius:28px;padding:clamp(1.8rem,5vw,3.4rem) 0;margin-block:clamp(2rem,6vw,4rem);overflow:hidden}
+  .cat-zone .wrap{padding-inline:var(--gut)}
+  .cat-zone .eyebrow{color:var(--on-ink-2)}
+  .cat-zone .lead{color:var(--on-ink-2)}
+  .cat-zone .s-head{max-width:60ch}
+  .cat-zone .s-title{color:var(--on-ink)}
+  .cat-sep-label{display:inline-flex;align-items:center;gap:.6rem;font-size:.7rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--on-ink-2);margin-bottom:1.6rem}
+  .cat-sep-label::before,.cat-sep-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.18);min-width:2rem}
+
+  /* pricing tiers */
+  .cat-pricing{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.85rem;margin-bottom:clamp(1.8rem,4vw,2.8rem)}
+  .cat-tier{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:1.5rem 1.6rem;display:flex;flex-direction:column;gap:.55rem;transition:background .3s}
+  .cat-tier:hover{background:rgba(255,255,255,.12)}
+  .cat-tier .tier-label{font-size:.72rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--on-ink-2)}
+  .cat-tier .tier-price{font-family:var(--display);font-weight:800;font-size:2.1rem;letter-spacing:-.03em;line-height:1;color:var(--on-ink)}
+  .cat-tier .tier-price small{font-size:.5em;font-weight:600;letter-spacing:0;color:var(--on-ink-2)}
+  .cat-tier .tier-min{display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:.3rem .85rem;font-size:.78rem;width:fit-content;color:var(--on-ink)}
+  .cat-tier .tier-note{font-size:.82rem;color:var(--on-ink-2);margin-top:.1rem}
+
+  /* included items inside dark zone */
+  .cat-get{display:grid;gap:0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:18px;overflow:hidden;margin-bottom:clamp(1.8rem,4vw,2.8rem)}
+  .cat-get-item{display:grid;grid-template-columns:2.2rem minmax(0,1fr);gap:.2rem .5rem;padding:.95rem 1.1rem;border-top:1px solid rgba(255,255,255,.12)}
+  .cat-get-item:first-child{border-top:0}
+  .cat-get-item i{font-style:normal;font-family:var(--display);font-weight:700;font-size:.72rem;letter-spacing:.1em;color:var(--on-ink-2);padding-top:.3rem;grid-row:span 2}
+  .cat-get-item b{font-family:var(--display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;line-height:1.3;color:var(--on-ink)}
+  .cat-get-item span{font-size:.82rem;color:var(--on-ink-2);line-height:1.5}
+
+  /* gallery inside dark zone */
+  .cat-gallery-wrap{position:relative}
+  .cat-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-inline:var(--gut);scroll-padding-inline:var(--gut);scrollbar-width:none;overscroll-behavior-x:contain;margin-bottom:clamp(1.8rem,4vw,2.8rem);cursor:grab;user-select:none;-webkit-user-select:none;scroll-behavior:smooth}
+  .cat-gallery.grabbing{cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto}
+  .cat-gallery::-webkit-scrollbar{display:none}
+  .cat-gallery>*{flex:none;scroll-snap-align:start}
+  .cat-item{width:min(62vw,230px);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.1);aspect-ratio:2/3;pointer-events:auto}
+  .cat-item img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+
+  /* desktop nav arrows */
+  .cat-nav{display:flex;gap:.5rem;align-items:center}
+  .cat-btn{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s,border-color .2s,transform .2s;padding:0}
+  .cat-btn:hover:not(:disabled){background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.5);transform:scale(1.05)}
+  .cat-btn:active:not(:disabled){transform:scale(.95)}
+  .cat-btn:disabled{opacity:.3;cursor:not-allowed}
+  .cat-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* catalog CTA inside dark zone */
+  .cat-cta{display:grid;gap:.8rem;padding-top:clamp(1.4rem,3vw,2rem);border-top:1px solid rgba(255,255,255,.14)}
+  .cat-cta .btn-cat{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:48px;font-weight:500;font-size:.95rem;padding:.8rem 1.5rem;border-radius:999px;border:1px solid rgba(255,255,255,.9);background:rgba(255,255,255,.9);color:var(--ink);cursor:pointer;text-align:center;transition:transform .3s var(--ease),box-shadow .3s,background .2s;width:100%}
+  .cat-cta .btn-cat:hover{transform:translateY(-2px);box-shadow:0 12px 30px -12px rgba(0,0,0,.6);background:#fff}
+  .cat-cta .cat-note{font-size:.76rem;color:var(--on-ink-2)}
+  .cat-facts{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.85rem}
+  .cat-facts span{font-size:.78rem;border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:.3rem .8rem;color:var(--on-ink)}
+
+  @media(min-width:900px){
+    .cat-zone{border-radius:32px}
+    .cat-get{grid-template-columns:1fr 1fr}
+    .cat-get-item:nth-child(2){border-top:0}
+    .cat-get-item:nth-child(even){border-left:1px solid rgba(255,255,255,.12)}
+    .cat-item{width:260px}
+    .cat-gallery{cursor:default}
+    .cat-btn{width:44px;height:44px}
+    .cat-cta{grid-template-columns:1fr 1fr;align-items:start;gap:1rem 3rem}
+    .cat-cta .cta-side{grid-column:2;grid-row:1/span 3}
+    .cat-cta .btn-cat{width:auto}
+  }
 </style>
 </head>
 <body>
@@ -472,6 +538,95 @@
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════
+     CATALOG PHOTOSHOOT — layanan terpisah, berbeda dari Public Session
+════════════════════════════════════════════════════════════ -->
+<div class="wrap">
+  <div class="cat-zone" id="catalog">
+    <!-- header -->
+    <div class="wrap">
+      <p class="cat-sep-label">Layanan lainnya</p>
+      <div class="s-head">
+        <p class="eyebrow">Catalog Photoshoot</p>
+        <h2 class="s-title">Per SKU &middot; <span class="script">20 Oktober</span></h2>
+        <p class="lead">Layanan katalog per SKU di sesi 20 Oktober 2026. Kami siapkan studio, model profesional, dan 5 foto edited per SKU dengan angle lengkap (full body, detail tekstur, dan back view).</p>
+      </div>
+    </div>
+
+    <!-- pricing tiers -->
+    <div class="wrap">
+      <div class="cat-pricing">
+        <article class="cat-tier">
+          <span class="tier-label">Paket Reguler</span>
+          <span class="tier-price">Rp120K <small>/SKU</small></span>
+          <span class="tier-min">Minimum 10 SKU &middot; 20 Okt</span>
+          <p class="tier-note">Studio · Model · 5 foto edited/SKU · BTS iPhone video</p>
+        </article>
+        <article class="cat-tier">
+          <span class="tier-label">Paket Fleksibel</span>
+          <span class="tier-price">Rp150K <small>/SKU</small></span>
+          <span class="tier-min">Minimum 5 SKU &middot; 20 Okt</span>
+          <p class="tier-note">Studio · Model · 5 foto edited/SKU · BTS iPhone video</p>
+        </article>
+      </div>
+    </div>
+
+    <!-- included items -->
+    <div class="wrap">
+      <div class="cat-get">
+        <div class="cat-get-item"><i>01</i><b>Studio Profesional</b><span>Sesi di studio dengan lighting setup profesional pada 20 Oktober 2026. Tidak ada biaya tambahan untuk set atau background.</span></div>
+        <div class="cat-get-item"><i>02</i><b>Model Profesional</b><span>Model kami mengarahkan pose per SKU untuk menonjolkan detail dan siluet produk terbaik.</span></div>
+        <div class="cat-get-item"><i>03</i><b>5 Foto Edited / SKU</b><span>Lima foto per produk — full body, detail, dan angle pilihan. Sudah termasuk color grading dan basic retouching.</span></div>
+        <div class="cat-get-item"><i>04</i><b>BTS iPhone Video</b><span>Klip behind-the-scenes vertikal dari iPhone untuk konten media sosial. Raw, tidak termasuk editing.</span></div>
+      </div>
+    </div>
+
+    <!-- gallery carousel -->
+    <div class="wrap" style="margin-bottom:.7rem">
+      <div class="rail-head" style="align-items:flex-end">
+        <div class="s-head" style="margin-bottom:.9rem">
+          <p class="eyebrow">Contoh hasil — Knitme</p>
+          <h2 class="s-title" style="font-size:clamp(1.2rem,4vw,1.7rem)">Full body, detail, back <span class="script">view</span></h2>
+        </div>
+        <div class="cat-nav" style="padding-bottom:.6rem">
+          <button type="button" class="cat-btn" id="catPrev" aria-label="Foto sebelumnya" disabled>
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <span class="count num" id="catWorkCount" style="color:var(--on-ink-2);padding:0 .2rem;white-space:nowrap" aria-hidden="true">1 / 14</span>
+          <button type="button" class="cat-btn" id="catNext" aria-label="Foto berikutnya">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="cat-gallery" id="catGallery" tabindex="0" aria-label="Foto catalog Knitme, geser ke samping"></div>
+    <div class="wrap">
+      <p class="hint" style="color:var(--on-ink-2);margin-bottom:clamp(1.8rem,4vw,2.8rem)">Geser untuk melihat foto lainnya &bull; Dipotret, di-styling dan diretouch oleh Monomi. Studio sama, standar sama.</p>
+    </div>
+
+    <!-- CTA -->
+    <div class="wrap">
+      <div class="cat-cta">
+        <div>
+          <p class="eyebrow" style="color:var(--on-ink-2)">20 Oktober 2026 &middot; kaine studio</p>
+          <h2 style="font-size:clamp(1.5rem,5vw,2.2rem);color:var(--on-ink)">Booking Catalog <span class="script">Photoshoot</span></h2>
+          <div class="cat-facts">
+            <span>20 Okt 2026</span>
+            <span>5 foto edited / SKU</span>
+            <span>BTS video</span>
+            <span>Studio &amp; Model</span>
+            <span>Mulai 5 SKU</span>
+          </div>
+        </div>
+        <div class="cta-side">
+          <a class="btn-cat" id="catWaBtn" data-cta="whatsapp" data-service="catalog" data-monomi-skip href="https://wa.me/6285126203934">Tanya / Booking via WhatsApp</a>
+          <p class="cat-note" style="margin-top:.5rem">Dibalas di bawah 1 jam pada hari kerja. Link tidak terbuka? Chat manual ke <b style="color:var(--on-ink)">+62 851-2620-3934</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- final CTA -->
 <section class="wrap" id="book" style="padding-top:0">
   <div class="final">
@@ -519,6 +674,13 @@
       </div>
       <button type="button" class="x" id="sheetClose" aria-label="Tutup">&times;</button>
     </div>
+    <fieldset class="field">
+      <legend>Layanan yang dipilih</legend>
+      <div class="chips">
+        <input type="radio" name="service" id="s-public" value="Public Session" checked><label for="s-public">Public Session (2,5 Jt)</label>
+        <input type="radio" name="service" id="s-catalog" value="Catalog Photoshoot"><label for="s-catalog">Catalog Photoshoot (Mulai 120K/SKU)</label>
+      </div>
+    </fieldset>
     <div class="field">
       <label for="q-ig">Instagram brand kamu</label>
       <div class="ig-input"><span aria-hidden="true">@</span><input type="text" id="q-ig" name="instagram" placeholder="namabrand" maxlength="60" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next"></div>
@@ -552,6 +714,7 @@
   /* ── content: edit here ── */
   const WA_NUMBER = '6285126203934';
   const WA_TEXT = 'Halo Monomi, saya mau ambil slot Public Photoshoot Session (20 Oktober 2026), paket Rp2.500.000. Boleh info detail dan cara DP-nya?';
+  const WA_CAT_BASE = 'Halo Monomi, saya mau tanya & booking layanan Catalog Photoshoot (20 Oktober 2026), mulai Rp120K/SKU. Boleh info ketersediaan slotnya?';
   const SESSION_DATE = '2026-10-20T09:00:00+07:00';
   /* Only set to a REAL, current number from the team. null = element stays hidden. */
   const SLOTS_LEFT = null;
@@ -561,6 +724,87 @@
   const $ = (id) => document.getElementById(id);
   const waUrl = (text) => 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(text);
   const WA_DEFAULT = waUrl(WA_TEXT);
+
+  /* ── catalog gallery ── */
+  (() => {
+    const rail = $('catGallery');
+    if (!rail) return;
+    for (let i = 1; i <= 14; i++) {
+      const d = document.createElement('div');
+      d.className = 'cat-item';
+      const img = document.createElement('img');
+      img.src = 'assets/catalog/cat-' + String(i).padStart(2, '0') + '.webp';
+      img.alt = 'Foto catalog Monomi — knitme project';
+      img.width = 600; img.height = 900;
+      img.loading = 'lazy'; img.decoding = 'async';
+      d.append(img);
+      rail.append(d);
+    }
+
+    /* gallery counter & arrow navigation */
+    const out = $('catWorkCount');
+    const prevBtn = $('catPrev');
+    const nextBtn = $('catNext');
+    const n = 14;
+
+    const getStep = () => {
+      const first = rail.querySelector('.cat-item');
+      return first ? first.offsetWidth + 12 : 280;
+    };
+
+    const updateNav = () => {
+      const max = rail.scrollWidth - rail.clientWidth;
+      if (out) {
+        const i = max > 0 ? Math.min(n, Math.max(1, Math.round(rail.scrollLeft / max * (n - 1)) + 1)) : 1;
+        out.textContent = i + ' / ' + n;
+      }
+      if (prevBtn) prevBtn.disabled = rail.scrollLeft <= 4;
+      if (nextBtn) nextBtn.disabled = rail.scrollLeft >= max - 4;
+    };
+
+    let t = 0;
+    rail.addEventListener('scroll', () => { cancelAnimationFrame(t); t = requestAnimationFrame(updateNav); }, { passive: true });
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        rail.scrollBy({ left: -getStep(), behavior: 'smooth' });
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        rail.scrollBy({ left: getStep(), behavior: 'smooth' });
+      });
+    }
+
+    // initial check after paint
+    setTimeout(updateNav, 100);
+
+    /* drag to scroll (mouse/desktop fallback) */
+    let isDown = false, startX, scrollLeft;
+    rail.addEventListener('mousedown', (e) => {
+      isDown = true;
+      rail.classList.add('grabbing');
+      startX = e.pageX - rail.offsetLeft;
+      scrollLeft = rail.scrollLeft;
+    });
+    window.addEventListener('mouseup', () => {
+      if (!isDown) return;
+      isDown = false;
+      rail.classList.remove('grabbing');
+    });
+    rail.addEventListener('mouseleave', () => {
+      if (!isDown) return;
+      isDown = false;
+      rail.classList.remove('grabbing');
+    });
+    rail.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - rail.offsetLeft;
+      const walk = (x - startX) * 1.6;
+      rail.scrollLeft = scrollLeft - walk;
+    });
+  })();
 
   /* countdown, optional slots, year */
   (() => {
@@ -576,7 +820,12 @@
     if (USE_QUALIFIER && !a.dataset.sheet) {
       a.href = '#ambil-slot'; a.removeAttribute('target'); a.removeAttribute('rel');
       a.setAttribute('role', 'button'); a.setAttribute('aria-haspopup', 'dialog');
-    } else { a.href = WA_DEFAULT; a.target = '_blank'; a.rel = 'noopener'; }
+    } else {
+      const isCat = a.id === 'catWaBtn' || a.dataset.service === 'catalog';
+      a.href = waUrl(isCat ? WA_CAT_BASE : WA_TEXT);
+      a.target = '_blank';
+      a.rel = 'noopener';
+    }
   });
 
   /* every Meta event goes through the CRM snippet; without it nothing is sent */
@@ -618,21 +867,27 @@
   })();
 
   /* WhatsApp: CRM snippet if present, else the original behaviour */
-  const state = { instagram: '', brandName: '', category: '' };
+  const state = { service: 'Public Session', instagram: '', brandName: '', category: '' };
+
   /* withIg=false when MonomiTrack adds the Instagram line itself */
   function buildText(withIg = true) {
+    const isCatalog = state.service === 'Catalog Photoshoot';
+    const base = isCatalog ? WA_CAT_BASE : WA_TEXT;
     const lines = [];
+    lines.push('Layanan: ' + state.service);
     if (withIg && state.instagram) lines.push('Instagram: @' + state.instagram);
     if (state.brandName) lines.push('Nama brand: ' + state.brandName);
     if (state.category) lines.push('Kategori: ' + state.category);
-    return lines.length ? WA_TEXT + '\n\n' + lines.join('\n') : WA_TEXT;
+    return lines.length ? base + '\n\n' + lines.join('\n') : base;
   }
   /* returns true when MonomiTrack took over (caller then preventDefault) */
   function trackedOpen(skip) {
     if (window.MonomiTrack && typeof MonomiTrack.openWhatsApp === 'function') {
       try {
-        const text = skip ? WA_TEXT : buildText(false);
-        MonomiTrack.openWhatsApp({ text, meta: { instagram: state.instagram, brandName: state.brandName, category: state.category } });
+        const isCatalog = state.service === 'Catalog Photoshoot';
+        const base = isCatalog ? WA_CAT_BASE : WA_TEXT;
+        const text = skip ? base : buildText(false);
+        MonomiTrack.openWhatsApp({ text, meta: { service: state.service, instagram: state.instagram, brandName: state.brandName, category: state.category } });
         return true;
       } catch (_) { /* fall back to the plain link */ }
     }
@@ -648,15 +903,21 @@
     return v.replace(/[^A-Za-z0-9._]/g, '').slice(0, 30);
   }
   function refreshSheetLink() {
+    const s = sheet.querySelector('input[name=service]:checked');
+    state.service = s ? s.value : 'Public Session';
     state.instagram = cleanIg($('q-ig').value);
     state.brandName = $('q-brand').value.trim();
     const c = sheet.querySelector('input[name=cat]:checked');
     state.category = c ? c.value : '';
     go.href = waUrl(buildText());
+    const isCatalog = state.service === 'Catalog Photoshoot';
+    skip.href = waUrl(isCatalog ? WA_CAT_BASE : WA_TEXT);
   }
   function openSheet(from) {
     lastFocus = from || document.activeElement;
-    skip.href = WA_DEFAULT;
+    const isFromCatalog = from && (from.id === 'catWaBtn' || from.dataset.service === 'catalog');
+    const radService = sheet.querySelector(isFromCatalog ? '#s-catalog' : '#s-public');
+    if (radService) radService.checked = true;
     refreshSheetLink();
     wrap.hidden = false;
     document.body.classList.add('lock');
@@ -698,7 +959,11 @@
     const inSheet = a.dataset.sheet;
     if (!inSheet) {
       if (USE_QUALIFIER) { e.preventDefault(); openSheet(a); }
-      else if (trackedOpen(true)) e.preventDefault();
+      else {
+        const isCat = a.id === 'catWaBtn' || a.dataset.service === 'catalog';
+        state.service = isCat ? 'Catalog Photoshoot' : 'Public Session';
+        if (trackedOpen(true)) e.preventDefault();
+      }
       return;
     }
     if (inSheet === 'skip') { state.instagram = state.brandName = state.category = ''; }
