@@ -16,7 +16,7 @@ export function createInvoiceListTool(deps: ToolDeps): AnyToolDef {
   return {
     name: "invoice_list",
     description:
-      "List invoices with optional filters. Filters: status, clientId, overdue (status=SENT and dueDate past), materaiPending (totalAmount>=5jt and materaiApplied=false). Returns up to 50; cursor-paginated.",
+      "List invoices with optional filters. Filters: status, clientId, overdue (status=SENT and dueDate past), materaiPending (totalAmount>5jt and materaiApplied=false). Returns up to 50; cursor-paginated.",
     allowedRoles: ADMIN_ROLES,
     requiredScope: MCP_SCOPE_READ,
     inputSchema: {

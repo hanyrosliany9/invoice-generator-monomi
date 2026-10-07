@@ -430,7 +430,7 @@ export class LocalizationService {
       "Faktur yang telah jatuh tempo akan dikenakan denda keterlambatan.",
       "Semua pajak dan biaya administrasi ditanggung oleh pihak yang bersangkutan.",
       "Dokumen ini sah dan berlaku tanpa tanda tangan basah.",
-      "Untuk invoice di atas 5 juta rupiah, wajib menggunakan materai.",
+      "Untuk invoice lebih dari 5 juta rupiah, wajib menggunakan materai.",
       "Komplain atau pertanyaan dapat disampaikan melalui kontak yang tersedia.",
     ];
   }

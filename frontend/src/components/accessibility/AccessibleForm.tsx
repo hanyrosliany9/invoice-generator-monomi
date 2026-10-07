@@ -1,6 +1,7 @@
 // AccessibleForm Components - Indonesian Business Management System
 // WCAG 2.1 AA compliant form components with Indonesian business context
 
+import { MATERAI_THRESHOLD } from '../../utils/currency'
 import React, { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -437,8 +438,8 @@ export const AccessibleNumberInput: React.FC<AccessibleNumberInputProps> = ({
         }
 
         // Check materai requirement
-        if (materaiCalculation && newValue >= 5000000) {
-          const isRequired = newValue >= 5000000
+        if (materaiCalculation && newValue > MATERAI_THRESHOLD) {
+          const isRequired = newValue > MATERAI_THRESHOLD
           setMateraiRequired(isRequired)
           const materaiAmount = newValue >= 1000000000 ? 20000 : 10000
           announceMateraiRequirement(isRequired, materaiAmount)
@@ -478,7 +479,7 @@ export const AccessibleNumberInput: React.FC<AccessibleNumberInputProps> = ({
     if (helpText) helpers.push(helpText)
     if (currency) helpers.push('Nilai dalam Rupiah Indonesia (IDR)')
     if (materaiCalculation && materaiRequired) {
-      helpers.push(t('a11y.accessibleForm.materaiRequired', 'Materai diperlukan untuk nilai di atas Rp 5.000.000'))
+      helpers.push(t('a11y.accessibleForm.materaiRequired', 'Materai diperlukan untuk nilai lebih dari Rp 5.000.000'))
     }
     return helpers.join('. ')
   }

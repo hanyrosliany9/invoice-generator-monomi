@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from '../utils/currency'
 import { apiClient } from '../config/api'
 import { InvoiceStatus } from '../types/invoice'
 import { now } from '../utils/date'
@@ -319,7 +320,7 @@ export const invoiceService = {
   // Check if materai is required
   requiresMaterai: (amount: string | number): boolean => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount
-    return num > 5000000 // 5 million IDR threshold
+    return num > MATERAI_THRESHOLD // 5 million IDR threshold
   },
 
   // Get status color for UI

@@ -1,6 +1,7 @@
 // Business Journey Service - Indonesian Business Management System
 // Enhanced with materai compliance, performance optimization, and security
 
+import { MATERAI_THRESHOLD } from "../../common/constants/materai.constants";
 import {
   Injectable,
   NotFoundException,
@@ -446,7 +447,7 @@ export class BusinessJourneyService {
 
     for (const invoice of invoices) {
       const amount = Number(invoice.totalAmount);
-      if (amount >= 5000000) {
+      if (amount > MATERAI_THRESHOLD) {
         // 5 million IDR threshold
         const requiredMaterai = this.calculateMateraiAmount(amount);
         totalRequiredAmount += requiredMaterai;
@@ -486,7 +487,7 @@ export class BusinessJourneyService {
 
   private calculateMateraiAmount(invoiceAmount: number): number {
     // 2025 Indonesian materai calculation
-    if (invoiceAmount >= 5000000 && invoiceAmount < 1000000000) {
+    if (invoiceAmount > MATERAI_THRESHOLD && invoiceAmount < 1000000000) {
       return 10000; // 10,000 IDR materai
     }
     if (invoiceAmount >= 1000000000) {
@@ -504,7 +505,7 @@ export class BusinessJourneyService {
       requiredActions: [],
     };
 
-    if (createEventDto.amount && createEventDto.amount >= 5000000) {
+    if (createEventDto.amount && createEventDto.amount > MATERAI_THRESHOLD) {
       if (!createEventDto.metadata?.materaiRequired) {
         result.isCompliant = false;
         result.requiredActions.push("MATERAI_REQUIRED");
@@ -681,7 +682,7 @@ export class BusinessJourneyService {
   ): string[] {
     const tags = [eventType.toLowerCase()];
 
-    if (entityDetails.amount && entityDetails.amount >= 5000000) {
+    if (entityDetails.amount && entityDetails.amount > MATERAI_THRESHOLD) {
       tags.push("materai-required");
     }
 
@@ -693,7 +694,7 @@ export class BusinessJourneyService {
   }
 
   private checkMateraiRequired(amount: number): boolean {
-    return amount >= 5000000; // 5 million IDR threshold
+    return amount > MATERAI_THRESHOLD; // 5 million IDR threshold
   }
 
   private async triggerRelatedEvents(event: any): Promise<void> {

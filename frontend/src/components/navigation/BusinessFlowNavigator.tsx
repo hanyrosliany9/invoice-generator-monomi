@@ -172,7 +172,7 @@ const culturalNotes: Record<BusinessStage, CulturalNote[]> = {
       id: 'invoicing-materai',
       category: 'documentation',
       title: 'Persyaratan Materai',
-      description: i18n.t('nav.businessFlowNavigator.invoicingMateraiDesc', 'Invoice > Rp 5 juta harus menggunakan materai Rp 10.000'),
+      description: i18n.t('nav.businessFlowNavigator.invoicingMateraiDesc', 'Invoice lebih dari Rp 5 juta harus menggunakan materai Rp 10.000'),
       examples: ['Cek nominal invoice', 'Pasang materai sebelum kirim'],
     },
   ],

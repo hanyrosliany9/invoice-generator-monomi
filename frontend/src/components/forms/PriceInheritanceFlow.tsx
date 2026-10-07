@@ -41,7 +41,7 @@ import {
   UserTestingMetrics,
   PriceSource,
 } from '../../types/priceInheritance.types'
-import { formatIDR, parseIDRAmount } from '../../utils/currency'
+import { formatIDR, parseIDRAmount, MATERAI_THRESHOLD } from '../../utils/currency'
 // UX metrics integration pending - will be implemented in performance optimization phase
 // CSS modules temporarily disabled - using Tailwind/Ant Design for styling consistency
 const styles: Record<string, string> = {}
@@ -160,7 +160,7 @@ export const PriceInheritanceFlow: React.FC<PriceInheritanceFlowProps> = ({
     }
 
     // Materai compliance validation
-    if (enableMateraiValidation && config.currentAmount >= 5000000) {
+    if (enableMateraiValidation && config.currentAmount > MATERAI_THRESHOLD) {
       const materaiAmount = config.currentAmount >= 1000000000 ? 20000 : 10000
       result.materaiCompliance = {
         required: true,

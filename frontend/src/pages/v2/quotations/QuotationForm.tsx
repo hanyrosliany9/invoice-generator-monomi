@@ -9,6 +9,7 @@
 // of mode, which is the whole point of v2.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { MATERAI_THRESHOLD } from '@/utils/currency'
 import { useMemo, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -370,7 +371,7 @@ export const QuotationForm = ({
     return { subtotal, taxRate, taxAmount, grandTotal };
   })();
 
-  const requiresMaterai = totals.grandTotal > 5_000_000;
+  const requiresMaterai = totals.grandTotal > MATERAI_THRESHOLD;
 
   // ── Payment terms (termin) ──
   const milestonesArray = useFieldArray({ control, name: 'milestones' });

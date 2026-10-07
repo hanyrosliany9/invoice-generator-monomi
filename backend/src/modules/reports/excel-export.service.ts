@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from "../../common/constants/materai.constants";
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import * as ExcelJS from "exceljs";
@@ -265,7 +266,7 @@ export class ExcelExportService {
         salesAmount,
         paymentsReceived,
         endingBalance,
-        requiresMaterai: salesAmount > 5000000, // Indonesian materai requirement
+        requiresMaterai: salesAmount > MATERAI_THRESHOLD, // Indonesian materai requirement
       });
     }
 
@@ -510,7 +511,7 @@ export class ExcelExportService {
     let materaiCount = 0;
 
     data.forEach((item, index) => {
-      const requiresMaterai = item.salesAmount > 5000000; // SAK EMKM materai requirement
+      const requiresMaterai = item.salesAmount > MATERAI_THRESHOLD; // SAK EMKM materai requirement
       const keterangan = requiresMaterai ? "Wajib Materai Rp 10.000" : "-";
       if (requiresMaterai) materaiCount++;
 

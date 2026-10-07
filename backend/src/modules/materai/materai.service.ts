@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from "../../common/constants/materai.constants";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
@@ -54,7 +55,7 @@ export class MateraiService {
     // Load materai configuration from environment or defaults
     this.materaiConfig = {
       enabled: this.configService.get<boolean>("MATERAI_ENABLED", true),
-      threshold: this.configService.get<number>("MATERAI_THRESHOLD", 5000000), // 5 million IDR
+      threshold: this.configService.get<number>("MATERAI_THRESHOLD", MATERAI_THRESHOLD), // 5 million IDR
       stampDutyAmount: this.configService.get<number>(
         "MATERAI_STAMP_AMOUNT",
         10000,
@@ -94,7 +95,7 @@ export class MateraiService {
 
     const amount = Number(invoice.totalAmount);
     const required =
-      this.materaiConfig.enabled && amount >= this.materaiConfig.threshold;
+      this.materaiConfig.enabled && amount > this.materaiConfig.threshold;
 
     return {
       required,
@@ -102,7 +103,7 @@ export class MateraiService {
       threshold: this.materaiConfig.threshold,
       message: required
         ? `Invoice memerlukan materai karena nilai lebih dari ${TransformationUtil.formatIDR(this.materaiConfig.threshold)}`
-        : `Invoice tidak memerlukan materai karena nilai kurang dari ${TransformationUtil.formatIDR(this.materaiConfig.threshold)}`,
+        : `Invoice tidak memerlukan materai karena nilai tidak lebih dari ${TransformationUtil.formatIDR(this.materaiConfig.threshold)}`,
       compliance: {
         lawReference: "UU No. 13 Tahun 1985 tentang Bea Meterai",
         effectiveDate: "1985-12-31",
@@ -412,7 +413,7 @@ export class MateraiService {
         confidence = 60;
       } else {
         action = "NO_MATERAI_NEEDED";
-        reasoning = `Invoice senilai ${TransformationUtil.formatIDR(amount)} di bawah batas materai. Tidak diperlukan materai.`;
+        reasoning = `Invoice senilai ${TransformationUtil.formatIDR(amount)} tidak melebihi batas materai. Tidak diperlukan materai.`;
       }
 
       // Calculate urgency based on invoice status and due date

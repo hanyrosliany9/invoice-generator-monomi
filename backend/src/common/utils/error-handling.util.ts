@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from "../constants/materai.constants";
 import {
   BadRequestException,
   NotFoundException,
@@ -96,7 +97,7 @@ export function validateIndonesianBusinessRules(data: any): void {
   if (
     data.totalAmount &&
     typeof data.totalAmount === "number" &&
-    data.totalAmount > 5000000
+    data.totalAmount > MATERAI_THRESHOLD
   ) {
     // Just validation, not enforcement
     console.log("Materai required for amount > 5 million IDR");

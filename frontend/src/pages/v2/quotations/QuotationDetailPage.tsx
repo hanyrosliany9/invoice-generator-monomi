@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from '@/utils/currency'
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -810,10 +811,10 @@ export default function QuotationDetailPageV2() {
                     <DateDisplay date={quotation.validUntil} />
                   </span>
                 </div>
-                {Number(quotation.totalAmount) > 5_000_000 && (
+                {Number(quotation.totalAmount) > MATERAI_THRESHOLD && (
                   <div className="inline-flex items-center gap-1.5 text-warning">
                     <AlertTriangle className="h-3 w-3" />
-                    {t('quotationDetail.hero.materaiRequired', 'Materai required (> 5M IDR)')}
+                    {t('quotationDetail.hero.materaiRequired', 'Materai required (more than 5M IDR)')}
                   </div>
                 )}
               </div>

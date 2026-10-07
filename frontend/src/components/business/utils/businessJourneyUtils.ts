@@ -1,6 +1,7 @@
 // Business Journey Utilities - Indonesian Business Management System
 // Enhanced with performance, security, and cultural optimization
 
+import { MATERAI_THRESHOLD } from '../../../utils/currency'
 import dayjs from 'dayjs'
 import DOMPurify from 'dompurify'
 import i18n from '../../../i18n/config'
@@ -55,7 +56,7 @@ export const getTimeGreeting = (): string => {
 
 export const calculateMateraiAmount = (invoiceAmount: number): number => {
   // 2025 Indonesian materai calculation
-  if (invoiceAmount >= 5000000 && invoiceAmount < 1000000000) {
+  if (invoiceAmount > MATERAI_THRESHOLD && invoiceAmount < 1000000000) {
     return 10000 // 10,000 IDR materai
   }
   if (invoiceAmount >= 1000000000) {

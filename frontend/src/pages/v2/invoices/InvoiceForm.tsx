@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from '@/utils/currency';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray, Controller, type SubmitHandler } from 'react-hook-form';
@@ -69,12 +70,11 @@ export type InvoiceFormValues = z.infer<ReturnType<typeof makeBaseSchema>>;
 /* ============================================================== */
 
 const TAX_RATE = 11;            // PPN 11%
-const MATERAI_THRESHOLD = 5_000_000;
 const MATERAI_AMOUNT = 10_000;
 
 const DEFAULT_TERMS_ID = `1. Pembayaran jatuh tempo 30 hari sejak tanggal invoice
 2. PPN 11% sudah termasuk dalam total (jika dicentang)
-3. Materai Rp10.000 wajib untuk nilai di atas Rp5.000.000
+3. Materai Rp10.000 wajib untuk nilai lebih dari Rp5.000.000
 4. Konfirmasi pembayaran dilakukan maksimal 3 hari kerja
 5. Sengketa harus diajukan dalam 14 hari sejak tanggal invoice
 6. Tunduk pada hukum Republik Indonesia & yurisdiksi Jakarta

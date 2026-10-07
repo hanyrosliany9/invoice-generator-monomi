@@ -1,6 +1,7 @@
 // PriceInheritanceFormField Component - Indonesian Business Management System
 // Form integration wrapper for price inheritance with seamless Ant Design Form integration
 
+import { MATERAI_THRESHOLD } from '../../utils/currency'
 import React, { useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Form, FormItemProps } from 'antd'
@@ -204,11 +205,11 @@ export const PriceInheritanceFormField: React.FC<
       rules.push({
         validator: (_: any, value: any) => {
           if (
-            value >= 5000000 &&
+            value > MATERAI_THRESHOLD &&
             !state.validationResult?.materaiCompliance?.required
           ) {
             return Promise.reject(
-              new Error(t('forms.priceInheritanceFormField.materaiRequired', 'Materai diperlukan untuk transaksi di atas Rp 5 juta'))
+              new Error(t('forms.priceInheritanceFormField.materaiRequired', 'Materai diperlukan untuk transaksi lebih dari Rp 5 juta'))
             )
           }
           return Promise.resolve()

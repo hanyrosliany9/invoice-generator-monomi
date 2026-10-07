@@ -1,6 +1,7 @@
 // Price Inheritance Service - Indonesian Business Management System
 // Comprehensive price inheritance with Indonesian business compliance and validation
 
+import { MATERAI_THRESHOLD } from "../../common/constants/materai.constants";
 import {
   Injectable,
   BadRequestException,
@@ -455,7 +456,7 @@ export class PriceInheritanceService {
   private async validateIndonesianCompliance(
     amount: number,
   ): Promise<IndonesianComplianceResult> {
-    const materaiRequired = amount >= 5000000;
+    const materaiRequired = amount > MATERAI_THRESHOLD;
     const materaiAmount = this.calculateMateraiAmount(amount);
 
     return {
@@ -483,7 +484,7 @@ export class PriceInheritanceService {
   }
 
   private calculateMateraiAmount(amount: number): number {
-    if (amount < 5000000) {
+    if (amount <= MATERAI_THRESHOLD) {
       return 0;
     } else if (amount < 1000000000) {
       return 10000; // 10,000 IDR materai
@@ -719,7 +720,7 @@ export class PriceInheritanceService {
       }
 
       // Auto-calculate materai
-      const materaiRequired = totalAmount > 5000000;
+      const materaiRequired = totalAmount > MATERAI_THRESHOLD;
       const materaiAmount = materaiRequired ? 10000 : 0;
 
       // Track what was automated

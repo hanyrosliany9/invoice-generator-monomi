@@ -160,7 +160,7 @@
       "prospectEtiquetteDesc": "Always bring business cards and present them with both hands",
       "quotationFormatDesc": "Use official company letterhead and include tax details",
       "approvedContractDesc": "Prepare contracts in both Indonesian and English if required",
-      "invoicingMateraiDesc": "Invoices above Rp 5 million must use a Rp 10,000 stamp duty (materai)",
+      "invoicingMateraiDesc": "Invoices more than Rp 5 million must use a Rp 10,000 stamp duty (materai)",
       "paymentFollowUpTitle": "Payment Follow-up",
       "paymentFollowUpDesc": "Use WhatsApp for more personal payment reminders",
       "completedFeedbackDesc": "Always conduct a feedback session to maintain long-term relationships",
@@ -558,7 +558,7 @@
       "send": "Send"
     },
     "quotationCreate": {
-      "defaultTerms": "1. Payment Net 30 from invoice date.\n2. Includes 11% VAT.\n3. Maximum 3 revisions.\n4. Materai (stamp duty) required for value > Rp 5,000,000.\n5. Governing law: Republic of Indonesia."
+      "defaultTerms": "1. Payment Net 30 from invoice date.\n2. Includes 11% VAT.\n3. Maximum 3 revisions.\n4. Materai (stamp duty) required for value more than Rp 5,000,000.\n5. Governing law: Republic of Indonesia."
     }
   },
   "invoices": {
@@ -2572,7 +2572,7 @@
       "total": "Total Amount",
       "includingTax": "including VAT {{rate}}%",
       "validUntil": "Valid until",
-      "materaiRequired": "Materai required (> 5M IDR)"
+      "materaiRequired": "Materai required (more than 5M IDR)"
     },
     "lineItems": {
       "title": "Line Items",
@@ -7258,7 +7258,7 @@
     "applied": "Stamp Duty Applied",
     "compliance": {
       "amount_1b": "IDR 20,000 stamp duty required for values > IDR 1 billion",
-      "amount_5m": "IDR 10,000 stamp duty required for values > IDR 5 million",
+      "amount_5m": "IDR 10,000 stamp duty required for values more than IDR 5 million",
       "compliance_rate": "Stamp duty compliance rate: {{percentage}}%",
       "pending_amount": "There are invoices requiring stamp duty totalling {{amount}}",
       "purchase_info": "Stamp duty can be purchased at post offices, banks, or stationery stores",
@@ -7295,7 +7295,7 @@
       "amountRequired": "Price amount is required",
       "amountMustBePositive": "Amount must be greater than zero",
       "amountTooLarge": "Amount is too large",
-      "materaiRequired": "Stamp duty (materai) is required for transactions above Rp 5 million"
+      "materaiRequired": "Stamp duty (materai) is required for transactions more than Rp 5 million"
     }
   },
   "tables": {
@@ -7521,7 +7521,7 @@
       "optionsFound": "{{count}} options found",
       "minValue": "Minimum value is {{value}}",
       "maxValue": "Maximum value is {{value}}",
-      "materaiRequired": "Materai is required for values above Rp 5,000,000",
+      "materaiRequired": "Materai is required for values more than Rp 5,000,000",
       "dateSelected": "Date selected: {{date}}",
       "save": "Save",
       "cancel": "Cancel"
@@ -9133,7 +9133,7 @@
           },
           "disetujui": {
             "title": "An approved quotation becomes an invoice",
-            "body": "An approved quotation shows Disetujui (1) and an invoice is created automatically with status Draft (see the Invoice guide). Click Lihat Invoice (2) to open it. If the total is above Rp 5.000.000, a Materai diperlukan marker (3) appears and the invoice will later ask for a stamp duty.",
+            "body": "An approved quotation shows Disetujui (1) and an invoice is created automatically with status Draft (see the Invoice guide). Click Lihat Invoice (2) to open it. If the total is more than Rp 5.000.000, a Materai diperlukan marker (3) appears and the invoice will later ask for a stamp duty.",
             "tip": "Approved by mistake? The Aksi penawaran menu has Buka Kembali (Batalkan Persetujuan), which voids the invoices that are not yet paid."
           },
           "revisi": {
@@ -9144,7 +9144,7 @@
       },
       "invoice": {
         "title": "Invoices: status, PDF and stamp duty",
-        "purpose": "Manage invoices from draft to paid: send, check status, print the PDF, and follow the stamp-duty reminder for invoices above Rp 5.000.000.",
+        "purpose": "Manage invoices from draft to paid: send, check status, print the PDF, and follow the stamp-duty reminder for invoices more than Rp 5.000.000.",
         "steps": {
           "daftar": {
             "title": "Open the Invoice menu",
@@ -9161,7 +9161,7 @@
           },
           "materai": {
             "title": "The stamp-duty reminder",
-            "body": "For invoices of Rp 5.000.000 or more the invoice page shows a Materai diperlukan warning (1): stick a Rp 10.000 stamp on the printed copy before sending it to the client. The line in the summary (2) reads Belum diterapkan.",
+            "body": "For invoices of more than Rp 5.000.000 the invoice page shows a Materai diperlukan warning (1): stick a Rp 10.000 stamp on the printed copy before sending it to the client. The line in the summary (2) reads Belum diterapkan.",
             "tip": "Sticking the stamp is a manual step on paper. The app only reminds you and records that the stamp was applied."
           },
           "materai-tempel": {
@@ -9171,7 +9171,7 @@
           "pdf": {
             "title": "Print or download the PDF",
             "body": "In the Tindakan lainnya menu choose Pratinjau PDF (1). The document opens in a preview window with a Unduh button. Print from here when a stamp must be applied.",
-            "tip": "Print first, stick the stamp, then send it to the client when the invoice value is Rp 5.000.000 or more."
+            "tip": "Print first, stick the stamp, and only then send it when the invoice is more than Rp 5.000.000."
           },
           "kirim": {
             "title": "Send the invoice",

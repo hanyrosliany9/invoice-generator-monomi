@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from "../../common/constants/materai.constants";
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -205,7 +206,7 @@ export class PdfExportService {
     let materaiCount = 0;
 
     data.forEach((item, index) => {
-      const requiresMaterai = item.salesAmount > 5000000;
+      const requiresMaterai = item.salesAmount > MATERAI_THRESHOLD;
       const keterangan = requiresMaterai ? "Wajib Materai Rp 10.000" : "-";
       if (requiresMaterai) materaiCount++;
 
@@ -654,7 +655,7 @@ export class PdfExportService {
         salesAmount,
         paymentsReceived,
         endingBalance,
-        requiresMaterai: salesAmount > 5000000,
+        requiresMaterai: salesAmount > MATERAI_THRESHOLD,
       });
     }
 

@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from "../constants/materai.constants";
 import { Decimal } from "@prisma/client/runtime/library";
 
 export class TransformationUtil {
@@ -39,7 +40,7 @@ export class TransformationUtil {
    */
   static requiresMaterai(
     amount: Decimal | number,
-    threshold: number = 5000000,
+    threshold: number = MATERAI_THRESHOLD,
   ): boolean {
     const numAmount = typeof amount === "number" ? amount : Number(amount);
     return numAmount > threshold;

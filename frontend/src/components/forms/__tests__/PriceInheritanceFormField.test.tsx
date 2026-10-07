@@ -41,11 +41,11 @@ vi.mock('../../../utils/currency', () => ({
   validateIDRAmount: (amount: number) => ({
     isValid: amount > 0,
     errors: amount <= 0 ? ['Jumlah harus lebih besar dari nol'] : [],
-    warnings: amount >= 5000000 ? ['Memerlukan materai'] : [],
+    warnings: amount > 5000000 ? ['Memerlukan materai'] : [],
   }),
   getAmountMetadata: (amount: number) => ({
-    requiresMaterai: amount >= 5000000,
-    materaiAmount: amount >= 5000000 ? 10000 : 0,
+    requiresMaterai: amount > 5000000,
+    materaiAmount: amount > 5000000 ? 10000 : 0,
     isLargeAmount: amount >= 100000000,
     riskLevel:
       amount >= 1000000000 ? 'high' : amount >= 100000000 ? 'medium' : 'low',

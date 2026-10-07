@@ -259,7 +259,7 @@ export class NotificationsService {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #17a2b8;">Pengingat Materai</h2>
         <p>Yth. Bapak/Ibu,</p>
-        <p>Invoice <strong>${escapeHtml(data.invoiceNumber)}</strong> dengan nilai di atas IDR 5.000.000 memerlukan materai.</p>
+        <p>Invoice <strong>${escapeHtml(data.invoiceNumber)}</strong> dengan nilai lebih dari IDR 5.000.000 memerlukan materai.</p>
         <div style="background-color: #d1ecf1; padding: 15px; border-left: 4px solid #17a2b8; margin: 20px 0;">
           <p><strong>Detail Invoice:</strong></p>
           <ul>

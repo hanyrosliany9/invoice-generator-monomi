@@ -272,7 +272,7 @@ export class SecurityMetricsService {
         title: "Materai Compliance Check Required",
         description: `${pendingMateraiInvoices} transaksi memerlukan validasi materai dalam 24 jam terakhir`,
         recommendation:
-          "Review dan validasi perhitungan materai untuk transaksi di atas Rp 5 juta",
+          "Review dan validasi perhitungan materai untuk transaksi lebih dari Rp 5 juta",
         timestamp: new Date(),
         indonesianSpecific: true,
         resolved: false,

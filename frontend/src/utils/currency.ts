@@ -1,6 +1,12 @@
 import i18n from '@/i18n/config'
 
 /**
+ * Indonesian stamp duty threshold (UU No. 10/2020 Pasal 3 ayat (2) huruf g):
+ * materai applies to amounts STRICTLY GREATER than Rp 5.000.000.
+ */
+export const MATERAI_THRESHOLD = 5_000_000
+
+/**
  * Safe number conversion that prevents NaN
  */
 export const safeNumber = (
@@ -157,7 +163,7 @@ export const requiresMaterai = (
   amount: number | string | null | undefined
 ): boolean => {
   const numericAmount = safeNumber(amount)
-  return numericAmount >= 5_000_000
+  return numericAmount > MATERAI_THRESHOLD
 }
 
 /**
@@ -167,7 +173,7 @@ export const getMateraiAmount = (invoiceAmount?: number): number => {
   if (!invoiceAmount) return 10_000
   const numericAmount = safeNumber(invoiceAmount)
 
-  if (numericAmount < 5_000_000) {
+  if (numericAmount <= MATERAI_THRESHOLD) {
     return 0 // No materai required
   } else if (numericAmount < 1_000_000_000) {
     return 10_000 // 10,000 IDR materai
@@ -614,13 +620,13 @@ export const validateIDRAmount = (
   }
 
   // Indonesian business warnings
-  if (amount >= 5000000 && amount < 10000000) {
+  if (amount > MATERAI_THRESHOLD && amount < 10000000) {
     warnings.push(
       'Transaksi ini mungkin memerlukan materai sesuai peraturan Indonesia'
     )
   }
 
-  if (amount >= 5000000) {
+  if (amount > MATERAI_THRESHOLD) {
     warnings.push(
       'Transaksi ini memerlukan materai sesuai UU No. 13 Tahun 1985'
     )

@@ -1,3 +1,4 @@
+import { MATERAI_THRESHOLD } from "../../common/constants/materai.constants";
 import {
   Injectable,
   NotFoundException,
@@ -917,7 +918,7 @@ export class QuotationsService {
     dueDate.setDate(dueDate.getDate() + paymentTermsDays);
 
     // Check if materai is required (> 5M IDR)
-    const materaiRequired = Number(quotation.totalAmount) > 5000000;
+    const materaiRequired = Number(quotation.totalAmount) > MATERAI_THRESHOLD;
 
     // Generate payment info from company settings
     const paymentInfo = await this.generatePaymentInfo();
@@ -1067,7 +1068,7 @@ export class QuotationsService {
       dueDate.setDate(dueDate.getDate() + 30);
     }
 
-    const materaiRequired = Number(nextMilestone.paymentAmount) > 5000000;
+    const materaiRequired = Number(nextMilestone.paymentAmount) > MATERAI_THRESHOLD;
 
     // Generate payment info from company settings
     const paymentInfo = await this.generatePaymentInfo();

@@ -306,7 +306,7 @@ export class IndonesianPdfFormatter {
           <strong>Informasi Materai (SAK EMKM):</strong><br>
           • Total invoice yang wajib materai: ${options.materaiInfo.count} invoice<br>
           • Estimasi biaya materai: ${this.formatIndonesianCurrency(options.materaiInfo.totalCost)}<br>
-          • Materai wajib untuk invoice > Rp 5.000.000 (UU No. 10/2020)
+          • Materai wajib untuk invoice lebih dari Rp 5.000.000 (UU No. 10/2020)
         </div>
       `;
     }

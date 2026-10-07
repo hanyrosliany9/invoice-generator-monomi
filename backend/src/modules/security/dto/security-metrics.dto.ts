@@ -149,7 +149,7 @@ export class ComplianceAlertDto {
 
   @ApiProperty({
     example:
-      "Review dan validasi perhitungan materai untuk transaksi di atas Rp 5 juta",
+      "Review dan validasi perhitungan materai untuk transaksi lebih dari Rp 5 juta",
   })
   recommendation: string;
 

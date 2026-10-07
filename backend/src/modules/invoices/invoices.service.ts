@@ -1,3 +1,4 @@
+import { isMateraiRequired } from "../../common/constants/materai.constants";
 import {
   Injectable,
   NotFoundException,
@@ -171,7 +172,7 @@ export class InvoicesService {
     const invoiceNumber = await this.generateInvoiceNumber();
 
     // Auto-calculate materai
-    const materaiRequired = createInvoiceDto.totalAmount >= 5000000;
+    const materaiRequired = isMateraiRequired(Number(createInvoiceDto.totalAmount));
 
     // Cascade scopeOfWork: DTO > Quotation > Project
     const scopeOfWork =
@@ -654,7 +655,7 @@ export class InvoicesService {
     // Recalculate materai requirement if total amount changed
     const data = { ...updateInvoiceDto };
     if (data.totalAmount) {
-      data.materaiRequired = data.totalAmount >= 5000000;
+      data.materaiRequired = isMateraiRequired(Number(data.totalAmount));
     }
 
     // FIX 5 (CRITICAL): Keep the GL balanced when totalAmount changes on a SENT
@@ -2119,8 +2120,8 @@ export class InvoicesService {
   }
 
   private calculateMateraiRequirement(totalAmount: number): boolean {
-    // Indonesian law: Materai required for documents >= 5 million IDR (UU No. 10 Tahun 2020)
-    return totalAmount >= 5000000;
+    // Indonesian law: Materai required for documents > 5 million IDR (UU No. 10 Tahun 2020)
+    return isMateraiRequired(totalAmount);
   }
 
   private async trackBusinessJourneyEvent(
