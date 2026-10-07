@@ -15,6 +15,8 @@ export const STATE_FILE = path.join(HERE, '.capture-state.json');
 /** CRM / WhatsApp / auto-publish capture: counters and start time, so cleanup can restore them (see seed-crm.mjs). */
 export const CRM_STATE_FILE = path.join(HERE, '.capture-crm-state.json');
 const LIKE = `%${DEMO}%`;
+/** Ad account served by fake-meta-graph.mjs. */
+const DEMO_AD_ACCOUNT = '912345678901234';
 
 export async function cleanup({ quiet = false } = {}) {
   await restoreInternalClient().catch((e) => console.warn('  could not restore internal client:', e.message));
@@ -92,19 +94,28 @@ export async function cleanup({ quiet = false } = {}) {
 
 /** Demo CRM / WhatsApp / publishing rows, found by the (Demo) marker in names, captions and message payloads. */
 async function cleanupCrmRows(run) {
-  const DL = `(SELECT id FROM leads WHERE name LIKE $1 OR company LIKE $1)`;
+  // Demo landing-page visits (seed-crm.mjs): their clicks, the waiting leads they created ("Website visitor · Kode"
+  // has no (Demo) marker) and the website Conversions API events queued for them.
+  const DCLICK = `(SELECT id FROM ad_clicks WHERE "visitId" LIKE 'demo-visit-%')`;
+  const DL = `(SELECT id FROM leads WHERE name LIKE $1 OR company LIKE $1 OR id IN (SELECT "leadId" FROM ad_clicks WHERE "visitId" LIKE 'demo-visit-%' AND "leadId" IS NOT NULL))`;
   const DCT = `(SELECT id FROM whatsapp_contacts WHERE "profileName" LIKE $1 OR "leadId" IN ${DL})`;
   const DCV = `(SELECT id FROM whatsapp_conversations WHERE "contactId" IN ${DCT})`;
   const DCAMP = `(SELECT id FROM crm_campaigns WHERE name LIKE $1)`;
   const DITEM = `(SELECT id FROM content_calendar_items WHERE caption LIKE $1)`;
-  await run('meta event outbox', `DELETE FROM meta_event_outbox WHERE "leadId" IN ${DL}`);
+  await run('meta event outbox', `DELETE FROM meta_event_outbox WHERE "leadId" IN ${DL} OR "adClickId" IN ${DCLICK}`);
   await run('lead activities', `DELETE FROM lead_activities WHERE "leadId" IN ${DL}`);
   await run('whatsapp messages', `DELETE FROM whatsapp_messages WHERE "conversationId" IN ${DCV}`);
   await run('whatsapp conversations', `DELETE FROM whatsapp_conversations WHERE id IN ${DCV}`);
   await run('whatsapp contacts', `DELETE FROM whatsapp_contacts WHERE id IN ${DCT}`);
   await run('whatsapp webhook events', `DELETE FROM whatsapp_webhook_events WHERE payload::text LIKE $1`);
   await run('leads', `DELETE FROM leads WHERE id IN ${DL}`);
+  await run('ad clicks', `DELETE FROM ad_clicks WHERE "visitId" LIKE 'demo-visit-%'`, []);
   await run('campaign spend', `DELETE FROM crm_campaign_spends WHERE "campaignId" IN ${DCAMP}`);
+  // Meta Ads sync against the fake Graph: everything of the demo ad account (fake-meta-graph.mjs AD_ACCOUNT)
+  await run('meta ads insights', `DELETE FROM meta_ads_insights_daily WHERE "adAccountId" = '${DEMO_AD_ACCOUNT}'`, []);
+  await run('meta ads ads', `DELETE FROM meta_ads_ads WHERE "adAccountId" = '${DEMO_AD_ACCOUNT}'`, []);
+  await run('meta ads campaigns', `DELETE FROM meta_ads_campaigns WHERE "adAccountId" = '${DEMO_AD_ACCOUNT}'`, []);
+  await run('meta ads sync state', `DELETE FROM meta_ads_sync_state WHERE "adAccountId" = '${DEMO_AD_ACCOUNT}' OR "backfilledAccountId" = '${DEMO_AD_ACCOUNT}'`, []);
   await run('campaigns', `DELETE FROM crm_campaigns WHERE id IN ${DCAMP}`);
   await run('publications', `DELETE FROM social_publications WHERE "contentId" IN ${DITEM}`);
 }

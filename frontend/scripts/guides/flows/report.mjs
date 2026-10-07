@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { monthName } from '../seed.mjs';
 import { scrollTo } from '../lib.mjs';
+import { removeInstagram, seedInstagram } from '../seed-instagram.mjs';
 
 const SLUG = 'laporan-bulanan';
 const id = (n) => `${SLUG}/${n}`;
@@ -38,6 +39,10 @@ export async function run(ctx) {
       H(page.getByRole('button', { name: /Simpan & Lanjutkan/ }), { n: 3, badge: 'tr' }),
     ],
   });
+
+  // The client has a synced Instagram account (demo rows, see seed-instagram.mjs), so the data chooser offers a 4th
+  // mode, "Ambil dari Instagram". Removed again at the end of this flow so later flows see an unconnected client.
+  await seedInstagram(ids.client, { month: ids.month, year: ids.year });
 
   // 3. Saved: data sections --------------------------------------------
   await page.getByRole('button', { name: /Simpan & Lanjutkan/ }).click();
@@ -180,5 +185,6 @@ export async function run(ctx) {
     ],
   });
 
+  await removeInstagram(ids.client);
   await page.close();
 }

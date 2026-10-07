@@ -95,9 +95,14 @@ export async function run(ctx) {
   const sb = await src.boundingBox();
   const cells = await page.locator('[data-date], [data-day]').all().catch(() => []);
   let target = null;
-  for (const c of cells) {
-    const b = await c.boundingBox();
-    if (b && b.x > sb.x + 150 && Math.abs(b.y - sb.y) < 140) { target = b; break; }
+  // The seeded dates are relative to today, so the post may sit in the last column of its week: take the day cell
+  // to its right, else the one to its left (same week row).
+  for (const dir of [1, -1]) {
+    for (const c of cells) {
+      const b = await c.boundingBox();
+      if (b && dir * (b.x - sb.x) > 150 && Math.abs(b.y - sb.y) < 140) { target = b; break; }
+    }
+    if (target) break;
   }
   if (!target) target = { x: sb.x + 280, y: sb.y - 10, width: 100, height: 100 };
   await page.mouse.move(sb.x + 20, sb.y + 8);

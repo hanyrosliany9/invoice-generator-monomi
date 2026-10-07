@@ -207,7 +207,15 @@ export async function clearHighlight(page) {
  * Take a screenshot and save it as optimised WebP under
  * public/guides/<slug>/<name>.webp. `id` is "<slug>/<name>".
  */
+/**
+ * GUIDE_ONLY="slug/step,slug/step" writes only those images (every other shot is skipped), so a flow can be
+ * re-run to refresh a few pictures without touching the rest. Unset: every shot is written.
+ */
+const ONLY = (process.env.GUIDE_ONLY || '').split(',').map((x) => x.trim()).filter(Boolean);
+export const wantShot = (id) => ONLY.length === 0 || ONLY.includes(id) || ONLY.includes(id.split('/')[0] + '/*');
+
 export async function shot(page, id, { highlights = [], fullPage = false, quality = 72, keepToasts = false } = {}) {
+  if (!wantShot(id)) return null;
   // Toasts are transient noise in a guide, unless the step is about one.
   await page.evaluate((hide) => {
     let st = document.getElementById('__guide_notoast');
@@ -250,4 +258,17 @@ export async function waitForPortalCode(email, fromByte) {
     if (all.length > 0) return all[all.length - 1][1];
   }
   throw new Error(`no portal code found in ${cfg.backendLog}`);
+}
+
+/**
+ * fill() that survives a form which resets itself when its async data (clients, types, defaults) arrives a moment
+ * after the page looked idle: checks the value again after a short settle and types it again if it was wiped.
+ */
+export async function fillStable(locator, value, { attempts = 3, settle = 900 } = {}) {
+  for (let i = 0; i < attempts; i += 1) {
+    await locator.fill(value);
+    await sleep(settle);
+    if ((await locator.inputValue().catch(() => value)) === value) return;
+  }
+  throw new Error(`form kept dropping the text "${String(value).slice(0, 40)}"`);
 }

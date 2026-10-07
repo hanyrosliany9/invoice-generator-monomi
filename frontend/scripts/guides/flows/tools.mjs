@@ -168,7 +168,13 @@ async function dashboard(ctx, page) {
     ],
   });
 
-  // 2. Sidebar groups
+  // 2. Sidebar groups: a tall window so the whole menu shows, the CRM group included, down to the collapse button
+  await page.setViewportSize({ width: 1280, height: 1680 });
+  await sleep(700);
+  if (!(await page.getByRole('link', { name: 'Dasbor CRM', exact: true }).first().isVisible().catch(() => false))) {
+    await page.getByText('CRM', { exact: true }).first().click(); // open the CRM group
+    await sleep(600);
+  }
   await shot(page, id('menu'), {
     highlights: [
       H(page.getByRole('link', { name: 'Klien', exact: true }).first(), { n: 1, scroll: false, pad: 3 }),
@@ -176,6 +182,8 @@ async function dashboard(ctx, page) {
       H(page.getByRole('link', { name: 'Panduan', exact: true }).first(), { n: 3, scroll: false, pad: 3 }),
     ].filter(Boolean),
   });
+  await page.setViewportSize({ width: 1280, height: 820 });
+  await sleep(500);
 
   // 3. Command palette
   await page.keyboard.press('Control+K');
@@ -194,7 +202,6 @@ async function dashboard(ctx, page) {
   });
   await page.getByRole('button', { name: 'EN', exact: true }).first().click();
   await sleep(1200);
-  await shot(page, id('bahasa-en'), { highlights: [] });
   await page.getByRole('button', { name: 'ID', exact: true }).first().click();
   await sleep(800);
 }

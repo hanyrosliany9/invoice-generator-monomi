@@ -6,7 +6,9 @@
  *   WHATSAPP_GRAPH_BASE_URL=http://127.0.0.1:5598 META_GRAPH_BASE_URL=http://127.0.0.1:5598 ...
  *
  * It answers just enough: token / WABA / phone-number checks, message templates, sending
- * messages, Conversions API events, and Instagram / Facebook publishing. A content caption
+ * messages, Conversions API events, Instagram / Facebook publishing and the Marketing API reads of
+ * the Meta Ads spend sync (me/adaccounts, act_X, act_X/campaigns, act_X/ads and act_X/insights, all
+ * with paging; two demo campaigns whose names match the (Demo) CRM campaigns). A content caption
  * containing "FAILME" makes the media upload fail with Meta's "unsupported aspect ratio" error.
  * Anything that looks like registering / migrating a number is logged as an ALARM (it must never happen).
  */
@@ -14,6 +16,47 @@ import http from 'node:http';
 
 const PORT = Number(process.env.FG_PORT || 5598);
 let n = 0;
+
+/* ---- Marketing API demo data (Meta Ads spend sync) ---- */
+export const AD_ACCOUNT = '912345678901234';
+const META_CAMPAIGNS = [
+  { id: '120210100000001', name: 'Promo Video Oktober (Demo)', status: 'ACTIVE', effective_status: 'ACTIVE', objective: 'OUTCOME_ENGAGEMENT', spend: [310000, 265000, 340000, 290000], clicks: [41, 36, 48, 39] },
+  { id: '120210100000002', name: 'Promo Reels Foto Produk (Demo)', status: 'ACTIVE', effective_status: 'ACTIVE', objective: 'OUTCOME_LEADS', spend: [185000, 160000, 205000, 175000], clicks: [27, 22, 31, 25] },
+];
+const META_ADS = [
+  { id: '120210200000001', campaign_id: META_CAMPAIGNS[0].id },
+  { id: '120210200000002', campaign_id: META_CAMPAIGNS[0].id },
+  { id: '120210200000003', campaign_id: META_CAMPAIGNS[1].id },
+];
+const ymd = (d) => d.toISOString().slice(0, 10);
+/** Daily rows for the last 14 days (inside the asked range), campaign by campaign, so paging has something to page. */
+function insightRows(range) {
+  const rows = [];
+  const today = new Date();
+  for (let back = 13; back >= 0; back -= 1) {
+    const d = new Date(today.getTime() - back * 86400e3);
+    const date = ymd(d);
+    if (range && (date < range.since || date > range.until)) continue;
+    for (const [ci, c] of META_CAMPAIGNS.entries()) {
+      if (ci === 1 && back > 9) continue; // the second campaign started later
+      const k = (back + ci) % c.spend.length;
+      rows.push({
+        campaign_id: c.id, campaign_name: c.name, spend: String(c.spend[k]), impressions: String(c.clicks[k] * 37), clicks: String(c.clicks[k]),
+        objective: c.objective, date_start: date, date_stop: date,
+      });
+    }
+  }
+  return rows;
+}
+/** Graph-style page: `after` is an offset cursor, `next` is present while more rows remain. */
+function paged(all, u, size) {
+  const off = Number(u.searchParams.get('after') || 0) || 0;
+  const slice = all.slice(off, off + size);
+  const more = off + size < all.length;
+  const out = { data: slice, paging: { cursors: { before: String(off), after: String(off + size) } } };
+  if (more) out.paging.next = `http://127.0.0.1:${PORT}${u.pathname}?after=${off + size}`;
+  return out;
+}
 
 http.createServer((req, res) => {
   let body = '';
@@ -31,8 +74,21 @@ http.createServer((req, res) => {
     }
     if (p.startsWith('/media/')) { res.writeHead(200, { 'content-type': 'image/jpeg' }); return res.end(Buffer.from('fakejpegbytes')); }
     if (req.method === 'GET' && p === '/me') return send(200, { id: '999000111', name: 'Monomi Publishing System User' });
+    if (req.method === 'GET' && p === '/me/adaccounts') {
+      return send(200, paged([{ account_id: AD_ACCOUNT, id: `act_${AD_ACCOUNT}`, name: 'Monomi Agency Ads (Demo)', account_status: 1, currency: 'IDR', timezone_name: 'Asia/Jakarta' }], u, 25));
+    }
+    if (req.method === 'GET' && p === `/act_${AD_ACCOUNT}`) {
+      return send(200, { id: `act_${AD_ACCOUNT}`, account_id: AD_ACCOUNT, name: 'Monomi Agency Ads (Demo)', account_status: 1, currency: 'IDR', timezone_name: 'Asia/Jakarta' });
+    }
+    if (req.method === 'GET' && p === `/act_${AD_ACCOUNT}/campaigns`) return send(200, paged(META_CAMPAIGNS.map(({ id, name, status, effective_status, objective }) => ({ id, name, status, effective_status, objective })), u, 1));
+    if (req.method === 'GET' && p === `/act_${AD_ACCOUNT}/ads`) return send(200, paged(META_ADS, u, 2));
+    if (req.method === 'GET' && p === `/act_${AD_ACCOUNT}/insights`) {
+      let range = null;
+      try { range = JSON.parse(u.searchParams.get('time_range') || 'null'); } catch { /* none */ }
+      return send(200, paged(insightRows(range), u, 12));
+    }
     if (req.method === 'GET' && p === '/me/permissions') {
-      return send(200, { data: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish', 'business_management'].map((permission) => ({ permission, status: 'granted' })) });
+      return send(200, { data: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish', 'business_management', 'ads_read'].map((permission) => ({ permission, status: 'granted' })) });
     }
     if (req.method === 'GET' && /^\/\d+\/phone_numbers$/.test(p)) {
       return send(200, { data: [{ id: '1111111111', display_phone_number: '+62 811-1111-1111', verified_name: 'Monomi Agency', platform_type: 'CLOUD_API', status: 'CONNECTED', quality_rating: 'GREEN' }] });

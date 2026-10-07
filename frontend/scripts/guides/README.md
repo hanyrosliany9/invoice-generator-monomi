@@ -48,6 +48,9 @@ node capture.mjs                  # all guides
 | `GUIDE_DEBUG_DIR` | none | on failure, save a screenshot of every open page here |
 | `GUIDE_IDS_OUT` | none | write the seeded ids to this JSON file |
 
+`GUIDE_ONLY="slug/step,slug/step"` writes only those images (every other `shot()` is skipped, the flow still runs), so a
+few outdated pictures can be refreshed without rewriting the rest; `slug/*` selects a whole guide.
+
 Options: `node capture.mjs report planner` (only these flows; names are files in
 `flows/`), `--keep` (do not clean up afterwards), `--reuse` (with `--keep` and
 `GUIDE_IDS_OUT`: skip cleanup and seeding and reuse the data of the previous `--keep`
@@ -60,14 +63,19 @@ run, handy while writing a flow), `--clean-only`.
 | `finance` | pengeluaran, akuntansi-dasar, aset-penyusutan, vendor-pembelian, gaji, penjualan |
 | `production` | shot-list, jadwal-syuting, call-sheet, production-hub |
 | `tools` | deck-presentasi, media-downloader, dashboard-navigasi, pengguna-peran |
-| `crm` | crm-leads-whatsapp (campaigns, ad message, ad spend, quick add, board, list, follow-ups, move stage, convert, dashboard) |
+| `crm` | crm-leads-whatsapp (campaigns, ad message, Copy ad link, ad spend, quick add, Kode chat, waiting leads, board, list, follow-ups, move stage, convert, dashboard) |
 | `crm-inbox` | crm-whatsapp-inbox (filters, ad banner, reply, phone-app replies, 24h window, templates, quick replies, assign, phone layout) |
 | `crm-publish` | publikasi-otomatis (auto-publishing to Instagram / Facebook on the Monomi content calendar) |
 | `crm-setup` | crm-whatsapp-setup (the admin WhatsApp settings card; one run per server state, see below) |
 | `shortcuts` | pintasan-keyboard, pintasan-klien (the `?` overlay, lightbox key tooltip, deck shortcuts dialog, presentation hint; the tables are rendered from `src/shortcuts/registry.ts`) |
 
 Staff logins are rate limited (5 per minute), so the capture signs in once through the UI
-and reuses that session (`storageState`) for every browser context. Wide screens
+and reuses that session (`storageState`) for every browser context. The sign-in runs in its own unrecorded context
+(`signInOnce` in `capture.mjs`): it waits for the page to settle, checks that both fields really hold their text right
+before submitting, and retries (backing off on a 429). Signing in inside the recorded page used to leave the e-mail field
+empty in `--record` mode: the e-mail is typed character by character there, and a cold Vite dev server that is still
+optimising dependencies (or the lazily loaded login page remounting) throws the typed text away. A form that resets itself
+when its data arrives is also why long flows use `fillStable()` (lib.mjs) for the first field of a form. Wide screens
 (financial reports, deck editor) are captured at 1440 or 1920 px so nothing is clipped;
 everything else is 1280 px.
 
@@ -77,6 +85,17 @@ These four flows (`crm`, `crm-inbox`, `crm-publish`, `crm-setup`) are *standalon
 their own "(Demo)" data (`seed-crm.mjs`: campaigns, ad spend, WhatsApp chats created through the signed webhook, leads, two converted
 clients with approved quotations, Monomi content with published / scheduled / failed publications) and nothing leaves the machine:
 the backend must talk to the **fake Meta Graph** (`fake-meta-graph.mjs`), never to Meta, and R2 points at dummies.
+The demo data also covers the landing-page features: two waiting leads (one with Instagram, brand and category, one that skipped the
+form: "Website visitor · Kode") created through the real public `POST /public/track/event` (PageView, 3.6 s, then the WhatsApp tap, each
+visitor with its own documentation-range `X-Forwarded-For`), two more taps that stay linkable by their Kode, and Meta ad spend
+for two campaigns synced through the real sync code (`POST /crm/meta-ads/sync`) from the fake Graph (`me/adaccounts`, `act_X`,
+`act_X/campaigns`, `act_X/ads`, paged `act_X/insights`), plus one manual "other costs" entry. Set `META_WEB_CAPI_ENABLED=true`,
+`META_PIXEL_ID`, `META_WEB_CAPI_TOKEN` (dummies) and `META_WEB_CAPI_GRAPH_BASE_URL` (the fake Graph) on the backend for the landing-page
+tracking card to be READY, and `META_SYSTEM_USER_TOKEN` with `META_GRAPH_BASE_URL` for the Meta Ads sync card. Instagram cards: dummy
+`META_APP_ID` / `META_APP_SECRET` make the integration "configured" (client page and portal cards render), `INSTAGRAM_SYNC_ENABLED=false`
+keeps every Instagram job off, and the report flow adds synced demo rows for its client (`seed-instagram.mjs`) so the report builder
+offers "Ambil dari Instagram". Cleanup removes the clicks (`visitId` starts with `demo-visit-`), the leads they created, the Meta ad
+rows of the demo ad account and the sync state.
 
 ```bash
 # fake Meta Graph on a free port

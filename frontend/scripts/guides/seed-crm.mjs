@@ -77,10 +77,12 @@ export async function seedCrm() {
   const c1 = await camp('Promo Video Oktober', 'FB-OKT1', 'BOTH', 6000000, 'Halo Monomi, saya tertarik dengan paket video produk. Boleh minta info harganya? [FB-OKT1]');
   const c2 = await camp('Promo Reels Foto Produk', 'IG-REELS2', 'INSTAGRAM', 3000000, 'Halo Monomi, saya lihat promo reels dan ingin tanya soal foto produk. [IG-REELS2]');
   ids.c1 = c1.id; ids.c2 = c2.id;
-  const spend = (c, a, b, amount, note) => api('POST', `/crm/campaigns/${c.id}/spend`, { dateFrom: ymd(a), dateTo: ymd(b), amount, note });
-  await spend(c1, -6, -2, 1500000, 'Minggu 1');
-  await spend(c1, -1, 0, 700000, 'Minggu 2');
-  await spend(c2, -6, 0, 900000, 'Boost reels');
+  // Ad spend comes from Meta: the real sync code runs against fake-meta-graph.mjs (account, campaigns, ads, paged
+  // daily insights) and links the two Meta campaigns, which carry the same names, to these CRM campaigns.
+  ids.metaSync = await api('POST', '/crm/meta-ads/sync', {}, undefined, { soft: true });
+  console.log('  meta ads sync:', JSON.stringify(ids.metaSync)?.slice(0, 200));
+  // Only what Meta cannot know is typed in by hand: one "other costs" entry (creative + studio).
+  await api('POST', `/crm/campaigns/${c1.id}/spend`, { dateFrom: ymd(-5), dateTo: ymd(-5), amount: 1200000, note: 'Kreatif dan sewa studio (Demo)' });
 
   await api('PUT', '/whatsapp/quick-replies', { items: [
     { title: 'Salam pembuka', text: 'Halo, terima kasih sudah menghubungi Monomi Agency! Ada yang bisa kami bantu?' },
@@ -150,6 +152,8 @@ export async function seedCrm() {
   await api('POST', `/crm/leads/${ids.lead.agus}/follow-up`, { at: new Date(Date.now() - 3600e3).toISOString(), note: 'telepon balik soal harga' });
   ids.lead.maya = maya.id; ids.lead.sari = sari.id; ids.lead.toni = toni.id; ids.lead.kopi = kopi.id; ids.lead.lina = lina.id;
 
+  await seedLandingLeads(ids);
+
   // Sari and Budi become clients: draft quotation -> approved -> Won (feeds the dashboard).
   const sa = await loginAs('superadmin@monomi.id');
   for (const [leadId, amount] of [[sari.id, 25000000], [ids.lead.budi, 6500000]]) {
@@ -158,6 +162,73 @@ export async function seedCrm() {
     await asToken(sa, 'PATCH', `/quotations/${conv.quotationId}/status`, { status: 'APPROVED' });
   }
   return ids;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Landing-page taps (link.monomiagency.com), through the real public endpoint  */
+/* ------------------------------------------------------------------ */
+
+const TRACK_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const LANDING = 'https://link.monomiagency.com/';
+let tapSeq = 0;
+/** Marker of every demo visit: cleanup finds the clicks (and the leads they created) by it. */
+export const DEMO_VISIT_PREFIX = 'demo-visit-';
+
+async function trackEvent(body, ip) {
+  const r = await fetch(`${cfg.apiUrl}/public/track/event`, {
+    method: 'POST',
+    headers: { 'content-type': 'text/plain', 'x-forwarded-for': ip, 'user-agent': TRACK_UA },
+    body: JSON.stringify(body),
+  });
+  if (r.status !== 200) throw new Error(`track event -> ${r.status}`);
+}
+
+/**
+ * One visitor of the landing page. `verified` sends the PageView first (and waits for the 3 s minimum age), which
+ * makes the WhatsApp tap pass the anti-abuse gate and create a waiting lead. Without it the tap is only stored,
+ * ready to be linked by its Kode. Each visitor gets its own documentation-range IP so the per-network cap never bites.
+ */
+async function landingTap({ ref, verified, meta, metaCampaignId, metaAdId, ip }) {
+  const n = ++tapSeq;
+  const visitId = `${DEMO_VISIT_PREFIX}${Date.now().toString(36)}${n}`;
+  const utm = metaCampaignId ? { source: 'meta', medium: 'paid', campaign: metaCampaignId, content: metaAdId } : {};
+  const pageUrl = metaCampaignId ? `${LANDING}?utm_source=meta&utm_medium=paid&utm_campaign=${metaCampaignId}&utm_content=${metaAdId}` : LANDING;
+  if (verified) {
+    await trackEvent({ name: 'PageView', visitId, eventId: `${visitId}-pv`, pageUrl, utm }, ip);
+    await sleep(3600);
+  }
+  await trackEvent({ name: 'Lead', visitId, eventId: `${visitId}-lead`, ref, pageUrl, utm, meta }, ip);
+  await sleep(600);
+}
+
+/**
+ * Landing-page leads: two waiting leads (one with Instagram, brand and category, one that skipped the form),
+ * a tap that is only stored for the "Kode" chat step, and a tap linked to Rina's lead through its Kode.
+ */
+async function seedLandingLeads(ids) {
+  const campaigns = await api('GET', '/crm/campaigns').catch(() => []);
+  const metaOf = (code) => (Array.isArray(campaigns) ? campaigns : campaigns.items ?? []).find((c) => c.code === code)?.metaCampaignId;
+  const m1 = metaOf('FB-OKT1') ?? '120210100000001';
+  const m2 = metaOf('IG-REELS2') ?? '120210100000002';
+  await landingTap({
+    ref: 'D7NAR2', verified: true, ip: '203.0.113.21', metaCampaignId: m1, metaAdId: '120210200000001',
+    meta: { instagram: '@dapurnara.id', brandName: 'Dapur Nara (Demo)', category: 'Makanan & Minuman' },
+  });
+  await landingTap({ ref: 'V8T3QX', verified: true, ip: '203.0.113.22', metaCampaignId: m2, metaAdId: '120210200000003', meta: {} });
+  ids.refs = { waitingForm: 'D7NAR2', waitingSkipped: 'V8T3QX', chat: 'K7QM2X', linked: 'R4NA9P' };
+  // stored taps (no PageView first): linkable by their Kode, no lead is created
+  await landingTap({
+    ref: ids.refs.chat, verified: false, ip: '203.0.113.23', metaCampaignId: m1, metaAdId: '120210200000002',
+    meta: { instagram: '@tokobunga.mawar' },
+  });
+  await landingTap({ ref: ids.refs.linked, verified: false, ip: '203.0.113.24', metaCampaignId: m1, metaAdId: '120210200000001', meta: { instagram: '@glowskin.id', brandName: 'Glow Skincare', category: 'Skincare' } });
+  await api('POST', `/crm/leads/${ids.lead.rina}/ad-click`, { code: ids.refs.linked });
+  const leads = (await api('GET', '/crm/leads?awaiting=true')).items ?? [];
+  ids.waiting = {
+    form: leads.find((l) => /Dapur Nara/.test(l.name))?.id,
+    skipped: leads.find((l) => /Website visitor/.test(l.name))?.id,
+  };
+  console.log('  waiting leads:', JSON.stringify(ids.waiting));
 }
 
 /** Monomi (internal client) content with Instagram + Facebook auto-publishing: published, scheduled, failed, plain. */

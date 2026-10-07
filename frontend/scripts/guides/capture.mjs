@@ -43,10 +43,10 @@ const FLOWS = [
 // reuse that session (cookies + localStorage) for every later browser context.
 let staffSession = null;
 
-async function newBrowserContext(browser, { w, h, dsf = 1, mobile = false, storageState }) {
+async function newBrowserContext(browser, { w, h, dsf = 1, mobile = false, storageState, record = RECORD }) {
   const context = await browser.newContext({
     storageState,
-    ...(RECORD ? { recordVideo: { dir: RAW_DIR, size: { width: w, height: h } } } : {}),
+    ...(record ? { recordVideo: { dir: RAW_DIR, size: { width: w, height: h } } } : {}),
     viewport: { width: w, height: h },
     deviceScaleFactor: dsf,
     hasTouch: mobile,
@@ -60,8 +60,54 @@ async function newBrowserContext(browser, { w, h, dsf = 1, mobile = false, stora
     try { localStorage.setItem('monomi.lang', 'id'); localStorage.setItem('monomi.portal.lang', 'id'); } catch { /* ignore */ }
   });
   await installMediaStub(context);
-  if (RECORD) await context.addInitScript(cursorInitScript, { mobile });
+  if (record) await context.addInitScript(cursorInitScript, { mobile });
   return context;
+}
+
+/**
+ * Signs in through the real login form and returns the session (storageState).
+ *
+ * This used to run inside the recorded page. In record mode the e-mail is typed one character at a
+ * time (about 1.5 s) and a Vite dev server that is still optimising dependencies (cold start) or a
+ * remount of the lazily loaded login page throws the typed text away: the e-mail came out empty and
+ * the submit never left /login. Now the sign-in happens in a plain, unrecorded context (the login
+ * frames are never part of a video anyway), waits for the page to settle, and checks that both
+ * fields really hold their values right before submitting; it retries (and backs off on the 5 per
+ * minute login limit) instead of failing on the first glitch.
+ */
+async function signInOnce(browser) {
+  const context = await newBrowserContext(browser, { w: 1280, h: 760, record: false });
+  const page = await context.newPage();
+  try {
+    let lastProblem = 'unknown';
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      await page.goto(`${cfg.appUrl}/login`, { waitUntil: 'networkidle' }).catch(() => {});
+      await page.locator('#email').waitFor({ state: 'visible', timeout: 30000 });
+      await sleep(1200 * attempt); // let a cold dev server finish optimising / reloading
+      await page.locator('#email').fill(cfg.email);
+      await page.locator('#password').fill(cfg.password);
+      const [em, pw] = await Promise.all([page.locator('#email').inputValue(), page.locator('#password').inputValue()]);
+      if (em !== cfg.email || pw !== cfg.password) {
+        lastProblem = `form lost its text (email ${em === '' ? 'empty' : 'ok'}, password ${pw === '' ? 'empty' : 'ok'})`;
+        console.log(`  login attempt ${attempt}: ${lastProblem}, retrying`);
+        continue;
+      }
+      await page.locator('button[type=submit]').click();
+      try {
+        await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 20000 });
+        await sleep(1500);
+        return await context.storageState();
+      } catch {
+        const text = ((await page.locator('body').innerText().catch(() => '')) || '').toLowerCase();
+        lastProblem = /terlalu banyak|too many/.test(text) ? 'rate limited' : 'still on /login after submit';
+        console.log(`  login attempt ${attempt}: ${lastProblem}`);
+        if (lastProblem === 'rate limited') await sleep(65000);
+      }
+    }
+    throw new Error(`could not sign in through the UI: ${lastProblem}`);
+  } finally {
+    await context.close().catch(() => {});
+  }
 }
 
 async function main() {
@@ -117,21 +163,12 @@ async function main() {
       },
       /** Signed-in staff browser context. Desktop 1280 wide by default. */
       async staff({ w = 1280, h = 760, dsf = 1, mobile = false } = {}) {
-        const context = await newBrowserContext(browser, { w, h, dsf, mobile, storageState: staffSession ?? undefined });
+        staffSession ??= await signInOnce(browser);
+        const context = await newBrowserContext(browser, { w, h, dsf, mobile, storageState: staffSession });
         const page = await context.newPage();
         openPages.push(page);
         track(page, { w, h, mobile });
-        if (staffSession === null) {
-          await page.goto(`${cfg.appUrl}/login`);
-          await page.fill('#email', cfg.email);
-          await page.fill('#password', cfg.password);
-          await page.click('button[type=submit]');
-          await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 });
-          await sleep(1500);
-          staffSession = await context.storageState();
-        } else {
-          await page.goto(`${cfg.appUrl}/`, { waitUntil: 'domcontentloaded' });
-        }
+        await page.goto(`${cfg.appUrl}/`, { waitUntil: 'domcontentloaded' });
         if (RECORD) markReady(page);
         return { context, page };
       },

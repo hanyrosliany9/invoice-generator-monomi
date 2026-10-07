@@ -2,7 +2,7 @@
  * Guides (staff, admin): klien-baru, proyek-baru, quotation, invoice, piutang-pembayaran.
  * Everything the guide creates carries the "(Demo)" marker.
  */
-import { scrollTo, DEMO } from '../lib.mjs';
+import { scrollTo, DEMO, fillStable } from '../lib.mjs';
 
 const H = (loc, o = {}) => ({ locator: loc, ...o });
 
@@ -126,7 +126,7 @@ async function proyekBaru(ctx, page) {
   // 2. Identity
   await go(page, '/projects/new', 1200);
   const desc = page.getByPlaceholder(/Ringkasan tujuan proyek/);
-  await desc.fill(`Video Iklan Ramadan Pelangi ${DEMO}`);
+  await fillStable(desc, `Video Iklan Ramadan Pelangi ${DEMO}`); // the form resets once its client / type lists arrive
   await page.getByPlaceholder(/Video 30 detik, Landing page/).fill('Video iklan 30 detik + 3 cutdown');
   await page.getByPlaceholder(/Pengembangan konsep kreatif/).fill(['1. Konsep kreatif dan storyboard', '2. Syuting 1 hari', '3. Editing, color grading, 2 kali revisi'].join(String.fromCharCode(10)));
   await shot(page, id('identitas'), {

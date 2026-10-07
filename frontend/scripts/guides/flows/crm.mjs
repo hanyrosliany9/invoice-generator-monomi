@@ -20,7 +20,7 @@ export async function run(ctx) {
   await shot(page, id('kampanye'), {
     highlights: [
       H(page.getByRole('button', { name: /Kampanye baru/ }), { n: 1, badge: 'tr' }),
-      H(page.locator('table tbody tr').first(), { n: 2, pad: 3 }),
+      H(page.locator('table tbody tr', { hasText: 'Promo Video Oktober (Demo)' }), { n: 2, pad: 3 }),
     ],
   });
 
@@ -31,6 +31,17 @@ export async function run(ctx) {
     highlights: [
       H(page.getByText(/Pesan otomatis untuk iklan WhatsApp/).first().locator('xpath=following::*[contains(text(),"[FB-OKT1]")][1]'), { n: 1, pad: 8 }),
       H(copyBtn, { n: 2 }),
+    ],
+  });
+
+  // 2b. One link for every website ad (Copy ad link) -------------------------------------
+  const adLinkBtn = page.getByRole('button', { name: /^Salin link iklan$/ });
+  await adLinkBtn.scrollIntoViewIfNeeded();
+  await sleep(300);
+  await shot(page, id('link-iklan-website'), {
+    highlights: [
+      H(page.getByTestId('ad-link-universal'), { n: 1, pad: 6 }),
+      H(adLinkBtn, { n: 2 }),
     ],
   });
 
@@ -65,7 +76,33 @@ export async function run(ctx) {
       H(add.getByRole('button', { name: /^Simpan lead$/ }), { n: 3, badge: 'tr' }),
     ],
   });
+
+  // 4b. A chat from the landing page carries "Kode: XXXXXX": the dialog shows the linked ad click -----------
+  await add.locator('#crm-quick-text').fill(`Halo Monomi, saya tertarik dengan paket video produk. Boleh minta info harganya?
+Instagram: @tokobunga.mawar
+Kode: ${ids.refs.chat}`);
+  await sleep(1200);
+  await shot(page, id('kode-chat'), {
+    highlights: [
+      H(add.locator('#crm-quick-text'), { n: 1 }),
+      H(add.getByTestId('quick-adclick-chip'), { n: 2, pad: 4 }),
+      H(add.getByRole('button', { name: /^Simpan lead$/ }), { n: 3, badge: 'tr' }),
+    ],
+  });
   await page.keyboard.press('Escape');
+  await sleep(500);
+
+  // 4c. Leads that wait for their WhatsApp message (landing page form) ---------------------------------------
+  await go(page, '/crm/leads', 2200);
+  await page.getByTestId('filter-awaiting').click();
+  await sleep(900);
+  await shot(page, id('lead-menunggu-wa'), {
+    highlights: [
+      H(page.getByTestId('filter-awaiting'), { n: 1 }),
+      H(page.getByTestId('waiting-badge').first(), { n: 2, pad: 4, badge: 'tr' }),
+    ],
+  });
+  await page.getByTestId('filter-awaiting').click();
   await sleep(500);
 
   // 5. The board -----------------------------------------------------------------

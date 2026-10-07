@@ -9,11 +9,12 @@
  *   GUIDE_WA_STATE=incomplete  only WHATSAPP_ACCESS_TOKEN (verify token, WABA and phone number ids missing)
  *   GUIDE_WA_STATE=invalid     a WABA id that is not numeric
  *
- * See README.md ("CRM / WhatsApp guides"). Standalone: needs no demo rows (in the ready state it also shows
- * the demo webhook traffic when the crm flow data exists).
+ * See README.md ("CRM / WhatsApp guides"). Standalone: the ready state seeds the CRM demo data itself (see `needs`).
  */
 export const standalone = true;
-export const needs = [];
+// The ready state also shows the landing-page and Meta Ads cards with numbers, so it brings the CRM demo data (the other
+// states run against a backend without WhatsApp variables, where the signed webhook used by the seed cannot work).
+export const needs = (process.env.GUIDE_WA_STATE || 'ready') === 'ready' ? ['crm'] : [];
 
 const SLUG = 'crm-whatsapp-setup';
 const id = (n) => `${SLUG}/${n}`;
@@ -89,5 +90,29 @@ export async function run(ctx) {
   await sleep(500);
   await shot(page, id('hubungkan'), {
     highlights: [H(section(3), { n: 1, pad: 6 })],
+  });
+
+  // Landing page tracking card (READY: the backend has META_WEB_CAPI_* pointed at the fake Graph) -----------------------
+  const tracking = page.locator('#tracking');
+  await tracking.scrollIntoViewIfNeeded();
+  await page.evaluate(() => document.getElementById('tracking')?.scrollIntoView({ block: 'start' }));
+  await sleep(500);
+  await shot(page, id('pelacakan-landing-page'), {
+    highlights: [
+      H(tracking.locator('dl'), { n: 1, pad: 6 }),
+      H(tracking.getByTestId('tracking-tag'), { n: 2, pad: 5, scroll: false }),
+      H(tracking.getByRole('button', { name: /Salin script tag|Copy script tag/ }), { n: 3, pad: 4, scroll: false }),
+    ],
+  });
+
+  // Meta Ads sync card (READY: the real sync ran against the fake Graph while seeding) --------------------------------------
+  const metaAds = page.locator('#meta-ads');
+  await page.evaluate(() => document.getElementById('meta-ads')?.scrollIntoView({ block: 'start' }));
+  await sleep(500);
+  await shot(page, id('sinkronisasi-meta-ads'), {
+    highlights: [
+      H(metaAds.locator('dl'), { n: 1, pad: 6 }),
+      H(metaAds.getByRole('button', { name: /Sinkronkan sekarang/ }), { n: 2, pad: 4, scroll: false }),
+    ],
   });
 }

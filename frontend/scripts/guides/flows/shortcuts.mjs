@@ -15,7 +15,8 @@ export async function run(ctx) {
   // ---- staff: ? overlay on the dashboard + lightbox ----------------------------------------
   const { page } = await ctx.staff({ w: 1280, h: 800 });
   let S = 'pintasan-keyboard';
-  await go(page, '/', 2500);
+  // On a CRM page the overlay lists that page's shortcuts (the CRM ones) before the global ones.
+  await go(page, '/crm/leads', 2500);
   await page.keyboard.press('?');
   await sleep(700);
   await shot(page, `${S}/bantuan`, {
