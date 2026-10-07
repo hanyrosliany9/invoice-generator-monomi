@@ -79,6 +79,97 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "durationSec": 93.5,
     "version": "b374952d"
   },
+  "akuntansi-lanjutan": {
+    "mp4": "akuntansi-lanjutan.9f629449.mp4",
+    "poster": "akuntansi-lanjutan.9f629449.webp",
+    "vtt": {
+      "id": "akuntansi-lanjutan.d9ced412.id.vtt",
+      "en": "akuntansi-lanjutan.b1c177d0.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "akuntansi-lanjutan.a4ca56fa.chapters.id.vtt",
+      "en": "akuntansi-lanjutan.a323d30e.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "buku-besar",
+        "start": 0,
+        "end": 9.23
+      },
+      {
+        "step": "neraca-saldo",
+        "start": 9.23,
+        "end": 21.67
+      },
+      {
+        "step": "arus-kas",
+        "start": 21.67,
+        "end": 28.6
+      },
+      {
+        "step": "aging-piutang",
+        "start": 28.6,
+        "end": 38.36
+      },
+      {
+        "step": "aging-hutang",
+        "start": 38.36,
+        "end": 45.19
+      },
+      {
+        "step": "laporan-pembelian",
+        "start": 45.19,
+        "end": 57.63
+      },
+      {
+        "step": "jurnal-penyesuaian",
+        "start": 57.63,
+        "end": 67.76
+      },
+      {
+        "step": "ecl",
+        "start": 67.76,
+        "end": 81
+      }
+    ],
+    "w": 1280,
+    "h": 888,
+    "durationSec": 81,
+    "version": "9f629449"
+  },
+  "analitik-milestone": {
+    "mp4": "analitik-milestone.9523dc78.mp4",
+    "poster": "analitik-milestone.9523dc78.webp",
+    "vtt": {
+      "id": "analitik-milestone.139e50d1.id.vtt",
+      "en": "analitik-milestone.04766ecf.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "analitik-milestone.f087d54e.chapters.id.vtt",
+      "en": "analitik-milestone.6e844316.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "ringkasan",
+        "start": 0,
+        "end": 5.16
+      },
+      {
+        "step": "metrik",
+        "start": 5.16,
+        "end": 14.3
+      },
+      {
+        "step": "tabel",
+        "start": 14.3,
+        "end": 25.2
+      }
+    ],
+    "w": 1280,
+    "h": 1066,
+    "durationSec": 25.2,
+    "version": "9523dc78"
+  },
   "aset-penyusutan": {
     "mp4": "aset-penyusutan.deab8184.mp4",
     "poster": "aset-penyusutan.deab8184.webp",
@@ -262,6 +353,74 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "h": 800,
     "durationSec": 166.4,
     "version": "7211b213"
+  },
+  "crm-pengaturan": {
+    "mp4": "crm-pengaturan.67fb4396.mp4",
+    "poster": "crm-pengaturan.67fb4396.webp",
+    "vtt": {
+      "id": "crm-pengaturan.46b083fd.id.vtt",
+      "en": "crm-pengaturan.92c025a2.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "crm-pengaturan.82e8f48b.chapters.id.vtt",
+      "en": "crm-pengaturan.886adad4.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "buka",
+        "start": 0,
+        "end": 9.21
+      },
+      {
+        "step": "target",
+        "start": 9.21,
+        "end": 20.12
+      },
+      {
+        "step": "tahap",
+        "start": 20.12,
+        "end": 31.78
+      },
+      {
+        "step": "ganti-nama",
+        "start": 31.78,
+        "end": 44.6
+      },
+      {
+        "step": "urutan",
+        "start": 44.6,
+        "end": 57.15
+      },
+      {
+        "step": "nonaktif",
+        "start": 57.15,
+        "end": 68.07
+      },
+      {
+        "step": "tambah",
+        "start": 68.07,
+        "end": 81.22
+      },
+      {
+        "step": "event-meta",
+        "start": 81.22,
+        "end": 89.81
+      },
+      {
+        "step": "kartu-lain",
+        "start": 89.81,
+        "end": 100.47
+      },
+      {
+        "step": "whatsapp",
+        "start": 100.47,
+        "end": 111.17
+      }
+    ],
+    "w": 1280,
+    "h": 888,
+    "durationSec": 111.2,
+    "version": "67fb4396"
   },
   "crm-whatsapp-inbox": {
     "mp4": "crm-whatsapp-inbox.daa4e56c.mp4",
@@ -571,6 +730,92 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "durationSec": 63.1,
     "version": "52cff713"
   },
+  "instagram-klien": {
+    "mp4": "instagram-klien.97f5d3aa.mp4",
+    "poster": "instagram-klien.97f5d3aa.webp",
+    "vtt": {
+      "id": "instagram-klien.dcfcc5bc.id.vtt",
+      "en": "instagram-klien.d3264da2.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "instagram-klien.a5568076.chapters.id.vtt",
+      "en": "instagram-klien.95823d65.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "kartu",
+        "start": 0,
+        "end": 10.14
+      },
+      {
+        "step": "terhubung",
+        "start": 10.14,
+        "end": 17.43
+      },
+      {
+        "step": "sinkron",
+        "start": 17.43,
+        "end": 28.58
+      },
+      {
+        "step": "status",
+        "start": 28.58,
+        "end": 41.57
+      },
+      {
+        "step": "laporan",
+        "start": 41.57,
+        "end": 54.4
+      },
+      {
+        "step": "putuskan",
+        "start": 54.4,
+        "end": 64.07
+      }
+    ],
+    "w": 1280,
+    "h": 900,
+    "durationSec": 64.1,
+    "version": "97f5d3aa"
+  },
+  "instagram-portal": {
+    "mp4": "instagram-portal.c4dfcbf7.mp4",
+    "poster": "instagram-portal.c4dfcbf7.webp",
+    "vtt": {
+      "id": "instagram-portal.3e938366.id.vtt",
+      "en": "instagram-portal.a935fb61.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "instagram-portal.a92a53f8.chapters.id.vtt",
+      "en": "instagram-portal.5d3dd403.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "kartu",
+        "start": 0,
+        "end": 11.73
+      },
+      {
+        "step": "izin",
+        "start": 11.73,
+        "end": 21.78
+      },
+      {
+        "step": "terhubung",
+        "start": 21.78,
+        "end": 33.68
+      },
+      {
+        "step": "putuskan",
+        "start": 33.68,
+        "end": 44.67
+      }
+    ],
+    "w": 540,
+    "h": 1168,
+    "durationSec": 44.7,
+    "version": "c4dfcbf7"
+  },
   "invoice": {
     "mp4": "invoice.8d19f76d.mp4",
     "poster": "invoice.8d19f76d.webp",
@@ -624,6 +869,59 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "durationSec": 78.6,
     "version": "8d19f76d"
   },
+  "invoice-manual": {
+    "mp4": "invoice-manual.cefd732e.mp4",
+    "poster": "invoice-manual.cefd732e.webp",
+    "vtt": {
+      "id": "invoice-manual.999b22ec.id.vtt",
+      "en": "invoice-manual.ff7d467e.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "invoice-manual.9d235a6a.chapters.id.vtt",
+      "en": "invoice-manual.8f78fe7c.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "buka",
+        "start": 0,
+        "end": 9.34
+      },
+      {
+        "step": "klien-proyek",
+        "start": 9.34,
+        "end": 24.29
+      },
+      {
+        "step": "item",
+        "start": 24.29,
+        "end": 38.83
+      },
+      {
+        "step": "ppn",
+        "start": 38.83,
+        "end": 49.3
+      },
+      {
+        "step": "materai",
+        "start": 49.3,
+        "end": 57.12
+      },
+      {
+        "step": "pembayaran",
+        "start": 57.12,
+        "end": 67.7
+      },
+      {
+        "step": "simpan",
+        "start": 67.7,
+        "end": 80.73
+      }
+    ],
+    "w": 1280,
+    "h": 900,
+    "durationSec": 80.7,
+    "version": "cefd732e"
+  },
   "jadwal-syuting": {
     "mp4": "jadwal-syuting.88c8f336.mp4",
     "poster": "jadwal-syuting.88c8f336.webp",
@@ -676,6 +974,49 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "h": 820,
     "durationSec": 78.2,
     "version": "88c8f336"
+  },
+  "kalender-proyek": {
+    "mp4": "kalender-proyek.4af5be1e.mp4",
+    "poster": "kalender-proyek.4af5be1e.webp",
+    "vtt": {
+      "id": "kalender-proyek.04ec5d75.id.vtt",
+      "en": "kalender-proyek.ca9ade1f.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "kalender-proyek.8ea04a0d.chapters.id.vtt",
+      "en": "kalender-proyek.beb490b9.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "bulan",
+        "start": 0,
+        "end": 5.15
+      },
+      {
+        "step": "hari",
+        "start": 5.15,
+        "end": 16.83
+      },
+      {
+        "step": "proyek",
+        "start": 16.83,
+        "end": 29.62
+      },
+      {
+        "step": "tambah-acara",
+        "start": 29.62,
+        "end": 51.59
+      },
+      {
+        "step": "acara",
+        "start": 51.59,
+        "end": 64.2
+      }
+    ],
+    "w": 1280,
+    "h": 1112,
+    "durationSec": 64.2,
+    "version": "4af5be1e"
   },
   "klien-baru": {
     "mp4": "klien-baru.ee81973a.mp4",
@@ -815,6 +1156,59 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "h": 900,
     "durationSec": 35.8,
     "version": "1d3f64eb"
+  },
+  "laporan-bisnis": {
+    "mp4": "laporan-bisnis.df663d7c.mp4",
+    "poster": "laporan-bisnis.df663d7c.webp",
+    "vtt": {
+      "id": "laporan-bisnis.f2c693bf.id.vtt",
+      "en": "laporan-bisnis.b2deb3f6.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "laporan-bisnis.000b93a6.chapters.id.vtt",
+      "en": "laporan-bisnis.c150612e.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "katalog",
+        "start": 0,
+        "end": 9.23
+      },
+      {
+        "step": "bulanan",
+        "start": 9.23,
+        "end": 16.39
+      },
+      {
+        "step": "bulanan-rinci",
+        "start": 16.39,
+        "end": 23.97
+      },
+      {
+        "step": "pendapatan",
+        "start": 23.97,
+        "end": 36.55
+      },
+      {
+        "step": "pembayaran",
+        "start": 36.55,
+        "end": 44.38
+      },
+      {
+        "step": "klien",
+        "start": 44.38,
+        "end": 56.54
+      },
+      {
+        "step": "proyek",
+        "start": 56.54,
+        "end": 68.33
+      }
+    ],
+    "w": 1280,
+    "h": 1066,
+    "durationSec": 68.3,
+    "version": "df663d7c"
   },
   "laporan-bulanan": {
     "mp4": "laporan-bulanan.44bd4f86.mp4",
@@ -1050,6 +1444,69 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "h": 1168,
     "durationSec": 36.8,
     "version": "9c37b25a"
+  },
+  "pengaturan-aplikasi": {
+    "mp4": "pengaturan-aplikasi.49252f80.mp4",
+    "poster": "pengaturan-aplikasi.49252f80.webp",
+    "vtt": {
+      "id": "pengaturan-aplikasi.31dc4495.id.vtt",
+      "en": "pengaturan-aplikasi.780d9710.en.vtt"
+    },
+    "chaptersVtt": {
+      "id": "pengaturan-aplikasi.d2405431.chapters.id.vtt",
+      "en": "pengaturan-aplikasi.664816c8.chapters.en.vtt"
+    },
+    "chapters": [
+      {
+        "step": "buka",
+        "start": 0,
+        "end": 9.2
+      },
+      {
+        "step": "profil",
+        "start": 9.2,
+        "end": 18.37
+      },
+      {
+        "step": "keamanan",
+        "start": 18.37,
+        "end": 31.81
+      },
+      {
+        "step": "perusahaan",
+        "start": 31.81,
+        "end": 38.55
+      },
+      {
+        "step": "rekening",
+        "start": 38.55,
+        "end": 46.39
+      },
+      {
+        "step": "invoice",
+        "start": 46.39,
+        "end": 55.37
+      },
+      {
+        "step": "notifikasi",
+        "start": 55.37,
+        "end": 66.8
+      },
+      {
+        "step": "cadangan",
+        "start": 66.8,
+        "end": 78.65
+      },
+      {
+        "step": "aplikasi",
+        "start": 78.65,
+        "end": 84.23
+      }
+    ],
+    "w": 1280,
+    "h": 1000,
+    "durationSec": 84.2,
+    "version": "49252f80"
   },
   "pengeluaran": {
     "mp4": "pengeluaran.0d7baa83.mp4",
