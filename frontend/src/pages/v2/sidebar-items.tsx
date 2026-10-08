@@ -35,6 +35,12 @@ import {
   UserPlus,
   Flag,
   MessageCircle,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Landmark,
+  Hourglass,
+  ShieldAlert,
+  PenLine,
 } from 'lucide-react';
 import type { SidebarSection } from '@/components/monomi/Sidebar';
 
@@ -121,7 +127,21 @@ export const v2SidebarSections: SidebarSection[] = [
     requiresAdmin: true,
     items: [
       { label: 'nav.journalEntries', icon: i(Book), href: '/accounting/journal-entries' },
-      { label: 'nav.cashBankBalance', icon: i(Wallet), href: '/accounting/cash-bank-balance' },
+      // Accrual adjusting entries (prepaid / unearned / accrued) — wizard that writes journals.
+      { label: 'nav.adjustingEntries', icon: i(PenLine), href: '/accounting/adjusting-entries' },
+      // Kas & Bank: balances, cash in/out documents, transfers and statement reconciliation.
+      {
+        label: 'nav.cashBank',
+        icon: i(Wallet),
+        href: '#cash-bank',
+        children: [
+          { label: 'nav.cashBankBalance', icon: i(Wallet), href: '/accounting/cash-bank-balance' },
+          { label: 'nav.cashReceipts', icon: i(ArrowDownLeft), href: '/accounting/cash-receipts' },
+          { label: 'nav.cashDisbursements', icon: i(ArrowUpRight), href: '/accounting/cash-disbursements' },
+          { label: 'nav.bankTransfers', icon: i(ArrowRightLeft), href: '/accounting/bank-transfers' },
+          { label: 'nav.bankReconciliations', icon: i(Landmark), href: '/accounting/bank-reconciliations' },
+        ],
+      },
       { label: 'nav.expenses', icon: i(CreditCard), href: '/expenses' },
       { label: 'nav.salaries', icon: i(Users), href: '/salaries' },
       // Penjualan (Sales): sales report (→ invoices, with +Penjualan) + receivables.
@@ -132,6 +152,8 @@ export const v2SidebarSections: SidebarSection[] = [
         children: [
           { label: 'nav.salesReport', icon: i(FileText), href: '/accounting/sales' },
           { label: 'nav.accountsReceivable', icon: i(Receipt), href: '/accounting/accounts-receivable' },
+          { label: 'nav.arAging', icon: i(Hourglass), href: '/accounting/ar-aging' },
+          { label: 'nav.eclProvision', icon: i(ShieldAlert), href: '/accounting/ecl-provisions' },
         ],
       },
       // Pembelian (Purchases): purchase report (PURCHASE journals, with +Pembelian) + payables.
@@ -142,6 +164,7 @@ export const v2SidebarSections: SidebarSection[] = [
         children: [
           { label: 'nav.purchaseReport', icon: i(FileText), href: '/accounting/purchases' },
           { label: 'nav.accountsPayable', icon: i(TrendingDown), href: '/accounting/accounts-payable' },
+          { label: 'nav.apAging', icon: i(Hourglass), href: '/accounting/ap-aging' },
         ],
       },
       // Laporan (Financial statements).

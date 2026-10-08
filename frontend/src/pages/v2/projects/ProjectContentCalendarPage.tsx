@@ -196,15 +196,11 @@ export default function ProjectContentCalendarPage() {
 
   const isLoading = projectLoading || contentLoading;
 
-  const items: ContentCalendarItem[] = useMemo(() => {
-    const raw = contentsResp as unknown as
-      | { data?: ContentCalendarItem[] | { data?: ContentCalendarItem[] } }
-      | undefined;
-    const inner = (raw as any)?.data;
-    if (Array.isArray(inner)) return inner;
-    if (Array.isArray(inner?.data)) return inner.data;
-    return [];
-  }, [contentsResp]);
+  // getContents() resolves to a plain array (the service unwraps the API envelope).
+  const items: ContentCalendarItem[] = useMemo(
+    () => (Array.isArray(contentsResp) ? contentsResp : []),
+    [contentsResp],
+  );
 
   /* ----- search (client-side) ----- */
   const filtered = useMemo(() => {

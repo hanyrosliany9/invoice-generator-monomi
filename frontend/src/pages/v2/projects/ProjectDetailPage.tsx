@@ -692,6 +692,14 @@ export default function ProjectDetailPageV2() {
                   <Calendar className="h-3.5 w-3.5" />
                   {t('projectDetail.newContentItem', 'New Content Item')}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/projects/${id}/calendar`)}>
+                  <CalendarRange className="h-3.5 w-3.5" />
+                  {t('projectDetail.projectCalendar', 'Project Calendar')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/projects/${id}/content-calendar`)}>
+                  <Images className="h-3.5 w-3.5" />
+                  {t('projectDetail.projectContentCalendar', 'Project Content Calendar')}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleDelete}
