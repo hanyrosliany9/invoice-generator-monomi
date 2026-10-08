@@ -1025,7 +1025,7 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
         <FieldShell
           id="si-inv-prefix"
           label={t('settingsPage.invoicing.invoicePrefix', 'Invoice Prefix')}
-          hint={t('settingsPage.invoicing.invoicePrefixHint', 'Example: INV- becomes INV-2026-001')}
+          hint={t('settingsPage.invoicing.invoicePrefixHint', 'Example: INV- becomes INV-202610-0001')}
           required
           error={errors.invoicePrefix?.message}
         >
@@ -1043,7 +1043,7 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
         <FieldShell
           id="si-qt-prefix"
           label={t('settingsPage.invoicing.quotationPrefix', 'Quotation Prefix')}
-          hint={t('settingsPage.invoicing.quotationPrefixHint', 'Example: QT- becomes QT-2026-001')}
+          hint={t('settingsPage.invoicing.quotationPrefixHint', 'Example: QT- becomes QT-202610-001')}
           required
           error={errors.quotationPrefix?.message}
         >

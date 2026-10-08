@@ -46,6 +46,7 @@ interface CashFlowTxn {
   id?: string;
   date: string;
   description: string;
+  descriptionId?: string | null;
   category?: string;
   cashIn?: number;
   cashOut?: number;
@@ -57,6 +58,9 @@ interface TxnRowProps {
 }
 
 const TxnRow = ({ txn, idLocale }: TxnRowProps) => {
+  const { i18n } = useTranslation();
+  // the ledger keeps an Indonesian description next to the English one; show it when the UI is Indonesian
+  const text = i18n.language?.startsWith('id') && txn.descriptionId ? txn.descriptionId : txn.description;
   const delta = (txn.cashIn || 0) - (txn.cashOut || 0);
   const isOutflow = delta < 0;
   return (
@@ -67,7 +71,7 @@ const TxnRow = ({ txn, idLocale }: TxnRowProps) => {
             {format(new Date(txn.date), 'd MMM yyyy', { locale: idLocale })}
           </span>
           <span className="text-sm text-text-secondary truncate">
-            {txn.description}
+            {text}
           </span>
         </div>
       </td>

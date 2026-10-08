@@ -218,7 +218,7 @@ export default function BankTransfersPage() {
   );
   const expenseAccounts = useMemo(
     () => (accounts as ChartOfAccount[]).filter(
-      (a) => a.accountType === 'EXPENSE' && a.accountSubType === 'BANK_CHARGES',
+      (a) => a.accountType === 'EXPENSE' && (a.accountSubType === 'BANK_CHARGES' || a.code === '6-2160'), // 6-2160 Biaya Bank is seeded as ADMIN_EXPENSE
     ),
     [accounts],
   );
