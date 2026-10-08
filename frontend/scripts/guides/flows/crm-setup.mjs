@@ -97,6 +97,13 @@ export async function run(ctx) {
   await tracking.scrollIntoViewIfNeeded();
   await page.evaluate(() => document.getElementById('tracking')?.scrollIntoView({ block: 'start' }));
   await sleep(500);
+  // The card builds the tag from window.location.origin (production: https://admin.monomiagency.com). The capture runs on
+  // localhost, so GUIDE_TRACK_ORIGIN swaps the displayed origin for the capture only; nothing in the app is changed.
+  if (process.env.GUIDE_TRACK_ORIGIN) {
+    await tracking.getByTestId('tracking-tag').evaluate((el, origin) => {
+      el.textContent = el.textContent.replace(window.location.origin, origin);
+    }, process.env.GUIDE_TRACK_ORIGIN);
+  }
   await shot(page, id('pelacakan-landing-page'), {
     highlights: [
       H(tracking.locator('dl'), { n: 1, pad: 6 }),

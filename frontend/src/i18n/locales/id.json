@@ -3542,8 +3542,8 @@
       "fieldBookBalanceEnd": "Saldo Buku Akhir",
       "fieldStatementBalance": "Saldo Bank Statement",
       "sectionAdjustments": "Item Penyesuaian",
-      "fieldDepositsInTransit": "Deposits in Transit",
-      "fieldOutstandingChecks": "Outstanding Checks",
+      "fieldDepositsInTransit": "Setoran dalam Perjalanan",
+      "fieldOutstandingChecks": "Cek Beredar",
       "fieldBankCharges": "Biaya Bank",
       "fieldBankInterest": "Bunga Bank",
       "fieldOtherAdjustments": "Penyesuaian Lainnya",
@@ -5009,9 +5009,9 @@
       "materaiThreshold": "Ambang Batas Materai (IDR)",
       "materaiThresholdHint": "Invoice di atas nilai ini akan menampilkan pengingat Materai.",
       "invoicePrefix": "Prefix Invoice",
-      "invoicePrefixHint": "Contoh: INV- menjadi INV-2026-001",
+      "invoicePrefixHint": "Contoh: INV- menjadi INV-202610-0001",
       "quotationPrefix": "Prefix Penawaran",
-      "quotationPrefixHint": "Contoh: QT- menjadi QT-2026-001",
+      "quotationPrefixHint": "Contoh: QT- menjadi QT-202610-001",
       "autoMateraiReminder": "Pengingat Materai Otomatis",
       "autoMateraiReminderHint": "Tampilkan pengingat saat total invoice lebih dari Rp 5.000.000.",
       "saveLabel": "Simpan Invoice",
@@ -10161,7 +10161,7 @@
           },
           "invoice": {
             "title": "Invoice dan penomoran (khusus admin)",
-            "body": "Pilih Termin Pembayaran Default (1): NET 7, 14, 30, atau 60 hari. Ambang Batas Materai (2) hanya menampilkan aturan hukum: lebih dari Rp 5.000.000, dan tidak dapat diubah. Prefix Invoice (3) dan Prefix Penawaran (4) ditempel di depan nomor dokumen, misalnya INV- menjadi INV-202610-0122 (prefix, tahun dan bulan, nomor urut). Saklar Pengingat Materai Otomatis (5) mengatur pengingat materai.",
+            "body": "Pilih Termin Pembayaran Default (1): NET 7, 14, 30, atau 60 hari. Ambang Batas Materai (2) hanya menampilkan aturan hukum: lebih dari Rp 5.000.000, dan tidak dapat diubah. Prefix Invoice (3) dan Prefix Penawaran (4) ditempel di depan nomor dokumen, misalnya INV- menjadi INV-202610-0001 (prefix, tahun dan bulan, nomor urut). Saklar Pengingat Materai Otomatis (5) mengatur pengingat materai.",
             "tip": "Aturan materai ditetapkan hukum: total lebih dari Rp 5.000.000, bukan sama dengan, pada form invoice dan penawaran. Ganti prefix hanya bila sungguh perlu, karena nomor lama tidak berubah."
           },
           "notifikasi": {
@@ -10376,17 +10376,17 @@
           },
           "kas-masuk-keluar": {
             "title": "Penerimaan dan pengeluaran kas",
-            "body": "Menu Akuntansi, Kas & Bank, Penerimaan Kas (uang masuk) atau Pengeluaran Kas (uang keluar). Klik Penerimaan Baru atau Pengeluaran Baru, lalu isi tanggal, jumlah, akun kas atau bank, akun lawan (sumber pendapatan atau jenis biaya), deskripsi, serta kategori arus kas dan metode pembayaran bila perlu. Klik Simpan sebagai draft. Draft muncul di daftar; lewat menu baris klik Ajukan lalu Setujui, dan jurnalnya terposting. Void membalik transaksi yang sudah diposting.",
+            "body": "Menu Akuntansi, Kas & Bank, Penerimaan Kas (uang masuk) atau Pengeluaran Kas (uang keluar). Klik Penerimaan Baru atau Pengeluaran Baru, lalu isi tanggal dan jumlah (1), akun kas atau bank tempat uang diterima atau dibayar (2), dan akun lawan (3), yaitu sumber pendapatan atau jenis biaya. Tambahkan deskripsi, serta kategori arus kas dan metode pembayaran bila perlu. Klik Simpan sebagai draft (4). Draft muncul di daftar; lewat menu baris klik Ajukan lalu Setujui, dan jurnalnya terposting. Void membalik transaksi yang sudah diposting.",
             "tip": "Belum ada yang masuk ke buku besar sebelum transaksi disetujui. Draft masih bisa dihapus."
           },
           "transfer-bank": {
             "title": "Transfer bank",
-            "body": "Menu Akuntansi, Kas & Bank, Transfer Bank. Klik Transfer Baru, pilih akun asal dan akun tujuan (harus berbeda), jumlah, deskripsi, dan metode transfer, lalu tambahkan biaya transfer beserta akun bebannya bila bank memungut biaya. Klik Buat Transfer: statusnya awalnya Tertunda. Lewat menu baris, klik Setujui untuk memposting jurnalnya, atau Tolak / Batalkan.",
+            "body": "Menu Akuntansi, Kas & Bank, Transfer Bank. Klik Transfer Baru, lalu pilih akun asal (1) dan akun tujuan (2), yang harus berbeda. Isi jumlah (3) dan metode transfer. Bila bank memungut biaya, isi biaya transfer (4) dan pilih akun bebannya, Biaya Bank. Tambahkan deskripsi, lalu klik Buat Transfer (5): statusnya awalnya Tertunda. Lewat menu baris, klik Setujui untuk memposting jurnalnya, atau Tolak / Batalkan.",
             "tip": "Kedua akun harus akun kas atau bank (kode 1-101x dan 1-102x)."
           },
           "rekonsiliasi-bank": {
             "title": "Rekonsiliasi bank",
-            "body": "Menu Akuntansi, Kas & Bank, Rekonsiliasi Bank. Klik Rekonsiliasi Baru, pilih rekening bank, tanggal rekening koran dan periodenya, lalu isi saldo buku dan saldo rekening koran, ditambah setoran dalam perjalanan, cek beredar, biaya bank, dan bunga. Dialog menampilkan saldo penyesuaian dan selisihnya. Tombol Buat Rekonsiliasi baru aktif bila selisih nol. Setelah itu, lewat menu baris, kirim untuk Review, lalu Setujui atau Tolak.",
+            "body": "Menu Akuntansi, Kas & Bank, Rekonsiliasi Bank. Klik Rekonsiliasi Baru, pilih rekening bank (1), tanggal rekening koran dan periodenya, lalu isi saldo buku akhir dan saldo rekening koran (2). Tambahkan item penyesuaian (3): setoran dalam perjalanan, cek beredar, biaya bank, dan bunga bank. Kotak Hasil Perhitungan (4) menampilkan saldo penyesuaian dan selisihnya. Tombol Buat Rekonsiliasi (5) baru aktif bila selisih nol. Setelah itu, lewat menu baris, kirim untuk Review, lalu Setujui atau Tolak.",
             "tip": "Selisih yang tidak nol berarti ada yang belum tercatat di pembukuan atau di rekening koran. Cari dulu sebelum menyimpan."
           }
         }

@@ -223,6 +223,11 @@ async function seedLandingLeads(ids) {
   });
   await landingTap({ ref: ids.refs.linked, verified: false, ip: '203.0.113.24', metaCampaignId: m1, metaAdId: '120210200000001', meta: { instagram: '@glowskin.id', brandName: 'Glow Skincare', category: 'Skincare' } });
   await api('POST', `/crm/leads/${ids.lead.rina}/ad-click`, { code: ids.refs.linked });
+  // visitors who only looked at the page and never tapped WhatsApp: real traffic always has more visits than taps
+  for (const [i, ip] of ['203.0.113.31', '203.0.113.32', '203.0.113.33', '203.0.113.34'].entries()) {
+    const visitId = `${DEMO_VISIT_PREFIX}browse${Date.now().toString(36)}${i}`;
+    await trackEvent({ name: 'PageView', visitId, eventId: `${visitId}-pv`, pageUrl: LANDING, utm: {} }, ip);
+  }
   const leads = (await api('GET', '/crm/leads?awaiting=true')).items ?? [];
   ids.waiting = {
     form: leads.find((l) => /Dapur Nara/.test(l.name))?.id,

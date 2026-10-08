@@ -48,6 +48,7 @@ node capture.mjs                  # all guides
 | `GUIDE_DATABASE_URL` | `postgresql://invoiceuser:devpassword@localhost:5438/invoices` | used by seed (thumbnails) and cleanup |
 | `GUIDE_DEBUG_DIR` | none | on failure, save a screenshot of every open page here |
 | `GUIDE_IDS_OUT` | none | write the seeded ids to this JSON file |
+| `GUIDE_TRACK_ORIGIN` | none | `crm-setup` only: replaces the localhost origin shown in the landing-page script tag (the card builds it from `window.location.origin`), e.g. `https://admin.monomiagency.com`. Capture-only, the app is untouched |
 
 `GUIDE_ONLY="slug/step,slug/step"` writes only those images (every other `shot()` is skipped, the flow still runs), so a
 few outdated pictures can be refreshed without rewriting the rest; `slug/*` selects a whole guide.
@@ -75,7 +76,7 @@ run, handy while writing a flow), `--clean-only`.
 | `crm-settings` | crm-pengaturan (/crm/settings: response target, stage rename / colour / order / switch / new stage, Meta events). It edits the settings through the UI and puts the stage rows and the target back in `finally`. Standalone |
 | `calendar` | kalender-proyek (/calendar and a project's calendar with a demo event) |
 | `reports-misc` | laporan-bisnis (/reports, the monthly business report, the four system reports) and analitik-milestone (/milestones; `seed-extra.mjs` adds a quotation with DP 30% / Pelunasan 70% terms, the first stage invoiced and paid) |
-| `accounting-adv` | akuntansi-lanjutan (general ledger, trial balance, cash flow, receivables / payables aging, purchase report, adjusting entry wizard, ECL dialog; `seed-extra.mjs` adds opening capital and three purchases). Read-only: the ECL dialog is cancelled |
+| `accounting-adv` | akuntansi-lanjutan (general ledger, trial balance, cash flow, receivables / payables aging, purchase report, adjusting entry wizard, ECL dialog; `seed-extra.mjs` adds opening capital and three purchases). plus the three Kas & Bank dialogs (new cash receipt, bank transfer, bank reconciliation: filled in, never saved). Read-only: every dialog is cancelled |
 
 Staff logins are rate limited (5 per minute), so the capture signs in once through the UI
 and reuses that session (`storageState`) for every browser context. The sign-in runs in its own unrecorded context
@@ -86,6 +87,8 @@ optimising dependencies (or the lazily loaded login page remounting) throws the 
 when its data arrives is also why long flows use `fillStable()` (lib.mjs) for the first field of a form. Wide screens
 (financial reports, deck editor) are captured at 1440 or 1920 px so nothing is clipped;
 everything else is 1280 px.
+
+Screenshots of `/accounting/...` pages scroll the sidebar to the Akuntansi section and open "Kas & Bank" first (`showAccountingSidebar` in `lib.mjs`), so the menu in the picture is the current one.
 
 ## CRM / WhatsApp / auto-publishing guides
 

@@ -80,62 +80,77 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "version": "b374952d"
   },
   "akuntansi-lanjutan": {
-    "mp4": "akuntansi-lanjutan.9f629449.mp4",
-    "poster": "akuntansi-lanjutan.9f629449.webp",
+    "mp4": "akuntansi-lanjutan.e81456fa.mp4",
+    "poster": "akuntansi-lanjutan.e81456fa.webp",
     "vtt": {
-      "id": "akuntansi-lanjutan.d9ced412.id.vtt",
-      "en": "akuntansi-lanjutan.b1c177d0.en.vtt"
+      "id": "akuntansi-lanjutan.bd54ac5a.id.vtt",
+      "en": "akuntansi-lanjutan.60b9692c.en.vtt"
     },
     "chaptersVtt": {
-      "id": "akuntansi-lanjutan.a4ca56fa.chapters.id.vtt",
-      "en": "akuntansi-lanjutan.a323d30e.chapters.en.vtt"
+      "id": "akuntansi-lanjutan.eb763793.chapters.id.vtt",
+      "en": "akuntansi-lanjutan.ed000361.chapters.en.vtt"
     },
     "chapters": [
       {
         "step": "buku-besar",
         "start": 0,
-        "end": 9.23
+        "end": 9.82
       },
       {
         "step": "neraca-saldo",
-        "start": 9.23,
-        "end": 21.67
+        "start": 9.82,
+        "end": 22.26
       },
       {
         "step": "arus-kas",
-        "start": 21.67,
-        "end": 28.6
+        "start": 22.26,
+        "end": 29.82
       },
       {
         "step": "aging-piutang",
-        "start": 28.6,
-        "end": 38.36
+        "start": 29.82,
+        "end": 42.39
       },
       {
         "step": "aging-hutang",
-        "start": 38.36,
-        "end": 45.19
+        "start": 42.39,
+        "end": 49.83
       },
       {
         "step": "laporan-pembelian",
-        "start": 45.19,
-        "end": 57.63
+        "start": 49.83,
+        "end": 62.29
       },
       {
         "step": "jurnal-penyesuaian",
-        "start": 57.63,
-        "end": 67.76
+        "start": 62.29,
+        "end": 72.43
       },
       {
         "step": "ecl",
-        "start": 67.76,
-        "end": 81
+        "start": 72.43,
+        "end": 85
+      },
+      {
+        "step": "kas-masuk-keluar",
+        "start": 85,
+        "end": 113.79
+      },
+      {
+        "step": "transfer-bank",
+        "start": 113.79,
+        "end": 152.54
+      },
+      {
+        "step": "rekonsiliasi-bank",
+        "start": 152.58,
+        "end": 198.57
       }
     ],
     "w": 1280,
     "h": 888,
-    "durationSec": 81,
-    "version": "9f629449"
+    "durationSec": 198.6,
+    "version": "e81456fa"
   },
   "analitik-milestone": {
     "mp4": "analitik-milestone.9523dc78.mp4",
@@ -501,62 +516,62 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "version": "daa4e56c"
   },
   "crm-whatsapp-setup": {
-    "mp4": "crm-whatsapp-setup.a1f881bc.mp4",
-    "poster": "crm-whatsapp-setup.a1f881bc.webp",
+    "mp4": "crm-whatsapp-setup.b55206b9.mp4",
+    "poster": "crm-whatsapp-setup.b55206b9.webp",
     "vtt": {
-      "id": "crm-whatsapp-setup.d9946e21.id.vtt",
-      "en": "crm-whatsapp-setup.1b5bb818.en.vtt"
+      "id": "crm-whatsapp-setup.e29fcfd1.id.vtt",
+      "en": "crm-whatsapp-setup.8d2baa61.en.vtt"
     },
     "chaptersVtt": {
-      "id": "crm-whatsapp-setup.7e7116a3.chapters.id.vtt",
-      "en": "crm-whatsapp-setup.389ad04d.chapters.en.vtt"
+      "id": "crm-whatsapp-setup.7f1c988b.chapters.id.vtt",
+      "en": "crm-whatsapp-setup.f76c4626.chapters.en.vtt"
     },
     "chapters": [
       {
         "step": "aturan-keselamatan",
         "start": 0,
-        "end": 10.51
+        "end": 10.5
       },
       {
         "step": "lokasi-token",
-        "start": 10.55,
-        "end": 19.85
+        "start": 10.54,
+        "end": 19.81
       },
       {
         "step": "kartu-status",
-        "start": 19.89,
-        "end": 28.71
+        "start": 19.85,
+        "end": 28.67
       },
       {
         "step": "webhook",
-        "start": 28.75,
-        "end": 40.82
+        "start": 28.71,
+        "end": 40.77
       },
       {
         "step": "capi",
-        "start": 40.82,
-        "end": 49.03
+        "start": 40.77,
+        "end": 48.99
       },
       {
         "step": "hubungkan",
-        "start": 49.03,
-        "end": 59
+        "start": 48.99,
+        "end": 58.93
       },
       {
         "step": "pelacakan-landing-page",
-        "start": 59,
-        "end": 68.94
+        "start": 58.93,
+        "end": 68.86
       },
       {
         "step": "sinkronisasi-meta-ads",
-        "start": 68.94,
-        "end": 78.83
+        "start": 68.86,
+        "end": 78.73
       }
     ],
     "w": 1280,
     "h": 800,
-    "durationSec": 78.8,
-    "version": "a1f881bc"
+    "durationSec": 78.7,
+    "version": "b55206b9"
   },
   "dashboard-navigasi": {
     "mp4": "dashboard-navigasi.ad84b00a.mp4",
@@ -1446,15 +1461,15 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
     "version": "9c37b25a"
   },
   "pengaturan-aplikasi": {
-    "mp4": "pengaturan-aplikasi.49252f80.mp4",
-    "poster": "pengaturan-aplikasi.49252f80.webp",
+    "mp4": "pengaturan-aplikasi.4a1f6747.mp4",
+    "poster": "pengaturan-aplikasi.4a1f6747.webp",
     "vtt": {
-      "id": "pengaturan-aplikasi.31dc4495.id.vtt",
-      "en": "pengaturan-aplikasi.780d9710.en.vtt"
+      "id": "pengaturan-aplikasi.d8b66f11.id.vtt",
+      "en": "pengaturan-aplikasi.d958197a.en.vtt"
     },
     "chaptersVtt": {
-      "id": "pengaturan-aplikasi.d2405431.chapters.id.vtt",
-      "en": "pengaturan-aplikasi.664816c8.chapters.en.vtt"
+      "id": "pengaturan-aplikasi.38e29558.chapters.id.vtt",
+      "en": "pengaturan-aplikasi.4b7a8834.chapters.en.vtt"
     },
     "chapters": [
       {
@@ -1465,48 +1480,48 @@ export const guideVideoManifest: Partial<Record<string, GuideVideo>> = {
       {
         "step": "profil",
         "start": 9.2,
-        "end": 18.37
+        "end": 18.36
       },
       {
         "step": "keamanan",
-        "start": 18.37,
-        "end": 31.81
+        "start": 18.36,
+        "end": 31.92
       },
       {
         "step": "perusahaan",
-        "start": 31.81,
-        "end": 38.55
+        "start": 31.92,
+        "end": 38.66
       },
       {
         "step": "rekening",
-        "start": 38.55,
-        "end": 46.39
+        "start": 38.66,
+        "end": 46.49
       },
       {
         "step": "invoice",
-        "start": 46.39,
-        "end": 55.37
+        "start": 46.49,
+        "end": 56.15
       },
       {
         "step": "notifikasi",
-        "start": 55.37,
-        "end": 66.8
+        "start": 56.15,
+        "end": 67.63
       },
       {
         "step": "cadangan",
-        "start": 66.8,
-        "end": 78.65
+        "start": 67.63,
+        "end": 79.53
       },
       {
         "step": "aplikasi",
-        "start": 78.65,
-        "end": 84.23
+        "start": 79.53,
+        "end": 85.17
       }
     ],
     "w": 1280,
     "h": 1000,
-    "durationSec": 84.2,
-    "version": "49252f80"
+    "durationSec": 85.2,
+    "version": "4a1f6747"
   },
   "pengeluaran": {
     "mp4": "pengeluaran.0d7baa83.mp4",

@@ -52,11 +52,23 @@ export const guideImageManifest: Partial<Record<string, { w: number; h: number }
     "w": 1440,
     "h": 1000
   },
+  "akuntansi-lanjutan/kas-masuk-keluar": {
+    "w": 1440,
+    "h": 1000
+  },
   "akuntansi-lanjutan/laporan-pembelian": {
     "w": 1440,
     "h": 1000
   },
   "akuntansi-lanjutan/neraca-saldo": {
+    "w": 1440,
+    "h": 1000
+  },
+  "akuntansi-lanjutan/rekonsiliasi-bank": {
+    "w": 1440,
+    "h": 1500
+  },
+  "akuntansi-lanjutan/transfer-bank": {
     "w": 1440,
     "h": 1000
   },

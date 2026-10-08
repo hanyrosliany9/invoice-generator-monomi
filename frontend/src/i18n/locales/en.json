@@ -4919,9 +4919,9 @@
       "materaiThreshold": "Materai Threshold (IDR)",
       "materaiThresholdHint": "Invoices above this amount will show a Materai reminder.",
       "invoicePrefix": "Invoice Prefix",
-      "invoicePrefixHint": "Example: INV- becomes INV-2026-001",
+      "invoicePrefixHint": "Example: INV- becomes INV-202610-0001",
       "quotationPrefix": "Quotation Prefix",
-      "quotationPrefixHint": "Example: QT- becomes QT-2026-001",
+      "quotationPrefixHint": "Example: QT- becomes QT-202610-001",
       "autoMateraiReminder": "Auto Materai Reminder",
       "autoMateraiReminderHint": "Show a reminder when an invoice total is more than Rp 5.000.000.",
       "saveLabel": "Save Invoicing",
@@ -10162,7 +10162,7 @@
           },
           "invoice": {
             "title": "Invoicing and numbering (admin only)",
-            "body": "Choose the Termin Pembayaran Default (default payment terms) (1): NET 7, 14, 30 or 60 days. Ambang Batas Materai (stamp duty threshold) (2) is a read-only line showing the legal rule: more than Rp 5.000.000. Prefix Invoice (3) and Prefix Penawaran (quotation prefix) (4) are put in front of document numbers, for example INV- becomes INV-202610-0122 (prefix, year and month, running number). The Pengingat Materai Otomatis (automatic stamp duty reminder) switch (5) controls the stamp duty reminder.",
+            "body": "Choose the Termin Pembayaran Default (default payment terms) (1): NET 7, 14, 30 or 60 days. Ambang Batas Materai (stamp duty threshold) (2) is a read-only line showing the legal rule: more than Rp 5.000.000. Prefix Invoice (3) and Prefix Penawaran (quotation prefix) (4) are put in front of document numbers, for example INV- becomes INV-202610-0001 (prefix, year and month, running number). The Pengingat Materai Otomatis (automatic stamp duty reminder) switch (5) controls the stamp duty reminder.",
             "tip": "The stamp duty rule is fixed by law: a total of more than Rp 5.000.000, not equal to it, on the invoice and quotation forms. Change a prefix only when really needed, because old numbers do not change."
           },
           "notifikasi": {
@@ -10377,17 +10377,17 @@
           },
           "kas-masuk-keluar": {
             "title": "Cash receipts and disbursements",
-            "body": "Menu Akuntansi, Kas & Bank, Penerimaan Kas (money in) or Pengeluaran Kas (money out). Click Penerimaan Baru or Pengeluaran Baru and fill in the date, the amount, the cash or bank account, the offset account (the revenue source or the expense), a description and optionally the cash flow category and payment method. Click Simpan sebagai draft. The draft appears in the list; use the row menu to Ajukan (submit) it and then Setujui (approve), which posts the journal. Void reverses a posted one.",
+            "body": "Menu Akuntansi, Kas & Bank, Penerimaan Kas (money in) or Pengeluaran Kas (money out). Click Penerimaan Baru or Pengeluaran Baru, then fill in the date and the amount (1), the cash or bank account the money goes into or comes from (2), and the offset account (3), which is the revenue source or the expense. Add a description and, if needed, the cash flow category and payment method. Click Simpan sebagai draft (4). The draft appears in the list; use the row menu to Ajukan (submit) it and then Setujui (approve), which posts the journal. Void reverses a posted one.",
             "tip": "Nothing hits the ledger until the transaction is approved. A draft can still be deleted."
           },
           "transfer-bank": {
             "title": "Bank transfers",
-            "body": "Menu Akuntansi, Kas & Bank, Transfer Bank. Click Transfer Baru, choose the source and destination accounts (they must differ), the amount, a description and the transfer method, and add a fee with its expense account if the bank charged one. Click Buat Transfer: it starts as Tertunda (pending). Use the row menu to Setujui (approve) it, which posts the journal, or Tolak / Batalkan it.",
+            "body": "Menu Akuntansi, Kas & Bank, Transfer Bank. Click Transfer Baru, then choose the source account (1) and the destination account (2), which must differ. Enter the amount (3) and the transfer method. If the bank charged a fee, enter the transfer fee (4) and choose its expense account, Biaya Bank. Add a description, then click Buat Transfer (5): it starts as Tertunda (pending). Use the row menu to Setujui (approve) it, which posts the journal, or Tolak / Batalkan it.",
             "tip": "Both accounts must be cash or bank accounts (codes 1-101x and 1-102x)."
           },
           "rekonsiliasi-bank": {
             "title": "Bank reconciliation",
-            "body": "Menu Akuntansi, Kas & Bank, Rekonsiliasi Bank. Click Rekonsiliasi Baru, choose the bank account, the statement date and the period, then enter the book balance and the bank statement balance, plus deposits in transit, outstanding checks, bank charges and interest. The dialog shows the adjusted balances and the difference. Buat Rekonsiliasi only becomes active when the difference is zero. Afterwards use the row menu to send it for Review, then Setujui (approve) or Tolak.",
+            "body": "Menu Akuntansi, Kas & Bank, Rekonsiliasi Bank. Click Rekonsiliasi Baru, choose the bank account (1), the statement date and the period, then enter the closing book balance and the bank statement balance (2). Add the adjustment items (3): deposits in transit, outstanding checks, bank charges and bank interest. The Hasil Perhitungan box (4) shows the adjusted balances and the difference. Buat Rekonsiliasi (5) only becomes active when the difference is zero. Afterwards use the row menu to send it for Review, then Setujui (approve) or Tolak.",
             "tip": "A non-zero difference means something is missing from the books or from the statement. Find it before saving."
           }
         }

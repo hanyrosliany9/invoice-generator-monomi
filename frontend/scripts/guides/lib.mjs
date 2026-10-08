@@ -217,6 +217,25 @@ export async function clearHighlight(page) {
 const ONLY = (process.env.GUIDE_ONLY || '').split(',').map((x) => x.trim()).filter(Boolean);
 export const wantShot = (id) => ONLY.length === 0 || ONLY.includes(id) || ONLY.includes(id.split('/')[0] + '/*');
 
+/**
+ * Scroll the staff sidebar to the Akuntansi section and open the "Kas & Bank" group, so accounting screenshots show the
+ * current menu (the section sits below the fold of a 1000 px page). Safe to call twice; a page without the sidebar is left alone.
+ */
+export async function showAccountingSidebar(page) {
+  await page.evaluate(() => {
+    const nav = document.querySelector('aside nav.aside-nav-v2');
+    const group = nav && [...nav.querySelectorAll('button[aria-expanded]')].find((b) => /Kas & Bank/.test(b.textContent || ''));
+    if (group && group.getAttribute('aria-expanded') === 'false') group.click();
+  }).catch(() => {});
+  await sleep(300);
+  await page.evaluate(() => {
+    const nav = document.querySelector('aside nav.aside-nav-v2');
+    const head = nav && [...nav.querySelectorAll('*')].find((e) => e.children.length === 0 && /^akuntansi$/i.test((e.textContent || '').trim()));
+    if (nav && head) nav.scrollTop += head.getBoundingClientRect().top - nav.getBoundingClientRect().top - 8;
+  }).catch(() => {});
+  await sleep(300);
+}
+
 export async function shot(page, id, { highlights = [], fullPage = false, quality = 72, keepToasts = false } = {}) {
   if (!wantShot(id)) return null;
   // Toasts are transient noise in a guide, unless the step is about one.
@@ -230,6 +249,7 @@ export async function shot(page, id, { highlights = [], fullPage = false, qualit
       document.head.append(st);
     }
   }, !keepToasts);
+  if (/\/accounting\//.test(page.url())) await showAccountingSidebar(page);
   if (highlights.length > 0) await highlight(page, highlights);
   await sleep(150);
   const png = await page.screenshot({ type: 'png', fullPage });

@@ -81,7 +81,7 @@ export async function run(ctx) {
   await shot(page, id('invoice'), {
     highlights: [
       H(page.getByLabel(/^Termin Pembayaran Default/), { n: 1, pad: 4, scroll: false }),
-      H(page.getByLabel(/^Ambang Batas Materai \(IDR\)/), { n: 2, pad: 4, scroll: false }),
+      H(page.getByTestId('materai-rule'),{ n: 2, pad: 4, scroll: false }),
       H(page.getByLabel(/^Prefix Invoice/), { n: 3, pad: 4, scroll: false }),
       H(page.getByLabel(/^Prefix Penawaran/), { n: 4, pad: 4, scroll: false }),
       H(page.getByRole('switch').first(), { n: 5, pad: 4, scroll: false }),
