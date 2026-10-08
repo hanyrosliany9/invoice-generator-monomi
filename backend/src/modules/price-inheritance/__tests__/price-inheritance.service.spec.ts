@@ -422,7 +422,8 @@ describe("PriceInheritanceService", () => {
       // Test different materai thresholds
       const testCases = [
         { amount: 3000000, expectedMaterai: 0 }, // Below threshold
-        { amount: 5000000, expectedMaterai: 10000 }, // At threshold
+        { amount: 5000000, expectedMaterai: 0 }, // Exactly at the threshold: strictly more than 5.000.000 is required
+        { amount: 5000001, expectedMaterai: 10000 }, // One rupiah above the threshold
         { amount: 50000000, expectedMaterai: 10000 }, // Normal range
         { amount: 1000000000, expectedMaterai: 20000 }, // High value
         { amount: 2000000000, expectedMaterai: 20000 }, // Very high value
