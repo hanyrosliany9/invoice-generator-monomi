@@ -130,7 +130,9 @@ export class BankReconciliationService {
   /**
    * Create bank reconciliation
    */
-  async createBankReconciliation(createDto: CreateBankReconciliationDto) {
+  async createBankReconciliation(
+    createDto: CreateBankReconciliationDto & { createdBy: string },
+  ) {
     // Validate bank account
     await this.validateBankAccount(createDto.bankAccountId);
 

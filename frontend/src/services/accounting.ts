@@ -1,5 +1,7 @@
 import { apiClient } from '../config/api';
 
+import type { CashCategory } from '@/components/accounting/cashCategories';
+
 export interface ChartOfAccount {
   id: string;
   code: string;
@@ -1020,7 +1022,7 @@ export interface CashTransaction {
   id: string;
   transactionNumber: string;
   transactionType: 'RECEIPT' | 'DISBURSEMENT';
-  category: 'OPERATING' | 'INVESTING' | 'FINANCING';
+  category: CashCategory;
   transactionDate: string;
   amount: number;
   cashAccountId: string;
@@ -1039,7 +1041,7 @@ export interface CashTransaction {
   descriptionId?: string;
   descriptionEn?: string;
   reference?: string;
-  paymentMethod: 'CASH' | 'BANK_TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CHEQUE' | 'E_WALLET' | 'OTHER';
+  paymentMethod: 'CASH' | 'BANK_TRANSFER' | 'OTHER';
   checkNumber?: string;
   bankReference?: string;
   projectId?: string;
@@ -1061,7 +1063,7 @@ export interface CashTransaction {
 
 export const createCashTransaction = async (data: {
   transactionType: 'RECEIPT' | 'DISBURSEMENT';
-  category: 'OPERATING' | 'INVESTING' | 'FINANCING';
+  category: CashCategory;
   transactionDate: string;
   amount: number;
   cashAccountId: string;
@@ -1070,12 +1072,11 @@ export const createCashTransaction = async (data: {
   descriptionId?: string;
   descriptionEn?: string;
   reference?: string;
-  paymentMethod?: 'CASH' | 'BANK_TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'CHEQUE' | 'E_WALLET' | 'OTHER';
+  paymentMethod?: 'CASH' | 'BANK_TRANSFER' | 'OTHER';
   checkNumber?: string;
   bankReference?: string;
   projectId?: string;
   clientId?: string;
-  status?: 'DRAFT' | 'SUBMITTED';
   notes?: string;
   notesId?: string;
 }): Promise<CashTransaction> => {
@@ -1089,7 +1090,7 @@ export const getCashTransactions = async (params?: {
   startDate?: string;
   endDate?: string;
   transactionType?: 'RECEIPT' | 'DISBURSEMENT';
-  category?: 'OPERATING' | 'INVESTING' | 'FINANCING';
+  category?: CashCategory;
   status?: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'POSTED' | 'VOID';
   cashAccountId?: string;
   offsetAccountId?: string;
@@ -1108,7 +1109,8 @@ export const getCashTransactions = async (params?: {
   };
 }> => {
   const response = await apiClient.get('/accounting/cash-transactions', { params });
-  return response.data.data;
+  // Paginated lists are returned as { data, pagination } without the ApiResponse envelope.
+  return response.data;
 };
 
 export const getCashTransaction = async (id: string): Promise<CashTransaction> => {
@@ -1215,7 +1217,6 @@ export const createBankTransfer = async (data: {
   confirmationCode?: string;
   projectId?: string;
   clientId?: string;
-  status?: 'PENDING';
   notes?: string;
   notesId?: string;
 }): Promise<BankTransfer> => {
@@ -1247,7 +1248,8 @@ export const getBankTransfers = async (params?: {
   };
 }> => {
   const response = await apiClient.get('/accounting/bank-transfers', { params });
-  return response.data.data;
+  // Paginated lists are returned as { data, pagination } without the ApiResponse envelope.
+  return response.data;
 };
 
 export const getBankTransfer = async (id: string): Promise<BankTransfer> => {
@@ -1400,7 +1402,8 @@ export const getBankReconciliations = async (params?: {
   };
 }> => {
   const response = await apiClient.get('/accounting/bank-reconciliations', { params });
-  return response.data.data;
+  // Paginated lists are returned as { data, pagination } without the ApiResponse envelope.
+  return response.data;
 };
 
 export const getBankReconciliation = async (id: string): Promise<BankReconciliation> => {

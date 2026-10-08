@@ -36,6 +36,8 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { CashTransactionFormDialog } from '@/components/accounting/CashTransactionFormDialog';
+import { CATEGORY_LABEL_FALLBACK, CATEGORY_LABEL_KEY, RECEIPT_CATEGORIES } from '@/components/accounting/cashCategories';
 import { useAuthStore } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
@@ -84,14 +86,6 @@ const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['v
   VOID:      'outline',
 };
 
-const CATEGORY_LABEL_KEY: Record<string, string> = {
-  OPERATING: 'accounting.cashReceipts.categoryOperating',
-  INVESTING:  'accounting.cashReceipts.categoryInvesting',
-  FINANCING:  'accounting.cashReceipts.categoryFinancing',
-};
-const CATEGORY_LABEL_FALLBACK: Record<string, string> = {
-  OPERATING: 'Operating', INVESTING: 'Investing', FINANCING: 'Financing',
-};
 
 const PAYMENT_METHOD_LABEL_KEY: Record<string, string> = {
   CASH:          'accounting.cashReceipts.paymentCash',
@@ -186,6 +180,7 @@ export default function CashReceiptsPageV2() {
 
   /* ----- view dialog ----- */
   const [viewing, setViewing] = useState<CashTransaction | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   /* ----- API queries ----- */
   const queryParams = useMemo(() => ({
@@ -308,7 +303,7 @@ export default function CashReceiptsPageV2() {
               <Wallet className="h-4 w-4" />
               {t('accounting.cashReceipts.cashBalance', 'Cash Balance')}
             </Button>
-            <Button onClick={() => navigate('/accounting/cash-receipts')} size="sm">
+            <Button onClick={() => setCreateOpen(true)} size="sm">
               <Plus className="h-4 w-4" />
               {t('accounting.cashReceipts.newReceipt', 'New Receipt')}
             </Button>
@@ -406,9 +401,9 @@ export default function CashReceiptsPageV2() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('accounting.cashReceipts.allCategories', 'All Categories')}</SelectItem>
-                  <SelectItem value="OPERATING">{t('accounting.cashReceipts.categoryOperating', 'Operating')}</SelectItem>
-                  <SelectItem value="INVESTING">{t('accounting.cashReceipts.categoryInvesting', 'Investing')}</SelectItem>
-                  <SelectItem value="FINANCING">{t('accounting.cashReceipts.categoryFinancing', 'Financing')}</SelectItem>
+                  {RECEIPT_CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>{t(CATEGORY_LABEL_KEY[c], CATEGORY_LABEL_FALLBACK[c])}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -496,7 +491,7 @@ export default function CashReceiptsPageV2() {
               hasActiveFilters ? (
                 <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.cashReceipts.resetFilter', 'Reset Filters')}</Button>
               ) : (
-                <Button onClick={() => navigate('/accounting/cash-receipts')} size="sm">
+                <Button onClick={() => setCreateOpen(true)} size="sm">
                   <Plus className="h-4 w-4" />
                   {t('accounting.cashReceipts.newReceipt', 'New Receipt')}
                 </Button>
@@ -582,6 +577,7 @@ export default function CashReceiptsPageV2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CashTransactionFormDialog open={createOpen} onOpenChange={setCreateOpen} type="RECEIPT" />
     </PageShell>
   );
 }

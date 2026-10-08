@@ -35,6 +35,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { toLocalISODate } from '@/utils/date';
 import { useAuthStore } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
@@ -298,9 +299,9 @@ export default function BankReconciliationsPage() {
     }
     createMutation.mutate({
       bankAccountId:       form.bankAccountId,
-      statementDate:       form.statementDate.toISOString(),
-      periodStartDate:     form.periodStartDate.toISOString(),
-      periodEndDate:       form.periodEndDate.toISOString(),
+      statementDate:       toLocalISODate(form.statementDate),
+      periodStartDate:     toLocalISODate(form.periodStartDate),
+      periodEndDate:       toLocalISODate(form.periodEndDate),
       statementReference:  form.statementReference || undefined,
       bookBalanceStart:    parseFloat(form.bookBalanceStart) || 0,
       bookBalanceEnd:      parseFloat(form.bookBalanceEnd),

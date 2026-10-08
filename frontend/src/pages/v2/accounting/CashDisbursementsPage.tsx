@@ -36,6 +36,8 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { CashTransactionFormDialog } from '@/components/accounting/CashTransactionFormDialog';
+import { CATEGORY_LABEL_FALLBACK, CATEGORY_LABEL_KEY, DISBURSEMENT_CATEGORIES } from '@/components/accounting/cashCategories';
 import { useAuthStore } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
@@ -77,14 +79,6 @@ const STATUS_LABEL_FALLBACK: Record<string, string> = {
 const STATUS_BADGE_VARIANT: Record<string, React.ComponentProps<typeof Badge>['variant']> = {
   DRAFT: 'outline', SUBMITTED: 'secondary', APPROVED: 'default',
   REJECTED: 'destructive', POSTED: 'default', VOID: 'outline',
-};
-const CATEGORY_LABEL_KEY: Record<string, string> = {
-  OPERATING: 'accounting.cashDisbursements.categoryOperating',
-  INVESTING:  'accounting.cashDisbursements.categoryInvesting',
-  FINANCING:  'accounting.cashDisbursements.categoryFinancing',
-};
-const CATEGORY_LABEL_FALLBACK: Record<string, string> = {
-  OPERATING: 'Operating', INVESTING: 'Investing', FINANCING: 'Financing',
 };
 const PAYMENT_METHOD_LABEL_KEY: Record<string, string> = {
   CASH: 'accounting.cashDisbursements.paymentCash',
@@ -162,6 +156,7 @@ export default function CashDisbursementsPageV2() {
   const [endDate, setEndDate]     = useState<Date | undefined>(undefined);
 
   const [viewing, setViewing] = useState<CashTransaction | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const queryParams = useMemo(() => ({
     page: 1, limit: 50,
@@ -268,7 +263,7 @@ export default function CashDisbursementsPageV2() {
               <Wallet className="h-4 w-4" />
               {t('accounting.cashDisbursements.cashBalance', 'Cash Balance')}
             </Button>
-            <Button onClick={() => navigate('/accounting/cash-disbursements')} size="sm">
+            <Button onClick={() => setCreateOpen(true)} size="sm">
               <Plus className="h-4 w-4" />
               {t('accounting.cashDisbursements.newDisbursement', 'New Disbursement')}
             </Button>
@@ -350,9 +345,9 @@ export default function CashDisbursementsPageV2() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('accounting.cashDisbursements.allCategories', 'All Categories')}</SelectItem>
-                  <SelectItem value="OPERATING">{t('accounting.cashDisbursements.categoryOperating', 'Operating')}</SelectItem>
-                  <SelectItem value="INVESTING">{t('accounting.cashDisbursements.categoryInvesting', 'Investing')}</SelectItem>
-                  <SelectItem value="FINANCING">{t('accounting.cashDisbursements.categoryFinancing', 'Financing')}</SelectItem>
+                  {DISBURSEMENT_CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>{t(CATEGORY_LABEL_KEY[c], CATEGORY_LABEL_FALLBACK[c])}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -429,7 +424,7 @@ export default function CashDisbursementsPageV2() {
               hasActiveFilters ? (
                 <Button variant="outline" size="sm" onClick={resetFilters}>{t('accounting.cashDisbursements.resetFilter', 'Reset Filters')}</Button>
               ) : (
-                <Button onClick={() => navigate('/accounting/cash-disbursements')} size="sm">
+                <Button onClick={() => setCreateOpen(true)} size="sm">
                   <Plus className="h-4 w-4" /> {t('accounting.cashDisbursements.newDisbursement', 'New Disbursement')}
                 </Button>
               )
@@ -508,6 +503,7 @@ export default function CashDisbursementsPageV2() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CashTransactionFormDialog open={createOpen} onOpenChange={setCreateOpen} type="DISBURSEMENT" />
     </PageShell>
   );
 }

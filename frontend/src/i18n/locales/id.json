@@ -152,7 +152,16 @@
     "crmLeads": "Lead",
     "crmCampaigns": "Kampanye",
     "crmDashboard": "Dasbor CRM",
-    "crmInbox": "Inbox"
+    "crmInbox": "Inbox",
+    "adjustingEntries": "Jurnal Penyesuaian",
+    "cashBank": "Kas & Bank",
+    "cashReceipts": "Penerimaan Kas",
+    "cashDisbursements": "Pengeluaran Kas",
+    "bankTransfers": "Transfer Bank",
+    "bankReconciliations": "Rekonsiliasi Bank",
+    "arAging": "Aging Piutang",
+    "apAging": "Aging Hutang",
+    "eclProvision": "Cadangan ECL"
   },
   "auth": {
     "login": "Masuk",
@@ -4480,6 +4489,49 @@
       "newClientPlaceholder": "Nama pelanggan baru...",
       "newClientHint": "Pelanggan akan dibuat saat disimpan.",
       "backToSelect": "Pilih pelanggan yang ada"
+    },
+    "forms": {
+      "pickAccount": "Pilih akun",
+      "searchAccount": "Cari kode atau nama",
+      "noAccount": "Tidak ada akun yang cocok",
+      "date": "Tanggal",
+      "amount": "Jumlah",
+      "description": "Deskripsi",
+      "category": "Kategori",
+      "paymentMethod": "Metode pembayaran",
+      "reference": "Referensi",
+      "notes": "Catatan",
+      "optional": "Opsional",
+      "saveDraft": "Simpan sebagai draft",
+      "cash": {
+        "titleReceipt": "Penerimaan Kas Baru",
+        "titleDisbursement": "Pengeluaran Kas Baru",
+        "descReceipt": "Uang masuk. Setelah disetujui, akun kas/bank didebit dan akun lawan dikredit.",
+        "descDisbursement": "Uang keluar. Setelah disetujui, akun kas/bank dikredit dan akun lawan didebit.",
+        "intoAccount": "Diterima di (kas/bank)",
+        "fromAccount": "Dibayar dari (kas/bank)",
+        "sourceAccount": "Sumber (akun kredit)",
+        "expenseAccount": "Peruntukan (akun debit)",
+        "created": "{{n}} disimpan sebagai draft. Ajukan dan setujui untuk memposting jurnalnya.",
+        "createFail": "Gagal menyimpan transaksi"
+      },
+      "errors": {
+        "dateRequired": "Tanggal wajib diisi",
+        "amountPositive": "Jumlah harus lebih dari 0",
+        "cashAccountRequired": "Pilih akun kas atau bank",
+        "offsetAccountRequired": "Pilih akun lawan",
+        "offsetSameAsCash": "Akun lawan harus berbeda dari akun kas/bank",
+        "descriptionRequired": "Deskripsi wajib diisi"
+      }
+    },
+    "cashCategory": {
+      "SALES_REVENUE": "Pendapatan penjualan",
+      "SERVICE_REVENUE": "Pendapatan jasa",
+      "OTHER_INCOME": "Pendapatan lain-lain",
+      "OPERATING_EXPENSE": "Beban operasional",
+      "ASSET_PURCHASE": "Pembelian aset",
+      "LOAN_REPAYMENT": "Pembayaran pinjaman",
+      "OTHER_EXPENSE": "Beban lain-lain"
     }
   },
   "pinterestDownloader": {
@@ -4946,7 +4998,7 @@
     },
     "invoicing": {
       "title": "Invoice & Penomoran",
-      "desc": "Default termin pembayaran, prefix penomoran, dan ambang batas Materai.",
+      "desc": "Default termin pembayaran, prefix penomoran, dan aturan Materai.",
       "saveSuccess": "Pengaturan faktur tersimpan.",
       "saveError": "Gagal menyimpan pengaturan faktur.",
       "defaultTerms": "Termin Pembayaran Default",
@@ -4961,13 +5013,17 @@
       "quotationPrefix": "Prefix Penawaran",
       "quotationPrefixHint": "Contoh: QT- menjadi QT-2026-001",
       "autoMateraiReminder": "Pengingat Materai Otomatis",
-      "autoMateraiReminderHint": "Tampilkan pengingat saat invoice melebihi ambang batas.",
+      "autoMateraiReminderHint": "Tampilkan pengingat saat total invoice lebih dari Rp 5.000.000.",
       "saveLabel": "Simpan Invoice",
       "termsRequired": "Termin wajib dipilih",
       "mustBeNumber": "Harus berupa angka",
       "notNegative": "Tidak boleh negatif",
       "invoicePrefixRequired": "Prefix invoice wajib diisi",
-      "quotationPrefixRequired": "Prefix penawaran wajib diisi"
+      "quotationPrefixRequired": "Prefix penawaran wajib diisi",
+      "materaiRule": "Ambang Batas Materai",
+      "materaiRuleHint": "Ditetapkan undang-undang (UU 10/2020) dan tidak dapat diubah: bea meterai berlaku bila total dokumen lebih dari nilai ini. Tepat Rp 5.000.000 tidak perlu materai.",
+      "materaiRuleValue": "Lebih dari {{amount}}",
+      "materaiFixed": "Ditetapkan hukum"
     },
     "notifications": {
       "title": "Notifikasi",
@@ -5538,7 +5594,9 @@
     "noMediaProjects": "Belum ada ruang media",
     "noMediaProjectsDesc": "Buat ruang media bersama untuk berkolaborasi memilih hasil dengan klien.",
     "assetCount": "{{count}} aset",
-    "shared": "Dibagikan"
+    "shared": "Dibagikan",
+    "projectCalendar": "Kalender Proyek",
+    "projectContentCalendar": "Kalender Konten Proyek"
   },
   "projectForm": {
     "identity": {
@@ -10103,8 +10161,8 @@
           },
           "invoice": {
             "title": "Invoice dan penomoran (khusus admin)",
-            "body": "Pilih Termin Pembayaran Default (1): NET 7, 14, 30, atau 60 hari. Ambang Batas Materai (2) berisi Rp 5.000.000. Prefix Invoice (3) dan Prefix Penawaran (4) ditempel di depan nomor dokumen, misalnya INV- menjadi INV-202610-0122 (prefix, tahun dan bulan, nomor urut). Saklar Pengingat Materai Otomatis (5) mengatur pengingat materai.",
-            "tip": "Aturan materai pada form invoice mengikuti ketentuan: total lebih dari Rp 5.000.000, bukan sama dengan. Biarkan ambangnya di nilai itu. Ganti prefix hanya bila sungguh perlu, karena nomor lama tidak berubah."
+            "body": "Pilih Termin Pembayaran Default (1): NET 7, 14, 30, atau 60 hari. Ambang Batas Materai (2) hanya menampilkan aturan hukum: lebih dari Rp 5.000.000, dan tidak dapat diubah. Prefix Invoice (3) dan Prefix Penawaran (4) ditempel di depan nomor dokumen, misalnya INV- menjadi INV-202610-0122 (prefix, tahun dan bulan, nomor urut). Saklar Pengingat Materai Otomatis (5) mengatur pengingat materai.",
+            "tip": "Aturan materai ditetapkan hukum: total lebih dari Rp 5.000.000, bukan sama dengan, pada form invoice dan penawaran. Ganti prefix hanya bila sungguh perlu, karena nomor lama tidak berubah."
           },
           "notifikasi": {
             "title": "Notifikasi",
@@ -10274,7 +10332,7 @@
       },
       "akuntansi-lanjutan": {
         "title": "Akuntansi lanjutan: ke mana mencari tiap laporan",
-        "purpose": "Peta singkat untuk admin: di mana menemukan buku besar, neraca saldo, arus kas, aging piutang dan hutang, laporan pembelian, wizard jurnal penyesuaian, dan cadangan ECL, serta apa yang dikatakan masing-masing. Jurnal, laba rugi, dan neraca dibahas di panduan Akuntansi dasar.",
+        "purpose": "Peta singkat untuk admin: di mana menemukan buku besar, neraca saldo, arus kas, aging piutang dan hutang, laporan pembelian, wizard jurnal penyesuaian, dan cadangan ECL, ditambah halaman Kas & Bank (penerimaan dan pengeluaran kas, transfer bank, rekonsiliasi bank), serta apa yang dikatakan masing-masing. Jurnal, laba rugi, dan neraca dibahas di panduan Akuntansi dasar.",
         "steps": {
           "buku-besar": {
             "title": "Buku Besar: setiap transaksi per akun",
@@ -10293,12 +10351,12 @@
           },
           "aging-piutang": {
             "title": "Aging Piutang: siapa yang menunggak dan berapa lama",
-            "body": "Halaman ini belum ada di menu samping: buka alamat /accounting/ar-aging. Lima kartu (1) membagi piutang menurut umur: Belum J.T., 1 sampai 30, 31 sampai 60, 61 sampai 90, dan lebih dari 90 hari. Tabel Analisis Umur per Klien (2) merinci tiap klien, dan PDF (3) serta Excel (4) menyimpannya.",
+            "body": "Menu Akuntansi, Penjualan, Aging Piutang. Lima kartu (1) membagi piutang menurut umur: Belum J.T., 1 sampai 30, 31 sampai 60, 61 sampai 90, dan lebih dari 90 hari. Tabel Analisis Umur per Klien (2) merinci tiap klien, dan PDF (3) serta Excel (4) menyimpannya.",
             "tip": "Semakin tua bucketnya, semakin besar risiko gagal bayar. Tagihan di atas 60 hari layak ditindaklanjuti lebih dulu."
           },
           "aging-hutang": {
             "title": "Aging Hutang: kewajiban yang harus dibayar",
-            "body": "Buka alamat /accounting/ap-aging. Susunannya sama dengan aging piutang, tetapi untuk hutang: kartu (1) membagi hutang menurut umur dan tabel Analisis Umur per Kategori (2) merinci hutang pembelian per kategori. Pembelian tanpa kategori masuk Kategori tidak diketahui.",
+            "body": "Menu Akuntansi, Pembelian, Aging Hutang. Susunannya sama dengan aging piutang, tetapi untuk hutang: kartu (1) membagi hutang menurut umur dan tabel Analisis Umur per Kategori (2) merinci hutang pembelian per kategori. Pembelian tanpa kategori masuk Kategori tidak diketahui.",
             "tip": "Hutang tercatat dari pembelian dengan cara bayar Hutang (lihat panduan Vendor dan pembelian). Lunasi lewat Tandai Lunas."
           },
           "laporan-pembelian": {
@@ -10308,13 +10366,28 @@
           },
           "jurnal-penyesuaian": {
             "title": "Wizard Jurnal Penyesuaian",
-            "body": "Buka alamat /accounting/adjusting-entries. Wizard tiga langkah (1) Pilih Tipe, Isi Data, dan Review membuat jurnal penyesuaian akrual. Pilih satu pola (2): Beban Dibayar Dimuka, Pendapatan Diterima Dimuka, Pendapatan Akrual, atau Beban Akrual. Tiap pola mengatur sisi debit dan kredit otomatis. Klik Lanjut (3) untuk mengisi data.",
+            "body": "Menu Akuntansi, Jurnal Penyesuaian. Wizard tiga langkah (1) Pilih Tipe, Isi Data, dan Review membuat jurnal penyesuaian akrual. Pilih satu pola (2): Beban Dibayar Dimuka, Pendapatan Diterima Dimuka, Pendapatan Akrual, atau Beban Akrual. Tiap pola mengatur sisi debit dan kredit otomatis. Klik Lanjut (3) untuk mengisi data.",
             "tip": "Pakai di akhir bulan untuk mengakui beban atau pendapatan pada periode yang benar. Jurnalnya dibuat pada langkah Review."
           },
           "ecl": {
             "title": "Cadangan ECL (PSAK 71)",
-            "body": "Buka alamat /accounting/ecl-provisions. Halaman ini menampilkan cadangan kerugian kredit ekspektasian atas piutang: Total Piutang, Total Cadangan ECL, Rasio Cadangan, dan Perhitungan Terakhir. Klik Hitung ECL: dialog meminta Tanggal Perhitungan (1) dan Opsi Posting (2), misalnya disimpan sebagai draf untuk diposting manual. Proses ini menghitung cadangan semua invoice outstanding berdasarkan umur piutang dan tarif ECL bawaan PSAK 71. Klik Hitung ECL (3) untuk menjalankan atau Batal.",
+            "body": "Menu Akuntansi, Penjualan, Cadangan ECL. Halaman ini menampilkan cadangan kerugian kredit ekspektasian atas piutang: Total Piutang, Total Cadangan ECL, Rasio Cadangan, dan Perhitungan Terakhir. Klik Hitung ECL: dialog meminta Tanggal Perhitungan (1) dan Opsi Posting (2), misalnya disimpan sebagai draf untuk diposting manual. Proses ini menghitung cadangan semua invoice outstanding berdasarkan umur piutang dan tarif ECL bawaan PSAK 71. Klik Hitung ECL (3) untuk menjalankan atau Batal.",
             "tip": "Segarkan memuat ulang data tanpa menghitung. Periksa dulu hasil draf bersama akuntan sebelum memostingnya."
+          },
+          "kas-masuk-keluar": {
+            "title": "Penerimaan dan pengeluaran kas",
+            "body": "Menu Akuntansi, Kas & Bank, Penerimaan Kas (uang masuk) atau Pengeluaran Kas (uang keluar). Klik Penerimaan Baru atau Pengeluaran Baru, lalu isi tanggal, jumlah, akun kas atau bank, akun lawan (sumber pendapatan atau jenis biaya), deskripsi, serta kategori arus kas dan metode pembayaran bila perlu. Klik Simpan sebagai draft. Draft muncul di daftar; lewat menu baris klik Ajukan lalu Setujui, dan jurnalnya terposting. Void membalik transaksi yang sudah diposting.",
+            "tip": "Belum ada yang masuk ke buku besar sebelum transaksi disetujui. Draft masih bisa dihapus."
+          },
+          "transfer-bank": {
+            "title": "Transfer bank",
+            "body": "Menu Akuntansi, Kas & Bank, Transfer Bank. Klik Transfer Baru, pilih akun asal dan akun tujuan (harus berbeda), jumlah, deskripsi, dan metode transfer, lalu tambahkan biaya transfer beserta akun bebannya bila bank memungut biaya. Klik Buat Transfer: statusnya awalnya Tertunda. Lewat menu baris, klik Setujui untuk memposting jurnalnya, atau Tolak / Batalkan.",
+            "tip": "Kedua akun harus akun kas atau bank (kode 1-101x dan 1-102x)."
+          },
+          "rekonsiliasi-bank": {
+            "title": "Rekonsiliasi bank",
+            "body": "Menu Akuntansi, Kas & Bank, Rekonsiliasi Bank. Klik Rekonsiliasi Baru, pilih rekening bank, tanggal rekening koran dan periodenya, lalu isi saldo buku dan saldo rekening koran, ditambah setoran dalam perjalanan, cek beredar, biaya bank, dan bunga. Dialog menampilkan saldo penyesuaian dan selisihnya. Tombol Buat Rekonsiliasi baru aktif bila selisih nol. Setelah itu, lewat menu baris, kirim untuk Review, lalu Setujui atau Tolak.",
+            "tip": "Selisih yang tidak nol berarti ada yang belum tercatat di pembukuan atau di rekening koran. Cari dulu sebelum menyimpan."
           }
         }
       }

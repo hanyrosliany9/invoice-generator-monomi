@@ -191,7 +191,16 @@
     "crmLeads": "Leads",
     "crmCampaigns": "Campaigns",
     "crmDashboard": "CRM Dashboard",
-    "crmInbox": "Inbox"
+    "crmInbox": "Inbox",
+    "adjustingEntries": "Adjusting Entries",
+    "cashBank": "Cash & Bank",
+    "cashReceipts": "Cash Receipts",
+    "cashDisbursements": "Cash Disbursements",
+    "bankTransfers": "Bank Transfers",
+    "bankReconciliations": "Bank Reconciliations",
+    "arAging": "Receivables Aging",
+    "apAging": "Payables Aging",
+    "eclProvision": "ECL Provision"
   },
   "breadcrumb": {
     "client": "Client",
@@ -4390,6 +4399,49 @@
       "newClientPlaceholder": "New client name...",
       "newClientHint": "Client will be created when you save.",
       "backToSelect": "Choose existing client"
+    },
+    "forms": {
+      "pickAccount": "Select account",
+      "searchAccount": "Search code or name",
+      "noAccount": "No matching account",
+      "date": "Date",
+      "amount": "Amount",
+      "description": "Description",
+      "category": "Category",
+      "paymentMethod": "Payment method",
+      "reference": "Reference",
+      "notes": "Notes",
+      "optional": "Optional",
+      "saveDraft": "Save as draft",
+      "cash": {
+        "titleReceipt": "New Cash Receipt",
+        "titleDisbursement": "New Cash Disbursement",
+        "descReceipt": "Money coming in. Debits the cash/bank account and credits the offset account once approved.",
+        "descDisbursement": "Money going out. Credits the cash/bank account and debits the offset account once approved.",
+        "intoAccount": "Received into (cash/bank)",
+        "fromAccount": "Paid from (cash/bank)",
+        "sourceAccount": "Source (credit account)",
+        "expenseAccount": "Purpose (debit account)",
+        "created": "{{n}} saved as draft. Submit and approve it to post the journal.",
+        "createFail": "Failed to save the transaction"
+      },
+      "errors": {
+        "dateRequired": "Date is required",
+        "amountPositive": "Amount must be greater than 0",
+        "cashAccountRequired": "Choose a cash or bank account",
+        "offsetAccountRequired": "Choose the offset account",
+        "offsetSameAsCash": "Offset account must differ from the cash/bank account",
+        "descriptionRequired": "Description is required"
+      }
+    },
+    "cashCategory": {
+      "SALES_REVENUE": "Sales revenue",
+      "SERVICE_REVENUE": "Service revenue",
+      "OTHER_INCOME": "Other income",
+      "OPERATING_EXPENSE": "Operating expense",
+      "ASSET_PURCHASE": "Asset purchase",
+      "LOAN_REPAYMENT": "Loan repayment",
+      "OTHER_EXPENSE": "Other expense"
     }
   },
   "pinterestDownloader": {
@@ -4856,7 +4908,7 @@
     },
     "invoicing": {
       "title": "Invoicing & Numbering",
-      "desc": "Default payment terms, numbering prefixes, and Materai threshold.",
+      "desc": "Default payment terms, numbering prefixes, and the Materai rule.",
       "saveSuccess": "Invoice settings saved.",
       "saveError": "Failed to save invoice settings.",
       "defaultTerms": "Default Payment Terms",
@@ -4871,13 +4923,17 @@
       "quotationPrefix": "Quotation Prefix",
       "quotationPrefixHint": "Example: QT- becomes QT-2026-001",
       "autoMateraiReminder": "Auto Materai Reminder",
-      "autoMateraiReminderHint": "Show a reminder when invoices exceed the threshold.",
+      "autoMateraiReminderHint": "Show a reminder when an invoice total is more than Rp 5.000.000.",
       "saveLabel": "Save Invoicing",
       "termsRequired": "Payment terms are required",
       "mustBeNumber": "Must be a number",
       "notNegative": "Cannot be negative",
       "invoicePrefixRequired": "Invoice prefix is required",
-      "quotationPrefixRequired": "Quotation prefix is required"
+      "quotationPrefixRequired": "Quotation prefix is required",
+      "materaiRule": "Materai Threshold",
+      "materaiRuleHint": "Fixed by Indonesian law (UU 10/2020) and not configurable: stamp duty applies when the document total is strictly more than the amount shown. Exactly Rp 5.000.000 needs none.",
+      "materaiRuleValue": "More than {{amount}}",
+      "materaiFixed": "Fixed by law"
     },
     "notifications": {
       "title": "Notifications",
@@ -5448,7 +5504,9 @@
     "noMediaProjects": "No media spaces yet",
     "noMediaProjectsDesc": "Create a shared media space to collaborate on selects with your client.",
     "assetCount": "{{count}} assets",
-    "shared": "Shared"
+    "shared": "Shared",
+    "projectCalendar": "Project Calendar",
+    "projectContentCalendar": "Project Content Calendar"
   },
   "projectForm": {
     "identity": {
@@ -10104,8 +10162,8 @@
           },
           "invoice": {
             "title": "Invoicing and numbering (admin only)",
-            "body": "Choose the Termin Pembayaran Default (default payment terms) (1): NET 7, 14, 30 or 60 days. Ambang Batas Materai (stamp duty threshold) (2) holds Rp 5.000.000. Prefix Invoice (3) and Prefix Penawaran (quotation prefix) (4) are put in front of document numbers, for example INV- becomes INV-202610-0122 (prefix, year and month, running number). The Pengingat Materai Otomatis (automatic stamp duty reminder) switch (5) controls the stamp duty reminder.",
-            "tip": "The stamp duty rule on the invoice form follows the regulation: a total of more than Rp 5.000.000, not equal to it. Leave the threshold at that value. Change a prefix only when really needed, because old numbers do not change."
+            "body": "Choose the Termin Pembayaran Default (default payment terms) (1): NET 7, 14, 30 or 60 days. Ambang Batas Materai (stamp duty threshold) (2) is a read-only line showing the legal rule: more than Rp 5.000.000. Prefix Invoice (3) and Prefix Penawaran (quotation prefix) (4) are put in front of document numbers, for example INV- becomes INV-202610-0122 (prefix, year and month, running number). The Pengingat Materai Otomatis (automatic stamp duty reminder) switch (5) controls the stamp duty reminder.",
+            "tip": "The stamp duty rule is fixed by law: a total of more than Rp 5.000.000, not equal to it, on the invoice and quotation forms. Change a prefix only when really needed, because old numbers do not change."
           },
           "notifikasi": {
             "title": "Notifications",
@@ -10275,7 +10333,7 @@
       },
       "akuntansi-lanjutan": {
         "title": "Advanced accounting: where to find each report",
-        "purpose": "A short map for admins: where to find the general ledger, trial balance, cash flow, receivables and payables aging, the purchase report, the adjusting entry wizard and the ECL provision, and what each one says. Journals, the income statement and the balance sheet are in the guide Basic accounting.",
+        "purpose": "A short map for admins: where to find the general ledger, trial balance, cash flow, receivables and payables aging, the purchase report, the adjusting entry wizard and the ECL provision, plus the Cash & Bank pages (cash receipts and disbursements, bank transfers, bank reconciliation), and what each one says. Journals, the income statement and the balance sheet are in the guide Basic accounting.",
         "steps": {
           "buku-besar": {
             "title": "General ledger: every transaction per account",
@@ -10294,12 +10352,12 @@
           },
           "aging-piutang": {
             "title": "Receivables aging: who is late and for how long",
-            "body": "This page is not in the side menu yet: open the address /accounting/ar-aging. Five cards (1) split receivables by age: Belum J.T. (not yet due), 1 to 30, 31 to 60, 61 to 90 and more than 90 days. The Analisis Umur per Klien table (2) details each client, and PDF (3) and Excel (4) save it.",
+            "body": "Menu Akuntansi (Accounting), Penjualan (Sales), Aging Piutang. Five cards (1) split receivables by age: Belum J.T. (not yet due), 1 to 30, 31 to 60, 61 to 90 and more than 90 days. The Analisis Umur per Klien table (2) details each client, and PDF (3) and Excel (4) save it.",
             "tip": "The older the bucket, the greater the risk of non-payment. Bills over 60 days deserve follow-up first."
           },
           "aging-hutang": {
             "title": "Payables aging: what must be paid",
-            "body": "Open the address /accounting/ap-aging. It is built like receivables aging but for payables: the cards (1) split payables by age and the Analisis Umur per Kategori table (2) details purchase payables per category. Purchases without a category fall under Kategori tidak diketahui.",
+            "body": "Menu Akuntansi, Pembelian (Purchases), Aging Hutang. It is built like receivables aging but for payables: the cards (1) split payables by age and the Analisis Umur per Kategori table (2) details purchase payables per category. Purchases without a category fall under Kategori tidak diketahui.",
             "tip": "Payables come from purchases paid by Hutang (see the guide Vendors and purchases). Settle them with Tandai Lunas."
           },
           "laporan-pembelian": {
@@ -10309,13 +10367,28 @@
           },
           "jurnal-penyesuaian": {
             "title": "Adjusting entry wizard",
-            "body": "Open the address /accounting/adjusting-entries. A three-step wizard (1), Pilih Tipe (choose type), Isi Data (fill in) and Review, creates accrual adjusting entries. Choose a pattern (2): Beban Dibayar Dimuka (prepaid expense), Pendapatan Diterima Dimuka (unearned revenue), Pendapatan Akrual (accrued revenue) or Beban Akrual (accrued expense). Each pattern sets the debit and credit sides automatically. Click Lanjut (3) to fill in the data.",
+            "body": "Menu Akuntansi, Jurnal Penyesuaian. A three-step wizard (1), Pilih Tipe (choose type), Isi Data (fill in) and Review, creates accrual adjusting entries. Choose a pattern (2): Beban Dibayar Dimuka (prepaid expense), Pendapatan Diterima Dimuka (unearned revenue), Pendapatan Akrual (accrued revenue) or Beban Akrual (accrued expense). Each pattern sets the debit and credit sides automatically. Click Lanjut (3) to fill in the data.",
             "tip": "Use it at month end to recognise an expense or revenue in the right period. The journal is created in the Review step."
           },
           "ecl": {
             "title": "ECL provision (PSAK 71)",
-            "body": "Open the address /accounting/ecl-provisions. The page shows the expected credit loss provision on receivables: Total Piutang, Total Cadangan ECL, Rasio Cadangan (provision ratio) and Perhitungan Terakhir (last calculation). Click Hitung ECL: the dialog asks for the Tanggal Perhitungan (calculation date) (1) and Opsi Posting (posting option) (2), for example saved as a draft to be posted manually. The process calculates the provision for every outstanding invoice from receivables age and the default PSAK 71 ECL rates. Click Hitung ECL (3) to run it or Batal to cancel.",
+            "body": "Menu Akuntansi, Penjualan, Cadangan ECL. The page shows the expected credit loss provision on receivables: Total Piutang, Total Cadangan ECL, Rasio Cadangan (provision ratio) and Perhitungan Terakhir (last calculation). Click Hitung ECL: the dialog asks for the Tanggal Perhitungan (calculation date) (1) and Opsi Posting (posting option) (2), for example saved as a draft to be posted manually. The process calculates the provision for every outstanding invoice from receivables age and the default PSAK 71 ECL rates. Click Hitung ECL (3) to run it or Batal to cancel.",
             "tip": "Segarkan (refresh) reloads the data without calculating. Review the draft result with your accountant before posting it."
+          },
+          "kas-masuk-keluar": {
+            "title": "Cash receipts and disbursements",
+            "body": "Menu Akuntansi, Kas & Bank, Penerimaan Kas (money in) or Pengeluaran Kas (money out). Click Penerimaan Baru or Pengeluaran Baru and fill in the date, the amount, the cash or bank account, the offset account (the revenue source or the expense), a description and optionally the cash flow category and payment method. Click Simpan sebagai draft. The draft appears in the list; use the row menu to Ajukan (submit) it and then Setujui (approve), which posts the journal. Void reverses a posted one.",
+            "tip": "Nothing hits the ledger until the transaction is approved. A draft can still be deleted."
+          },
+          "transfer-bank": {
+            "title": "Bank transfers",
+            "body": "Menu Akuntansi, Kas & Bank, Transfer Bank. Click Transfer Baru, choose the source and destination accounts (they must differ), the amount, a description and the transfer method, and add a fee with its expense account if the bank charged one. Click Buat Transfer: it starts as Tertunda (pending). Use the row menu to Setujui (approve) it, which posts the journal, or Tolak / Batalkan it.",
+            "tip": "Both accounts must be cash or bank accounts (codes 1-101x and 1-102x)."
+          },
+          "rekonsiliasi-bank": {
+            "title": "Bank reconciliation",
+            "body": "Menu Akuntansi, Kas & Bank, Rekonsiliasi Bank. Click Rekonsiliasi Baru, choose the bank account, the statement date and the period, then enter the book balance and the bank statement balance, plus deposits in transit, outstanding checks, bank charges and interest. The dialog shows the adjusted balances and the difference. Buat Rekonsiliasi only becomes active when the difference is zero. Afterwards use the row menu to send it for Review, then Setujui (approve) or Tolak.",
+            "tip": "A non-zero difference means something is missing from the books or from the statement. Find it before saving."
           }
         }
       }

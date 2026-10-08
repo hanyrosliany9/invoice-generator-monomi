@@ -35,6 +35,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { toLocalISODate } from '@/utils/date';
 import { useAuthStore } from '@/store/auth';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
@@ -298,7 +299,7 @@ export default function BankTransfersPage() {
       return;
     }
     createMutation.mutate({
-      transferDate:     form.transferDate.toISOString(),
+      transferDate:     toLocalISODate(form.transferDate),
       amount:           parseFloat(form.amount),
       fromAccountId:    form.fromAccountId,
       toAccountId:      form.toAccountId,
@@ -311,7 +312,6 @@ export default function BankTransfersPage() {
       bankReference:    form.bankReference || undefined,
       confirmationCode: form.confirmationCode || undefined,
       notes:            form.notes || undefined,
-      status:           'PENDING',
     });
   };
 

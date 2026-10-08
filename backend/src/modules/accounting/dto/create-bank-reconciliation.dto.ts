@@ -180,5 +180,6 @@ export class CreateBankReconciliationDto {
   notesId?: string;
 
   @IsString()
-  createdBy: string;
+  @IsOptional()
+  createdBy?: string; // Always set by the server from req.user.id
 }
