@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { formatIDR, MATERAI_THRESHOLD } from '@/utils/currency';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -906,9 +907,6 @@ const BanksSection = ({ data }: { data: CompanySettings | undefined }) => {
 
 const makeInvoicingSchema = (t: TFunction) => z.object({
   defaultPaymentTerms: z.string().min(1, t('settingsPage.invoicing.termsRequired', 'Termin wajib dipilih')),
-  materaiThreshold: z.coerce
-    .number({ invalid_type_error: t('settingsPage.invoicing.mustBeNumber', 'Harus berupa angka') })
-    .min(0, t('settingsPage.invoicing.notNegative', 'Tidak boleh negatif')),
   invoicePrefix: z
     .string()
     .min(1, t('settingsPage.invoicing.invoicePrefixRequired', 'Prefix invoice wajib diisi'))
@@ -936,7 +934,6 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
     resolver: zodResolver(invoicingSchema),
     defaultValues: {
       defaultPaymentTerms: data?.defaultPaymentTerms ?? 'NET 30',
-      materaiThreshold: data?.materaiThreshold ?? 5_000_000,
       invoicePrefix: data?.invoicePrefix ?? 'INV-',
       quotationPrefix: data?.quotationPrefix ?? 'QT-',
       autoMateraiReminder: data?.autoMateraiReminder ?? true,
@@ -947,7 +944,6 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
     if (data) {
       reset({
         defaultPaymentTerms: data.defaultPaymentTerms ?? 'NET 30',
-        materaiThreshold: data.materaiThreshold ?? 5_000_000,
         invoicePrefix: data.invoicePrefix ?? 'INV-',
         quotationPrefix: data.quotationPrefix ?? 'QT-',
         autoMateraiReminder: data.autoMateraiReminder ?? true,
@@ -971,7 +967,6 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
   const onSubmit: SubmitHandler<InvoicingFormValues> = (values) => {
     mutation.mutate({
       defaultPaymentTerms: values.defaultPaymentTerms,
-      materaiThreshold: Number(values.materaiThreshold),
       invoicePrefix: values.invoicePrefix,
       quotationPrefix: values.quotationPrefix,
       autoMateraiReminder: values.autoMateraiReminder,
@@ -983,7 +978,7 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
       <SectionTitle
         icon={<Receipt />}
         title={t('settingsPage.invoicing.title', 'Invoicing & Numbering')}
-        description={t('settingsPage.invoicing.desc', 'Default payment terms, numbering prefixes, and Materai threshold.')}
+        description={t('settingsPage.invoicing.desc', 'Default payment terms, numbering prefixes, and the Materai rule.')}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
         <FieldShell
@@ -1009,25 +1004,23 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
             )}
           />
         </FieldShell>
+        {/* The materai threshold is fixed by law (UU 10/2020: more than Rp 5.000.000),
+            so it is shown as a read-only rule, not an editable setting. The invoice and
+            quotation forms use the MATERAI_THRESHOLD constant; the stored column stays
+            for backend compatibility but is no longer written from here. */}
         <FieldShell
           id="si-materai"
-          label={t('settingsPage.invoicing.materaiThreshold', 'Materai Threshold (IDR)')}
-          hint={t('settingsPage.invoicing.materaiThresholdHint', 'Invoices above this amount will show a Materai reminder.')}
-          error={errors.materaiThreshold?.message}
+          label={t('settingsPage.invoicing.materaiRule', 'Materai Threshold')}
+          hint={t('settingsPage.invoicing.materaiRuleHint', 'Fixed by Indonesian law (UU 10/2020) and not configurable: stamp duty applies when the document total is strictly more than the amount shown. Exactly Rp 5.000.000 needs none.')}
         >
-          <Input
+          <div
             id="si-materai"
-            type="number"
-            min={0}
-            step={100_000}
-            className={cn(
-              fieldInputClass,
-              'tabular-nums',
-              errors.materaiThreshold && fieldInvalidClass,
-            )}
-            disabled={mutation.isPending}
-            {...register('materaiThreshold')}
-          />
+            data-testid="materai-rule"
+            className={cn(fieldInputClass, 'tabular-nums flex items-center justify-between gap-3 cursor-default opacity-90')}
+          >
+            <span>{t('settingsPage.invoicing.materaiRuleValue', 'More than {{amount}}', { amount: formatIDR(MATERAI_THRESHOLD) })}</span>
+            <span className="text-xs text-text-tertiary">{t('settingsPage.invoicing.materaiFixed', 'Fixed by law')}</span>
+          </div>
         </FieldShell>
         <FieldShell
           id="si-inv-prefix"
@@ -1068,7 +1061,7 @@ const InvoicingSection = ({ data }: { data: SystemSettings | undefined }) => {
         <FieldShell
           id="si-auto-materai"
           label={t('settingsPage.invoicing.autoMateraiReminder', 'Auto Materai Reminder')}
-          hint={t('settingsPage.invoicing.autoMateraiReminderHint', 'Show a reminder when invoices exceed the threshold.')}
+          hint={t('settingsPage.invoicing.autoMateraiReminderHint', 'Show a reminder when an invoice total is more than Rp 5.000.000.')}
           className="md:col-span-2"
         >
           <Controller

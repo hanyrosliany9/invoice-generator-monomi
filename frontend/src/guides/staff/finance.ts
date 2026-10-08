@@ -22,11 +22,17 @@ export const financeGuides: GuideDef[] = [
   {
     slug: 'akuntansi-lanjutan', audience: 'staff', topic: 'finance', icon: Scale, minutes: 9, adminOnly: true,
     openHref: '/accounting/general-ledger',
-    steps: steps('akuntansi-lanjutan', [
-      ['buku-besar', '/accounting/general-ledger'], ['neraca-saldo', '/accounting/trial-balance'], ['arus-kas', '/accounting/cash-flow'],
-      ['aging-piutang', '/accounting/ar-aging'], ['aging-hutang', '/accounting/ap-aging'], ['laporan-pembelian', '/accounting/purchases'],
-      ['jurnal-penyesuaian', '/accounting/adjusting-entries'], ['ecl', '/accounting/ecl-provisions'],
-    ]),
+    steps: [
+      ...steps('akuntansi-lanjutan', [
+        ['buku-besar', '/accounting/general-ledger'], ['neraca-saldo', '/accounting/trial-balance'], ['arus-kas', '/accounting/cash-flow'],
+        ['aging-piutang', '/accounting/ar-aging'], ['aging-hutang', '/accounting/ap-aging'], ['laporan-pembelian', '/accounting/purchases'],
+        ['jurnal-penyesuaian', '/accounting/adjusting-entries'], ['ecl', '/accounting/ecl-provisions'],
+      ]),
+      // Text-only steps (no screenshot yet): the Cash & Bank pages.
+      { id: 'kas-masuk-keluar', href: '/accounting/cash-receipts' },
+      { id: 'transfer-bank', href: '/accounting/bank-transfers' },
+      { id: 'rekonsiliasi-bank', href: '/accounting/bank-reconciliations' },
+    ],
   },
   {
     slug: 'laporan-bisnis', audience: 'staff', topic: 'finance', icon: PieChart, minutes: 6, adminOnly: true,
