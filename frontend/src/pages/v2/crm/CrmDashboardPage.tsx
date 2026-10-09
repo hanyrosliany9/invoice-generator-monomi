@@ -11,7 +11,7 @@ import { crmApi, type CrmStats } from '@/services/crm';
 import { CrmShell, nativeSelectClass } from './CrmShell';
 import { useCrmCampaigns, useCrmStages } from './crmHooks';
 import { formatMoney, idrCompact, moneyCompact, timeAgo, useCrmLabels, wibDateStr } from './crmUtils';
-import { CodeBadge } from './LeadParts';
+import { CodeBadge, PlatformBadge } from './LeadParts';
 
 type Period = 'thisMonth' | 'lastMonth' | 'last30' | 'last90' | 'thisYear';
 
@@ -96,6 +96,11 @@ export default function CrmDashboardPage() {
               {t('crm.dash.syncedFrom', 'Ad spend includes data synced from Meta · last sync {{ago}}', { ago: timeAgo(s.metaLastSyncAt, uiLang) })}
             </p>
           )}
+          {s.tiktokLastSyncAt && (
+            <p className="text-xs text-text-secondary" data-testid="dash-synced-tiktok">
+              {t('crm.dash.syncedFromTikTok', 'Ad spend includes data synced from TikTok · last sync {{ago}}', { ago: timeAgo(s.tiktokLastSyncAt, uiLang) })}
+            </p>
+          )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard label={t('crm.dash.kpi.leads', 'New leads')} value={s.leads} delta={leadsDelta} />
             <StatCard label={t('crm.dash.kpi.won', 'Clients won')} value={s.won} sublabel={t('crm.dash.kpi.conversion', '{{pct}}% conversion', { pct: s.conversionPct })} />
@@ -109,10 +114,16 @@ export default function CrmDashboardPage() {
               value={moneyCompact(s.spend, s.spendCurrency, lang)}
               sublabel={s.manualSeparate
                 ? t('crm.dash.kpi.spendHintSeparate', 'Meta only. Other costs {{other}} (rupiah) are shown apart.', { other: idrCompact(s.manualSpend ?? 0, lang) })
-                : t('crm.dash.kpi.spendHint', 'Meta {{meta}} · other costs {{other}}', {
-                  meta: idrCompact(s.metaSpend ?? 0, lang),
-                  other: idrCompact(s.manualSpend ?? s.spend, lang),
-                })}
+                : (s.tiktokSpend ?? 0) > 0
+                  ? t('crm.dash.kpi.spendHintTikTok', 'Meta {{meta}} · TikTok {{tiktok}} · other costs {{other}}', {
+                    meta: idrCompact(s.metaSpend ?? 0, lang),
+                    tiktok: idrCompact(s.tiktokSpend ?? 0, lang),
+                    other: idrCompact(s.manualSpend ?? 0, lang),
+                  })
+                  : t('crm.dash.kpi.spendHint', 'Meta {{meta}} · other costs {{other}}', {
+                    meta: idrCompact(s.metaSpend ?? 0, lang),
+                    other: idrCompact(s.manualSpend ?? s.spend, lang),
+                  })}
             />
             <StatCard
               label={t('crm.dash.kpi.costLead', 'Cost per lead')}
@@ -185,6 +196,41 @@ export default function CrmDashboardPage() {
             </GlassPanel>
           </div>
 
+          {(s.tiktokSpend ?? 0) > 0 || (s.byPlatform ?? []).some((p) => p.platform === 'TIKTOK' && p.campaigns > 0) ? (
+            <GlassPanel padding="none" className="overflow-hidden" data-testid="dash-by-platform">
+              <h2 className="p-5 pb-3 text-sm font-semibold">{t('crm.dash.byPlatform', 'By ad platform')}</h2>
+              {s.tiktokSeparate && (
+                <p className="px-5 pb-3 text-xs text-warning">{t('crm.dash.tiktokSeparate', 'The TikTok account is in {{currency}}: its spend is not added to the rupiah totals.', { currency: s.tiktokCurrency ?? '' })}</p>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px] text-sm">
+                  <thead className="bg-bg-sunken text-left text-[11px] uppercase tracking-wider text-text-tertiary">
+                    <tr>
+                      <th className="px-5 py-2.5">{t('crm.dash.col.platform', 'Platform')}</th>
+                      <th className="px-3 py-2.5 text-right">{t('crm.campaigns.col.leads', 'Leads')}</th>
+                      <th className="px-3 py-2.5 text-right">{t('crm.campaigns.col.won', 'Won')}</th>
+                      <th className="px-3 py-2.5 text-right">{t('crm.dash.col.spend', 'Ad spend')}</th>
+                      <th className="px-3 py-2.5 text-right">{t('crm.dash.col.costLead', 'Cost / lead')}</th>
+                      <th className="px-5 py-2.5 text-right">{t('crm.campaigns.col.costClient', 'Cost / client')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(s.byPlatform ?? []).map((p) => (
+                      <tr key={p.platform} className="border-t border-border-subtle" data-testid={`dash-platform-${p.platform}`}>
+                        <td className="px-5 py-2.5"><PlatformBadge kind={p.platform} /></td>
+                        <td className="px-3 py-2.5 text-right font-mono">{p.leads}</td>
+                        <td className="px-3 py-2.5 text-right font-mono">{p.won}</td>
+                        <td className="px-3 py-2.5 text-right font-mono">{formatMoney(p.spend, s.spendCurrency)}</td>
+                        <td className="px-3 py-2.5 text-right font-mono">{formatMoney(p.costPerLead, s.spendCurrency)}</td>
+                        <td className="px-5 py-2.5 text-right font-mono">{formatMoney(p.costPerClient, s.spendCurrency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </GlassPanel>
+          ) : null}
+
           <GlassPanel padding="none" className="overflow-hidden">
             <h2 className="p-5 pb-3 text-sm font-semibold">{t('crm.dash.byCampaign', 'By campaign')}</h2>
             <div className="overflow-x-auto">
@@ -205,7 +251,7 @@ export default function CrmDashboardPage() {
                 <tbody>
                   {s.byCampaign.map((c) => (
                     <tr key={c.campaignId} className="border-t border-border-subtle">
-                      <td className="px-5 py-2.5"><CodeBadge code={c.code} /> <span className="ml-1.5">{c.name}</span></td>
+                      <td className="px-5 py-2.5"><CodeBadge code={c.code} /> <span className="ml-1.5">{c.name}</span>{c.platform === 'TIKTOK' && <span className="ml-1.5"><PlatformBadge kind="TIKTOK" /></span>}</td>
                       <td className="px-3 py-2.5 text-right font-mono">{c.leads}</td>
                       <td className="px-3 py-2.5 text-right font-mono">{c.qualified}</td>
                       <td className="px-3 py-2.5 text-right font-mono">{c.won}</td>

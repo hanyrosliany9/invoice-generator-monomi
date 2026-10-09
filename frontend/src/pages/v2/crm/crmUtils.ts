@@ -254,6 +254,19 @@ export const buildAdLink = (base: string | null | undefined, code: string): stri
 export const buildUniversalAdLink = (base: string | null | undefined): string =>
   `${(base || DEFAULT_LANDING_URL).replace(/\/+$/, '')}/?utm_source=meta&utm_medium=paid&utm_campaign={{campaign.id}}&utm_content={{ad.id}}`;
 
+/**
+ * ONE link for every TikTok ad: put it in the ad's website URL / URL parameters.
+ * TikTok fills __CAMPAIGN_ID__ (campaign), __AID__ (ad group) and __CID__ (creative) per
+ * ad and appends ttclid by itself. The macros must stay literal, UPPERCASE with two
+ * underscores on each side.
+ */
+export const buildTikTokAdLink = (base: string | null | undefined): string =>
+  `${(base || DEFAULT_LANDING_URL).replace(/\/+$/, '')}/?utm_source=tiktok&utm_medium=paid&utm_campaign=__CAMPAIGN_ID__&utm_term=__AID__&utm_content=__CID__`;
+
+/** The ad platform a CRM campaign belongs to: TikTok when linked to / marked as TikTok, else Meta. */
+export const campaignPlatformKind = (c: { platform?: string | null; tiktokCampaignId?: string | null }): 'META' | 'TIKTOK' =>
+  c.tiktokCampaignId || c.platform === 'TIKTOK' ? 'TIKTOK' : 'META';
+
 /** Money in the Meta account currency: IDR as "Rp 1.234", others as "USD 12.34". */
 export const formatMoney = (v: number | null | undefined, currency?: string | null): string => {
   if (v === null || v === undefined) return '-';

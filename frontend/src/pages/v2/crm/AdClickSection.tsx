@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiErrorMessage, crmApi, type LeadDetail } from '@/services/crm';
 import { useCrmLabels } from './crmUtils';
+import { attributionText } from './tiktokUi';
 
 /** "https://link.monomiagency.com/?utm_x=1" -> "link.monomiagency.com/" (display only). */
 const shortUrl = (url: string | null): string => {
@@ -93,7 +94,11 @@ export function AdClickSection({
     const others = lead.otherAdClickRefs ?? [];
     return (
       <>
-        <p className="mb-3 text-xs font-medium text-success" data-testid="adclick-matched">{t('crm.adClick.matched', 'Matched via website click')}</p>
+        <p className="mb-1 text-xs font-medium text-success" data-testid="adclick-matched">{t('crm.adClick.matched', 'Matched via website click')}</p>
+        {attributionText(t, lead.attribution) && (
+          <p className="mb-3 text-xs text-text-secondary" data-testid="adclick-attribution">{attributionText(t, lead.attribution)}</p>
+        )}
+        {!attributionText(t, lead.attribution) && <div className="mb-2" />}
         <dl className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-sm">
           <dt className="text-text-tertiary">{t('crm.adClick.code', 'Code')}</dt>
           <dd className="font-mono">{click.ref}</dd>

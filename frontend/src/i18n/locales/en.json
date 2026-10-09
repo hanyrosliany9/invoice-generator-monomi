@@ -10672,7 +10672,8 @@
       "platform": {
         "FACEBOOK": "Facebook",
         "INSTAGRAM": "Instagram",
-        "BOTH": "Facebook + Instagram"
+        "BOTH": "Facebook + Instagram",
+        "TIKTOK": "TikTok"
       },
       "title": "Campaigns",
       "subtitle": "Every ad gets a unique code. Put it in the WhatsApp ad's pre-filled message so every lead knows where it came from.",
@@ -10748,7 +10749,28 @@
         "empty": "No Meta campaigns known yet. Run \"Sync now\" in CRM settings.",
         "help": "Link this campaign to its Meta campaign to pull the ad spend automatically."
       },
-      "spendSplitSeparate": "Meta {{meta}}. Other costs {{other}} are in rupiah and are not added to {{currency}}."
+      "spendSplitSeparate": "Meta {{meta}}. Other costs {{other}} are in rupiah and are not added to {{currency}}.",
+      "spendTikTokSeparate": "TikTok {{tiktok}} is in another currency and is not added to the rupiah totals. Other costs {{other}}.",
+      "spendSplitBoth": "Meta {{meta}} + TikTok {{tiktok}} + other costs {{other}}",
+      "spendSplitTikTok": "TikTok {{tiktok}} + other costs {{other}}",
+      "syncedTikTok": "Synced from TikTok · last sync {{ago}}",
+      "syncedTikTokNever": "TikTok sync has not run yet",
+      "tiktokLink": {
+        "saved": "Linked to the TikTok campaign.",
+        "unlinked": "Unlinked from TikTok.",
+        "title": "TikTok campaign",
+        "none": "Not linked to a TikTok campaign",
+        "linkedHelp": "Spend of TikTok campaign \"{{name}}\" syncs into this campaign, and landing visits from its ads are linked to it. Choose \"Not linked\" to stop.",
+        "empty": "No TikTok campaigns known yet. Run \"Sync now\" in CRM settings > TikTok.",
+        "help": "Link this campaign to its TikTok campaign to pull the ad spend automatically."
+      },
+      "tiktokAdLink": {
+        "title": "Ad link for TikTok ads (one link for every ad)",
+        "copy": "Copy TikTok ad link",
+        "help": "Paste it once in the TikTok ad (Ads Manager > Ad > Destination URL, or the URL parameters field without the leading ?). TikTok fills __CAMPAIGN_ID__, __AID__ (ad group) and __CID__ (creative) for each ad and adds the ttclid click id by itself, so every landing visit is linked to its campaign automatically. Keep the macros UPPERCASE with two underscores on each side."
+      },
+      "tiktokBadge": "TikTok",
+      "tiktokSpend": "TikTok ad spend syncs automatically too."
     },
     "errors": {
       "delete": "Could not delete.",
@@ -10813,7 +10835,8 @@
         "spendHint": "Meta {{meta}} · other costs {{other}}",
         "costLead": "Cost per lead",
         "costLeadHint": "Ad spend {{spend}} ÷ {{n}} leads",
-        "spendHintSeparate": "Meta only. Other costs {{other}} (rupiah) are shown apart."
+        "spendHintSeparate": "Meta only. Other costs {{other}} (rupiah) are shown apart.",
+        "spendHintTikTok": "Meta {{meta}} · TikTok {{tiktok}} · other costs {{other}}"
       },
       "funnel": "Sales funnel",
       "dropPre": "Most leads drop off at",
@@ -10829,7 +10852,8 @@
         "revenue": "Revenue",
         "costLead": "Cost / lead",
         "spend": "Ad spend",
-        "costQualified": "Cost / Qualified"
+        "costQualified": "Cost / Qualified",
+        "platform": "Platform"
       },
       "noCampaign": "No campaign",
       "noData": "No leads in this period.",
@@ -10838,7 +10862,10 @@
       "lost_other": "{{count}} leads marked as lost.",
       "unansweredCount_one": "{{count}} lead",
       "unansweredCount_other": "{{count}} leads",
-      "syncedFrom": "Ad spend includes data synced from Meta · last sync {{ago}}"
+      "syncedFrom": "Ad spend includes data synced from Meta · last sync {{ago}}",
+      "syncedFromTikTok": "Ad spend includes data synced from TikTok · last sync {{ago}}",
+      "byPlatform": "By ad platform",
+      "tiktokSeparate": "The TikTok account is in {{currency}}: its spend is not added to the rupiah totals."
     },
     "leads": {
       "campaign": "Campaign",
@@ -11412,6 +11439,123 @@
       "syncIncomplete": "The ad account could not be chosen. See the card for details.",
       "syncSkipped": "The sync is not set up on the server, nothing was synced.",
       "syncFailed": "The sync failed. See the card for details."
+    },
+    "tiktok": {
+      "ads": {
+        "syncDone": "Synced: {{rows}} days of spend read, {{created}} new campaigns.",
+        "syncBusy": "A sync is already running. Try again in a minute.",
+        "syncRateLimited": "TikTok asked us to slow down. The sync will try again later by itself.",
+        "syncIncomplete": "The ad account is not reachable with this token. See the card for details.",
+        "syncSkipped": "The TikTok Ads sync is not set up on the server, nothing was synced.",
+        "syncFailed": "The sync failed. See the card for details.",
+        "stateReady": "Ready: spend syncs from TikTok",
+        "stateOff": "Off: TikTok ad spend is entered by hand",
+        "stateIncomplete": "Incomplete: not syncing",
+        "stateInvalid": "Invalid: not syncing",
+        "last": {
+          "SUCCESS": "Succeeded",
+          "FAILED": "Failed",
+          "RATE_LIMITED": "TikTok asked us to slow down",
+          "INCOMPLETE": "Ad account not reachable",
+          "SKIPPED": "Skipped"
+        },
+        "title": "Ads spend sync",
+        "loadFailed": "Could not load the TikTok Ads sync status.",
+        "status": "Status",
+        "advertiser": "Ad account",
+        "lastSync": "Last sync",
+        "lastRun": "Last attempt",
+        "nextTry": "Next try",
+        "range": "Days read last time",
+        "campaigns": "TikTok campaigns",
+        "campaignsLine": "{{n}} known · {{linked}} linked to a CRM campaign",
+        "offPlain": "The sync is off. You can still log TikTok ad spend by hand on the Campaigns page.",
+        "incompletePlain": "The sync is not set up completely on the server yet. Ask the developer/admin to finish the setup.",
+        "failedPlain": "The last sync failed. Spend already stored is kept. It retries automatically.",
+        "syncing": "Syncing…",
+        "syncNow": "Sync now",
+        "auto": "Runs automatically every 3 hours."
+      },
+      "events": {
+        "line": "sent {{sent}} · failed {{failed}} · waiting {{waiting}} · skipped {{skipped}}",
+        "sendRan": "Done: {{sent}} sent, {{failed}} failed, {{skipped}} skipped.",
+        "sendOff": "The sender is not ready, nothing was sent.",
+        "stateReady": "Ready: sending events to TikTok",
+        "stateOff": "Off: nothing is sent to TikTok",
+        "stateIncomplete": "Incomplete: not sending",
+        "stateInvalid": "Invalid: not sending",
+        "title": "Events API (conversions)",
+        "loadFailed": "Could not load the TikTok Events API status.",
+        "status": "Status",
+        "pixel": "Pixel",
+        "sentBy": "Sent so far",
+        "counts": "Events to TikTok",
+        "lastSent": "Last sent",
+        "lastFailed": "Last failure",
+        "routing": "Each lead goes to ONE platform: the one whose ad brought the person most recently when they tapped WhatsApp. TikTok gets Contact (tap), Lead (chat arrived), CompleteRegistration (Qualified) and Purchase (paid). Meta leads and organic visitors send nothing to TikTok.",
+        "testMode": "Test mode: events show up in Events Manager > Test Events. Remove the test code for production.",
+        "authProblem": "TikTok refused the token ({{code}}). Generate a new Events API token in Events Manager and update the server.",
+        "problemsPlain": "TikTok is not fully set up on the server yet. Ask the developer/admin to finish the setup. Clicks are still recorded, nothing is lost.",
+        "techOpen": "Events older than {{days}} days are skipped (TikTok documents no maximum age). Server settings used: {{vars}}.",
+        "sendNow": "Send queued events now"
+      },
+      "connect": {
+        "storedToast": "Token stored encrypted. It will not be shown again.",
+        "failed": "TikTok did not accept the code.",
+        "removed": "Stored token removed.",
+        "copied": "Token copied.",
+        "copyFailed": "Could not copy. Select the text and copy it manually.",
+        "title": "Connect TikTok Ads",
+        "help": "After the advertiser approves the developer app, TikTok redirects to your redirect URL with ?auth_code=... Paste that code here (single use, valid about an hour). Monomi exchanges it for the long-term token.",
+        "noApp": "TIKTOK_ADS_APP_ID and TIKTOK_ADS_APP_SECRET are not set on the server yet.",
+        "sourceEnv": "Token source: TIKTOK_ADS_ACCESS_TOKEN on the server.",
+        "sourceStored": "Token source: stored encrypted in the database. It is never shown.",
+        "sourceNoneStore": "No token yet. It will be stored encrypted and never shown again.",
+        "sourceNoneEnv": "No token yet. TOKEN_ENCRYPTION_KEY is not set, so the token will be shown ONCE for you to put into TIKTOK_ADS_ACCESS_TOKEN.",
+        "placeholder": "auth_code from the redirect URL",
+        "label": "TikTok auth_code",
+        "button": "Connect",
+        "stored": "Connected. The token is stored encrypted and will not be shown again.",
+        "showOnce": "The token could not be stored. Copy it now into TIKTOK_ADS_ACCESS_TOKEN on the server: it will not be shown again.",
+        "copy": "Copy token",
+        "done": "I saved it, hide it",
+        "accounts": "Ad accounts this token can read: {{ids}}. Set TIKTOK_ADVERTISER_ID to the one to sync.",
+        "removeConfirm": "Remove the stored TikTok token? The sync stops until a new one is connected.",
+        "remove": "Remove stored token"
+      },
+      "title": "TikTok",
+      "subtitle": "Sends the funnel of TikTok ad leads back to TikTok from the server, and pulls the TikTok ad spend every 3 hours.",
+      "never": "Never",
+      "techDetails": "Technical details (admin)",
+      "techEnv": "Server settings used: {{vars}}. Change them in the server environment and restart the backend.",
+      "panel": {
+        "whenQualified": "When the lead is Qualified",
+        "whenChat": "When the WhatsApp chat arrives",
+        "status": {
+          "PENDING_CONFIG": "Waiting to be sent"
+        },
+        "hint": {
+          "Contact": "Sent when the WhatsApp button was tapped",
+          "Lead": "The chat arrived and the phone number is known",
+          "CompleteRegistration": "The lead reached Qualified (or later)",
+          "Purchase": "Paid, with the value in IDR"
+        },
+        "title": "Events sent to TikTok",
+        "route": "This lead's events go to TikTok: its latest ad click before WhatsApp came from TikTok.",
+        "routeOther": "Later events of this lead no longer go to TikTok: its latest ad click came from another source. Events already sent stay."
+      }
+    },
+    "attribution": {
+      "platform": {
+        "TIKTOK": "TikTok",
+        "META": "Meta"
+      },
+      "none": "No ad attribution (organic visit): no ad platform gets this lead's events.",
+      "reason": {
+        "url_param": "the ad link of the visit that tapped WhatsApp",
+        "last_touch": "last ad click before WhatsApp"
+      },
+      "line": "Attributed to {{platform}} — {{reason}}"
     }
   },
   "socialPublish": {

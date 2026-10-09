@@ -14,6 +14,22 @@ import type { Lead, LeadStage } from '@/services/crm';
 import { idr, isWaitingLead, leadContactLine, sourceTone, toNumber, useCrmLabels } from './crmUtils';
 import { getInitials } from '@/utils/initials';
 
+/** Which ad platform a campaign belongs to: a small pill next to its name. */
+export function PlatformBadge({ kind }: { kind: 'META' | 'TIKTOK' }) {
+  const { t } = useCrmLabels();
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+        kind === 'TIKTOK' ? 'bg-text-primary/10 text-text-primary' : 'bg-brand-cream/20',
+      )}
+      data-testid={`platform-badge-${kind}`}
+    >
+      {kind === 'TIKTOK' ? t('crm.campaigns.tiktokBadge', 'TikTok') : t('crm.campaigns.metaBadge', 'Meta')}
+    </span>
+  );
+}
+
 export const StageBadge = ({ stage, className }: { stage: LeadStage; className?: string }) => {
   const { stageLabel } = useCrmLabels();
   return (

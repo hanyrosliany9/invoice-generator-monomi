@@ -28,6 +28,7 @@ import {
 import { CodeBadge, LostDialog, MoveStageMenu, SourceBadge, StageBadge, WaitingBadge } from './LeadParts';
 import { ConvertDialog } from './ConvertDialog';
 import { AdClickSection } from './AdClickSection';
+import { showTikTokPanel, tiktokEventHint, tiktokPanelRows, tiktokStatusLabel } from './tiktokUi';
 import { LeadWhatsAppPanel } from './whatsapp/LeadWhatsAppPanel';
 
 const META_EVENTS: MetaEventName[] = ['LeadSubmitted', 'QualifiedLead', 'Purchase'];
@@ -531,6 +532,30 @@ export default function LeadDetailPage() {
               })}
             </ul>
           </Section>
+
+          {showTikTokPanel(lead) && (
+            <Section title={t('crm.tiktok.panel.title', 'Events sent to TikTok')}>
+              <p className="mb-3 text-xs text-text-tertiary" data-testid="tiktok-panel-route">
+                {lead.attribution?.platform === 'TIKTOK'
+                  ? t('crm.tiktok.panel.route', 'This lead\'s events go to TikTok: its latest ad click before WhatsApp came from TikTok.')
+                  : t('crm.tiktok.panel.routeOther', 'Later events of this lead no longer go to TikTok: its latest ad click came from another source. Events already sent stay.')}
+              </p>
+              <ul className="space-y-2">
+                {tiktokPanelRows(lead).map((row) => (
+                  <li key={row.name} className="text-sm" data-testid={`tiktok-row-${row.name}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-mono text-xs">{row.name}</span>
+                      <span className={cn('text-right text-xs', row.status ? (row.status === 'SENT' ? 'text-success' : row.status === 'FAILED' ? 'text-danger' : 'text-warning') : 'text-text-tertiary')}>
+                        {tiktokStatusLabel(t, row)}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-text-tertiary">{tiktokEventHint(t, row.name)}</div>
+                    {row.status === 'SKIPPED' && row.error && <div className="break-words text-[11px] text-text-tertiary">{row.error}</div>}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
         </aside>
       </div>
 

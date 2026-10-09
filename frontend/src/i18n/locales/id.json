@@ -10671,7 +10671,8 @@
       "platform": {
         "FACEBOOK": "Facebook",
         "INSTAGRAM": "Instagram",
-        "BOTH": "Facebook + Instagram"
+        "BOTH": "Facebook + Instagram",
+        "TIKTOK": "TikTok"
       },
       "title": "Kampanye",
       "subtitle": "Setiap iklan punya kode unik. Taruh kodenya di pesan otomatis iklan WhatsApp agar setiap lead tahu asalnya.",
@@ -10747,7 +10748,28 @@
         "empty": "Belum ada kampanye Meta yang dikenal. Jalankan \"Sinkronkan sekarang\" di pengaturan CRM.",
         "help": "Hubungkan kampanye ini ke kampanye Meta-nya agar biaya iklan terambil otomatis."
       },
-      "spendSplitSeparate": "Meta {{meta}}. Biaya lain {{other}} dalam rupiah dan tidak dijumlahkan ke {{currency}}."
+      "spendSplitSeparate": "Meta {{meta}}. Biaya lain {{other}} dalam rupiah dan tidak dijumlahkan ke {{currency}}.",
+      "spendTikTokSeparate": "TikTok {{tiktok}} memakai mata uang lain dan tidak dijumlahkan ke total rupiah. Biaya lain {{other}}.",
+      "spendSplitBoth": "Meta {{meta}} + TikTok {{tiktok}} + biaya lain {{other}}",
+      "spendSplitTikTok": "TikTok {{tiktok}} + biaya lain {{other}}",
+      "syncedTikTok": "Tersinkron dari TikTok · sinkronisasi terakhir {{ago}}",
+      "syncedTikTokNever": "Sinkronisasi TikTok belum pernah berjalan",
+      "tiktokLink": {
+        "saved": "Terhubung ke kampanye TikTok.",
+        "unlinked": "Terlepas dari TikTok.",
+        "title": "Kampanye TikTok",
+        "none": "Tidak terhubung ke kampanye TikTok",
+        "linkedHelp": "Biaya kampanye TikTok \"{{name}}\" disinkronkan ke kampanye ini, dan kunjungan landing page dari iklannya terhubung ke sini. Pilih \"Tidak terhubung\" untuk berhenti.",
+        "empty": "Belum ada kampanye TikTok yang dikenal. Jalankan \"Sinkronkan sekarang\" di Pengaturan CRM > TikTok.",
+        "help": "Hubungkan kampanye ini ke kampanye TikTok-nya untuk menarik biaya iklan otomatis."
+      },
+      "tiktokAdLink": {
+        "title": "Tautan iklan untuk iklan TikTok (satu tautan untuk semua iklan)",
+        "copy": "Salin tautan iklan TikTok",
+        "help": "Tempel sekali di iklan TikTok (Ads Manager > Iklan > URL tujuan, atau kolom parameter URL tanpa tanda ? di depan). TikTok mengisi __CAMPAIGN_ID__, __AID__ (ad group) dan __CID__ (kreatif) untuk setiap iklan serta menambahkan ID klik ttclid sendiri, sehingga setiap kunjungan landing page otomatis terhubung ke kampanyenya. Pertahankan makro dengan HURUF BESAR dan dua garis bawah di kiri-kanan."
+      },
+      "tiktokBadge": "TikTok",
+      "tiktokSpend": "Biaya iklan TikTok juga disinkronkan otomatis."
     },
     "errors": {
       "delete": "Tidak dapat menghapus.",
@@ -10812,7 +10834,8 @@
         "spendHint": "Meta {{meta}} · biaya lain {{other}}",
         "costLead": "Biaya per lead",
         "costLeadHint": "Biaya iklan {{spend}} ÷ {{n}} lead",
-        "spendHintSeparate": "Hanya Meta. Biaya lain {{other}} (rupiah) ditampilkan terpisah."
+        "spendHintSeparate": "Hanya Meta. Biaya lain {{other}} (rupiah) ditampilkan terpisah.",
+        "spendHintTikTok": "Meta {{meta}} · TikTok {{tiktok}} · biaya lain {{other}}"
       },
       "funnel": "Corong penjualan",
       "dropPre": "Kebanyakan lead berhenti di",
@@ -10828,14 +10851,18 @@
         "revenue": "Pendapatan",
         "costLead": "Biaya / lead",
         "spend": "Biaya iklan",
-        "costQualified": "Biaya / Qualified"
+        "costQualified": "Biaya / Qualified",
+        "platform": "Platform"
       },
       "noCampaign": "Tanpa kampanye",
       "noData": "Tidak ada lead pada periode ini.",
       "bySource": "Per sumber",
       "lost_other": "{{count}} lead ditandai kalah.",
       "unansweredCount_other": "{{count}} lead",
-      "syncedFrom": "Biaya iklan memuat data dari Meta · sinkron terakhir {{ago}}"
+      "syncedFrom": "Biaya iklan memuat data dari Meta · sinkron terakhir {{ago}}",
+      "syncedFromTikTok": "Biaya iklan termasuk data yang disinkronkan dari TikTok · sinkronisasi terakhir {{ago}}",
+      "byPlatform": "Per platform iklan",
+      "tiktokSeparate": "Akun TikTok memakai {{currency}}: biayanya tidak dijumlahkan ke total rupiah."
     },
     "leads": {
       "campaign": "Kampanye",
@@ -11406,6 +11433,123 @@
       "syncIncomplete": "Akun iklan belum bisa dipilih. Lihat kartu untuk detailnya.",
       "syncSkipped": "Sinkronisasi belum diatur di server, tidak ada yang disinkronkan.",
       "syncFailed": "Sinkronisasi gagal. Lihat kartu untuk detailnya."
+    },
+    "tiktok": {
+      "ads": {
+        "syncDone": "Tersinkron: {{rows}} hari biaya iklan dibaca, {{created}} kampanye baru.",
+        "syncBusy": "Sinkronisasi sedang berjalan. Coba lagi sebentar lagi.",
+        "syncRateLimited": "TikTok meminta kami melambat. Sinkronisasi akan dicoba lagi otomatis nanti.",
+        "syncIncomplete": "Akun iklan tidak bisa diakses dengan token ini. Lihat detail di kartu.",
+        "syncSkipped": "Sinkronisasi TikTok Ads belum diatur di server, tidak ada yang disinkronkan.",
+        "syncFailed": "Sinkronisasi gagal. Lihat detail di kartu.",
+        "stateReady": "Siap: biaya iklan disinkronkan dari TikTok",
+        "stateOff": "Mati: biaya iklan TikTok diisi manual",
+        "stateIncomplete": "Belum lengkap: tidak menyinkronkan",
+        "stateInvalid": "Tidak valid: tidak menyinkronkan",
+        "last": {
+          "SUCCESS": "Berhasil",
+          "FAILED": "Gagal",
+          "RATE_LIMITED": "TikTok meminta kami melambat",
+          "INCOMPLETE": "Akun iklan tidak bisa diakses",
+          "SKIPPED": "Dilewati"
+        },
+        "title": "Sinkronisasi biaya iklan",
+        "loadFailed": "Tidak bisa memuat status sinkronisasi TikTok Ads.",
+        "status": "Status",
+        "advertiser": "Akun iklan",
+        "lastSync": "Sinkronisasi terakhir",
+        "lastRun": "Percobaan terakhir",
+        "nextTry": "Coba lagi",
+        "range": "Hari yang dibaca terakhir kali",
+        "campaigns": "Kampanye TikTok",
+        "campaignsLine": "{{n}} dikenal · {{linked}} terhubung ke kampanye CRM",
+        "offPlain": "Sinkronisasi mati. Anda tetap bisa mencatat biaya iklan TikTok manual di halaman Kampanye.",
+        "incompletePlain": "Sinkronisasi belum diatur lengkap di server. Minta developer/admin menyelesaikan pengaturannya.",
+        "failedPlain": "Sinkronisasi terakhir gagal. Biaya yang sudah tersimpan tetap ada. Akan dicoba lagi otomatis.",
+        "syncing": "Menyinkronkan…",
+        "syncNow": "Sinkronkan sekarang",
+        "auto": "Berjalan otomatis setiap 3 jam."
+      },
+      "events": {
+        "line": "terkirim {{sent}} · gagal {{failed}} · menunggu {{waiting}} · dilewati {{skipped}}",
+        "sendRan": "Selesai: {{sent}} terkirim, {{failed}} gagal, {{skipped}} dilewati.",
+        "sendOff": "Pengirim belum siap, tidak ada yang dikirim.",
+        "stateReady": "Siap: mengirim event ke TikTok",
+        "stateOff": "Mati: tidak ada yang dikirim ke TikTok",
+        "stateIncomplete": "Belum lengkap: tidak mengirim",
+        "stateInvalid": "Tidak valid: tidak mengirim",
+        "title": "Events API (konversi)",
+        "loadFailed": "Tidak bisa memuat status TikTok Events API.",
+        "status": "Status",
+        "pixel": "Pixel",
+        "sentBy": "Terkirim sejauh ini",
+        "counts": "Event ke TikTok",
+        "lastSent": "Terakhir terkirim",
+        "lastFailed": "Kegagalan terakhir",
+        "routing": "Setiap lead hanya masuk ke SATU platform: platform yang iklannya paling baru membawa orang itu saat ia menekan WhatsApp. TikTok menerima Contact (tekan tombol), Lead (chat masuk), CompleteRegistration (Qualified) dan Purchase (lunas). Lead Meta dan pengunjung organik tidak mengirim apa pun ke TikTok.",
+        "testMode": "Mode uji: event muncul di Events Manager > Test Events. Hapus kode uji untuk produksi.",
+        "authProblem": "TikTok menolak token ({{code}}). Buat token Events API baru di Events Manager lalu perbarui server.",
+        "problemsPlain": "TikTok belum diatur lengkap di server. Minta developer/admin menyelesaikan pengaturannya. Klik tetap tercatat, tidak ada yang hilang.",
+        "techOpen": "Event yang lebih lama dari {{days}} hari dilewati (TikTok tidak mendokumentasikan batas usia maksimum). Pengaturan server yang dipakai: {{vars}}.",
+        "sendNow": "Kirim event antrean sekarang"
+      },
+      "connect": {
+        "storedToast": "Token disimpan terenkripsi. Token tidak akan ditampilkan lagi.",
+        "failed": "TikTok tidak menerima kode tersebut.",
+        "removed": "Token tersimpan dihapus.",
+        "copied": "Token disalin.",
+        "copyFailed": "Tidak bisa menyalin. Pilih teksnya lalu salin manual.",
+        "title": "Hubungkan TikTok Ads",
+        "help": "Setelah pemilik akun iklan menyetujui aplikasi developer, TikTok mengarahkan ke redirect URL Anda dengan ?auth_code=... Tempel kode itu di sini (sekali pakai, berlaku sekitar satu jam). Monomi menukarnya dengan token jangka panjang.",
+        "noApp": "TIKTOK_ADS_APP_ID dan TIKTOK_ADS_APP_SECRET belum diatur di server.",
+        "sourceEnv": "Sumber token: TIKTOK_ADS_ACCESS_TOKEN di server.",
+        "sourceStored": "Sumber token: tersimpan terenkripsi di database. Tidak pernah ditampilkan.",
+        "sourceNoneStore": "Belum ada token. Token akan disimpan terenkripsi dan tidak ditampilkan lagi.",
+        "sourceNoneEnv": "Belum ada token. TOKEN_ENCRYPTION_KEY belum diatur, jadi token akan ditampilkan SEKALI untuk Anda isikan ke TIKTOK_ADS_ACCESS_TOKEN.",
+        "placeholder": "auth_code dari redirect URL",
+        "label": "auth_code TikTok",
+        "button": "Hubungkan",
+        "stored": "Terhubung. Token disimpan terenkripsi dan tidak akan ditampilkan lagi.",
+        "showOnce": "Token tidak bisa disimpan. Salin sekarang ke TIKTOK_ADS_ACCESS_TOKEN di server: token tidak akan ditampilkan lagi.",
+        "copy": "Salin token",
+        "done": "Sudah saya simpan, sembunyikan",
+        "accounts": "Akun iklan yang bisa dibaca token ini: {{ids}}. Isi TIKTOK_ADVERTISER_ID dengan akun yang ingin disinkronkan.",
+        "removeConfirm": "Hapus token TikTok yang tersimpan? Sinkronisasi berhenti sampai token baru dihubungkan.",
+        "remove": "Hapus token tersimpan"
+      },
+      "title": "TikTok",
+      "subtitle": "Mengirim funnel lead dari iklan TikTok kembali ke TikTok dari server, dan menarik biaya iklan TikTok setiap 3 jam.",
+      "never": "Belum pernah",
+      "techDetails": "Detail teknis (admin)",
+      "techEnv": "Pengaturan server yang dipakai: {{vars}}. Ubah di environment server lalu restart backend.",
+      "panel": {
+        "whenQualified": "Saat lead menjadi Qualified",
+        "whenChat": "Saat chat WhatsApp masuk",
+        "status": {
+          "PENDING_CONFIG": "Menunggu dikirim"
+        },
+        "hint": {
+          "Contact": "Dikirim saat tombol WhatsApp ditekan",
+          "Lead": "Chat masuk dan nomor telepon sudah diketahui",
+          "CompleteRegistration": "Lead mencapai Qualified (atau lebih jauh)",
+          "Purchase": "Lunas, dengan nilai dalam IDR"
+        },
+        "title": "Event terkirim ke TikTok",
+        "route": "Event lead ini masuk ke TikTok: klik iklan terakhirnya sebelum WhatsApp berasal dari TikTok.",
+        "routeOther": "Event berikutnya dari lead ini tidak lagi masuk ke TikTok: klik iklan terakhirnya berasal dari sumber lain. Event yang sudah terkirim tetap."
+      }
+    },
+    "attribution": {
+      "platform": {
+        "TIKTOK": "TikTok",
+        "META": "Meta"
+      },
+      "none": "Tanpa atribusi iklan (kunjungan organik): tidak ada platform iklan yang menerima event lead ini.",
+      "reason": {
+        "url_param": "tautan iklan dari kunjungan yang menekan WhatsApp",
+        "last_touch": "klik iklan terakhir sebelum WhatsApp"
+      },
+      "line": "Diatribusikan ke {{platform}} — {{reason}}"
     }
   },
   "socialPublish": {

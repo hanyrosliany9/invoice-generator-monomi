@@ -13,7 +13,10 @@ export type MetaEventStatus = 'PENDING_CONFIG' | 'QUEUED' | 'SENT' | 'FAILED' | 
 export type ActivityType =
   | 'NOTE' | 'CALL' | 'WHATSAPP' | 'MEETING'
   | 'STAGE_CHANGE' | 'FOLLOW_UP_SET' | 'FOLLOW_UP_DONE' | 'CONVERTED' | 'ASSIGNED';
-export type CampaignPlatform = 'FACEBOOK' | 'INSTAGRAM' | 'BOTH';
+export type CampaignPlatform = 'FACEBOOK' | 'INSTAGRAM' | 'BOTH' | 'TIKTOK';
+/** Which ad platform gets a lead's events (decided per click, most recent ad touch wins). */
+export type AdPlatform = 'META' | 'TIKTOK' | 'NONE';
+export type TikTokEventName = 'Contact' | 'Lead' | 'CompleteRegistration' | 'Purchase';
 export type CampaignStatus = 'ACTIVE' | 'PAUSED' | 'ENDED';
 
 export interface LeadStage {
@@ -92,6 +95,16 @@ export interface MetaEventRow {
   lastError: string | null;
 }
 
+export interface TikTokEventRow {
+  id: string;
+  eventName: TikTokEventName;
+  status: MetaEventStatus;
+  value: string | number | null;
+  eventTime: string;
+  sentAt: string | null;
+  lastError: string | null;
+}
+
 /** Landing-page click linked to a lead (no ip / user agent / browser ids). */
 export interface LeadAdClick {
   ref: string;
@@ -130,6 +143,11 @@ export interface LeadDetail extends Lead {
   waitingOutcome?: WaitingOutcome;
   /** The website Lead event sent when the WhatsApp button was tapped. */
   adClickEvent: { status: MetaEventStatus; eventTime: string; sentAt: string | null; lastError: string | null } | null;
+  /** Which platform gets this lead's events: the latest converting click (never an unverified HANDLE tap). null on clicks recorded before TikTok support. */
+  attribution?: { platform: AdPlatform | null; reason: 'url_param' | 'last_touch' | 'none' | null; ref: string | null; at: string } | null;
+  /** The TikTok Contact event sent when the WhatsApp button was tapped. */
+  tiktokClickEvent?: { status: MetaEventStatus; eventTime: string; sentAt: string | null; lastError: string | null } | null;
+  tiktokEvents?: TikTokEventRow[];
   client: { id: string; name: string } | null;
   project: { id: string; number: string; description: string } | null;
   quotation: { id: string; quotationNumber: string; status: string; totalAmount: string | number } | null;
@@ -231,6 +249,24 @@ export interface TrackingSummary {
   lastFailed: { at: string; eventName: string; error: string | null } | null;
 }
 
+export interface TikTokEventsSummary {
+  state: TrackingState;
+  problems: string[];
+  pixelConfigured: boolean;
+  pixelId: string | null;
+  tokenConfigured: boolean;
+  testMode: boolean;
+  maxAgeDays: number;
+  envVars: string[];
+  events: Record<MetaEventStatus, number>;
+  sentByEvent: Record<string, number>;
+  lastSentAt: string | null;
+  lastFailed: { at: string; eventName: string; error: string | null } | null;
+  queuedVisitEvents: number;
+  /** A 40001 / 40104 answer was seen since the server started: check the token. */
+  authProblem: { at: string; code: number } | null;
+}
+
 export interface ConvertInput {
   clientId?: string;
   createProject?: boolean;
@@ -280,6 +316,17 @@ export interface Campaign {
   metaCampaignName?: string | null;
   metaStatus?: string | null;
   metaObjective?: string | null;
+  /** Synced TikTok spend (a TikTok campaign linked to this CRM campaign). */
+  tiktokSpend?: number;
+  tiktokImpressions?: number;
+  tiktokClicks?: number;
+  tiktokCurrency?: string;
+  /** Foreign-currency TikTok account: its spend is shown apart, not added to spend. */
+  tiktokSeparate?: boolean;
+  tiktokCampaignId?: string | null;
+  tiktokCampaignName?: string | null;
+  tiktokStatus?: string | null;
+  tiktokObjective?: string | null;
 }
 
 export interface CampaignInput {
@@ -301,7 +348,7 @@ export interface CampaignSpend {
   dateTo: string;
   amount: number;
   note: string | null;
-  source: 'MANUAL' | 'META';
+  source: 'MANUAL' | 'META' | 'TIKTOK';
   /** Synced Meta days cannot be edited or deleted. */
   readOnly?: boolean;
   currency?: string;
@@ -336,6 +383,54 @@ export interface MetaAdsSyncResult {
   message?: string;
   insightRows?: number;
   created?: number;
+}
+
+export type TikTokAdsState = 'OFF' | 'INCOMPLETE' | 'INVALID' | 'READY';
+
+export interface TikTokAdsStatus {
+  state: TikTokAdsState;
+  problems: string[];
+  advertiser: { id: string; name: string | null; currency: string | null; timezone: string | null } | null;
+  tokenSource: 'ENV' | 'STORED' | 'NONE';
+  canStoreToken: boolean;
+  appConfigured: boolean;
+  storedTokenAt: string | null;
+  backfillDays: number;
+  lastRunAt: string | null;
+  lastSuccessAt: string | null;
+  lastStatus: 'SUCCESS' | 'FAILED' | 'RATE_LIMITED' | 'INCOMPLETE' | 'SKIPPED' | null;
+  lastTrigger: 'CRON' | 'MANUAL' | null;
+  lastError: string | null;
+  rateLimitedUntil: string | null;
+  running: boolean;
+  range: { from: string; to: string } | null;
+  tiktokCampaigns: number;
+  linkedCampaigns: number;
+  env: string[];
+}
+
+export interface TikTokAdsSyncResult {
+  status: 'SUCCESS' | 'FAILED' | 'RATE_LIMITED' | 'INCOMPLETE' | 'SKIPPED' | 'BUSY';
+  message?: string;
+  insightRows?: number;
+  created?: number;
+}
+
+export interface TikTokCampaignOption {
+  tiktokCampaignId: string;
+  name: string;
+  operationStatus: string | null;
+  objective: string | null;
+  linkedCampaignId: string | null;
+  linkedCampaignCode: string | null;
+}
+
+export interface TikTokConnectResult {
+  stored: boolean;
+  advertiserIds: string[];
+  /** Only when it could not be stored: shown once. */
+  token?: string;
+  note?: string;
 }
 
 export interface MetaCampaignOption {
@@ -375,6 +470,10 @@ export interface CrmStats {
   spendCurrency?: string;
   manualSeparate?: boolean;
   metaLastSyncAt?: string | null;
+  tiktokSpend?: number;
+  tiktokSeparate?: boolean;
+  tiktokCurrency?: string;
+  tiktokLastSyncAt?: string | null;
   costPerLead: number | null;
   costPerQualified?: number | null;
   costPerClient: number | null;
@@ -385,8 +484,14 @@ export interface CrmStats {
   bySource: Array<{ source: LeadSource; leads: number; won: number }>;
   byCampaign: Array<{
     campaignId: string; name: string; code: string; leads: number; qualified: number; won: number;
-    revenue: number; spend: number; metaSpend?: number; impressions?: number; clicks?: number;
+    revenue: number; spend: number; metaSpend?: number; tiktokSpend?: number; platform?: 'META' | 'TIKTOK'; impressions?: number; clicks?: number;
     costPerLead: number | null; costPerQualified?: number | null; costPerClient: number | null;
+  }>;
+  /** Spend and cost-per numbers split by ad platform. */
+  byPlatform?: Array<{
+    platform: 'META' | 'TIKTOK'; campaigns: number; leads: number; qualified: number; won: number;
+    revenue: number; spend: number;
+    costPerLead: number | null; costPerQualified: number | null; costPerClient: number | null;
   }>;
   noCampaign: { leads: number; won: number };
   funnel: FunnelStep[];
@@ -444,6 +549,9 @@ export const crmApi = {
   trackingSummary: async (): Promise<TrackingSummary> => unwrap(await api.get('/crm/tracking/summary')),
   trackingSendNow: async (): Promise<{ enabled: boolean; sent: number; failed: number; skipped: number }> =>
     unwrap(await api.post('/crm/tracking/send-now')),
+  tiktokSummary: async (): Promise<TikTokEventsSummary> => unwrap(await api.get('/crm/tracking/tiktok/summary')),
+  tiktokSendNow: async (): Promise<{ enabled: boolean; sent: number; failed: number; skipped: number }> =>
+    unwrap(await api.post('/crm/tracking/tiktok/send-now')),
   assignees: async (): Promise<Assignee[]> => unwrap(await api.get('/crm/assignees')),
   badges: async (): Promise<CrmBadges> => unwrap(await api.get('/crm/badges')),
   stats: async (p: { from?: string; to?: string; campaignId?: string } = {}): Promise<CrmStats> =>
@@ -475,6 +583,15 @@ export const crmApi = {
   metaAdsCampaigns: async (): Promise<MetaCampaignOption[]> => unwrap(await api.get('/crm/meta-ads/campaigns')),
   setMetaLink: async (campaignId: string, metaCampaignId: string | null): Promise<Campaign> =>
     unwrap(await api.put(`/crm/campaigns/${campaignId}/meta-link`, { metaCampaignId })),
+
+  tiktokAdsStatus: async (): Promise<TikTokAdsStatus> => unwrap(await api.get('/crm/tiktok-ads/status')),
+  tiktokAdsSync: async (): Promise<TikTokAdsSyncResult> => unwrap(await api.post('/crm/tiktok-ads/sync')),
+  tiktokAdsCampaigns: async (): Promise<TikTokCampaignOption[]> => unwrap(await api.get('/crm/tiktok-ads/campaigns')),
+  setTikTokLink: async (campaignId: string, tiktokCampaignId: string | null): Promise<Campaign> =>
+    unwrap(await api.put(`/crm/campaigns/${campaignId}/tiktok-link`, { tiktokCampaignId })),
+  tiktokAdsConnect: async (authCode: string): Promise<TikTokConnectResult> =>
+    unwrap(await api.post('/crm/tiktok-ads/connect', { authCode })),
+  tiktokAdsDisconnect: async (): Promise<void> => { await api.delete('/crm/tiktok-ads/connect'); },
 };
 
 /** Best human-readable message from an axios error. */

@@ -266,7 +266,7 @@ export class CrmLeadsService {
     const converting = adClicks.find((c) => c.linkedVia === "KODE" || c.linkedVia === "AUTO_CREATE") ?? null;
     const attribution = converting
       ? {
-          platform: (converting.attributedPlatform ?? "NONE") as "META" | "TIKTOK" | "NONE",
+          platform: (converting.attributedPlatform ?? null) as "META" | "TIKTOK" | "NONE" | null,
           reason: converting.attributionReason ?? null,
           ref: converting.ref ?? null,
           at: converting.createdAt,

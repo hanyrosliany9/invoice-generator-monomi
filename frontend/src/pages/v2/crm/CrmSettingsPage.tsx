@@ -16,6 +16,7 @@ import { useCrmLabels } from './crmUtils';
 import { WhatsAppSettingsCard } from './whatsapp/WhatsAppSettingsCard';
 import { TrackingSettingsCard } from './TrackingSettingsCard';
 import { MetaAdsSyncCard } from './MetaAdsSyncCard';
+import { TikTokSettingsCard } from './TikTokSettingsCard';
 
 function StageRow({
   stage, index, last, onMove,
@@ -171,6 +172,8 @@ export default function CrmSettingsPage() {
         <TrackingSettingsCard />
 
         <MetaAdsSyncCard />
+
+        <TikTokSettingsCard />
 
         <WhatsAppSettingsCard />
       </div>

@@ -22,8 +22,9 @@ import {
   apiErrorMessage, crmApi, type Campaign, type CampaignPlatform, type CampaignStatus,
 } from '@/services/crm';
 import { CrmShell, nativeSelectClass, textareaClass } from './CrmShell';
-import { buildAdLink, buildUniversalAdLink, formatMoney, idr, timeAgo, useCrmLabels, wibDateStr } from './crmUtils';
-import { CodeBadge } from './LeadParts';
+import { buildAdLink, buildTikTokAdLink, buildUniversalAdLink, campaignPlatformKind, formatMoney, idr, timeAgo, useCrmLabels, wibDateStr } from './crmUtils';
+import { CodeBadge, PlatformBadge } from './LeadParts';
+import { tiktokSpendSplit } from './tiktokUi';
 
 const compactNumber = (n: number): string => n.toLocaleString('en', { notation: 'compact', maximumFractionDigits: 1 });
 
@@ -50,6 +51,14 @@ export default function CampaignsPage() {
   const trackingQ = useQuery({ queryKey: ['crm', 'tracking'], queryFn: crmApi.trackingSummary, retry: false });
   const metaQ = useQuery({ queryKey: ['crm', 'meta-ads', 'status'], queryFn: crmApi.metaAdsStatus, retry: false, staleTime: 30_000 });
   const metaCampaignsQ = useQuery({ queryKey: ['crm', 'meta-ads', 'campaigns'], queryFn: crmApi.metaAdsCampaigns, retry: false, staleTime: 30_000 });
+  const tiktokQ = useQuery({ queryKey: ['crm', 'tiktok', 'ads'], queryFn: crmApi.tiktokAdsStatus, retry: false, staleTime: 30_000 });
+  const tiktokCampaignsQ = useQuery({ queryKey: ['crm', 'tiktok', 'campaigns'], queryFn: crmApi.tiktokAdsCampaigns, retry: false, staleTime: 30_000 });
+  const tiktokStatus = tiktokQ.data;
+  const tiktokSyncedLine = tiktokStatus && tiktokStatus.state === 'READY'
+    ? (tiktokStatus.lastSuccessAt
+      ? t('crm.campaigns.syncedTikTok', 'Synced from TikTok · last sync {{ago}}', { ago: timeAgo(tiktokStatus.lastSuccessAt, lang) })
+      : t('crm.campaigns.syncedTikTokNever', 'TikTok sync has not run yet'))
+    : null;
   const metaStatus = metaQ.data;
   const syncedLine = metaStatus && metaStatus.state === 'READY'
     ? (metaStatus.lastSuccessAt
@@ -64,7 +73,15 @@ export default function CampaignsPage() {
     },
     onError: (err) => toast.error(apiErrorMessage(err, t('crm.errors.save', 'Could not save.'))),
   });
-  const [adLinkVariant, setAdLinkVariant] = useState<'universal' | 'code' | null>(null);
+  const ttLinkMut = useMutation({
+    mutationFn: ({ id, tiktokCampaignId }: { id: string; tiktokCampaignId: string | null }) => crmApi.setTikTokLink(id, tiktokCampaignId),
+    onSuccess: (_c, v) => {
+      toast.success(v.tiktokCampaignId ? t('crm.campaigns.tiktokLink.saved', 'Linked to the TikTok campaign.') : t('crm.campaigns.tiktokLink.unlinked', 'Unlinked from TikTok.'));
+      qc.invalidateQueries({ queryKey: ['crm'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err, t('crm.errors.save', 'Could not save.'))),
+  });
+  const [adLinkVariant, setAdLinkVariant] = useState<'universal' | 'code' | 'tiktok' | null>(null);
 
   useEffect(() => {
     if (!selectedId && campaigns.length > 0) setSelectedId(campaigns[0].id);
@@ -106,7 +123,7 @@ export default function CampaignsPage() {
     }
   };
 
-  const copyAdLink = async (link: string, variant: 'universal' | 'code') => {
+  const copyAdLink = async (link: string, variant: 'universal' | 'code' | 'tiktok') => {
     try {
       await navigator.clipboard.writeText(link);
       setAdLinkVariant(variant);
@@ -127,6 +144,7 @@ export default function CampaignsPage() {
     FACEBOOK: t('crm.campaigns.platform.FACEBOOK', 'Facebook'),
     INSTAGRAM: t('crm.campaigns.platform.INSTAGRAM', 'Instagram'),
     BOTH: t('crm.campaigns.platform.BOTH', 'Facebook + Instagram'),
+    TIKTOK: t('crm.campaigns.platform.TIKTOK', 'TikTok'),
   }[p]);
 
   return (
@@ -155,6 +173,9 @@ export default function CampaignsPage() {
           {syncedLine && (
             <p className="flex items-center gap-1.5 text-xs text-text-secondary" data-testid="synced-line"><RefreshCw className="h-3.5 w-3.5 shrink-0" /> {syncedLine}</p>
           )}
+          {tiktokSyncedLine && (
+            <p className="flex items-center gap-1.5 text-xs text-text-secondary" data-testid="synced-line-tiktok"><RefreshCw className="h-3.5 w-3.5 shrink-0" /> {tiktokSyncedLine}</p>
+          )}
           {/* Desktop table */}
           <GlassPanel padding="none" className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[760px] text-sm">
@@ -179,7 +200,7 @@ export default function CampaignsPage() {
                   >
                     <td className="px-4 py-3">
                       <button type="button" className="text-left" aria-pressed={c.id === selectedId} onClick={() => setSelectedId(c.id)}>
-                        <div className="font-semibold">{c.name}</div>
+                        <div className="flex items-center gap-2"><span className="font-semibold">{c.name}</span><PlatformBadge kind={campaignPlatformKind(c)} /></div>
                         <div className="text-xs text-text-tertiary">{statusText(c.status)} · {platformText(c.platform)}</div>
                       </button>
                     </td>
@@ -214,7 +235,7 @@ export default function CampaignsPage() {
                 className={cn('w-full rounded-xl border p-4 text-left', c.id === selectedId ? 'border-ring/60 bg-bg-raised' : 'border-border-subtle bg-bg-sunken')}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="font-semibold">{c.name}</div>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2"><span className="font-semibold">{c.name}</span><PlatformBadge kind={campaignPlatformKind(c)} /></div>
                   <CodeBadge code={c.code} />
                 </div>
                 <div className="mt-0.5 text-xs text-text-tertiary">{statusText(c.status)} · {platformText(c.platform)}</div>
@@ -234,7 +255,7 @@ export default function CampaignsPage() {
             <div className="grid gap-5 lg:grid-cols-2">
               <GlassPanel padding="none" className="p-5">
                 <div className="mb-3 flex items-start justify-between gap-3">
-                  <h2 className="font-display text-2xl leading-tight">{selected.name}</h2>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2"><h2 className="font-display text-2xl leading-tight">{selected.name}</h2><PlatformBadge kind={campaignPlatformKind(selected)} /></div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button type="button" variant="ghost" size="icon-sm" aria-label={t('crm.campaigns.more', 'Campaign actions')}><MoreHorizontal /></Button>
@@ -290,6 +311,44 @@ export default function CampaignsPage() {
                     <p className="mt-2 text-xs text-text-tertiary">{t('crm.campaigns.adLink.help', 'For links outside Meta (Instagram bio, newsletter, other ad networks): the campaign code travels as utm_campaign.')}</p>
                   </details>
                 </div>
+                <div className="mt-5 border-t border-border-subtle pt-4" data-testid="tiktok-ad-link-block">
+                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.tiktokAdLink.title', 'Ad link for TikTok ads (one link for every ad)')}</div>
+                  <code className="block break-all rounded-lg border border-border-subtle bg-bg-sunken p-3 text-xs" data-testid="ad-link-tiktok">
+                    {buildTikTokAdLink(trackingQ.data?.landingPageUrl)}
+                  </code>
+                  <div className="mt-3">
+                    <Button type="button" variant="outline" className="gap-2" onClick={() => copyAdLink(buildTikTokAdLink(trackingQ.data?.landingPageUrl), 'tiktok')}>
+                      {adLinkCopied && adLinkVariant === 'tiktok' ? <Check /> : <Copy />} {adLinkCopied && adLinkVariant === 'tiktok' ? t('crm.campaigns.copiedShort', 'Copied') : t('crm.campaigns.tiktokAdLink.copy', 'Copy TikTok ad link')}
+                    </Button>
+                  </div>
+                  <p className="mt-3 text-xs text-text-tertiary">
+                    {t('crm.campaigns.tiktokAdLink.help', "Paste it once in the TikTok ad (Ads Manager > Ad > Destination URL, or the URL parameters field without the leading ?). TikTok fills __CAMPAIGN_ID__, __AID__ (ad group) and __CID__ (creative) for each ad and adds the ttclid click id by itself, so every landing visit is linked to its campaign automatically. Keep the macros UPPERCASE with two underscores on each side.")}
+                  </p>
+                </div>
+                <div className="mt-5 border-t border-border-subtle pt-4">
+                  <Label htmlFor="tiktok-link" className="mb-1 block text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.tiktokLink.title', 'TikTok campaign')}</Label>
+                  <select
+                    id="tiktok-link"
+                    className={cn(nativeSelectClass, 'w-full')}
+                    value={selected.tiktokCampaignId ?? ''}
+                    disabled={ttLinkMut.isPending}
+                    onChange={(e) => ttLinkMut.mutate({ id: selected.id, tiktokCampaignId: e.target.value || null })}
+                  >
+                    <option value="">{t('crm.campaigns.tiktokLink.none', 'Not linked to a TikTok campaign')}</option>
+                    {(tiktokCampaignsQ.data ?? []).map((m) => (
+                      <option key={m.tiktokCampaignId} value={m.tiktokCampaignId} disabled={!!m.linkedCampaignId && m.linkedCampaignId !== selected.id}>
+                        {m.name} · {m.tiktokCampaignId}{m.linkedCampaignId && m.linkedCampaignId !== selected.id ? ` (${t('crm.campaigns.metaLink.takenBy', 'linked to {{code}}', { code: m.linkedCampaignCode ?? '' })})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-text-tertiary">
+                    {selected.tiktokCampaignId
+                      ? t('crm.campaigns.tiktokLink.linkedHelp', 'Spend of TikTok campaign "{{name}}" syncs into this campaign, and landing visits from its ads are linked to it. Choose "Not linked" to stop.', { name: selected.tiktokCampaignName ?? selected.tiktokCampaignId })
+                      : (tiktokCampaignsQ.data ?? []).length === 0
+                        ? t('crm.campaigns.tiktokLink.empty', 'No TikTok campaigns known yet. Run "Sync now" in CRM settings > TikTok.')
+                        : t('crm.campaigns.tiktokLink.help', 'Link this campaign to its TikTok campaign to pull the ad spend automatically.')}
+                  </p>
+                </div>
                 <div className="mt-5 border-t border-border-subtle pt-4">
                   <Label htmlFor="meta-link" className="mb-1 block text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.metaLink.title', 'Meta campaign')}</Label>
                   <select
@@ -334,6 +393,8 @@ export default function CampaignsPage() {
                 <div className="mb-3 rounded-lg bg-bg-sunken px-3 py-2 text-sm" data-testid="spend-summary">
                   <div className="font-mono">{formatMoney(selected.spend, selected.spendCurrency)}</div>
                   <div className="text-xs text-text-tertiary">
+                    {tiktokSpendSplit(t, selected) ?? (
+                      <>
                     {selected.manualSeparate
                       ? t('crm.campaigns.spendSplitSeparate', 'Meta {{meta}}. Other costs {{other}} are in rupiah and are not added to {{currency}}.', {
                         meta: formatMoney(selected.metaSpend ?? 0, selected.spendCurrency),
@@ -344,6 +405,8 @@ export default function CampaignsPage() {
                         meta: formatMoney(selected.metaSpend ?? 0, selected.spendCurrency),
                         other: formatMoney(selected.manualSpend ?? 0, selected.spendCurrency),
                       })}
+                      </>
+                    )}
                     {(selected.impressions ?? 0) > 0 && <> · {t('crm.campaigns.imprClicks', '{{impr}} impr. · {{clicks}} clicks', { impr: compactNumber(selected.impressions ?? 0), clicks: compactNumber(selected.clicks ?? 0) })}</>}
                   </div>
                 </div>
@@ -356,14 +419,17 @@ export default function CampaignsPage() {
                           {s.source === 'META' && (
                             <span className="rounded bg-brand-cream/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" data-testid="meta-badge">{t('crm.campaigns.metaBadge', 'Meta')}</span>
                           )}
+                          {s.source === 'TIKTOK' && (
+                            <span className="rounded bg-text-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" data-testid="tiktok-badge">{t('crm.campaigns.tiktokBadge', 'TikTok')}</span>
+                          )}
                         </div>
-                        {s.source === 'META' && (s.impressions ?? 0) > 0 && (
+                        {s.source !== 'MANUAL' && (s.impressions ?? 0) > 0 && (
                           <div className="text-xs text-text-tertiary">{t('crm.campaigns.imprClicks', '{{impr}} impr. · {{clicks}} clicks', { impr: compactNumber(s.impressions ?? 0), clicks: compactNumber(s.clicks ?? 0) })}</div>
                         )}
                         {s.note && <div className="text-xs text-text-tertiary">{s.note}</div>}
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
-                        <span className="font-mono">{formatMoney(s.amount, s.source === 'META' ? s.currency : 'IDR')}</span>
+                        <span className="font-mono">{formatMoney(s.amount, s.source !== 'MANUAL' ? s.currency : 'IDR')}</span>
                         {s.readOnly ? <span className="inline-block w-8" aria-hidden /> : (
                           <Button
                             type="button" variant="ghost" size="icon-sm" className="text-text-tertiary"
@@ -376,7 +442,7 @@ export default function CampaignsPage() {
                   ))}
                   {spendQ.data?.length === 0 && <li className="py-6 text-center text-sm text-text-tertiary">{t('crm.campaigns.noSpend', 'No spend logged yet.')}</li>}
                 </ul>
-                <p className="mt-3 text-xs text-text-tertiary">{t('crm.campaigns.metaSpend', 'Meta ad spend syncs automatically. Use "Log other costs" for anything else (creative, studio, agency fees).')}</p>
+                <p className="mt-3 text-xs text-text-tertiary">{t('crm.campaigns.metaSpend', 'Meta ad spend syncs automatically. Use "Log other costs" for anything else (creative, studio, agency fees).')}{(selected.tiktokCampaignId || selected.platform === 'TIKTOK') ? ` ${t('crm.campaigns.tiktokSpend', 'TikTok ad spend syncs automatically too.')}` : ''}</p>
               </GlassPanel>
             </div>
           )}
@@ -458,6 +524,7 @@ function CampaignDialog({
               <option value="FACEBOOK">{t('crm.campaigns.platform.FACEBOOK', 'Facebook')}</option>
               <option value="INSTAGRAM">{t('crm.campaigns.platform.INSTAGRAM', 'Instagram')}</option>
               <option value="BOTH">{t('crm.campaigns.platform.BOTH', 'Facebook + Instagram')}</option>
+              <option value="TIKTOK">{t('crm.campaigns.platform.TIKTOK', 'TikTok')}</option>
             </select>
           </div>
           <div className="space-y-1.5"><Label htmlFor="cp-start">{t('crm.campaigns.start', 'Start')}</Label><MonomiDatePicker value={ymdToDate(f.startDate)} onChange={(d) => setF((p) => ({ ...p, startDate: d ? dateToYmd(d) : '' }))} /></div>
