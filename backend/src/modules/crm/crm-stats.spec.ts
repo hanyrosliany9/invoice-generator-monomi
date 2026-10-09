@@ -47,7 +47,14 @@ describe("parseRange", () => {
 });
 
 describe("CrmStatsService.stats", () => {
-  function build(leads: any[], spends: any[], metaLinked: any[] = [], metaDaily: any[] = [], syncState: any = null) {
+  function build(
+    leads: any[],
+    spends: any[],
+    metaLinked: any[] = [],
+    metaDaily: any[] = [],
+    syncState: any = null,
+    tiktok: { linked?: any[]; daily?: any[]; state?: any } = {},
+  ) {
     const prisma: any = {
       leadStage: { findMany: jest.fn(async () => stages) },
       lead: { findMany: jest.fn(async () => leads), count: jest.fn(async (a: any) => (a.where?.firstResponseAt === null ? 3 : 7)) },
@@ -56,11 +63,19 @@ describe("CrmStatsService.stats", () => {
         findMany: jest.fn(async (a: any) =>
           a?.where?.metaCampaignId
             ? metaLinked
-            : [{ id: "c1", name: "October Video Promo", code: "FB-OKT1" }, { id: "c2", name: "Reels", code: "IG-R" }],
+            : a?.where?.tiktokCampaignId
+              ? (tiktok.linked ?? [])
+              : [
+                  { id: "c1", name: "October Video Promo", code: "FB-OKT1", platform: "FACEBOOK", tiktokCampaignId: null },
+                  { id: "c2", name: "Reels", code: "IG-R", platform: "INSTAGRAM", tiktokCampaignId: null },
+                  { id: "c3", name: "TikTok Okt", code: "TT-OKT", platform: "TIKTOK", tiktokCampaignId: "1790000000000001" },
+                ],
         ),
       },
       metaAdsSyncState: { findUnique: jest.fn(async () => syncState) },
       metaAdsInsightDaily: { findMany: jest.fn(async () => metaDaily) },
+      tikTokAdsSyncState: { findUnique: jest.fn(async () => tiktok.state ?? null) },
+      tikTokAdsInsightDaily: { findMany: jest.fn(async () => tiktok.daily ?? []) },
     };
     const settings: any = { getThresholdMinutes: jest.fn(async () => 15) };
     return new CrmStatsService(prisma, settings);
@@ -180,5 +195,79 @@ describe("CrmStatsService.stats", () => {
     const c1 = s.byCampaign.find((c) => c.code === "FB-OKT1")!;
     expect(c1).toMatchObject({ spend: 60, metaSpend: 60 });
     expect(c1.costPerLead).toBeCloseTo(12);
+  });
+});
+
+describe("CrmStatsService.stats - TikTok spend", () => {
+  // reuse the module-level helpers through a tiny local build
+  const mk = (tiktok: any) => {
+    const prisma: any = {
+      leadStage: { findMany: jest.fn(async () => stages) },
+      lead: { findMany: jest.fn(async () => tiktokLeads), count: jest.fn(async () => 0) },
+      campaignSpend: { findMany: jest.fn(async () => []) },
+      campaign: {
+        findMany: jest.fn(async (a: any) =>
+          a?.where?.metaCampaignId
+            ? []
+            : a?.where?.tiktokCampaignId
+              ? [{ id: "c3", tiktokCampaignId: "1790000000000001" }]
+              : [
+                  { id: "c1", name: "Meta Okt", code: "FB-OKT1", platform: "FACEBOOK", tiktokCampaignId: null },
+                  { id: "c3", name: "TikTok Okt", code: "TT-OKT", platform: "TIKTOK", tiktokCampaignId: "1790000000000001" },
+                ],
+        ),
+      },
+      metaAdsSyncState: { findUnique: jest.fn(async () => null) },
+      metaAdsInsightDaily: { findMany: jest.fn(async () => []) },
+      tikTokAdsSyncState: { findUnique: jest.fn(async () => tiktok.state) },
+      tikTokAdsInsightDaily: { findMany: jest.fn(async () => tiktok.daily) },
+    };
+    return new CrmStatsService(prisma, { getThresholdMinutes: jest.fn(async () => 15) } as any);
+  };
+  const tiktokLeads = [
+    lead("m1", "QUALIFIED", { campaignId: "c1", activities: hist("QUALIFIED") }),
+    lead("t1", "QUALIFIED", { campaignId: "c3", activities: hist("QUALIFIED") }),
+    lead("t2", "NEW", { campaignId: "c3" }),
+  ];
+  const daily = [
+    { tiktokCampaignId: "1790000000000001", amount: 600_000, impressions: 1000, clicks: 40 },
+    { tiktokCampaignId: "1790000000000001", amount: 400_000, impressions: 500, clicks: 10 },
+  ];
+
+  it("adds synced TikTok spend to the totals and the campaign, and splits the cost-per numbers by platform", async () => {
+    const s = await mk({ state: { currency: "IDR", timezoneName: "Asia/Jakarta", lastSuccessAt: new Date("2026-10-09T05:00:00Z") }, daily }).stats({
+      from: "2026-10-01",
+      to: "2026-10-31",
+    });
+    expect(s.spend).toBe(1_000_000);
+    expect(s.tiktokSpend).toBe(1_000_000);
+    expect(s.tiktokSeparate).toBe(false);
+    expect(s.tiktokLastSyncAt).toBe("2026-10-09T05:00:00.000Z");
+    const c3 = s.byCampaign.find((c) => c.campaignId === "c3")!;
+    expect(c3).toMatchObject({ platform: "TIKTOK", tiktokSpend: 1_000_000, spend: 1_000_000, manualSpend: 0, impressions: 1500, clicks: 50, leads: 2 });
+    expect(c3.costPerLead).toBe(500_000);
+    expect(c3.costPerQualified).toBe(1_000_000);
+    const tt = s.byPlatform.find((p) => p.platform === "TIKTOK")!;
+    const meta = s.byPlatform.find((p) => p.platform === "META")!;
+    expect(tt).toMatchObject({ leads: 2, qualified: 1, spend: 1_000_000, costPerLead: 500_000 });
+    expect(meta).toMatchObject({ leads: 1, spend: 0 });
+  });
+
+  it("a TikTok account in another currency is reported but kept out of the rupiah totals", async () => {
+    const s = await mk({ state: { currency: "USD", timezoneName: "Asia/Jakarta", lastSuccessAt: null }, daily }).stats({
+      from: "2026-10-01",
+      to: "2026-10-31",
+    });
+    expect(s.spend).toBe(0);
+    expect(s.tiktokSpend).toBe(1_000_000);
+    expect(s.tiktokSeparate).toBe(true);
+    expect(s.tiktokCurrency).toBe("USD");
+  });
+
+  it("with no TikTok data everything is unchanged (zero TikTok spend, Meta platform row only has leads)", async () => {
+    const s = await mk({ state: null, daily: [] }).stats({ from: "2026-10-01", to: "2026-10-31" });
+    expect(s.tiktokSpend).toBe(0);
+    expect(s.spend).toBe(0);
+    expect(s.byPlatform.find((p) => p.platform === "TIKTOK")!.spend).toBe(0);
   });
 });

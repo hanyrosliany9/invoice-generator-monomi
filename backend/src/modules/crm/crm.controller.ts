@@ -17,6 +17,7 @@ import { CrmCampaignsService } from "./crm-campaigns.service";
 import { CrmLeadsService } from "./crm-leads.service";
 import { CrmSettingsService } from "./crm-settings.service";
 import { MetaAdsAdminService } from "./meta-ads/meta-ads-admin.service";
+import { TikTokAdsAdminService } from "./tiktok-ads/tiktok-ads-admin.service";
 import { CrmStatsService } from "./crm-stats.service";
 import {
   AddLeadPhoneDto,
@@ -43,6 +44,8 @@ import {
   UpdateLeadDto,
   UpdateSpendDto,
   SetMetaLinkDto,
+  SetTikTokLinkDto,
+  ConnectTikTokAdsDto,
   UpdateStageDto,
 } from "./dto/crm.dto";
 
@@ -62,6 +65,7 @@ export class CrmController {
     private readonly settings: CrmSettingsService,
     private readonly stats: CrmStatsService,
     private readonly metaAds: MetaAdsAdminService,
+    private readonly tiktokAds: TikTokAdsAdminService,
   ) {}
 
   private uid(req: any): string | null {
@@ -258,6 +262,12 @@ export class CrmController {
     return this.metaAds.setLink(id, dto.metaCampaignId);
   }
 
+  @Put("campaigns/:id/tiktok-link")
+  @ApiOperation({ summary: "Link a CRM campaign to a TikTok campaign (or unlink with null)" })
+  setTikTokLink(@Param("id") id: string, @Body() dto: SetTikTokLinkDto) {
+    return this.tiktokAds.setLink(id, dto.tiktokCampaignId);
+  }
+
   @Get("campaigns/:id/spend")
   listSpend(@Param("id") id: string) {
     return this.campaigns.listSpend(id);
@@ -291,6 +301,40 @@ export class CrmController {
   @ApiOperation({ summary: "Sync ad spend from Meta now" })
   metaAdsSync() {
     return this.metaAds.syncNow();
+  }
+
+  // ---- TikTok Ads sync ---------------------------------------------------
+
+  @Get("tiktok-ads/status")
+  @ApiOperation({ summary: "TikTok Ads sync status (admin)" })
+  tiktokAdsStatus() {
+    return this.tiktokAds.status();
+  }
+
+  @Post("tiktok-ads/sync")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Sync ad spend from TikTok now" })
+  tiktokAdsSync() {
+    return this.tiktokAds.syncNow();
+  }
+
+  @Get("tiktok-ads/campaigns")
+  @ApiOperation({ summary: "TikTok campaigns known from the last syncs (for the link dropdown)" })
+  tiktokAdsCampaigns() {
+    return this.tiktokAds.listTikTokCampaigns();
+  }
+
+  @Post("tiktok-ads/connect")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Connect TikTok Ads: exchange the OAuth auth_code for the long-term token (stored encrypted, never shown again)" })
+  tiktokAdsConnect(@Body() dto: ConnectTikTokAdsDto) {
+    return this.tiktokAds.connect(dto.authCode);
+  }
+
+  @Delete("tiktok-ads/connect")
+  @ApiOperation({ summary: "Forget the stored TikTok Ads token" })
+  tiktokAdsDisconnect() {
+    return this.tiktokAds.disconnect();
   }
 
   @Get("meta-ads/campaigns")

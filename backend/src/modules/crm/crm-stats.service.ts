@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { loadMetaSpend } from "./meta-ads/meta-ads-spend";
+import { loadTikTokSpend } from "./tiktok-ads/tiktok-ads-spend";
 import { dateOnly, wibDateString } from "./meta-ads/meta-ads.utils";
 import { CrmSettingsService } from "./crm-settings.service";
 import {
@@ -55,6 +56,11 @@ interface LeadRow {
     totalAmount: unknown;
     invoices: Array<{ status: string; totalAmount: unknown }>;
   } | null;
+}
+
+/** TikTok when the CRM campaign is linked to a TikTok campaign or marked TikTok, else Meta. */
+export function platformOfCampaign(c: { platform?: string | null; tiktokCampaignId?: string | null } | undefined): "META" | "TIKTOK" {
+  return c?.tiktokCampaignId || c?.platform === "TIKTOK" ? "TIKTOK" : "META";
 }
 
 /** Revenue of one lead: approved quotation total (never less than paid), else paid invoices. */
@@ -134,7 +140,9 @@ export class CrmStatsService {
           ...(params.campaignId ? { campaignId: params.campaignId } : {}),
         },
       }),
-      this.prisma.campaign.findMany({ select: { id: true, name: true, code: true } }),
+      this.prisma.campaign.findMany({
+        select: { id: true, name: true, code: true, platform: true, tiktokCampaignId: true },
+      }),
       this.prisma.lead.count({
         where: {
           firstResponseAt: null,
@@ -194,6 +202,17 @@ export class CrmStatsService {
     }
     const metaSpendTotal = [...meta.byCampaign.values()].reduce((s, m) => s + m.amount, 0);
 
+    // synced TikTok spend adds to the rupiah totals too (a foreign-currency account is kept apart)
+    const tiktok = await loadTikTokSpend(this.prisma, { range, campaignId: params.campaignId });
+    const ttSeparate = tiktok.currency !== "IDR";
+    if (!ttSeparate) {
+      for (const [cid, m] of tiktok.byCampaign) {
+        spend += m.amount;
+        spendByCampaign.set(cid, (spendByCampaign.get(cid) ?? 0) + m.amount);
+      }
+    }
+    const tiktokSpendTotal = [...tiktok.byCampaign.values()].reduce((s, m) => s + m.amount, 0);
+
     // waiting leads (no chat yet) have nothing to answer
     const responseMinutes = leads
       .filter((l) => l.firstResponseAt && !l.awaitingWhatsapp)
@@ -248,7 +267,8 @@ export class CrmStatsService {
           }).length
         : 0;
       const metaSp = meta.byCampaign.get(id)?.amount ?? 0;
-      const cm = campaignCostMetrics(sp - metaSp, metaSp, { leads: cl.length, qualified: qualifiedN, won: wonN });
+      const ttSp = ttSeparate ? 0 : (tiktok.byCampaign.get(id)?.amount ?? 0);
+      const cm = campaignCostMetrics(sp - metaSp - ttSp, metaSp + ttSp, { leads: cl.length, qualified: qualifiedN, won: wonN });
       return {
         campaignId: id,
         name: c?.name ?? "-",
@@ -258,15 +278,39 @@ export class CrmStatsService {
         won: wonN,
         revenue: cl.reduce((s, r) => s + r.revenue, 0),
         spend: sp,
+        platform: platformOfCampaign(c),
         metaSpend: metaSp,
+        tiktokSpend: tiktok.byCampaign.get(id)?.amount ?? 0,
         manualSpend: manualByCampaign.get(id) ?? 0,
-        impressions: meta.byCampaign.get(id)?.impressions ?? 0,
-        clicks: meta.byCampaign.get(id)?.clicks ?? 0,
+        impressions: (meta.byCampaign.get(id)?.impressions ?? 0) + (tiktok.byCampaign.get(id)?.impressions ?? 0),
+        clicks: (meta.byCampaign.get(id)?.clicks ?? 0) + (tiktok.byCampaign.get(id)?.clicks ?? 0),
         costPerLead: cm.costPerLead,
         costPerQualified: cm.costPerQualified,
         costPerClient: cm.costPerClient,
       };
     }).sort((a, b) => b.leads - a.leads);
+
+    // spend and cost-per numbers split by ad platform (campaigns without a TikTok link count as Meta)
+    const byPlatform = (["META", "TIKTOK"] as const).map((platform) => {
+      const rows = byCampaign.filter((r) => r.platform === platform);
+      const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((s, r) => s + f(r), 0);
+      const pSpend = sum((r) => r.spend);
+      const pLeads = sum((r) => r.leads);
+      const pQualified = sum((r) => r.qualified);
+      const pWon = sum((r) => r.won);
+      return {
+        platform,
+        campaigns: rows.length,
+        leads: pLeads,
+        qualified: pQualified,
+        won: pWon,
+        revenue: sum((r) => r.revenue),
+        spend: pSpend,
+        costPerLead: safeDivide(pSpend, pLeads),
+        costPerQualified: safeDivide(pSpend, pQualified),
+        costPerClient: safeDivide(pSpend, pWon),
+      };
+    });
 
     const noCampaign = revenues.filter((r) => !r.l.campaignId);
     return {
@@ -285,6 +329,11 @@ export class CrmStatsService {
       revenuePending: revenue - revenuePaid,
       spend,
       metaSpend: metaSpendTotal,
+      tiktokSpend: tiktokSpendTotal,
+      /** true: the TikTok account is not IDR, so its spend is NOT in spend / cost per */
+      tiktokSeparate: ttSeparate,
+      tiktokCurrency: tiktok.currency,
+      tiktokLastSyncAt: tiktok.lastSyncAt ? tiktok.lastSyncAt.toISOString() : null,
       manualSpend: manualSpendTotal,
       /** true: manual (IDR) costs are NOT in spend / cost per, because the Meta account is not IDR */
       manualSeparate: mixed,
@@ -304,6 +353,7 @@ export class CrmStatsService {
       byOwner,
       bySource: [...sourceMap.values()].sort((a, b) => b.leads - a.leads),
       byCampaign,
+      byPlatform,
       noCampaign: { leads: noCampaign.length, won: noCampaign.filter((r) => r.l.stage.type === "WON").length },
       funnel,
       dropOff: findDropOff(funnel),

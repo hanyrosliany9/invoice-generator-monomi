@@ -225,12 +225,15 @@ export class CrmLeadsService {
           },
         },
         metaEvents: { orderBy: { createdAt: "asc" } },
+        tiktokEvents: { orderBy: { createdAt: "asc" } },
         // no ip / user agent / browser ids: only what staff need to see
         adClicks: {
           orderBy: { createdAt: "desc" },
           select: {
             id: true,
             linkedVia: true,
+            attributedPlatform: true,
+            attributionReason: true,
             ref: true,
             createdAt: true,
             linkedAt: true,
@@ -259,6 +262,23 @@ export class CrmLeadsService {
       [...adClicks].reverse().find((c) => c.linkedVia === "AUTO_CREATE") ??
       null;
     const adClick = latest ? (({ id: _id, linkedVia: _via, ...c }) => c)(latest) : null;
+    // Which platform gets this lead's events: the LATEST converting click (KODE / AUTO_CREATE, never HANDLE).
+    const converting = adClicks.find((c) => c.linkedVia === "KODE" || c.linkedVia === "AUTO_CREATE") ?? null;
+    const attribution = converting
+      ? {
+          platform: (converting.attributedPlatform ?? "NONE") as "META" | "TIKTOK" | "NONE",
+          reason: converting.attributionReason ?? null,
+          ref: converting.ref ?? null,
+          at: converting.createdAt,
+        }
+      : null;
+    // the TikTok Contact event is sent at tap time and belongs to the click, not the lead
+    const tiktokClickEvent = converting
+      ? ((await this.prisma.tikTokEventOutbox.findFirst({
+          where: { eventName: "Contact", adClickId: converting.id },
+          select: { status: true, eventTime: true, sentAt: true, lastError: true },
+        })) ?? null)
+      : null;
     // The website Lead event is sent at click time and belongs to the click, not the lead.
     const adClickEvent = latest
       ? ((await this.prisma.metaEventOutbox.findFirst({
@@ -278,6 +298,8 @@ export class CrmLeadsService {
         .map((c) => c.ref)
         .filter((r): r is string => !!r),
       adClickEvent,
+      attribution,
+      tiktokClickEvent,
       thresholdMinutes: threshold,
     };
   }

@@ -385,6 +385,61 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   META_WEB_CAPI_GRAPH_BASE_URL?: string;
+
+  // TikTok Events API + TikTok Ads spend sync. All optional and OFF by default;
+  // values are validated in depth by ad-tracking/tiktok-events.config.ts and
+  // crm/tiktok-ads/tiktok-ads.config.ts (a bad value only keeps the feature off).
+  @IsString()
+  @IsOptional()
+  TIKTOK_PIXEL_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_EVENTS_ACCESS_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_EVENTS_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_TEST_EVENT_CODE?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_EVENTS_MAX_AGE_DAYS?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_EVENTS_API_BASE_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_ADS_SYNC_ENABLED?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_ADVERTISER_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_ADS_ACCESS_TOKEN?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_ADS_APP_ID?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_ADS_APP_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_ADS_SYNC_BACKFILL_DAYS?: string;
+
+  @IsString()
+  @IsOptional()
+  TIKTOK_ADS_API_BASE_URL?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

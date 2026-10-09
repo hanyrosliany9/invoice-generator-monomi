@@ -97,7 +97,7 @@ export function parseCount(raw: unknown): number {
 const CODE_MAX = 24;
 
 /** "PB-CAMP-LINK  (copy)" -> "PB-CAMP-LINK-COPY"; fits the campaign code rule (2-24 chars of A-Z 0-9 - _). */
-export function sanitizeCampaignCode(name: string, metaCampaignId: string): string {
+export function sanitizeCampaignCode(name: string, metaCampaignId: string, fallbackPrefix = "META"): string {
   let s = name
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
@@ -107,7 +107,7 @@ export function sanitizeCampaignCode(name: string, metaCampaignId: string): stri
     .replace(/^[-_]+/, "")
     .slice(0, CODE_MAX)
     .replace(/[-_]+$/, "");
-  if (s.length < 2) s = `META-${metaCampaignId.slice(-6)}`;
+  if (s.length < 2) s = `${fallbackPrefix}-${metaCampaignId.slice(-6)}`;
   return s;
 }
 

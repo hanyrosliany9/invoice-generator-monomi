@@ -9,6 +9,7 @@ import {
 } from "./dto/crm.dto";
 import { campaignCostMetrics, maxReachedOrder } from "./crm.utils";
 import { loadMetaSpend } from "./meta-ads/meta-ads-spend";
+import { loadTikTokSpend } from "./tiktok-ads/tiktok-ads-spend";
 
 @Injectable()
 export class CrmCampaignsService {
@@ -20,7 +21,7 @@ export class CrmCampaignsService {
   }
 
   async list() {
-    const [campaigns, leadRows, qualifiedStage, spends, meta] = await Promise.all([
+    const [campaigns, leadRows, qualifiedStage, spends, meta, tiktok] = await Promise.all([
       this.prisma.campaign.findMany({ orderBy: [{ status: "asc" }, { createdAt: "desc" }] }),
       this.prisma.lead.findMany({
         where: { campaignId: { not: null } },
@@ -36,7 +37,10 @@ export class CrmCampaignsService {
       this.prisma.leadStage.findFirst({ where: { key: "QUALIFIED", isActive: true }, select: { order: true } }),
       this.prisma.campaignSpend.groupBy({ by: ["campaignId"], _sum: { amount: true } }),
       loadMetaSpend(this.prisma),
+      loadTikTokSpend(this.prisma),
     ]);
+    // a TikTok account in another currency is kept apart (never added to rupiah totals)
+    const ttSeparate = tiktok.currency !== "IDR";
     const counts = new Map<string, { leads: number; qualified: number; won: number }>();
     for (const l of leadRows) {
       const e = counts.get(l.campaignId as string) ?? { leads: 0, qualified: 0, won: 0 };
@@ -53,7 +57,8 @@ export class CrmCampaignsService {
       const m = meta.byCampaign.get(c.id);
       // rupiah manual costs are not added to a foreign-currency Meta account: kept apart
       const mixed = meta.currency !== "IDR";
-      const cm = campaignCostMetrics(mixed ? 0 : manualSpend, m?.amount ?? 0, n);
+      const t = tiktok.byCampaign.get(c.id);
+      const cm = campaignCostMetrics(mixed ? 0 : manualSpend, (m?.amount ?? 0) + (ttSeparate ? 0 : (t?.amount ?? 0)), n);
       return {
         ...c,
         budget: c.budget === null ? null : Number(c.budget),
@@ -63,8 +68,13 @@ export class CrmCampaignsService {
         spend: cm.spend,
         manualSpend,
         metaSpend: m?.amount ?? 0,
-        impressions: m?.impressions ?? 0,
-        clicks: m?.clicks ?? 0,
+        tiktokSpend: t?.amount ?? 0,
+        tiktokImpressions: t?.impressions ?? 0,
+        tiktokClicks: t?.clicks ?? 0,
+        tiktokCurrency: tiktok.currency,
+        tiktokSeparate: ttSeparate,
+        impressions: (m?.impressions ?? 0) + (t?.impressions ?? 0),
+        clicks: (m?.clicks ?? 0) + (t?.clicks ?? 0),
         spendCurrency: meta.currency,
         manualSeparate: mixed,
         costPerLead: cm.costPerLead,
@@ -150,7 +160,30 @@ export class CrmCampaignsService {
       orderBy: { dateFrom: "desc" },
     });
     const manual = rows.map((r) => ({ ...r, amount: Number(r.amount) }));
-    if (!campaign.metaCampaignId) return manual;
+    const tiktokDaily = campaign.tiktokCampaignId
+      ? await this.prisma.tikTokAdsInsightDaily.findMany({
+          where: { tiktokCampaignId: campaign.tiktokCampaignId },
+          orderBy: { date: "desc" },
+        })
+      : [];
+    const tiktokSynced = tiktokDaily.map((d) => ({
+      id: `tiktok:${d.date.toISOString().slice(0, 10)}`,
+      campaignId,
+      dateFrom: d.date,
+      dateTo: d.date,
+      amount: Number(d.amount),
+      currency: d.currency,
+      impressions: d.impressions,
+      clicks: d.clicks,
+      note: null,
+      source: "TIKTOK" as const,
+      createdById: null,
+      createdAt: d.updatedAt,
+      readOnly: true,
+    }));
+    if (!campaign.metaCampaignId) {
+      return [...manual, ...tiktokSynced].sort((a, b) => b.dateFrom.getTime() - a.dateFrom.getTime());
+    }
     const daily = await this.prisma.metaAdsInsightDaily.findMany({
       where: { metaCampaignId: campaign.metaCampaignId },
       orderBy: { date: "desc" },
@@ -170,7 +203,7 @@ export class CrmCampaignsService {
       createdAt: d.updatedAt,
       readOnly: true,
     }));
-    return [...manual, ...synced].sort((a, b) => b.dateFrom.getTime() - a.dateFrom.getTime());
+    return [...manual, ...synced, ...tiktokSynced].sort((a, b) => b.dateFrom.getTime() - a.dateFrom.getTime());
   }
 
   async addSpend(campaignId: string, dto: CreateSpendDto, actorId: string | null) {

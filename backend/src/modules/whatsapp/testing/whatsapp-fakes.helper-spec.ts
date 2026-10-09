@@ -118,6 +118,9 @@ const DEFAULTS: Record<string, () => Row> = {
     sentAt: null,
     value: null,
   }),
+  tikTokAdsSyncState: () => ({ tokenEnc: null, rateLimitedUntil: null, rateLimitStrikes: 0, leaseUntil: null }),
+  tikTokAdsInsightDaily: () => ({ impressions: 0, clicks: 0 }),
+  tikTokAdsCampaign: () => ({ autoLinkDisabled: false }),
   tikTokEventOutbox: () => ({
     adClickId: null,
     attempts: 0,

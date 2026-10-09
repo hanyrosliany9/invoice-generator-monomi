@@ -433,6 +433,19 @@ export class StatsQueryDto {
   campaignId?: string;
 }
 
+export class SetTikTokLinkDto {
+  /** Numeric TikTok campaign id, or null to unlink. */
+  @ValidateIf((_, v) => v !== null)
+  @IsString() @Matches(/^\d{5,25}$/, { message: "ID kampanye TikTok harus berupa angka" })
+  tiktokCampaignId: string | null;
+}
+
+export class ConnectTikTokAdsDto {
+  /** auth_code from the TikTok OAuth redirect (single use, valid about an hour). */
+  @IsString() @Matches(/^[A-Za-z0-9_-]{8,256}$/, { message: "Kode otorisasi tidak valid" })
+  authCode: string;
+}
+
 export class SetMetaLinkDto {
   /** Numeric Meta campaign id, or null to unlink. */
   @ValidateIf((_, v) => v !== null)

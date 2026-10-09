@@ -13,6 +13,8 @@ import { CrmStatsService } from "./crm-stats.service";
 import { MetaGraphClient } from "../social-publishing/meta-graph.client";
 import { MetaAdsAdminService } from "./meta-ads/meta-ads-admin.service";
 import { MetaAdsSyncService } from "./meta-ads/meta-ads-sync.service";
+import { TikTokAdsAdminService } from "./tiktok-ads/tiktok-ads-admin.service";
+import { TikTokAdsSyncService } from "./tiktok-ads/tiktok-ads-sync.service";
 
 /**
  * CRM phase A: leads, pipeline stages, campaigns + spend, stats, Meta event
@@ -30,6 +32,8 @@ import { MetaAdsSyncService } from "./meta-ads/meta-ads-sync.service";
     MetaGraphClient,
     MetaAdsSyncService,
     MetaAdsAdminService,
+    TikTokAdsSyncService,
+    TikTokAdsAdminService,
   ],
   exports: [CrmLeadsService, CrmSettingsService],
 })
