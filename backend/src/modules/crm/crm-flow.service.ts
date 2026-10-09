@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { LeadStageType, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { CrmOutboxService, MetaEventName, META_EVENTS } from "./crm-outbox.service";
+import { activityEventLabel, CrmOutboxService, MetaEventName, META_EVENTS } from "./crm-outbox.service";
 
 export interface ChangeStageOptions {
   note?: string | null;
@@ -104,15 +104,16 @@ export class CrmFlowService {
       let metaEvent: string | null = null;
       // Skipping past Qualified (e.g. New -> Convert / Won) still reports the
       // qualified signal once; queued first so it precedes any Purchase.
-      if (impliesQualified && (await this.outbox.queueEvent(tx, updated, "QualifiedLead", { eventTime: now }))) {
-        metaEvent = "QualifiedLead";
+      if (impliesQualified) {
+        const r = await this.outbox.queueEventResult(tx, updated, "QualifiedLead", { eventTime: now });
+        if (r.created) metaEvent = activityEventLabel(r);
       }
       if (this.isMetaEvent(toStage.metaEvent)) {
-        const created = await this.outbox.queueEvent(tx, updated, toStage.metaEvent, {
+        const r = await this.outbox.queueEventResult(tx, updated, toStage.metaEvent, {
           value,
           eventTime: now,
         });
-        if (created) metaEvent = toStage.metaEvent;
+        if (r.created) metaEvent = activityEventLabel(r);
       }
       await tx.leadActivity.create({
         data: {

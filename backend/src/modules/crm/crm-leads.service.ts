@@ -15,7 +15,7 @@ import { AutoLeadService } from "../ad-tracking/auto-lead.service";
 import { extractRefCode, normalizeRefCode } from "../ad-tracking/ref-code";
 import { extractInstagramHandle, normalizeInstagramHandle } from "../ad-tracking/track-utils";
 import { CrmFlowService } from "./crm-flow.service";
-import { CrmOutboxService } from "./crm-outbox.service";
+import { activityEventLabel, CrmOutboxService } from "./crm-outbox.service";
 import { CrmSettingsService } from "./crm-settings.service";
 import {
   ConvertLeadDto,
@@ -463,9 +463,8 @@ export class CrmLeadsService {
         if (linked) linkedRef = linked.ref;
       }
       if (WHATSAPP_SOURCES.includes(source)) {
-        if (await this.outbox.queueEvent(tx, created, "LeadSubmitted", { eventTime: firstContactAt })) {
-          metaEvent = "LeadSubmitted";
-        }
+        const r = await this.outbox.queueEventResult(tx, created, "LeadSubmitted", { eventTime: firstContactAt });
+        if (r.created) metaEvent = activityEventLabel(r);
       }
       if (stage.metaEvent === "QualifiedLead") {
         await this.outbox.queueEvent(tx, created, "QualifiedLead", { eventTime: now });

@@ -10960,7 +10960,8 @@
         "website": "Dicocokkan lewat klik website",
         "whatsapp": "lewat klik iklan WhatsApp",
         "leadAtClick": "Lead (terkirim saat tombol diketuk)"
-      }
+      },
+      "notToMeta": "Klik iklan terakhir lead ini berasal dari TikTok, jadi event-nya masuk ke TikTok, bukan Meta (lihat di bawah)."
     },
     "time": {
       "min": "{{n}} mnt",
@@ -11008,7 +11009,8 @@
       "mergedFrom": "Lead landing page yang menunggu digabung ke sini · Kode",
       "mergedInto": "Duplikat: digabung ke lead",
       "neverSentWhatsapp": "Ditutup: tidak pernah mengirim pesan WhatsApp",
-      "returningClientPlain": "Klien lama"
+      "returningClientPlain": "Klien lama",
+      "tiktok": "TikTok: {{event}}"
     },
     "lost": {
       "done": "Lead ditandai kalah.",

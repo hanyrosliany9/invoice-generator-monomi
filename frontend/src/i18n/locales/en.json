@@ -10965,7 +10965,8 @@
         "website": "Matched via website click",
         "whatsapp": "via WhatsApp ad click",
         "leadAtClick": "Lead (sent when the button was tapped)"
-      }
+      },
+      "notToMeta": "The latest ad click of this lead came from TikTok, so its events go to TikTok, not Meta (see below)."
     },
     "time": {
       "min": "{{n}} min",
@@ -11013,7 +11014,8 @@
       "mergedFrom": "Waiting landing-page lead merged into this one · Kode",
       "mergedInto": "Duplicate: merged into lead",
       "neverSentWhatsapp": "Closed: never sent the WhatsApp message",
-      "returningClientPlain": "Returning client"
+      "returningClientPlain": "Returning client",
+      "tiktok": "TikTok: {{event}}"
     },
     "lost": {
       "done": "Lead marked as lost.",

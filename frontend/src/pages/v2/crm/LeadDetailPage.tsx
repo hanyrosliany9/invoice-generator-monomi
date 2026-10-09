@@ -73,7 +73,14 @@ function formSkipped(parsed: { key: string; text: string | null }, lead: LeadDet
 function ActivityRow({ a, lead }: { a: LeadActivity; lead: LeadDetail }) {
   const { t, stageLabel, sourceLabel, formatDateTime, activityText } = useCrmLabels();
   const who = a.actor?.name;
-  const meta = a.metaEvent ? <span className="text-text-tertiary"> · {t('crm.history.meta', 'Meta: {{event}}', { event: a.metaEvent })}</span> : null;
+  const meta = a.metaEvent
+    ? (
+      <span className="text-text-tertiary"> · {a.metaEvent.startsWith('tiktok:')
+        ? t('crm.history.tiktok', 'TikTok: {{event}}', { event: a.metaEvent.slice(7) })
+        : t('crm.history.meta', 'Meta: {{event}}', { event: a.metaEvent })}
+      </span>
+    )
+    : null;
   let body: React.ReactNode;
   switch (a.type) {
     case 'STAGE_CHANGE':
@@ -503,6 +510,9 @@ export default function LeadDetailPage() {
 
           <Section title={t('crm.meta.title', 'Events sent to Meta')}>
             <p className="mb-3 text-xs text-text-tertiary">{t('crm.meta.desc', 'Sent automatically once Meta approves our permissions.')}</p>
+            {lead.attribution?.platform === 'TIKTOK' && (
+              <p className="mb-3 text-xs text-warning" data-testid="meta-not-sent">{t('crm.meta.notToMeta', 'The latest ad click of this lead came from TikTok, so its events go to TikTok, not Meta (see below).')}</p>
+            )}
             <ul className="space-y-2">
               {lead.adClick && lead.adClickEvent && (
                 <li className="text-sm" data-testid="meta-row-lead-click">

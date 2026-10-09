@@ -21,6 +21,17 @@ type Db = Pick<Prisma.TransactionClient, "metaEventOutbox"> &
 
 export type OutboxRoute = "BUSINESS_MESSAGING" | "WEBSITE";
 
+/** Where a queued stage event went: `eventName` is the event on THAT platform's outbox. */
+export interface QueueResult {
+  created: boolean;
+  platform: "META" | "TIKTOK";
+  eventName: string;
+}
+
+/** Timeline label of the event a stage change queued: Meta's name, or "tiktok:<TikTok event>". */
+export const activityEventLabel = (r: QueueResult): string =>
+  r.platform === "TIKTOK" ? `tiktok:${r.eventName}` : r.eventName;
+
 /**
  * Which Conversions API route carries a lead's stage events:
  *  - a Click-to-WhatsApp id wins (business_messaging) — never both routes;
@@ -79,6 +90,16 @@ export class CrmOutboxService {
     eventName: MetaEventName,
     opts: { value?: number | null; eventTime?: Date } = {},
   ): Promise<boolean> {
+    return (await this.queueEventResult(db, lead, eventName, opts)).created;
+  }
+
+  /** Like queueEvent, but also says which platform's outbox took the event. */
+  async queueEventResult(
+    db: Db,
+    lead: OutboxLead,
+    eventName: MetaEventName,
+    opts: { value?: number | null; eventTime?: Date } = {},
+  ): Promise<QueueResult> {
     const eventTime = opts.eventTime ?? new Date();
     // Last-touch platform: the latest converting click decides, so a repeat
     // conversion from another platform switches FUTURE events; events already
@@ -87,13 +108,14 @@ export class CrmOutboxService {
       const latest = await latestEventClick({ adClick: db.adClick }, lead.id);
       if (latest?.attributedPlatform === "TIKTOK") {
         const tt = TIKTOK_EVENT_FOR_META[eventName];
-        if (!tt) return false;
+        if (!tt) return { created: false, platform: "TIKTOK", eventName };
         // "Lead" needs the phone (it is also queued when the chat fills it in)
-        if (tt === "Lead" && !lead.phone) return false;
-        return queueTikTokEvent({ tikTokEventOutbox: db.tikTokEventOutbox }, lead.id, latest.id, tt, {
+        if (tt === "Lead" && !lead.phone) return { created: false, platform: "TIKTOK", eventName: tt };
+        const created = await queueTikTokEvent({ tikTokEventOutbox: db.tikTokEventOutbox }, lead.id, latest.id, tt, {
           value: opts.value ?? null,
           eventTime,
         });
+        return { created, platform: "TIKTOK", eventName: tt };
       }
     }
     // a lead may hold several landing-page clicks: only a confirmed (KODE) or
@@ -102,7 +124,7 @@ export class CrmOutboxService {
     const click = clickId ? { id: clickId } : null;
     const route = chooseRoute(lead, !!click);
     // The website Lead was already sent when the WhatsApp button was tapped.
-    if (route === "WEBSITE" && eventName === "LeadSubmitted") return false;
+    if (route === "WEBSITE" && eventName === "LeadSubmitted") return { created: false, platform: "META", eventName };
     const dedupeKey = `${lead.id}:${eventName}`;
     const value = opts.value ?? null;
     const payload = this.buildPayload(lead, eventName, eventTime, value) as Prisma.InputJsonValue;
@@ -129,6 +151,6 @@ export class CrmOutboxService {
         data: { value: new Prisma.Decimal(value), payload },
       });
     }
-    return created.count > 0;
+    return { created: created.count > 0, platform: "META", eventName };
   }
 }

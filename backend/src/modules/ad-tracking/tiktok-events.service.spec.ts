@@ -204,6 +204,16 @@ describe("TikTok routing, outbox and sender", () => {
       expect(t.metaEventOutbox.filter((e: any) => e.eventName !== "Lead")).toHaveLength(0);
     });
 
+    it("the timeline names the TikTok event a stage change queued (not a Meta one)", async () => {
+      const { t, tap, leads } = setup();
+      await tap({ i: 9 });
+      const lead = t.lead[0];
+      await leads.addPhone(lead.id, "0812 3456 7890", "u1");
+      await leads.moveStage(lead.id, "st-qual", "u1");
+      const stageRows = t.leadActivity.filter((a: any) => a.type === "STAGE_CHANGE" && a.toStageId === "st-qual");
+      expect(stageRows.map((a: any) => a.metaEvent)).toEqual(["tiktok:CompleteRegistration"]);
+    });
+
     it("implied CompleteRegistration: skipping straight to Won still reports the qualified signal once, before Purchase", async () => {
       const { t, tap, leads } = setup();
       await tap({ i: 11 });

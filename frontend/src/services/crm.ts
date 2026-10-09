@@ -76,7 +76,8 @@ export interface LeadActivity {
   id: string;
   type: ActivityType;
   body: string | null;
-  metaEvent: MetaEventName | null;
+  /** Event queued by this activity: a Meta event name, or "tiktok:<TikTok event>". */
+  metaEvent: MetaEventName | `tiktok:${TikTokEventName}` | null;
   createdAt: string;
   actor: UserRef | null;
   fromStage: { id: string; key: string | null; name: string } | null;

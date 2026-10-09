@@ -285,7 +285,8 @@ export default function CampaignsPage() {
                 <p className="mt-3 text-xs text-text-tertiary">
                   {t('crm.campaigns.prefillHelp', 'Paste it in Meta Ads Manager → Ad → Message → "Pre-filled message". The code at the end links each lead to this campaign.')}
                 </p>
-                <div className="mt-5 border-t border-border-subtle pt-4">
+                <div className="flex flex-col">
+                <div className={cn('mt-5 border-t border-border-subtle pt-4', campaignPlatformKind(selected) === 'TIKTOK' ? 'order-2' : 'order-1')}>
                   <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.adLink.universalTitle', 'Ad link for Meta ads (one link for every ad)')}</div>
                   <code className="block break-all rounded-lg border border-border-subtle bg-bg-sunken p-3 text-xs" data-testid="ad-link-universal">
                     {buildUniversalAdLink(trackingQ.data?.landingPageUrl)}
@@ -311,7 +312,7 @@ export default function CampaignsPage() {
                     <p className="mt-2 text-xs text-text-tertiary">{t('crm.campaigns.adLink.help', 'For links outside Meta (Instagram bio, newsletter, other ad networks): the campaign code travels as utm_campaign.')}</p>
                   </details>
                 </div>
-                <div className="mt-5 border-t border-border-subtle pt-4" data-testid="tiktok-ad-link-block">
+                <div className={cn('mt-5 border-t border-border-subtle pt-4', campaignPlatformKind(selected) === 'TIKTOK' ? 'order-1' : 'order-2')} data-testid="tiktok-ad-link-block">
                   <div className="mb-1 text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.tiktokAdLink.title', 'Ad link for TikTok ads (one link for every ad)')}</div>
                   <code className="block break-all rounded-lg border border-border-subtle bg-bg-sunken p-3 text-xs" data-testid="ad-link-tiktok">
                     {buildTikTokAdLink(trackingQ.data?.landingPageUrl)}
@@ -324,6 +325,7 @@ export default function CampaignsPage() {
                   <p className="mt-3 text-xs text-text-tertiary">
                     {t('crm.campaigns.tiktokAdLink.help', "Paste it once in the TikTok ad (Ads Manager > Ad > Destination URL, or the URL parameters field without the leading ?). TikTok fills __CAMPAIGN_ID__, __AID__ (ad group) and __CID__ (creative) for each ad and adds the ttclid click id by itself, so every landing visit is linked to its campaign automatically. Keep the macros UPPERCASE with two underscores on each side.")}
                   </p>
+                </div>
                 </div>
                 <div className="mt-5 border-t border-border-subtle pt-4">
                   <Label htmlFor="tiktok-link" className="mb-1 block text-xs font-medium uppercase tracking-wider text-text-tertiary">{t('crm.campaigns.tiktokLink.title', 'TikTok campaign')}</Label>
