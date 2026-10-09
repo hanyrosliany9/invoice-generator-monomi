@@ -4,6 +4,8 @@ import { AdClick, Prisma } from "@prisma/client";
 import { createHash } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { AdTrackingConfig, allowedPageUrl, resolveAdTrackingConfig } from "./ad-tracking.config";
+import { Attribution, AttributedPlatform, decideAttribution } from "./ad-attribution";
+import { SKIP_META_ATTRIBUTED_TIKTOK, ttclidFromUrl } from "./tiktok-events.payload";
 import { ParsedTrackEvent } from "./track-event.payload";
 import { InMemoryTrackCounters, ipBucket, TrackCounters } from "./track-limits";
 import {
@@ -51,6 +53,8 @@ export interface VisitEventToSend {
   eventId: string;
   eventTime: Date;
   click: WebClick;
+  /** Who gets this visit: TIKTOK -> TikTok ViewContent only; META / NONE -> Meta as before. */
+  platform?: AttributedPlatform;
 }
 
 export interface RecordResult {
@@ -101,6 +105,7 @@ interface ClickFields {
   fbclid: string | null;
   fbc: string | null;
   fbp: string | null;
+  ttclid: string | null;
   clientIp: string | null;
   userAgent: string | null;
   campaignCode: string | null;
@@ -129,11 +134,12 @@ export function metaClickId(
   return parts.length >= 4 ? parts.slice(3).join(".") || null : null;
 }
 
-/** pageUrl without its fbclid query parameter (used when PII retention ends). */
+/** pageUrl without its fbclid / ttclid query parameters (used when PII retention ends). */
 export function stripClickIdFromUrl(url: string): string | null {
   try {
     const u = new URL(url);
     u.searchParams.delete("fbclid");
+    u.searchParams.delete("ttclid");
     return u.toString();
   } catch {
     return null;
@@ -170,7 +176,7 @@ export class AdClickService {
     // All digits = a Meta campaign id ({{campaign.id}} in the ad URL) of a linked campaign: explicit, wins over a code.
     if (/^\d{5,25}$/.test(utmCampaign)) {
       const m = await this.prisma.campaign.findFirst({
-        where: { metaCampaignId: utmCampaign },
+        where: { OR: [{ metaCampaignId: utmCampaign }, { tiktokCampaignId: utmCampaign }] },
         select: { code: true },
       });
       if (m) return m.code;
@@ -215,6 +221,7 @@ export class AdClickService {
     fields: ClickFields,
     now: Date,
     cfg: AdTrackingConfig,
+    attr?: Attribution,
   ): Promise<AdClick | null> {
     const existing = await this.prisma.adClick.findFirst({
       where: { visitId },
@@ -224,7 +231,13 @@ export class AdClickService {
     if (!(await this.allowNewRow(cfg))) return null;
     try {
       return await this.prisma.adClick.create({
-        data: { visitId, visitKey: visitId, createdAt: now, ...fields },
+        data: {
+          visitId,
+          visitKey: visitId,
+          createdAt: now,
+          ...fields,
+          ...(attr ? { attributedPlatform: attr.platform, attributionReason: attr.reason } : {}),
+        },
       });
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -253,6 +266,8 @@ export class AdClickService {
     const now = new Date();
     const cfg = this.config();
     const campaignCode = await this.resolveCampaignCode(ev.utmCampaign);
+    // the snippet sends the persisted ttclid; a ttclid in the landing URL itself counts too
+    if (!ev.ttclid) ev = { ...ev, ttclid: ttclidFromUrl(ev.pageUrl) };
     // The browser normally sends _fbc; rebuild it from fbclid when only the
     // raw click id reached us (format: fb.<subdomain index>.<ms>.<fbclid>).
     const fbc = ev.fbc ?? (ev.fbclid ? `fb.1.${now.getTime()}.${ev.fbclid}` : null);
@@ -267,13 +282,15 @@ export class AdClickService {
       fbclid: ev.fbclid,
       fbc,
       fbp: ev.fbp,
+      ttclid: ev.ttclid,
       clientIp: ctx.ip,
       userAgent: ctx.userAgent ? ctx.userAgent.slice(0, USER_AGENT_MAX) : null,
       campaignCode,
     };
+    const attr = this.attribution(ev, [ev.pageUrl], now);
     if (ev.name === "Lead") return this.recordLead(ev, ctx, fields, now, cfg);
 
-    let row = await this.ensureVisitRow(ev.visitId, fields, now, cfg);
+    let row = await this.ensureVisitRow(ev.visitId, fields, now, cfg, attr);
     if (!row) return { outcome: "dropped" };
     // later events may carry identifiers the first one lacked
     const fill = missingFields(row, fields);
@@ -300,9 +317,26 @@ export class AdClickService {
           clientIp: ctx.ip ?? row.clientIp,
           userAgent: fields.userAgent ?? row.userAgent,
           campaignCode: row.campaignCode ?? campaignCode,
+          ttclid: ev.ttclid ?? row.ttclid,
+          referrer: ev.referrer ?? row.referrer,
         },
+        platform: row.attributedPlatform ?? attr.platform,
       },
     };
+  }
+
+  /** Last-touch platform of this event (see ad-attribution.ts). */
+  private attribution(ev: ParsedTrackEvent, urls: Array<string | null | undefined>, now: Date): Attribution {
+    return decideAttribution({
+      urls,
+      utmSource: ev.utmSource,
+      referrer: ev.referrer,
+      hasFbId: !!(ev.fbclid || ev.fbc),
+      hasTtId: !!ev.ttclid,
+      fbTouchAt: ev.fbTouchAt,
+      ttTouchAt: ev.ttTouchAt,
+      now,
+    });
   }
 
   /** duplicate (same tap again) / conflict (ref or eventId used by another tap) / null (new). */
@@ -326,14 +360,20 @@ export class AdClickService {
     const known = await this.tapOutcome(ref, ev.eventId);
     if (known) return { outcome: known };
 
-    const visitRow = await this.ensureVisitRow(ev.visitId, fields, now, cfg);
+    const preAttr = this.attribution(ev, [ev.pageUrl], now);
+    const visitRow = await this.ensureVisitRow(ev.visitId, fields, now, cfg, preAttr);
     if (!visitRow) return { outcome: "dropped" };
+    // The platform is decided for THIS tap: the landing URL of the visit
+    // (this event's URL, else the visit's first URL), else the newest stored touch.
+    const attr = this.attribution(ev, [ev.pageUrl, visitRow.pageUrl], now);
     const tap = {
       ref,
       eventId: ev.eventId,
       instagramHandle: ev.instagramHandle,
       brandName: ev.brandName,
       category: ev.category,
+      attributedPlatform: attr.platform,
+      attributionReason: attr.reason,
     };
     let autoLeadClickId: string | null = null;
     try {
@@ -356,8 +396,10 @@ export class AdClickService {
             data: { visitId: ev.visitId, createdAt: now, ...fields, ...tap },
           });
         }
-        const { skip, autoLead } = await this.leadSkipReason(tx, visitRow, click, ctx, now);
+        const { skip, autoLead } = await this.leadSkipReason(tx, visitRow, click, ctx, now, attr.platform);
         autoLeadClickId = autoLead ? click.id : null;
+        const toTikTok = attr.platform === "TIKTOK";
+        // A TikTok-attributed tap sends nothing to Meta: the row stays as a visible SKIPPED marker.
         await tx.metaEventOutbox.create({
           data: {
             leadId: null,
@@ -365,12 +407,26 @@ export class AdClickService {
             route: "WEBSITE",
             eventName: "Lead",
             eventTime: now,
-            status: skip ? "SKIPPED" : "PENDING_CONFIG",
-            lastError: skip,
+            status: skip || toTikTok ? "SKIPPED" : "PENDING_CONFIG",
+            lastError: toTikTok ? SKIP_META_ATTRIBUTED_TIKTOK : skip,
             payload: { event_name: "Lead" },
             dedupeKey: `click:${ev.eventId}`,
           },
         });
+        if (toTikTok) {
+          await tx.tikTokEventOutbox.create({
+            data: {
+              leadId: null,
+              adClickId: click.id,
+              eventName: "Contact",
+              eventTime: now,
+              status: skip ? "SKIPPED" : "PENDING_CONFIG",
+              lastError: skip,
+              payload: { event: "Contact" },
+              dedupeKey: `click:${ev.eventId}`,
+            },
+          });
+        }
         return "ok" as const;
       });
       if (outcome === "ok" && autoLeadClickId) await this.autoCreateLead(autoLeadClickId, ctx, now);
@@ -419,6 +475,7 @@ export class AdClickService {
     click: AdClick,
     ctx: ClickContext,
     now: Date,
+    platform: AttributedPlatform = "META",
   ): Promise<LeadGate> {
     const network = ipBucket(ctx.ip);
     const pageViewAt = visitRow.pageViewAt;
@@ -447,10 +504,15 @@ export class AdClickService {
       ipCapped =
         (await this.counters.increment(`lead-ip:${network}`, HOUR_MS)) > LEAD_IP_CAP_PER_HOUR;
       if (!reason && ipCapped) reason = SKIP_IP_LEAD_CAP;
-      const clickId = metaClickId(click.fbclid ?? visitRow.fbclid, click.fbc ?? visitRow.fbc);
+      // the duplicate-click-id guard uses the id of the platform that gets the tap
+      const clickId =
+        platform === "TIKTOK"
+          ? (click.ttclid ?? visitRow.ttclid)
+          : metaClickId(click.fbclid ?? visitRow.fbclid, click.fbc ?? visitRow.fbc);
       if (!reason && clickId) {
         const key = createHash("sha256").update(clickId).digest("hex").slice(0, 32);
-        if ((await this.counters.increment(`lead-click:${key}`, DAY_MS)) > 1) {
+        const counter = platform === "TIKTOK" ? `lead-click:tt:${key}` : `lead-click:${key}`;
+        if ((await this.counters.increment(counter, DAY_MS)) > 1) {
           reason = SKIP_DUPLICATE_CLICK_ID;
         }
       }
@@ -644,6 +706,19 @@ export class AdClickService {
         ],
       },
     });
+    // TikTok click-time Contact rows follow the same rule
+    await this.prisma.tikTokEventOutbox.deleteMany({
+      where: {
+        leadId: null,
+        OR: [
+          { adClickId: null },
+          {
+            adClick: { leadId: null },
+            createdAt: { lt: new Date(t - ORPHAN_WEB_EVENT_RETENTION_DAYS * DAY_MS) },
+          },
+        ],
+      },
+    });
     if (orphans.count) {
       this.logger.log(
         `Purged ${orphans.count} website Lead event row(s) of unlinked or deleted ad clicks`,
@@ -654,8 +729,8 @@ export class AdClickService {
 
   /**
    * Linked clicks older than AD_CLICK_PII_RETENTION_DAYS (default 90) lose the
-   * device identifiers: clientIp, userAgent, fbclid, fbc, fbp, referrer, and
-   * the fbclid parameter of pageUrl (rewritten in batches until done or
+   * device identifiers: clientIp, userAgent, fbclid, fbc, fbp, ttclid, referrer, and
+   * the fbclid / ttclid parameters of pageUrl (rewritten in batches until done or
    * PII_SCRUB_BUDGET_MS is spent; the next night continues). Later website
    * stage events for such a lead go out with the hashed lead data and
    * external_id only. Returns the rows whose identifiers were nulled.
@@ -678,10 +753,11 @@ export class AdClickService {
           { fbclid: { not: null } },
           { fbc: { not: null } },
           { fbp: { not: null } },
+          { ttclid: { not: null } },
           { referrer: { not: null } },
         ],
       },
-      data: { clientIp: null, userAgent: null, fbclid: null, fbc: null, fbp: null, referrer: null },
+      data: { clientIp: null, userAgent: null, fbclid: null, fbc: null, fbp: null, ttclid: null, referrer: null },
     });
     // Keyset pagination by id: every row is visited at most once per run, so
     // the loop ends even when a URL cannot be cleaned (it is nulled instead).
@@ -691,7 +767,7 @@ export class AdClickService {
         where: {
           leadId: { not: null },
           createdAt: { lt: cutoff },
-          pageUrl: { contains: "fbclid=" },
+          OR: [{ pageUrl: { contains: "fbclid=" } }, { pageUrl: { contains: "ttclid=" } }],
           ...(afterId ? { id: { gt: afterId } } : {}),
         },
         select: { id: true, pageUrl: true },
@@ -702,7 +778,9 @@ export class AdClickService {
         const cleaned = row.pageUrl ? stripClickIdFromUrl(row.pageUrl) : null;
         await this.prisma.adClick.update({
           where: { id: row.id },
-          data: { pageUrl: cleaned && !cleaned.includes("fbclid=") ? cleaned : null },
+          data: {
+            pageUrl: cleaned && !cleaned.includes("fbclid=") && !cleaned.includes("ttclid=") ? cleaned : null,
+          },
         });
       }
       if (batch.length < PII_SCRUB_BATCH) break;

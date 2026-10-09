@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { eventClickId } from "../ad-tracking/click-link";
+import { latestEventClick, queueTikTokEvent } from "../ad-tracking/tiktok-outbox";
+import { TIKTOK_EVENT_FOR_META } from "../ad-tracking/tiktok-events.payload";
 
 export const META_EVENTS = ["LeadSubmitted", "QualifiedLead", "Purchase"] as const;
 export type MetaEventName = (typeof META_EVENTS)[number];
@@ -15,7 +17,7 @@ export interface OutboxLead {
 }
 
 type Db = Pick<Prisma.TransactionClient, "metaEventOutbox"> &
-  Partial<Pick<Prisma.TransactionClient, "adClick">>;
+  Partial<Pick<Prisma.TransactionClient, "adClick" | "tikTokEventOutbox">>;
 
 export type OutboxRoute = "BUSINESS_MESSAGING" | "WEBSITE";
 
@@ -37,7 +39,11 @@ export function chooseRoute(
 /**
  * Records Meta Conversions API events in an outbox (two routes: business
  * messaging for CTWA leads, website for leads linked to a landing-page ad
- * click). This service never calls Meta: rows stay PENDING_CONFIG until the
+ * click). A lead whose LATEST converting click (KODE / AUTO_CREATE, never
+ * HANDLE) is attributed to TikTok gets its stage events on the TikTok outbox
+ * instead (LeadSubmitted -> Lead, QualifiedLead -> CompleteRegistration,
+ * Purchase -> Purchase) and none on Meta; a Click-to-WhatsApp lead always
+ * stays on Meta. This service never calls Meta or TikTok: rows stay PENDING_CONFIG until the
  * matching sender (MetaCapiService / WebCapiService) is configured. Each lead gets at most ONE row per event name (dedupeKey
  * "<leadId>:<eventName>"), which makes every hook idempotent.
  */
@@ -74,6 +80,22 @@ export class CrmOutboxService {
     opts: { value?: number | null; eventTime?: Date } = {},
   ): Promise<boolean> {
     const eventTime = opts.eventTime ?? new Date();
+    // Last-touch platform: the latest converting click decides, so a repeat
+    // conversion from another platform switches FUTURE events; events already
+    // sent stay where they went.
+    if (!lead.ctwaClid && db.adClick && db.tikTokEventOutbox) {
+      const latest = await latestEventClick({ adClick: db.adClick }, lead.id);
+      if (latest?.attributedPlatform === "TIKTOK") {
+        const tt = TIKTOK_EVENT_FOR_META[eventName];
+        if (!tt) return false;
+        // "Lead" needs the phone (it is also queued when the chat fills it in)
+        if (tt === "Lead" && !lead.phone) return false;
+        return queueTikTokEvent({ tikTokEventOutbox: db.tikTokEventOutbox }, lead.id, latest.id, tt, {
+          value: opts.value ?? null,
+          eventTime,
+        });
+      }
+    }
     // a lead may hold several landing-page clicks: only a confirmed (KODE) or
     // the lead-creating (AUTO_CREATE) click carries events, never a HANDLE one
     const clickId = lead.ctwaClid || !db.adClick ? null : await eventClickId({ adClick: db.adClick }, lead.id);

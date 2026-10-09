@@ -11,6 +11,7 @@ import { PublicTrackController } from "./public-track.controller";
 import { createPublicTrackBody, createPublicTrackCors } from "./public-track.http";
 import { MONOMI_TRACK_JS } from "./monomi-track.snippet";
 import { WebCapiService } from "./web-capi.service";
+import { TikTokEventsService } from "./tiktok-events.service";
 import { WhatsAppGraphClient } from "../whatsapp/whatsapp-graph.client";
 import { FakeGraph, FakePrisma, withEnv } from "../whatsapp/testing/whatsapp-fakes.helper-spec";
 import { LEAD_IP_CAP_PER_HOUR } from "./ad-click.service";
@@ -91,6 +92,7 @@ describe("public tracking endpoints", () => {
       providers: [
         { provide: AdClickService, useValue: (clicks = new AdClickService(prisma as any, new InMemoryTrackCounters())) },
         { provide: WebCapiService, useValue: sender },
+        { provide: TikTokEventsService, useValue: new TikTokEventsService(prisma as any) },
       ],
     }).compile();
     app = mod.createNestApplication();
@@ -234,8 +236,8 @@ describe("public tracking endpoints", () => {
     expect(prisma.tables.adClick).toHaveLength(1);
   });
 
-  it("caps the body at 4 KB (413) and stores nothing", async () => {
-    const res = await post(lead({ meta: { brandName: "x".repeat(6000) } }));
+  it("caps the body at 8 KB (413) and stores nothing", async () => {
+    const res = await post(lead({ meta: { brandName: "x".repeat(9000) } }));
     expect(res.status).toBe(413);
     expect(prisma.tables.adClick).toHaveLength(0);
   });
@@ -500,6 +502,7 @@ describe("POST /event throttling (IPv4 per address, IPv6 per /64)", () => {
       providers: [
         { provide: AdClickService, useValue: new AdClickService(prisma as any, new InMemoryTrackCounters()) },
         { provide: WebCapiService, useValue: new WebCapiService(prisma as any, new WhatsAppGraphClient(new FakeGraph().fetch as any)) },
+        { provide: TikTokEventsService, useValue: new TikTokEventsService(prisma as any) },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
     }).compile();

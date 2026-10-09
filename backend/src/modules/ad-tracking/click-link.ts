@@ -1,4 +1,5 @@
 import { AdClickLinkVia, Prisma } from "@prisma/client";
+import { latestEventClick, rerouteToTikTokInTx } from "./tiktok-outbox";
 
 type Tx = Prisma.TransactionClient;
 type Db = Pick<Prisma.TransactionClient, "adClick">;
@@ -41,6 +42,12 @@ export async function rerouteToWebsiteInTx(tx: Tx, leadId: string): Promise<void
   if (!lead || lead.ctwaClid) return;
   const clickId = await eventClickId(tx, leadId);
   if (!clickId) return;
+  // The latest converting click came from TikTok: its events go to TikTok, none to Meta.
+  const latest = await latestEventClick(tx, leadId);
+  if (latest?.attributedPlatform === "TIKTOK") {
+    await rerouteToTikTokInTx(tx, leadId, latest.id);
+    return;
+  }
   await tx.metaEventOutbox.updateMany({
     where: {
       leadId,
@@ -81,6 +88,10 @@ export async function attachClickInTx(
   if (claimed.count === 0) return false;
   await tx.metaEventOutbox.updateMany({
     where: { adClickId: click.id, route: "WEBSITE", eventName: "Lead", leadId: null },
+    data: { leadId },
+  });
+  await tx.tikTokEventOutbox.updateMany({
+    where: { adClickId: click.id, eventName: "Contact", leadId: null },
     data: { leadId },
   });
   if (via === "HANDLE") return true;

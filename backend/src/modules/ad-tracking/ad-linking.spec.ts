@@ -366,6 +366,29 @@ describe("retention", () => {
     }
   });
 
+  it("the 90-day scrub also nulls ttclid and strips it from pageUrl; unlinked TikTok clicks and their Contact rows are purged", async () => {
+    const now = new Date();
+    const { adClicks, t, prisma } = setup({
+      clicks: [
+        { id: "tt-old", ref: "DDDD22", eventId: "d", createdAt: new Date(now.getTime() - 91 * DAY), leadId: "L1", ttclid: "E.C.P.abc123", pageUrl: "https://link.monomiagency.com/?utm_source=tiktok&ttclid=E.C.P.abc123", attributedPlatform: "TIKTOK" },
+        { id: "tt-young", ref: "EEEE22", eventId: "e", createdAt: new Date(now.getTime() - 10 * DAY), leadId: "L2", ttclid: "E.C.P.def456" },
+        { id: "tt-unlinked", ref: "FFFF22", eventId: "f", createdAt: new Date(now.getTime() - 31 * DAY), leadId: null, ttclid: "E.C.P.ghi789" },
+      ],
+    });
+    (prisma as any).tables.tikTokEventOutbox.push({ id: "c1", leadId: null, adClickId: "tt-unlinked", eventName: "Contact", createdAt: new Date(now.getTime() - 31 * DAY) });
+    expect(await adClicks.scrubLinkedClickPii(now)).toBe(1);
+    const by = (id: string): any => t.adClick.find((c: any) => c.id === id);
+    expect(by("tt-old")).toMatchObject({ ttclid: null, attributedPlatform: "TIKTOK", leadId: "L1" });
+    expect(by("tt-old").pageUrl).toBe("https://link.monomiagency.com/?utm_source=tiktok");
+    expect(by("tt-young").ttclid).toBe("E.C.P.def456");
+    expect(await adClicks.purgeUnlinked(now)).toBe(1);
+    expect(t.adClick.find((c: any) => c.id === "tt-unlinked")).toBeUndefined();
+    for (const o of (prisma as any).tables.metaEventOutbox) if (o.adClickId === "tt-unlinked") o.adClickId = null;
+    (prisma as any).tables.tikTokEventOutbox[0].adClickId = null; // the FK nulls it when the click is deleted
+    await adClicks.purgeUnlinked(now);
+    expect((prisma as any).tables.tikTokEventOutbox).toHaveLength(0);
+  });
+
   it("rewrites every pageUrl past one batch (keyset batches), and nulls a URL it cannot clean instead of looping", async () => {
     const now = new Date();
     const old = new Date(now.getTime() - 100 * DAY);

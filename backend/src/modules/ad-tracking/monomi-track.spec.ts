@@ -185,3 +185,81 @@ describe("monomi-track.js (runs without a Meta Pixel)", () => {
     }).not.toThrow();
   });
 });
+
+describe("monomi-track.js - TikTok click id (ttclid) and ad-touch times", () => {
+  const TTCLID = "E.C.P.v3fQ2RHacdksKfofPmlyuStIIHJ4Af1tKYxF9zz2c2PLx1Oaw15oHpcfl5AH";
+  const TT_LANDING = `https://link.monomiagency.com/?utm_source=tiktok&utm_campaign=1790000000000001&ttclid=${TTCLID}`;
+  const DAY = 86_400_000;
+
+  it("persists ttclid in a first-party cookie (>= 28 days, host-only) and localStorage, and sends it with every event", () => {
+    const b = makeBrowser({ url: TT_LANDING });
+    expect(b.jar.get("monomi_ttclid")).toEqual({ value: TTCLID, domain: null });
+    expect(b.local.get("monomi_ttclid")).toBe(TTCLID);
+    const write = b.cookieWrites.find((w) => w.startsWith("monomi_ttclid="))!;
+    const expires = Date.parse(/expires=([^;]+)/.exec(write)![1]);
+    expect(expires - Date.now()).toBeGreaterThan(28 * DAY);
+    expect(write).not.toMatch(/domain=/i);
+    b.sandbox.MonomiTrack.track("ViewContent");
+    b.sandbox.MonomiTrack.openWhatsApp({ phone: "6285126203934" });
+    expect(b.sent.length).toBeGreaterThanOrEqual(3);
+    for (const s of b.sent) expect(s.body.ttclid).toBe(TTCLID);
+  });
+
+  it("never generates _ttp (nothing in the browser sets it without the TikTok Pixel)", () => {
+    const b = makeBrowser({ url: TT_LANDING });
+    expect(b.jar.has("_ttp")).toBe(false);
+    expect(b.cookieWrites.join(";")).not.toMatch(/_ttp/);
+    expect(JSON.stringify(b.sent)).not.toMatch(/ttp"/);
+  });
+
+  it("a returning direct visit still sends the stored ttclid and the stored touch times", () => {
+    const first = makeBrowser({ url: TT_LANDING });
+    const cookies = { monomi_ttclid: TTCLID, monomi_ttt: first.jar.get("monomi_ttt")!.value };
+    const back = makeBrowser({ url: "https://link.monomiagency.com/", cookies });
+    expect(back.sent[0].body.ttclid).toBe(TTCLID);
+    expect(back.sent[0].body.ttt).toBe(Number(cookies.monomi_ttt));
+    // and when only localStorage survived (cookie cleared), the cookie is restored
+    const local = new Map([["monomi_ttclid", TTCLID], ["monomi_ttt", String(Date.now() - DAY)]]);
+    const ls = makeBrowser({ url: "https://link.monomiagency.com/", local });
+    expect(ls.sent[0].body.ttclid).toBe(TTCLID);
+    expect(ls.jar.get("monomi_ttclid")?.value).toBe(TTCLID);
+  });
+
+  it("forgets a ttclid older than its 30-day retention", () => {
+    const old = String(Date.now() - 40 * DAY);
+    const b = makeBrowser({ url: "https://link.monomiagency.com/", cookies: { monomi_ttclid: TTCLID, monomi_ttt: old } });
+    expect(b.sent[0].body.ttclid).toBeUndefined();
+    expect(b.local.has("monomi_ttclid")).toBe(false);
+  });
+
+  it("accepts up to 1000 characters and refuses longer / malformed values", () => {
+    const long = "a".repeat(1000);
+    expect(makeBrowser({ url: `https://link.monomiagency.com/?ttclid=${long}` }).sent[0].body.ttclid).toBe(long);
+    expect(makeBrowser({ url: `https://link.monomiagency.com/?ttclid=${long}b` }).sent[0].body.ttclid).toBeUndefined();
+    expect(makeBrowser({ url: "https://link.monomiagency.com/?ttclid=%3Cscript%3E" }).sent[0].body.ttclid).toBeUndefined();
+    expect(makeBrowser({ url: "https://link.monomiagency.com/?ttclid=ab" }).sent[0].body.ttclid).toBeUndefined();
+  });
+
+  it("records the time of the last Meta / TikTok touch (click id or utm_source) for last-touch attribution", () => {
+    const before = Date.now();
+    const meta = makeBrowser({ url: LANDING });
+    expect(meta.sent[0].body.fbt).toBeGreaterThanOrEqual(before);
+    expect(meta.sent[0].body.ttt).toBeUndefined();
+    const tt = makeBrowser({ url: TT_LANDING });
+    expect(tt.sent[0].body.ttt).toBeGreaterThanOrEqual(before);
+    expect(tt.sent[0].body.fbt).toBeUndefined();
+    // utm_source alone is a touch too; an organic visit records none
+    expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=tiktok" }).sent[0].body.ttt).toBeGreaterThanOrEqual(before);
+    const organic = makeBrowser({ url: "https://link.monomiagency.com/" });
+    expect(organic.sent[0].body.fbt).toBeUndefined();
+    expect(organic.sent[0].body.ttt).toBeUndefined();
+  });
+
+  it("keeps both platforms' times side by side so the server can pick the newer one", () => {
+    const fbAt = String(Date.now() - 20 * DAY);
+    const b = makeBrowser({ url: TT_LANDING, cookies: { _fbc: "fb.1.1.OLD", monomi_fbt: fbAt } });
+    expect(b.sent[0].body.fbt).toBe(Number(fbAt));
+    expect(b.sent[0].body.ttt).toBeGreaterThan(Number(fbAt));
+    expect(b.sent[0].body.fbc).toBe("fb.1.1.OLD");
+  });
+});

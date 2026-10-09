@@ -3,15 +3,16 @@
  * GET /api/v1/public/track/monomi-track.js.
  *
  * It is the ONLY tracker on the page: the landing page does not load Meta's
- * browser Pixel. Every event goes to our backend, which sends it to the
- * Conversions API server-side.
+ * browser Pixel or the TikTok Pixel. Every event goes to our backend, which
+ * sends it to the Meta Conversions API or the TikTok Events API server-side
+ * (one platform per visit: the most recent ad touch, see ad-attribution.ts).
  *
  * Kept as a string so it ships with the backend build (no asset copying) and
  * is covered by tests. Rules for editing it: plain ES2017, no dependencies,
  * no backticks / template literals (this file wraps it in one), never throw,
  * never delay opening WhatsApp, and never put anything secret in it.
  */
-export const MONOMI_TRACK_VERSION = "2.1.0";
+export const MONOMI_TRACK_VERSION = "2.2.0";
 
 export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSION} - first-party tracker, events are sent server-side */
 (function () {
@@ -35,6 +36,9 @@ export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSIO
   var ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
   var NS = "monomi_";
   var COOKIE_DAYS = 90;
+  // TikTok recommends keeping the ttclid for at least 28 days; its click window is shorter than Meta's.
+  var TTCLID_DAYS = 30;
+  var TTCLID_RE = /^[A-Za-z0-9_.~=-]{4,1000}$/;
 
   // ---- small helpers ----
   function rand(n) {
@@ -112,6 +116,51 @@ export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSIO
   // Exact fbclid case matters: Meta compares it to the click it issued.
   if (fbclid && !getCookie("_fbc")) setCookie("_fbc", "fb.1." + Date.now() + "." + fbclid, COOKIE_DAYS);
 
+  // ---- ad touches: which platform's ad brought this visitor most recently? ----
+  // A touch = a click id or utm_source of that platform in the landing URL. The time
+  // of the last touch per platform is kept in a cookie + localStorage and sent with
+  // every event; the server picks the newer one when this visit has no ad parameter.
+  function srcOf(v) {
+    v = String(v || "").toLowerCase();
+    if (v === "tiktok" || v === "tt") return "tt";
+    if (["facebook", "fb", "instagram", "ig", "meta"].indexOf(v) !== -1) return "fb";
+    return "";
+  }
+  function readTime(key) {
+    var v = Number(getCookie(NS + key) || load("localStorage", key) || 0);
+    return isFinite(v) && v > 0 ? Math.floor(v) : 0;
+  }
+  function writeTime(key, ms, days) {
+    setCookie(NS + key, String(ms), days);
+    store("localStorage", key, String(ms));
+  }
+  var urlSrc = srcOf(params.get("utm_source"));
+  var urlTtclid = params.get("ttclid") || "";
+  if (urlTtclid && !TTCLID_RE.test(urlTtclid)) urlTtclid = "";
+  var nowMs = Date.now();
+  var fbTouch = readTime("fbt");
+  var ttTouch = readTime("ttt");
+  if (params.get("fbclid") || urlSrc === "fb") { fbTouch = nowMs; writeTime("fbt", fbTouch, COOKIE_DAYS); }
+  if (urlTtclid || urlSrc === "tt") { ttTouch = nowMs; writeTime("ttt", ttTouch, TTCLID_DAYS); }
+
+  // ---- TikTok click id: first-party cookie + localStorage (never generate _ttp) ----
+  var ttclid = urlTtclid || getCookie(NS + "ttclid") || load("localStorage", "ttclid");
+  if (ttclid && !TTCLID_RE.test(ttclid)) ttclid = "";
+  if (ttclid && ttTouch && nowMs - ttTouch > TTCLID_DAYS * 86400000) {
+    // older than the retention: forget it
+    ttclid = "";
+    ttTouch = 0;
+    setCookie(NS + "ttclid", "", -1);
+    store("localStorage", "ttclid", null);
+  }
+  if (urlTtclid) {
+    setCookie(NS + "ttclid", urlTtclid, TTCLID_DAYS);
+    store("localStorage", "ttclid", urlTtclid);
+  } else if (ttclid && !getCookie(NS + "ttclid")) {
+    // cookie gone (cleared / expired early) but localStorage still has it and it is young enough
+    setCookie(NS + "ttclid", ttclid, TTCLID_DAYS);
+  }
+
   var UTM_KEYS = ["source", "medium", "campaign", "content", "term"];
   var utm = {};
   var seenUtm = false;
@@ -179,7 +228,8 @@ export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSIO
       var payload = {
         name: name, visitId: visitId, eventId: makeUuid(),
         pageUrl: location.href.split("#")[0], referrer: document.referrer || undefined,
-        utm: utm, fbclid: fbclid || undefined, fbc: getCookie("_fbc") || undefined, fbp: getCookie("_fbp") || fbp
+        utm: utm, fbclid: fbclid || undefined, fbc: getCookie("_fbc") || undefined, fbp: getCookie("_fbp") || fbp,
+        ttclid: ttclid || undefined, fbt: fbTouch || undefined, ttt: ttTouch || undefined
       };
       if (extra) for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) payload[k] = extra[k];
       send(payload);

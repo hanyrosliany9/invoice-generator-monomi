@@ -29,6 +29,7 @@ import {
   SKIP_SENT_BEFORE_MERGE,
 } from "./auto-lead.service";
 import { PublicTrackController } from "./public-track.controller";
+import { TikTokEventsService } from "./tiktok-events.service";
 import { createPublicTrackBody, createPublicTrackCors } from "./public-track.http";
 import { parseTrackEvent } from "./track-event.payload";
 import { InMemoryTrackCounters, TrackCounters } from "./track-limits";
@@ -315,6 +316,7 @@ describe("auto-created leads from the landing-page form", () => {
         providers: [
           { provide: AdClickService, useValue: ctx.clicks },
           { provide: WebCapiService, useValue: sender },
+          { provide: TikTokEventsService, useValue: new TikTokEventsService(ctx.prisma as any) },
         ],
       }).compile();
       const app: INestApplication = mod.createNestApplication();

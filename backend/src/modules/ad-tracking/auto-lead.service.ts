@@ -12,6 +12,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { escapeActivityText, normalizePhone, waIdFromPhone } from "../crm/crm.utils";
 import { AdTrackingConfig, resolveAdTrackingConfig } from "./ad-tracking.config";
 import { attachClickInTx, confirmKodeInTx, rerouteToWebsiteInTx } from "./click-link";
+import { queueTikTokLeadInTx } from "./tiktok-outbox";
 import { InMemoryTrackCounters, TrackCounters } from "./track-limits";
 import { isBotUserAgent } from "./track-utils";
 
@@ -333,6 +334,8 @@ export class AutoLeadService {
         data: { leadId: waitingId, type: "NOTE", body: "@lead.phoneFilled", actorId: input.actorId },
       });
       if (input.confirmedRef) await confirmKodeInTx(tx, input.confirmedRef, waitingId);
+      // The chat arrived and the phone is known: TikTok "Lead" for a TikTok-attributed lead.
+      await queueTikTokLeadInTx(tx, waitingId, now);
       if (returningFrom) {
         // "<leadId> <WON|LOST> <name>": the UI links the id (name last: free text)
         await tx.leadActivity.create({
@@ -406,6 +409,10 @@ export class AutoLeadService {
       where: { leadId: placeholder.id, route: "WEBSITE", eventName: "Lead" },
       data: { leadId: targetId },
     });
+    await tx.tikTokEventOutbox.updateMany({
+      where: { leadId: placeholder.id, eventName: "Contact" },
+      data: { leadId: targetId },
+    });
     await tx.whatsAppContact.updateMany({ where: { leadId: placeholder.id }, data: { leadId: targetId } });
 
     const data: Prisma.LeadUncheckedUpdateInput = { lastContactAt: now };
@@ -453,6 +460,32 @@ export class AutoLeadService {
       });
     }
 
+    // same marker rows on the TikTok outbox (event names there: Lead / CompleteRegistration / Purchase)
+    const carriedTikTok = await tx.tikTokEventOutbox.findMany({
+      where: {
+        leadId: placeholder.id,
+        eventName: { in: ["Lead", "CompleteRegistration", "Purchase"] },
+        status: { in: [...CARRY_STATUSES] },
+      },
+      select: { eventName: true, adClickId: true },
+    });
+    if (carriedTikTok.length) {
+      await tx.tikTokEventOutbox.createMany({
+        data: carriedTikTok.map((e) => ({
+          leadId: targetId,
+          adClickId: e.adClickId,
+          eventName: e.eventName,
+          eventTime: now,
+          currency: "IDR",
+          status: "SKIPPED" as const,
+          lastError: SKIP_SENT_BEFORE_MERGE,
+          payload: { event: e.eventName, carried_from_lead: placeholder.id },
+          dedupeKey: `${targetId}:${e.eventName}`,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
     const refs = clicks.map((c) => c.ref).filter(Boolean).join(", ");
     await tx.leadActivity.create({
       data: { leadId: targetId, type: "NOTE", body: `@lead.mergedFrom: ${refs}`.trimEnd(), actorId },
@@ -462,10 +495,12 @@ export class AutoLeadService {
       await tx.leadActivity.create({ data: { leadId: targetId, type: "WHATSAPP", body, actorId } });
     }
 
-    const [staffMade, ownEvents] = await Promise.all([
+    const [staffMade, ownMetaEvents, ownTikTokEvents] = await Promise.all([
       tx.leadActivity.count({ where: { leadId: placeholder.id, actorId: { not: null } } }),
       tx.metaEventOutbox.count({ where: { leadId: placeholder.id } }),
+      tx.tikTokEventOutbox.count({ where: { leadId: placeholder.id } }),
     ]);
+    const ownEvents = ownMetaEvents + ownTikTokEvents;
     const linked = placeholder.clientId || placeholder.projectId || placeholder.quotationId;
     let placeholderDeleted = false;
     if (staffMade === 0 && ownEvents === 0 && !linked) {

@@ -68,6 +68,9 @@ export interface WebClick {
   clientIp: string | null;
   userAgent: string | null;
   campaignCode?: string | null;
+  /** TikTok click id and referrer of the visit: used by the TikTok route only, never sent to Meta. */
+  ttclid?: string | null;
+  referrer?: string | null;
 }
 
 export interface WebLead {

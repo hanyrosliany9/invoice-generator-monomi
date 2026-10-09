@@ -769,6 +769,7 @@ enum CampaignPlatform {
   FACEBOOK
   INSTAGRAM
   BOTH
+  TIKTOK
 }
 
 enum CampaignStatus {
@@ -780,6 +781,7 @@ enum CampaignStatus {
 enum CampaignSpendSource {
   MANUAL
   META
+  TIKTOK
 }
 
 enum MetaEventStatus {
@@ -826,7 +828,12 @@ model Campaign {
   metaCampaignName String?
   metaStatus       String? // Meta effective_status (ACTIVE, PAUSED, ARCHIVED...)
   metaObjective    String?
-  // true when the sync generated the code from the Meta name: such a code never matches as a bare word in chat text
+  // Linked TikTok Ads campaign (same idea as the Meta link): spend syncs from the TikTok Reporting API.
+  tiktokCampaignId   String?         @unique
+  tiktokCampaignName String?
+  tiktokStatus       String? // TikTok operation_status (ENABLE, DISABLE, DELETE)
+  tiktokObjective    String?
+  // true when the sync generated the code from the Meta / TikTok name: such a code never matches as a bare word in chat text
   codeAuto         Boolean          @default(false)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -904,8 +911,9 @@ model Lead {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  activities LeadActivity[]
-  metaEvents MetaEventOutbox[]
+  activities   LeadActivity[]
+  metaEvents   MetaEventOutbox[]
+  tiktokEvents TikTokEventOutbox[]
   waContacts WhatsAppContact[]
   // Landing-page taps linked to this lead (several when the same person taps
   // again, or when a waiting lead is merged into it); the newest one carries
@@ -999,6 +1007,12 @@ model MetaEventOutbox {
 // agent and Meta ids go out with the lead's hashed phone / name); a HANDLE
 // click (an unverified tap that only named the same Instagram handle) never
 // does, until a WhatsApp chat or staff confirm its Kode (it then becomes KODE).
+enum AdAttributionPlatform {
+  META
+  TIKTOK
+  NONE
+}
+
 enum AdClickLinkVia {
   AUTO_CREATE // the tap that auto-created the lead
   KODE // its Kode was confirmed by the WhatsApp chat or by staff
@@ -1030,6 +1044,13 @@ model AdClick {
   fbclid       String?
   fbc          String?
   fbp          String?
+  // TikTok click id (landing URL ?ttclid=, up to 1000 chars). Personal data like fbclid.
+  ttclid       String?
+  // Which ad platform gets this click's events, decided when the row was written
+  // (tap time for a WhatsApp tap): url_param | last_touch | none. null on rows
+  // written before TikTok support (old Meta-only behaviour).
+  attributedPlatform AdAttributionPlatform?
+  attributionReason  String?
   clientIp     String?
   userAgent    String?
   // Optional qualifier answers from the landing page (never sent to Meta).
@@ -1046,7 +1067,8 @@ model AdClick {
   linkedAt     DateTime?
   linkedVia    AdClickLinkVia? // null while unlinked
 
-  metaEvents MetaEventOutbox[]
+  metaEvents   MetaEventOutbox[]
+  tiktokEvents TikTokEventOutbox[]
 
   @@index([createdAt])
   @@index([campaignCode])
@@ -6795,4 +6817,110 @@ model MetaAdsInsightDaily {
   @@unique([metaCampaignId, date])
   @@index([date])
   @@map("meta_ads_insights_daily")
+}
+
+// ---------------------------------------------------------------------------
+// TikTok Events API (server-side conversions) + TikTok Ads spend sync
+// ---------------------------------------------------------------------------
+
+enum TikTokEventStatus {
+  PENDING_CONFIG
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+/// Outbox of TikTok Events API events (web, Pixel code). Separate from
+/// meta_event_outbox: the dedupe keys ("<leadId>:Purchase") would collide.
+model TikTokEventOutbox {
+  id         String            @id @default(cuid())
+  leadId     String? // null for the click-time Contact event (no CRM lead yet)
+  lead       Lead?             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  adClickId  String? // the landing-page click this event is attributed to
+  adClick    AdClick?          @relation(fields: [adClickId], references: [id], onDelete: SetNull)
+  eventName  String // Contact | Lead | CompleteRegistration | Purchase
+  eventTime  DateTime          @default(now())
+  value      Decimal?          @db.Decimal(14, 2)
+  currency   String            @default("IDR")
+  status     TikTokEventStatus @default(PENDING_CONFIG)
+  payload    Json
+  response   Json?
+  attempts   Int               @default(0)
+  lastError  String?
+  sentAt     DateTime?
+  dedupeKey  String?           @unique // "<leadId>:Purchase", "click:<eventId>"
+  nextTryAt  DateTime?
+  inFlightAt DateTime?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+  @@index([adClickId])
+  @@map("tiktok_event_outbox")
+}
+
+/// Singleton ("default"): sync lease, advertiser status, rate-limit backoff and
+/// the optional encrypted long-term token (only when TOKEN_ENCRYPTION_KEY exists).
+model TikTokAdsSyncState {
+  id                     String    @id @default("default")
+  advertiserId           String?
+  accountName            String?
+  currency               String?
+  timezoneName           String?
+  leaseOwner             String?
+  leaseUntil             DateTime?
+  lastRunAt              DateTime?
+  lastSuccessAt          DateTime?
+  lastStatus             String? // SUCCESS | FAILED | RATE_LIMITED | INCOMPLETE
+  lastError              String?
+  lastTrigger            String? // CRON | MANUAL
+  backfilledAdvertiserId String? // advertiser whose first-run backfill completed
+  rateLimitedUntil       DateTime?
+  rateLimitStrikes       Int       @default(0)
+  lastRangeFrom          DateTime? @db.Date
+  lastRangeTo            DateTime? @db.Date
+  // OAuth helper: AES-256-GCM envelope of the long-term token (never returned by any API)
+  tokenEnc               String?
+  tokenKeyId             String?
+  tokenAdvertiserIds     String[]  @default([])
+  tokenStoredAt          DateTime?
+  updatedAt              DateTime  @updatedAt
+
+  @@map("tiktok_ads_sync_state")
+}
+
+model TikTokAdsCampaign {
+  id               String   @id @default(cuid())
+  advertiserId     String
+  tiktokCampaignId String   @unique
+  name             String
+  operationStatus  String?
+  secondaryStatus  String?
+  objective        String?
+  // set when staff unlink it: the sync must not auto-create a CRM campaign again
+  autoLinkDisabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([advertiserId])
+  @@map("tiktok_ads_campaigns")
+}
+
+/// One row per TikTok campaign per day (stat_time_day, advertiser time zone).
+model TikTokAdsInsightDaily {
+  id               String   @id @default(cuid())
+  advertiserId     String
+  tiktokCampaignId String
+  date             DateTime @db.Date
+  amount           Decimal  @db.Decimal(18, 2)
+  currency         String   @default("IDR")
+  impressions      Int      @default(0)
+  clicks           Int      @default(0)
+  updatedAt        DateTime @updatedAt
+
+  @@unique([tiktokCampaignId, date])
+  @@index([date])
+  @@map("tiktok_ads_insights_daily")
 }

@@ -36,6 +36,10 @@ const RELATIONS: Record<
     lead: ["lead", "leadId", "one"],
     adClick: ["adClick", "adClickId", "one"],
   },
+  tikTokEventOutbox: {
+    lead: ["lead", "leadId", "one"],
+    adClick: ["adClick", "adClickId", "one"],
+  },
   adClick: { lead: ["lead", "leadId", "one"] },
   lead: {
     stage: ["leadStage", "stageId", "one"],
@@ -46,6 +50,7 @@ const RELATIONS: Record<
     quotation: ["quotation", "quotationId", "one"],
     activities: ["leadActivity", "leadId", "many"],
     metaEvents: ["metaEventOutbox", "leadId", "many"],
+    tiktokEvents: ["tikTokEventOutbox", "leadId", "many"],
     adClicks: ["adClick", "leadId", "many"],
   },
   leadActivity: {
@@ -61,9 +66,11 @@ const UNIQUE: Record<string, string[]> = {
   whatsAppConversation: ["contactId"],
   whatsAppWebhookEvent: ["payloadHash"],
   metaEventOutbox: ["dedupeKey"],
+  tikTokEventOutbox: ["dedupeKey"],
   adClick: ["ref", "eventId", "visitKey"],
-  campaign: ["code", "metaCampaignId"],
+  campaign: ["code", "metaCampaignId", "tiktokCampaignId"],
   metaAdsCampaign: ["metaCampaignId"],
+  tikTokAdsCampaign: ["tiktokCampaignId"],
 };
 
 const DEFAULTS: Record<string, () => Row> = {
@@ -111,6 +118,17 @@ const DEFAULTS: Record<string, () => Row> = {
     sentAt: null,
     value: null,
   }),
+  tikTokEventOutbox: () => ({
+    adClickId: null,
+    attempts: 0,
+    status: "PENDING_CONFIG",
+    nextTryAt: null,
+    inFlightAt: null,
+    response: null,
+    lastError: null,
+    sentAt: null,
+    value: null,
+  }),
   lead: () => ({
     firstResponseAt: null,
     referral: null,
@@ -143,6 +161,9 @@ const DEFAULTS: Record<string, () => Row> = {
     fbclid: null,
     fbc: null,
     fbp: null,
+    ttclid: null,
+    attributedPlatform: null,
+    attributionReason: null,
     ref: null,
     eventId: null,
     instagramHandle: null,

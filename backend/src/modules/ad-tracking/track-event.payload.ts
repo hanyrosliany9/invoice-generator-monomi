@@ -1,12 +1,13 @@
 import { normalizeRefCode } from "./ref-code";
 import { normalizeInstagramHandle } from "./track-utils";
+import { TTCLID_RE } from "./tiktok-events.payload";
 
 /** Landing-page answers: stored and shown as plain text only. */
 export const BRAND_NAME_MAX = 80;
 export const CATEGORY_MAX = 40;
 
 /** Hard cap for the request body (sendBeacon payloads are tiny). */
-export const TRACK_EVENT_MAX_BYTES = 4096;
+export const TRACK_EVENT_MAX_BYTES = 8192;
 
 /** The only events the endpoint accepts (and Meta ever receives from the page). */
 export const TRACK_EVENT_NAMES = ["PageView", "ViewContent", "EngagedVisit", "Lead"] as const;
@@ -29,6 +30,11 @@ export interface ParsedTrackEvent {
   fbclid: string | null;
   fbc: string | null;
   fbp: string | null;
+  /** TikTok click id (up to 1000 chars), persisted by the snippet for 30 days. */
+  ttclid: string | null;
+  /** Last time the snippet recorded a Meta / TikTok ad touch (epoch ms) - last-touch attribution. */
+  fbTouchAt: number | null;
+  ttTouchAt: number | null;
   instagramHandle: string | null;
   brandName: string | null;
   category: string | null;
@@ -37,6 +43,7 @@ export interface ParsedTrackEvent {
 const ID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 const FBCLID_RE = /^[A-Za-z0-9_.-]{4,300}$/;
 const FBC_RE = /^fb\.\d{1,2}\.\d{10,16}\.[A-Za-z0-9_.-]{4,300}$/;
+const TOUCH_MAX = 4_102_444_800_000; // year 2100: anything above is junk
 const FBP_RE = /^fb\.\d{1,2}\.\d{10,16}\.\d{4,20}$/;
 
 // eslint-disable-next-line no-control-regex
@@ -62,6 +69,11 @@ function url(value: unknown, max: number): string | null {
   } catch {
     return null;
   }
+}
+
+/** Epoch ms of a snippet touch (a plain positive integer), else null; future values are checked later. */
+function touch(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 && value < TOUCH_MAX ? value : null;
 }
 
 function pattern(value: unknown, re: RegExp): string | null {
@@ -108,7 +120,7 @@ export function parseTrackEvent(raw: unknown): ParsedTrackEvent | null {
     visitId,
     eventId,
     ref: name === "Lead" ? ref : null,
-    pageUrl: url(b.pageUrl, 500),
+    pageUrl: url(b.pageUrl, 1500),
     referrer: url(b.referrer, 500),
     utmSource: text(utm.source, 120),
     utmMedium: text(utm.medium, 120),
@@ -118,6 +130,9 @@ export function parseTrackEvent(raw: unknown): ParsedTrackEvent | null {
     fbclid: pattern(b.fbclid, FBCLID_RE),
     fbc: pattern(b.fbc, FBC_RE),
     fbp: pattern(b.fbp, FBP_RE),
+    ttclid: pattern(b.ttclid, TTCLID_RE),
+    fbTouchAt: touch(b.fbt),
+    ttTouchAt: touch(b.ttt),
     // qualifier answers only matter on the WhatsApp tap
     instagramHandle: name === "Lead" ? normalizeInstagramHandle(meta.instagram) : null,
     brandName: name === "Lead" ? text(meta.brandName, BRAND_NAME_MAX) : null,

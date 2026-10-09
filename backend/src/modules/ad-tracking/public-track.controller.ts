@@ -21,6 +21,7 @@ import { publicTrackTracker } from "./track-limits";
 import { isBotUserAgent } from "./track-utils";
 import { USER_AGENT_MAX } from "./web-capi.payload";
 import { WebCapiService } from "./web-capi.service";
+import { TikTokEventsService } from "./tiktok-events.service";
 
 const SCRIPT_ETAG = `"${createHash("sha256").update(MONOMI_TRACK_JS).digest("hex").slice(0, 24)}"`;
 
@@ -45,6 +46,7 @@ export class PublicTrackController {
   constructor(
     private readonly clicks: AdClickService,
     private readonly sender: WebCapiService,
+    private readonly tiktok: TikTokEventsService,
   ) {}
 
   @Public()
@@ -90,7 +92,16 @@ export class PublicTrackController {
       // never log the submitted code / ids
       this.logger.warn("Landing-page Lead ignored: its code or event id belongs to another tap");
     }
-    if (result.visitEvent) this.sender.enqueueVisitEvent(result.visitEvent);
+    if (result.visitEvent) {
+      // One platform per visit: a TikTok visit becomes a TikTok ViewContent (the
+      // snippet's automatic PageView only) and nothing goes to Meta; Meta and
+      // organic visits behave exactly as before.
+      if (result.visitEvent.platform === "TIKTOK") {
+        if (result.visitEvent.name === "PageView") this.tiktok.enqueueVisitEvent(result.visitEvent);
+      } else {
+        this.sender.enqueueVisitEvent(result.visitEvent);
+      }
+    }
     return { ok: true };
   }
 }

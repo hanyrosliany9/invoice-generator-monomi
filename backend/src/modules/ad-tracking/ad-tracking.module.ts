@@ -9,6 +9,9 @@ import { reportAdTrackingConfig } from "./ad-tracking.config";
 import { PublicTrackController } from "./public-track.controller";
 import { RedisTrackCounters, TrackCounters } from "./track-limits";
 import { WebCapiService } from "./web-capi.service";
+import { TikTokEventsService } from "./tiktok-events.service";
+import { TikTokAdminController } from "./tiktok-admin.controller";
+import { reportTikTokEventsConfig } from "./tiktok-events.config";
 
 /**
  * Landing-page tracking: the public click endpoint + drop-in snippet, ad click
@@ -19,20 +22,22 @@ import { WebCapiService } from "./web-capi.service";
  */
 @Module({
   imports: [PrismaModule, RedisThrottlerStorageModule],
-  controllers: [PublicTrackController, AdTrackingAdminController],
+  controllers: [PublicTrackController, AdTrackingAdminController, TikTokAdminController],
   providers: [
     AdClickService,
     AutoLeadService,
     WebCapiService,
+    TikTokEventsService,
     WhatsAppGraphClient,
     // abuse counters (global new-row cap, Lead gating, auto-lead cap) on the app's Redis
     { provide: TrackCounters, useClass: RedisTrackCounters },
   ],
-  exports: [AdClickService, AutoLeadService],
+  exports: [AdClickService, AutoLeadService, TikTokEventsService],
 })
 export class AdTrackingModule implements OnModuleInit {
   onModuleInit(): void {
     const cfg = reportAdTrackingConfig();
+    reportTikTokEventsConfig();
     new Logger(AdTrackingModule.name).log(
       `Ad tracking module loaded (website CAPI ${cfg?.state ?? "UNKNOWN"})`,
     );

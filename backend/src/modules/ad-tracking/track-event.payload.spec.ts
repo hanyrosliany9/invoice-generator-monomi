@@ -19,6 +19,32 @@ const lead = {
   meta: { instagram: "@Kopi.Senja", brandName: "Kopi Senja", category: "F&B", looks: "3", extra: "dropped" },
 };
 
+describe("parseTrackEvent - TikTok fields", () => {
+  const TTCLID = "E.C.P.v3fQ2RHacdksKfofPmlyuStIIHJ4Af1tKYxF9zz2c2PLx1Oaw15oHpcfl5AH";
+  it("accepts ttclid up to 1000 characters and the touch times, and nothing else", () => {
+    const p = parseTrackEvent({ ...base, ttclid: TTCLID, fbt: 1759900000000, ttt: 1759950000000 });
+    expect(p).toMatchObject({ ttclid: TTCLID, fbTouchAt: 1759900000000, ttTouchAt: 1759950000000 });
+    expect(parseTrackEvent({ ...base, ttclid: "a".repeat(1000) })!.ttclid).toHaveLength(1000);
+    expect(parseTrackEvent({ ...base, ttclid: "a".repeat(1001) })!.ttclid).toBeNull();
+  });
+  it("drops malformed ttclid / touch values instead of failing the event", () => {
+    for (const bad of ["<script>", "a b", "ab", 12345, {}, ["x"]]) {
+      expect(parseTrackEvent({ ...base, ttclid: bad })!.ttclid).toBeNull();
+    }
+    for (const bad of ["1759900000000", -1, 0, 1.5, 9e15, null, {}]) {
+      const p = parseTrackEvent({ ...base, fbt: bad, ttt: bad })!;
+      expect(p.fbTouchAt).toBeNull();
+      expect(p.ttTouchAt).toBeNull();
+    }
+  });
+  it("keeps the long page URL a 1000-character ttclid makes (1500 cap) and fits the body cap", () => {
+    const url = `https://link.monomiagency.com/?utm_source=tiktok&ttclid=${"a".repeat(1000)}`;
+    const body = JSON.stringify({ ...base, pageUrl: url, ttclid: "a".repeat(1000) });
+    expect(Buffer.byteLength(body)).toBeLessThan(TRACK_EVENT_MAX_BYTES);
+    expect(parseTrackEvent(body)!.pageUrl).toBe(url);
+  });
+});
+
 describe("parseTrackEvent", () => {
   it("accepts the snippet payload as an object or as the raw text sendBeacon sends", () => {
     expect(parseTrackEvent(JSON.stringify(base))).toEqual(parseTrackEvent(base));
