@@ -727,21 +727,36 @@ describe("TikTok routing, outbox and sender", () => {
       expect(paid.click.attributedPlatform).toBe("TIKTOK");
     });
 
-    it("2. one click selection: latest KODE, else latest AUTO_CREATE, never HANDLE", async () => {
+    it("2. one click selection: the most recent KODE / AUTO_CREATE click wins, never HANDLE", async () => {
       const { selectEventClick } = require("./event-click");
       const { prisma, t } = setup();
       const at = (n: number) => new Date(1_790_000_000_000 + n * 1000);
       t.adClick.push(
         { id: "auto1", leadId: "L", linkedVia: "AUTO_CREATE", attributedPlatform: "META", createdAt: at(1) },
-        { id: "auto2", leadId: "L", linkedVia: "AUTO_CREATE", attributedPlatform: "TIKTOK", createdAt: at(2) },
-        { id: "handle", leadId: "L", linkedVia: "HANDLE", attributedPlatform: "META", createdAt: at(9) },
+        { id: "handle", leadId: "L", linkedVia: "HANDLE", attributedPlatform: "TIKTOK", createdAt: at(9) },
       );
-      expect((await selectEventClick(prisma as any, "L")).id).toBe("auto2");
-      t.adClick.push({ id: "kode1", leadId: "L", linkedVia: "KODE", attributedPlatform: "META", createdAt: at(0) });
-      expect((await selectEventClick(prisma as any, "L")).id).toBe("kode1"); // any KODE beats a newer AUTO_CREATE
+      expect((await selectEventClick(prisma as any, "L")).id).toBe("auto1"); // HANDLE ignored even though newest
+      t.adClick.push({ id: "kode1", leadId: "L", linkedVia: "KODE", attributedPlatform: "TIKTOK", createdAt: at(0) });
+      expect((await selectEventClick(prisma as any, "L")).id).toBe("auto1"); // S13: newer Meta AUTO_CREATE beats older TikTok KODE
       t.adClick.push({ id: "kode2", leadId: "L", linkedVia: "KODE", attributedPlatform: "TIKTOK", createdAt: at(3) });
-      expect((await selectEventClick(prisma as any, "L")).id).toBe("kode2");
+      expect((await selectEventClick(prisma as any, "L")).id).toBe("kode2"); // newer TikTok KODE beats older Meta AUTO_CREATE
       expect(await selectEventClick(prisma as any, "nobody")).toBeNull();
+    });
+
+    it("2. TikTok config not READY when a stage event is queued: a TikTok-deciding lead routes to Meta", async () => {
+      const { t, tap, leads } = setup();
+      await tap({ i: 79 });
+      const lead = t.lead[0];
+      await leads.addPhone(lead.id, "0812 3456 7890", "u1");
+      const before = tt(t).length;
+      const off = withEnv({ TIKTOK_EVENTS_ENABLED: "false" });
+      try {
+        await leads.moveStage(lead.id, "st-qual", "u1");
+      } finally {
+        off();
+      }
+      expect(tt(t)).toHaveLength(before);
+      expect(t.metaEventOutbox.some((e: any) => e.leadId === lead.id && e.eventName === "QualifiedLead")).toBe(true);
     });
 
     it("2. a Meta stage event never carries the TikTok click (and the TikTok event uses that same click)", async () => {

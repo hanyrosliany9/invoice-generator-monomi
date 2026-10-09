@@ -9,11 +9,12 @@ export interface EventClick {
 
 /**
  * THE one place that picks the click of a lead's stage events, for both ad
- * platforms: the latest click whose Kode was confirmed (KODE), else the latest
- * click that auto-created the lead (AUTO_CREATE). A HANDLE click (an anonymous
- * tap that only named the same Instagram handle) is never chosen: anyone who
- * knows a public handle could otherwise attach their own device to a real
- * customer's events.
+ * platforms: the MOST RECENT click (by createdAt, the time of the conversion
+ * tap) among those whose Kode was confirmed (KODE) or that auto-created the
+ * lead (AUTO_CREATE). The most recent ad touch that made the person convert
+ * wins, whatever its platform. A HANDLE click (an anonymous tap that only named
+ * the same Instagram handle) is never chosen: anyone who knows a public handle
+ * could otherwise attach their own device to a real customer's events.
  *
  * Its `attributedPlatform` decides which platform gets the lead's FUTURE stage
  * events, and the same click supplies the device data and click ids of those
@@ -21,16 +22,9 @@ export interface EventClick {
  * TikTok click and the other way round. Events already sent stay where they went.
  */
 export async function selectEventClick(db: Pick<Tx, "adClick">, leadId: string): Promise<EventClick | null> {
-  const order = [{ createdAt: "desc" as const }, { id: "desc" as const }];
-  const kode = await db.adClick.findFirst({
-    where: { leadId, linkedVia: "KODE" },
-    orderBy: order,
-    select: { id: true, attributedPlatform: true },
-  });
-  if (kode) return kode;
   return db.adClick.findFirst({
-    where: { leadId, linkedVia: "AUTO_CREATE" },
-    orderBy: order,
+    where: { leadId, linkedVia: { in: ["KODE", "AUTO_CREATE"] } },
+    orderBy: [{ createdAt: "desc" as const }, { id: "desc" as const }],
     select: { id: true, attributedPlatform: true },
   });
 }

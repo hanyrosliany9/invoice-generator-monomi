@@ -141,8 +141,10 @@ export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSIO
   var fbTouch = readTime("fbt");
   var ttTouch = readTime("ttt");
   if (params.get("fbclid") || urlSrc === "fb") { fbTouch = nowMs; writeTime("fbt", fbTouch, COOKIE_DAYS); }
-  // A TikTok touch needs a ttclid: a bare utm_source=tiktok (a profile link) is not an ad click.
-  if (urlTtclid) { ttTouch = nowMs; writeTime("ttt", ttTouch, TTCLID_DAYS); }
+  // A TikTok touch needs a ttclid, or utm_source=tiktok with a paid utm_medium (as on the server):
+  // a bare utm_source=tiktok (a profile link) is not an ad click.
+  var paidMedium = ["paid", "cpc", "paid_social", "ads"].indexOf(String(params.get("utm_medium") || "").trim().toLowerCase()) !== -1;
+  if (urlTtclid || (urlSrc === "tt" && paidMedium)) { ttTouch = nowMs; writeTime("ttt", ttTouch, TTCLID_DAYS); }
 
   // ---- TikTok click id: first-party cookie + localStorage (never generate _ttp) ----
   var ttclid = urlTtclid || getCookie(NS + "ttclid") || load("localStorage", "ttclid");

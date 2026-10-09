@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { selectEventClick } from "../ad-tracking/event-click";
+import { resolveTikTokEventsConfig } from "../ad-tracking/tiktok-events.config";
 import { queueTikTokEvent } from "../ad-tracking/tiktok-outbox";
 import { TIKTOK_EVENT_FOR_META } from "../ad-tracking/tiktok-events.payload";
 
@@ -106,7 +107,9 @@ export class CrmOutboxService {
     // sent stay where they went.
     // ONE click selection serves both platforms (see selectEventClick).
     const selected = lead.ctwaClid || !db.adClick ? null : await selectEventClick({ adClick: db.adClick }, lead.id);
-    if (db.tikTokEventOutbox) {
+    // TikTok off / not READY: route to Meta as before TikTok support, so events are not stranded in an outbox that never sends.
+    const tiktokReady = resolveTikTokEventsConfig().state === "READY";
+    if (db.tikTokEventOutbox && tiktokReady) {
       const latest = selected;
       if (latest?.attributedPlatform === "TIKTOK") {
         const tt = TIKTOK_EVENT_FOR_META[eventName];
@@ -123,7 +126,8 @@ export class CrmOutboxService {
     // a lead may hold several landing-page clicks: only a confirmed (KODE) or
     // the lead-creating (AUTO_CREATE) click carries events, never a HANDLE one
     // a Meta event never carries a TikTok click
-    const click = selected && selected.attributedPlatform !== "TIKTOK" ? { id: selected.id } : null;
+    const click =
+      selected && (selected.attributedPlatform !== "TIKTOK" || !tiktokReady) ? { id: selected.id } : null;
     const route = chooseRoute(lead, !!click);
     // The website Lead was already sent when the WhatsApp button was tapped.
     if (route === "WEBSITE" && eventName === "LeadSubmitted") return { created: false, platform: "META", eventName };

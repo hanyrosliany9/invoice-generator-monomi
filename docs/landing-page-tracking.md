@@ -225,9 +225,9 @@ pending events never move onto it; the lead page lists it as "tapped again
 (not confirmed)". When the chat or staff confirm its Kode it becomes `KODE`.
 
 **Which click carries a lead's website events** (its IP, user agent, `fbc` /
-`fbp` go out with the lead's hashed phone / name): the newest `KODE` click
-(Kode confirmed by the chat or staff), else the `AUTO_CREATE` click (the tap
-that created the lead); never a `HANDLE` click.
+`fbp` go out with the lead's hashed phone / name): the most recent click
+(by tap time) among the `KODE` clicks (Kode confirmed by the chat or staff) and
+the `AUTO_CREATE` click (the tap that created the lead); never a `HANDLE` click.
 
 **When the chat arrives** (quick-add with the Kode, the lead page's **Link ad
 click code**, **Add phone** on the waiting lead, or a WhatsApp Cloud API message
@@ -527,11 +527,11 @@ A TikTok-attributed tap leaves a SKIPPED marker row on the Meta outbox
 its visit sends no Meta PageView.
 
 **Repeat conversions** (a second tap with another Kode, or a merge): the lead's
-platform for FUTURE stage events is that of its **latest KODE / AUTO_CREATE
-click** (`selectEventClick`, the one selection used for the platform decision and for the device data / click ids of both platforms; an unverified HANDLE click never decides). Events
+platform for FUTURE stage events is that of its **most recent KODE / AUTO_CREATE
+click** (the most recent ad touch that made the person convert wins, on either platform) (`selectEventClick`, the one selection used for the platform decision and for the device data / click ids of both platforms; an unverified HANDLE click never decides). Events
 already sent stay where they went; a later stage event (including the implied
 CompleteRegistration) goes to the new platform. A Click-to-WhatsApp lead
-(`ctwa_clid`) always stays on Meta. The lead page shows
+(`ctwa_clid`) always stays on Meta, and so does every event while the TikTok Events config is not READY. The lead page shows
 "Attributed to TikTok - last ad click before WhatsApp".
 
 ### 9.2 Event mapping

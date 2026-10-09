@@ -251,7 +251,11 @@ describe("monomi-track.js - TikTok click id (ttclid) and ad-touch times", () => 
     // a Meta utm_source alone is a touch; a bare utm_source=tiktok (profile link) is NOT a TikTok ad touch
     expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=instagram" }).sent[0].body.fbt).toBeGreaterThanOrEqual(before);
     expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=tiktok" }).sent[0].body.ttt).toBeUndefined();
-    expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=tiktok&utm_medium=paid" }).sent[0].body.ttt).toBeUndefined();
+    expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=tiktok&utm_medium=organic" }).sent[0].body.ttt).toBeUndefined();
+    // a TikTok paid utm landing (same definition as the server) is a touch
+    for (const m of ["paid", "cpc", "paid_social", "ads", "CPC"]) {
+      expect(makeBrowser({ url: `https://link.monomiagency.com/?utm_source=tiktok&utm_medium=${m}` }).sent[0].body.ttt).toBeGreaterThanOrEqual(before);
+    }
     const organic = makeBrowser({ url: "https://link.monomiagency.com/" });
     expect(organic.sent[0].body.fbt).toBeUndefined();
     expect(organic.sent[0].body.ttt).toBeUndefined();

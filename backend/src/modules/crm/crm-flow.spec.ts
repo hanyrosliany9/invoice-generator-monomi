@@ -70,7 +70,7 @@ function makeDb() {
     },
     adClick: {
       findFirst: async ({ where }: any) =>
-        db.adClicks.find((c: any) => c.leadId === where.leadId && c.linkedVia === where.linkedVia) ?? null,
+        db.adClicks.find((c: any) => c.leadId === where.leadId && where.linkedVia.in.includes(c.linkedVia)) ?? null,
     },
     adClicks: [] as any[],
     $transaction: async (fn: any) => fn(db),
