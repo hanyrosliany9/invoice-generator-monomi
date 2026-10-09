@@ -21,6 +21,8 @@ export interface ParsedTrackEvent {
   /** Lead only: the code written into the WhatsApp text. */
   ref: string | null;
   pageUrl: string | null;
+  /** The page URL was longer than the cap and was cut: a ttclid must not be read from it. */
+  pageUrlTruncated: boolean;
   referrer: string | null;
   utmSource: string | null;
   utmMedium: string | null;
@@ -40,6 +42,7 @@ export interface ParsedTrackEvent {
   category: string | null;
 }
 
+export const PAGE_URL_MAX = 1500;
 const ID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 const FBCLID_RE = /^[A-Za-z0-9_.-]{4,300}$/;
 const FBC_RE = /^fb\.\d{1,2}\.\d{10,16}\.[A-Za-z0-9_.-]{4,300}$/;
@@ -74,6 +77,21 @@ function url(value: unknown, max: number): string | null {
 /** Epoch ms of a snippet touch (a plain positive integer), else null; future values are checked later. */
 function touch(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value > 0 && value < TOUCH_MAX ? value : null;
+}
+
+/** A valid URL whose normalised form is longer than `max` (url() cuts it). */
+function urlTruncated(value: unknown, max: number): boolean {
+  if (typeof value !== "string" || value.length > 2000) return false;
+  try {
+    const u = new URL(value.trim());
+    if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+    u.hash = "";
+    u.username = "";
+    u.password = "";
+    return u.toString().length > max;
+  } catch {
+    return false;
+  }
 }
 
 function pattern(value: unknown, re: RegExp): string | null {
@@ -120,7 +138,8 @@ export function parseTrackEvent(raw: unknown): ParsedTrackEvent | null {
     visitId,
     eventId,
     ref: name === "Lead" ? ref : null,
-    pageUrl: url(b.pageUrl, 1500),
+    pageUrl: url(b.pageUrl, PAGE_URL_MAX),
+    pageUrlTruncated: urlTruncated(b.pageUrl, PAGE_URL_MAX),
     referrer: url(b.referrer, 500),
     utmSource: text(utm.source, 120),
     utmMedium: text(utm.medium, 120),

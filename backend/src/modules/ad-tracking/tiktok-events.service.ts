@@ -25,6 +25,7 @@ import {
   tiktokSkipReason,
 } from "./tiktok-events.payload";
 import type { VisitEventToSend } from "./ad-click.service";
+import { urlForTikTok } from "./url-params";
 
 export interface TikTokRunResult {
   enabled: boolean;
@@ -51,6 +52,8 @@ export const TIKTOK_STALE_BEFORE_ENABLE_MS = 86_400_000;
 export const TIKTOK_MAX_BATCH = 1000;
 export const TIKTOK_VISIT_QUEUE_MAX = 5000;
 export const TIKTOK_VISIT_MAX_ATTEMPTS = 3;
+/** At most this many extra requests per flush are spent on isolating a batch TikTok refused (40002). */
+export const TIKTOK_PERMANENT_RETRY_CAP = 20;
 
 /** Click-time Contact (the WhatsApp tap) is its own lane; CRM stage events never wait behind it. */
 export const CONTACT_LANE: Prisma.TikTokEventOutboxWhereInput = { eventName: "Contact" };
@@ -142,7 +145,7 @@ export class TikTokEventsService {
   /** Overridable in tests. */
   http: TikTokHttp = fetchHttp;
   env: () => NodeJS.ProcessEnv = () => process.env;
-  /** Last 40001 / 40104 seen (admin card: "check the token"). */
+  /** Last auth-class answer seen (40001 / 40102 / 40104 / 40105) (admin card: "check the token"). */
   lastAuthError: { at: Date; code: number } | null = null;
 
   constructor(private readonly prisma: PrismaService) {}
@@ -172,7 +175,8 @@ export class TikTokEventsService {
     const adCfg = resolveAdTrackingConfig(this.env());
     return {
       visitId: click.visitId ?? null,
-      pageUrl: allowedPageUrl(click.pageUrl, adCfg) ?? adCfg.landingPageUrl,
+      // never another platform's click id: Meta's fbclid stays out of TikTok events
+      pageUrl: urlForTikTok(allowedPageUrl(click.pageUrl, adCfg) ?? adCfg.landingPageUrl),
       referrer: click.referrer ?? null,
       ttclid: click.ttclid ?? null,
       clientIp: click.clientIp ?? null,
@@ -195,7 +199,7 @@ export class TikTokEventsService {
     const code = typeof res.json?.code === "number" ? res.json.code : null;
     if (res.status === 200 && code === 0) return res.json;
     const kind = classifyTikTokError(res.status, code);
-    if (code === 40001 || code === 40104) this.lastAuthError = { at: new Date(), code };
+    if (kind === "auth") this.lastAuthError = { at: new Date(), code: code ?? res.status };
     const msg = this.scrub(String(res.json?.message ?? `HTTP ${res.status}`));
     throw new TikTokApiError(`code ${code ?? "-"}: ${msg}`, kind, res.status, code);
   }
@@ -407,40 +411,74 @@ export class TikTokEventsService {
     this.flushing = true;
     try {
       const maxAgeMs = cfg.maxAgeDays * 86_400_000;
+      const budget = { left: TIKTOK_PERMANENT_RETRY_CAP };
       while (this.visitQueue.length > 0) {
         const taken = this.visitQueue.splice(0, TIKTOK_MAX_BATCH);
         const fresh = taken.filter((q) => now.getTime() - q.eventTime.getTime() <= maxAgeMs);
         result.stale += taken.length - fresh.length;
         if (fresh.length === 0) continue;
-        result.requests += 1;
-        try {
-          await this.request(cfg, fresh.map((q) => q.event));
-          result.sent += fresh.length;
-        } catch (error) {
-          const kind: TikTokErrorKind = error instanceof TikTokApiError ? error.kind : "transient";
-          this.logger.warn(`TikTok visit batch of ${fresh.length} failed (${kind}): ${this.scrub((error as Error)?.message ?? "")}`);
-          if (kind === "permanent") {
-            // 40002 names the zero-based index of the first bad event: drop it and resend the rest
-            const m = /data\.?\s*(\d+)\s*\./.exec((error as Error).message ?? "");
-            const bad = m ? Number(m[1]) : -1;
-            if (bad >= 0 && bad < fresh.length && fresh.length > 1) {
-              result.dropped += 1;
-              this.visitQueue.unshift(...fresh.filter((_, i) => i !== bad));
-            } else {
-              result.dropped += fresh.length;
-            }
-            continue;
-          }
-          const again = fresh.filter((q) => (q.attempts += 1) < TIKTOK_VISIT_MAX_ATTEMPTS);
-          result.dropped += fresh.length - again.length;
-          result.retrying += again.length;
-          this.visitQueue.unshift(...again);
-          break;
-        }
+        const left = await this.sendVisitBatch(cfg, fresh, result, budget);
+        if (left.length === 0) continue;
+        // transient / auth / rate limit: retry on a later tick, a few times, then drop
+        const again = left.filter((q) => (q.attempts += 1) < TIKTOK_VISIT_MAX_ATTEMPTS);
+        result.dropped += left.length - again.length;
+        result.retrying += again.length;
+        this.visitQueue.unshift(...again);
+        break;
       }
       return result;
     } finally {
       this.flushing = false;
+    }
+  }
+
+  /**
+   * Sends one batch. Returns the events that must be retried later (a transient /
+   * auth / rate-limit failure); everything else is settled here. A permanent
+   * refusal (40002) is isolated instead of dropping the whole batch: the index TikTok
+   * names is dropped and the rest resent; when no index can be read the batch is split
+   * in half and each half sent on its own. The extra requests are capped per flush
+   * (`budget`), after which the remaining batch is dropped.
+   */
+  private async sendVisitBatch(
+    cfg: TikTokEventsConfig,
+    batch: QueuedVisit[],
+    result: TikTokVisitFlushResult,
+    budget: { left: number },
+    isolation = false,
+  ): Promise<QueuedVisit[]> {
+    if (isolation) {
+      // an extra request spent on isolating a refused batch: capped per flush
+      if (budget.left <= 0) {
+        result.dropped += batch.length;
+        return [];
+      }
+      budget.left -= 1;
+    }
+    result.requests += 1;
+    try {
+      await this.request(cfg, batch.map((q) => q.event));
+      result.sent += batch.length;
+      return [];
+    } catch (error) {
+      const kind: TikTokErrorKind = error instanceof TikTokApiError ? error.kind : "transient";
+      this.logger.warn(`TikTok visit batch of ${batch.length} failed (${kind}): ${this.scrub((error as Error)?.message ?? "")}`);
+      if (kind !== "permanent") return batch;
+      if (batch.length === 1) {
+        result.dropped += 1;
+        return [];
+      }
+      // 40002 names the zero-based index of the first bad event
+      const m = /data\.?\s*(\d+)\s*\./.exec((error as Error).message ?? "");
+      const bad = m ? Number(m[1]) : -1;
+      if (bad >= 0 && bad < batch.length) {
+        result.dropped += 1;
+        return this.sendVisitBatch(cfg, batch.filter((_, i) => i !== bad), result, budget, true);
+      }
+      const mid = Math.ceil(batch.length / 2);
+      const first = await this.sendVisitBatch(cfg, batch.slice(0, mid), result, budget, true);
+      if (first.length > 0) return [...first, ...batch.slice(mid)];
+      return this.sendVisitBatch(cfg, batch.slice(mid), result, budget, true);
     }
   }
 

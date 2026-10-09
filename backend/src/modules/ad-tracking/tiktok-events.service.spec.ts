@@ -7,7 +7,7 @@ import { AdClickService } from "./ad-click.service";
 import { AutoLeadService } from "./auto-lead.service";
 import { parseTrackEvent } from "./track-event.payload";
 import { InMemoryTrackCounters } from "./track-limits";
-import { TikTokApiError, TikTokEventsService, TikTokHttp } from "./tiktok-events.service";
+import { TIKTOK_PERMANENT_RETRY_CAP, TikTokApiError, TikTokEventsService, TikTokHttp } from "./tiktok-events.service";
 import { SKIP_META_ATTRIBUTED_TIKTOK } from "./tiktok-events.payload";
 import { WebCapiService } from "./web-capi.service";
 import { WhatsAppGraphClient } from "../whatsapp/whatsapp-graph.client";
@@ -636,6 +636,200 @@ describe("TikTok routing, outbox and sender", () => {
       } finally {
         off();
       }
+    });
+  });
+
+  describe("review hardening", () => {
+    const sender = (prisma: any, post: any) => {
+      const s = new TikTokEventsService(prisma);
+      s.http = { post };
+      return s;
+    };
+
+    it("1. organic qualified -> TikTok Kode (events sent) -> Meta Kode: Meta never gets the QualifiedLead / Purchase back", async () => {
+      const { t, tap, leads } = setup();
+      t.lead.push({
+        id: "L-org", name: "Budi", phone: "+6281234567890", instagramHandle: null, stageId: "st-new", source: "WHATSAPP_ORGANIC",
+        createdAt: new Date(), firstContactAt: new Date(), lastContactAt: new Date(), estimatedValue: 0, awaitingWhatsapp: false, autoCreated: false, nameIsPlaceholder: false,
+      });
+      await leads.moveStage("L-org", "st-qual", "u1"); // organic: Meta business-messaging row
+      const tk = await tap({ i: 70 });
+      await leads.linkAdClick("L-org", tk.ref, "u1"); // TikTok Kode: the Meta row becomes the SKIP_ATTRIBUTED_TIKTOK marker
+      const metaRow = () => t.metaEventOutbox.find((e: any) => e.leadId === "L-org" && e.eventName === "QualifiedLead");
+      expect(metaRow()).toMatchObject({ status: "SKIPPED", lastError: SKIP_META_ATTRIBUTED_TIKTOK });
+      for (const e of tt(t)) e.status = "SENT"; // everything was sent to TikTok
+
+      const mt = await tap({ i: 71, url: META_URL, extra: { fbclid: "IwAR1" } });
+      mt.click.createdAt = new Date(Date.now() + 60_000);
+      await leads.linkAdClick("L-org", mt.ref, "u1"); // Meta Kode afterwards
+      expect(metaRow()).toMatchObject({ route: "BUSINESS_MESSAGING", status: "SKIPPED", lastError: SKIP_META_ATTRIBUTED_TIKTOK });
+      expect(t.metaEventOutbox.filter((e: any) => e.leadId === "L-org" && ["QualifiedLead", "Purchase"].includes(e.eventName) && e.status !== "SKIPPED")).toHaveLength(0);
+      // and what TikTok already got is not touched
+      expect(tt(t).every((e: any) => e.status === "SENT")).toBe(true);
+    });
+
+    it("1. a row skipped only for lack of a ctwa_clid is still revived by a Meta Kode; SKIP_SENT_BEFORE_MERGE never is", async () => {
+      const { prisma, t } = setup();
+      const { rerouteToWebsiteInTx } = require("./click-link");
+      t.lead.push({ id: "L1", ctwaClid: null });
+      t.adClick.push({ id: "k1", leadId: "L1", linkedVia: "KODE", attributedPlatform: "META", createdAt: new Date() });
+      t.metaEventOutbox.push(
+        { id: "a", leadId: "L1", route: "BUSINESS_MESSAGING", eventName: "QualifiedLead", status: "SKIPPED", dedupeKey: "L1:QualifiedLead", lastError: "no ctwa_clid - not from a CTWA ad" },
+        { id: "b", leadId: "L1", route: "BUSINESS_MESSAGING", eventName: "Purchase", status: "SKIPPED", dedupeKey: "L1:Purchase", lastError: "SKIP_SENT_BEFORE_MERGE: the placeholder lead already sent it" },
+        { id: "c", leadId: "L1", route: "BUSINESS_MESSAGING", eventName: "QualifiedLead", status: "PENDING_CONFIG", dedupeKey: "L1:QualifiedLead:x", lastError: null },
+      );
+      await rerouteToWebsiteInTx(prisma as any, "L1");
+      const row = (id: string) => t.metaEventOutbox.find((e: any) => e.id === id);
+      expect(row("a")).toMatchObject({ route: "WEBSITE", status: "PENDING_CONFIG" });
+      expect(row("c")).toMatchObject({ route: "WEBSITE" });
+      expect(row("b")).toMatchObject({ route: "BUSINESS_MESSAGING", status: "SKIPPED" });
+    });
+
+    it("1. merge: the SKIP_SENT_BEFORE_MERGE marker is created BEFORE the re-route, so the already-sent Meta QualifiedLead is not queued again", async () => {
+      const { t, tap, leads } = setup();
+      t.lead.push({
+        id: "L-old", name: "Budi", phone: "+6281234567890", instagramHandle: null, stageId: "st-new", source: "WHATSAPP_ORGANIC",
+        createdAt: new Date(Date.now() - DAY), firstContactAt: new Date(), lastContactAt: new Date(), estimatedValue: 0, awaitingWhatsapp: false, autoCreated: false, nameIsPlaceholder: false,
+      });
+      await tap({ i: 75, url: META_URL, extra: { fbclid: "IwAR1" } });
+      const placeholder = t.lead.find((l: any) => l.autoCreated);
+      await leads.moveStage(placeholder.id, "st-qual", "u1");
+      const sentRow = t.metaEventOutbox.find((e: any) => e.leadId === placeholder.id && e.eventName === "QualifiedLead");
+      sentRow.status = "SENT";
+      await leads.addPhone(placeholder.id, "0812 3456 7890", "u1"); // merge into L-old
+      const rows = t.metaEventOutbox.filter((e: any) => e.leadId === "L-old" && e.eventName === "QualifiedLead");
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ status: "SKIPPED" });
+      expect(rows[0].lastError).toMatch(/SKIP_SENT_BEFORE_MERGE/);
+    });
+
+    it("4. while the TikTok config is OFF, a TikTok-looking tap behaves exactly as before: Meta gets the Lead, nothing for TikTok", async () => {
+      const off = withEnv({ TIKTOK_EVENTS_ENABLED: "false" });
+      try {
+        const { t, tap } = setup();
+        const r = await tap({ i: 76 });
+        expect(r.click.attributedPlatform).toBe("NONE");
+        expect(tt(t)).toHaveLength(0);
+        const lead = t.metaEventOutbox.find((e: any) => e.dedupeKey.startsWith("click:"));
+        expect(lead).toBeDefined();
+        expect(lead.lastError ?? "").not.toMatch(/ATTRIBUTED_TIKTOK/);
+        expect(r.pageView.visitEvent.platform).not.toBe("TIKTOK");
+      } finally {
+        off();
+      }
+    });
+
+    it("4. a bio link with utm_source=tiktok only (no ttclid, no paid medium) is not an ad: the tap stays organic", async () => {
+      const { tap } = setup();
+      const r = await tap({ i: 77, url: `${LANDING}/?utm_source=tiktok` });
+      expect(r.click.attributedPlatform).toBe("NONE");
+      const paid = await tap({ i: 78, url: `${LANDING}/?utm_source=tiktok&utm_medium=cpc` });
+      expect(paid.click.attributedPlatform).toBe("TIKTOK");
+    });
+
+    it("2. one click selection: latest KODE, else latest AUTO_CREATE, never HANDLE", async () => {
+      const { selectEventClick } = require("./event-click");
+      const { prisma, t } = setup();
+      const at = (n: number) => new Date(1_790_000_000_000 + n * 1000);
+      t.adClick.push(
+        { id: "auto1", leadId: "L", linkedVia: "AUTO_CREATE", attributedPlatform: "META", createdAt: at(1) },
+        { id: "auto2", leadId: "L", linkedVia: "AUTO_CREATE", attributedPlatform: "TIKTOK", createdAt: at(2) },
+        { id: "handle", leadId: "L", linkedVia: "HANDLE", attributedPlatform: "META", createdAt: at(9) },
+      );
+      expect((await selectEventClick(prisma as any, "L")).id).toBe("auto2");
+      t.adClick.push({ id: "kode1", leadId: "L", linkedVia: "KODE", attributedPlatform: "META", createdAt: at(0) });
+      expect((await selectEventClick(prisma as any, "L")).id).toBe("kode1"); // any KODE beats a newer AUTO_CREATE
+      t.adClick.push({ id: "kode2", leadId: "L", linkedVia: "KODE", attributedPlatform: "TIKTOK", createdAt: at(3) });
+      expect((await selectEventClick(prisma as any, "L")).id).toBe("kode2");
+      expect(await selectEventClick(prisma as any, "nobody")).toBeNull();
+    });
+
+    it("2. a Meta stage event never carries the TikTok click (and the TikTok event uses that same click)", async () => {
+      const { t, tap, leads } = setup();
+      const tk = await tap({ i: 72 });
+      const lead = t.lead[0];
+      await leads.addPhone(lead.id, "0812 3456 7890", "u1");
+      await leads.moveStage(lead.id, "st-qual", "u1");
+      expect(t.metaEventOutbox.filter((e: any) => e.leadId === lead.id && e.adClickId === tk.click.id && e.eventName !== "Lead")).toHaveLength(0);
+      expect(tt(t).filter((e: any) => e.leadId === lead.id).every((e: any) => e.adClickId === tk.click.id)).toBe(true);
+    });
+
+    it("9. 40102 / 40105 are auth errors (surfaced as authProblem); any other 4xxxx code is permanent, not retried", async () => {
+      for (const code of [40102, 40105]) {
+        const { prisma, t, tap, leads } = setup();
+        await tap({ i: 73 });
+        await leads.addPhone(t.lead[0].id, "0812 3456 7890", "u1");
+        const s = sender(prisma, async () => ({ status: 200, json: { code, message: "token", request_id: "R" } }));
+        await s.run();
+        expect(s.lastAuthError).toMatchObject({ code });
+        expect((await s.stats()).authProblem).toMatchObject({ code });
+        expect(tt(t).every((e: any) => e.status === "QUEUED" && e.attempts === 1)).toBe(true);
+      }
+      const { prisma, t, tap, leads } = setup();
+      await tap({ i: 74 });
+      await leads.addPhone(t.lead[0].id, "0812 3456 7890", "u1");
+      const post = jest.fn(async () => ({ status: 200, json: { code: 40999, message: "nope", request_id: "R" } }));
+      const s = sender(prisma, post);
+      await s.run();
+      expect(s.lastAuthError).toBeNull();
+      expect(tt(t).every((e: any) => e.status === "FAILED")).toBe(true);
+    });
+
+    it("10. 40002 without a readable index splits the batch in half and keeps the good events; the retries are capped", async () => {
+      const { prisma, tap } = setup();
+      const poison = new Set<string>();
+      const post = jest.fn(async (_u: string, _t: string, body: any) => {
+        if (body.data.some((e: any) => poison.has(e.event_id))) return { status: 400, json: { code: 40002, message: "invalid payload", request_id: "R" } };
+        return { status: 200, json: { code: 0, message: "OK", request_id: "R" } };
+      });
+      const s = sender(prisma, post);
+      const evs: any[] = [];
+      for (const i of [80, 81, 82, 83]) evs.push((await tap({ i })).pageView.visitEvent);
+      poison.add(`tt_view_${evs[2].eventId}`);
+      for (const e of evs) s.enqueueVisitEvent(e);
+      const res = await s.flushVisitEvents();
+      expect(res).toMatchObject({ sent: 3, dropped: 1 });
+      expect(s.queuedVisitEvents).toBe(0);
+
+      // everything poisoned: the number of requests stops at the cap instead of splitting down to every event
+      const many: any[] = [];
+      for (let i = 0; i < 60; i++) many.push((await tap({ i: 100 + i })).pageView.visitEvent);
+      const all = sender(prisma, async () => ({ status: 400, json: { code: 40002, message: "invalid payload", request_id: "R" } }));
+      for (const e of many) all.enqueueVisitEvent(e);
+      const r2 = await all.flushVisitEvents();
+      expect(r2.requests).toBeLessThanOrEqual(1 + TIKTOK_PERMANENT_RETRY_CAP);
+      expect(r2.sent).toBe(0);
+      expect(r2.dropped).toBe(60);
+      expect(all.queuedVisitEvents).toBe(0);
+    });
+
+    it("5. TikTok events carry no fbclid in their page URL; Meta events carry no ttclid and a URL of at most 500 characters", () => {
+      const { clickForMeta } = require("./web-capi.service");
+      const { urlForTikTok } = require("./url-params");
+      const cfg = { allowedOrigins: [LANDING], landingPageUrl: `${LANDING}/` } as any;
+      const long = `${LANDING}/?utm_source=facebook&fbclid=IwAR1&ttclid=${TTCLID}&x=${"a".repeat(900)}`;
+      const m = clickForMeta({ pageUrl: long }, cfg).pageUrl;
+      expect(m.length).toBeLessThanOrEqual(500);
+      expect(m).not.toContain("ttclid");
+      expect(m).toContain("fbclid=IwAR1");
+      expect(urlForTikTok(`${LANDING}/?ttclid=${TTCLID}&fbclid=IwAR1&utm_source=tiktok`)).toBe(`${LANDING}/?ttclid=${TTCLID}&utm_source=tiktok`);
+    });
+
+    it("11/12. only the referrer origin goes to TikTok; a URL cut short is flagged so no ttclid is read from it", async () => {
+      const { tap } = setup();
+      const r = await tap({ i: 90, referrer: "https://www.tiktok.com/@brand/video/1?secret=abc" });
+      expect(r.click.attributedPlatform).toBe("TIKTOK");
+      const { buildTikTokEvent } = require("./tiktok-events.payload");
+      const e = buildTikTokEvent({ eventName: "ViewContent", eventTime: new Date(), eventId: "x" }, r.click, null, LANDING);
+      expect(e.page.referrer).toBe("https://www.tiktok.com");
+
+      const longUrl = `${LANDING}/?utm_source=tiktok&utm_medium=paid&pad=${"p".repeat(1500)}&ttclid=${TTCLID}`;
+      const parsed = parseTrackEvent(JSON.stringify({ name: "PageView", visitId: visitFor(91), eventId: eventId(), pageUrl: longUrl }))!;
+      expect(parsed.pageUrlTruncated).toBe(true);
+      expect(parsed.pageUrl!.length).toBeLessThanOrEqual(1500);
+      expect(parsed.pageUrl).not.toContain("ttclid");
+      const short = parseTrackEvent(JSON.stringify({ name: "PageView", visitId: visitFor(92), eventId: eventId(), pageUrl: TT_URL }))!;
+      expect(short.pageUrlTruncated).toBe(false);
     });
   });
 

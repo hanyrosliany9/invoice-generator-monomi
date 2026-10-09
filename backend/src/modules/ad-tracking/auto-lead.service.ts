@@ -434,7 +434,6 @@ export class AutoLeadService {
     // the Kode the chat carried is confirmed on the target; clicks keep how
     // they were linked (a HANDLE click stays unable to carry events)
     if (input?.confirmedRef) await confirmKodeInTx(tx, input.confirmedRef, targetId);
-    if (clicks.length) await rerouteToWebsiteInTx(tx, targetId);
 
     // Stage events the placeholder already sent / queued are not sent again
     // for the same person: a marker row takes the target's dedupe key.
@@ -485,6 +484,10 @@ export class AutoLeadService {
         skipDuplicates: true,
       });
     }
+
+    // Only now re-route: the markers above already hold the target's dedupe keys, so a
+    // re-route can never create a row that skipDuplicates would have let win over them.
+    if (clicks.length) await rerouteToWebsiteInTx(tx, targetId);
 
     const refs = clicks.map((c) => c.ref).filter(Boolean).join(", ");
     await tx.leadActivity.create({

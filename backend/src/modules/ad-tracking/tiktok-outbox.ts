@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { REVIVABLE_BM_ROWS, selectEventClick } from "./event-click";
 import { SKIP_META_ATTRIBUTED_TIKTOK, TIKTOK_EVENT_FOR_META } from "./tiktok-events.payload";
 
 type Tx = Prisma.TransactionClient;
@@ -6,25 +7,8 @@ type Tx = Prisma.TransactionClient;
 /** Meta stage events a lead earned before its converting click was known (see click-link.ts). */
 const RELINKABLE_META_EVENTS = ["QualifiedLead", "Purchase"];
 
-/**
- * The click whose platform decides where a lead's events go: the LATEST
- * landing-page click whose Kode was confirmed (KODE) or that auto-created the
- * lead (AUTO_CREATE). A HANDLE click (anonymous, unverified) is never used.
- * Repeat conversions: a second tap with a Kode from another platform's visit
- * becomes the latest click, so FUTURE stage events switch platform; events
- * already sent stay where they went.
- */
-export async function latestEventClick(
-  db: Pick<Tx, "adClick">,
-  leadId: string,
-): Promise<{ id: string; attributedPlatform: "META" | "TIKTOK" | "NONE" | null } | null> {
-  const click = await db.adClick.findFirst({
-    where: { leadId, linkedVia: { in: ["KODE", "AUTO_CREATE"] } },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    select: { id: true, attributedPlatform: true },
-  });
-  return click;
-}
+/** The lead's event click (see selectEventClick): its platform decides where FUTURE stage events go. */
+export const latestEventClick = selectEventClick;
 
 export interface TikTokQueueOpts {
   value?: number | null;
@@ -106,7 +90,8 @@ export async function rerouteToTikTokInTx(
       leadId,
       route: "BUSINESS_MESSAGING",
       eventName: { in: RELINKABLE_META_EVENTS },
-      status: { in: ["PENDING_CONFIG", "SKIPPED"] },
+      // only rows still waiting or skipped for lack of a click: never an earlier decision
+      ...REVIVABLE_BM_ROWS,
     },
     select: { id: true, eventName: true, eventTime: true, value: true },
   });

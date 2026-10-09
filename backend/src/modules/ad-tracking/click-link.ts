@@ -1,5 +1,6 @@
 import { AdClickLinkVia, Prisma } from "@prisma/client";
-import { latestEventClick, rerouteToTikTokInTx } from "./tiktok-outbox";
+import { REVIVABLE_BM_ROWS, selectEventClick } from "./event-click";
+import { rerouteToTikTokInTx } from "./tiktok-outbox";
 
 type Tx = Prisma.TransactionClient;
 type Db = Pick<Prisma.TransactionClient, "adClick">;
@@ -7,27 +8,9 @@ type Db = Pick<Prisma.TransactionClient, "adClick">;
 /** Outbox events that exist for the website route when a lead is linked later. */
 export const RELINKABLE_EVENTS = ["QualifiedLead", "Purchase"];
 
-/**
- * The click whose IP / user agent / Meta ids go out with a lead's website
- * stage events (together with the lead's hashed phone and name): the newest
- * click whose Kode was confirmed (KODE), else the click that auto-created the
- * lead (AUTO_CREATE). A HANDLE click (an anonymous tap that only named the
- * same Instagram handle) is never chosen: anyone who knows a public handle
- * could otherwise attach their own device to a real customer's events.
- */
+/** The id of the lead's event click (see selectEventClick: the one shared selection). */
 export async function eventClickId(db: Db, leadId: string): Promise<string | null> {
-  const kode = await db.adClick.findFirst({
-    where: { leadId, linkedVia: "KODE" },
-    orderBy: { createdAt: "desc" },
-    select: { id: true },
-  });
-  if (kode) return kode.id;
-  const created = await db.adClick.findFirst({
-    where: { leadId, linkedVia: "AUTO_CREATE" },
-    orderBy: { createdAt: "asc" },
-    select: { id: true },
-  });
-  return created?.id ?? null;
+  return (await selectEventClick(db, leadId))?.id ?? null;
 }
 
 /**
@@ -40,12 +23,12 @@ export async function eventClickId(db: Db, leadId: string): Promise<string | nul
 export async function rerouteToWebsiteInTx(tx: Tx, leadId: string): Promise<void> {
   const lead = await tx.lead.findUnique({ where: { id: leadId }, select: { ctwaClid: true } });
   if (!lead || lead.ctwaClid) return;
-  const clickId = await eventClickId(tx, leadId);
-  if (!clickId) return;
-  // The latest converting click came from TikTok: its events go to TikTok, none to Meta.
-  const latest = await latestEventClick(tx, leadId);
-  if (latest?.attributedPlatform === "TIKTOK") {
-    await rerouteToTikTokInTx(tx, leadId, latest.id);
+  const event = await selectEventClick(tx, leadId);
+  if (!event) return;
+  const clickId = event.id;
+  // The event click came from TikTok: its events go to TikTok, none to Meta.
+  if (event.attributedPlatform === "TIKTOK") {
+    await rerouteToTikTokInTx(tx, leadId, clickId);
     return;
   }
   await tx.metaEventOutbox.updateMany({
@@ -53,7 +36,8 @@ export async function rerouteToWebsiteInTx(tx: Tx, leadId: string): Promise<void
       leadId,
       route: "BUSINESS_MESSAGING",
       eventName: { in: RELINKABLE_EVENTS },
-      status: { in: ["PENDING_CONFIG", "SKIPPED"] },
+      // never revive an earlier decision (SKIP_ATTRIBUTED_TIKTOK, SKIP_SENT_BEFORE_MERGE, ...)
+      ...REVIVABLE_BM_ROWS,
     },
     data: {
       route: "WEBSITE",

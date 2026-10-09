@@ -12,7 +12,7 @@
  * no backticks / template literals (this file wraps it in one), never throw,
  * never delay opening WhatsApp, and never put anything secret in it.
  */
-export const MONOMI_TRACK_VERSION = "2.2.0";
+export const MONOMI_TRACK_VERSION = "2.3.0";
 
 export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSION} - first-party tracker, events are sent server-side */
 (function () {
@@ -141,13 +141,14 @@ export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSIO
   var fbTouch = readTime("fbt");
   var ttTouch = readTime("ttt");
   if (params.get("fbclid") || urlSrc === "fb") { fbTouch = nowMs; writeTime("fbt", fbTouch, COOKIE_DAYS); }
-  if (urlTtclid || urlSrc === "tt") { ttTouch = nowMs; writeTime("ttt", ttTouch, TTCLID_DAYS); }
+  // A TikTok touch needs a ttclid: a bare utm_source=tiktok (a profile link) is not an ad click.
+  if (urlTtclid) { ttTouch = nowMs; writeTime("ttt", ttTouch, TTCLID_DAYS); }
 
   // ---- TikTok click id: first-party cookie + localStorage (never generate _ttp) ----
   var ttclid = urlTtclid || getCookie(NS + "ttclid") || load("localStorage", "ttclid");
   if (ttclid && !TTCLID_RE.test(ttclid)) ttclid = "";
-  if (ttclid && ttTouch && nowMs - ttTouch > TTCLID_DAYS * 86400000) {
-    // older than the retention: forget it
+  if (ttclid && (!ttTouch || nowMs - ttTouch > TTCLID_DAYS * 86400000)) {
+    // no time, or older than the retention: a stored ttclid is only trusted with a young touch time
     ttclid = "";
     ttTouch = 0;
     setCookie(NS + "ttclid", "", -1);
@@ -227,7 +228,8 @@ export const MONOMI_TRACK_JS = String.raw`/*! monomi-track ${MONOMI_TRACK_VERSIO
     try {
       var payload = {
         name: name, visitId: visitId, eventId: makeUuid(),
-        pageUrl: location.href.split("#")[0], referrer: document.referrer || undefined,
+        // cut before sending: a very long URL must never push the beacon over the server's size cap
+        pageUrl: location.href.split("#")[0].slice(0, 1500), referrer: (document.referrer || "").slice(0, 500) || undefined,
         utm: utm, fbclid: fbclid || undefined, fbc: getCookie("_fbc") || undefined, fbp: getCookie("_fbp") || fbp,
         ttclid: ttclid || undefined, fbt: fbTouch || undefined, ttt: ttTouch || undefined
       };

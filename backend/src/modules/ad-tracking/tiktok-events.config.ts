@@ -43,6 +43,12 @@ export interface TikTokEventsConfig {
 }
 
 const logger = new Logger("TikTokEventsConfig");
+/** The "ignored in production" warning is logged once per process, not on every resolve. */
+let warnedBaseUrlIgnored = false;
+/** Test hook: lets a spec see the warning again. */
+export const resetTikTokConfigWarnings = (): void => {
+  warnedBaseUrlIgnored = false;
+};
 const clean = (v: string | undefined): string | null => {
   const t = v?.trim();
   return t ? t : null;
@@ -91,7 +97,10 @@ export function resolveTikTokEventsConfig(env: NodeJS.ProcessEnv = process.env):
   const override = clean(env.TIKTOK_EVENTS_API_BASE_URL);
   if (override) {
     if (isProduction) {
-      logger.warn("TIKTOK_EVENTS_API_BASE_URL is ignored in production");
+      if (!warnedBaseUrlIgnored) {
+        warnedBaseUrlIgnored = true;
+        logger.warn("TIKTOK_EVENTS_API_BASE_URL is ignored in production");
+      }
     } else {
       const o = toHttpOrigin(override);
       if (o) baseUrl = o;

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { eventClickId } from "../ad-tracking/click-link";
-import { latestEventClick, queueTikTokEvent } from "../ad-tracking/tiktok-outbox";
+import { selectEventClick } from "../ad-tracking/event-click";
+import { queueTikTokEvent } from "../ad-tracking/tiktok-outbox";
 import { TIKTOK_EVENT_FOR_META } from "../ad-tracking/tiktok-events.payload";
 
 export const META_EVENTS = ["LeadSubmitted", "QualifiedLead", "Purchase"] as const;
@@ -104,8 +104,10 @@ export class CrmOutboxService {
     // Last-touch platform: the latest converting click decides, so a repeat
     // conversion from another platform switches FUTURE events; events already
     // sent stay where they went.
-    if (!lead.ctwaClid && db.adClick && db.tikTokEventOutbox) {
-      const latest = await latestEventClick({ adClick: db.adClick }, lead.id);
+    // ONE click selection serves both platforms (see selectEventClick).
+    const selected = lead.ctwaClid || !db.adClick ? null : await selectEventClick({ adClick: db.adClick }, lead.id);
+    if (db.tikTokEventOutbox) {
+      const latest = selected;
       if (latest?.attributedPlatform === "TIKTOK") {
         const tt = TIKTOK_EVENT_FOR_META[eventName];
         if (!tt) return { created: false, platform: "TIKTOK", eventName };
@@ -120,8 +122,8 @@ export class CrmOutboxService {
     }
     // a lead may hold several landing-page clicks: only a confirmed (KODE) or
     // the lead-creating (AUTO_CREATE) click carries events, never a HANDLE one
-    const clickId = lead.ctwaClid || !db.adClick ? null : await eventClickId({ adClick: db.adClick }, lead.id);
-    const click = clickId ? { id: clickId } : null;
+    // a Meta event never carries a TikTok click
+    const click = selected && selected.attributedPlatform !== "TIKTOK" ? { id: selected.id } : null;
     const route = chooseRoute(lead, !!click);
     // The website Lead was already sent when the WhatsApp button was tapped.
     if (route === "WEBSITE" && eventName === "LeadSubmitted") return { created: false, platform: "META", eventName };

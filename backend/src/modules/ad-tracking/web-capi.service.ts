@@ -23,6 +23,7 @@ import {
   webSkipReason,
 } from "./web-capi.payload";
 import type { VisitEventToSend } from "./ad-click.service";
+import { urlForMeta } from "./url-params";
 
 export interface WebCapiRunResult {
   enabled: boolean;
@@ -82,7 +83,8 @@ const isForbidden = (error: unknown) => error instanceof ForbiddenGraphEndpointE
  * filter existed are covered too).
  */
 export function clickForMeta<T extends WebClick>(click: T, cfg: AdTrackingConfig): T {
-  return { ...click, pageUrl: allowedPageUrl(click.pageUrl, cfg) ?? cfg.landingPageUrl };
+  // urlForMeta: no TikTok click id in a Meta event, and the URL length Meta has always been sent
+  return { ...click, pageUrl: urlForMeta(allowedPageUrl(click.pageUrl, cfg) ?? cfg.landingPageUrl) };
 }
 
 /**

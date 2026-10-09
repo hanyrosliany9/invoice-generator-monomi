@@ -6,6 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AdTrackingConfig, allowedPageUrl, resolveAdTrackingConfig } from "./ad-tracking.config";
 import { Attribution, AttributedPlatform, decideAttribution } from "./ad-attribution";
 import { SKIP_META_ATTRIBUTED_TIKTOK, ttclidFromUrl } from "./tiktok-events.payload";
+import { resolveTikTokEventsConfig } from "./tiktok-events.config";
 import { ParsedTrackEvent } from "./track-event.payload";
 import { InMemoryTrackCounters, ipBucket, TrackCounters } from "./track-limits";
 import {
@@ -267,7 +268,8 @@ export class AdClickService {
     const cfg = this.config();
     const campaignCode = await this.resolveCampaignCode(ev.utmCampaign);
     // the snippet sends the persisted ttclid; a ttclid in the landing URL itself counts too
-    if (!ev.ttclid) ev = { ...ev, ttclid: ttclidFromUrl(ev.pageUrl) };
+    // (never from a URL that was cut short: the ttclid could be cut with it)
+    if (!ev.ttclid && !ev.pageUrlTruncated) ev = { ...ev, ttclid: ttclidFromUrl(ev.pageUrl) };
     // The browser normally sends _fbc; rebuild it from fbclid when only the
     // raw click id reached us (format: fb.<subdomain index>.<ms>.<fbclid>).
     const fbc = ev.fbc ?? (ev.fbclid ? `fb.1.${now.getTime()}.${ev.fbclid}` : null);
@@ -287,7 +289,7 @@ export class AdClickService {
       userAgent: ctx.userAgent ? ctx.userAgent.slice(0, USER_AGENT_MAX) : null,
       campaignCode,
     };
-    const attr = this.attribution(ev, [ev.pageUrl], now);
+    const attr = this.attribution(ev, null, now);
     if (ev.name === "Lead") return this.recordLead(ev, ctx, fields, now, cfg);
 
     let row = await this.ensureVisitRow(ev.visitId, fields, now, cfg, attr);
@@ -326,15 +328,16 @@ export class AdClickService {
   }
 
   /** Last-touch platform of this event (see ad-attribution.ts). */
-  private attribution(ev: ParsedTrackEvent, urls: Array<string | null | undefined>, now: Date): Attribution {
+  private attribution(ev: ParsedTrackEvent, visitUrl: string | null, now: Date): Attribution {
     return decideAttribution({
-      urls,
-      utmSource: ev.utmSource,
+      tapUrl: ev.pageUrl,
+      visitUrl,
       referrer: ev.referrer,
       hasFbId: !!(ev.fbclid || ev.fbc),
-      hasTtId: !!ev.ttclid,
       fbTouchAt: ev.fbTouchAt,
       ttTouchAt: ev.ttTouchAt,
+      // TikTok counts only while its Events config is READY: otherwise nothing changes for Meta
+      tiktokEnabled: resolveTikTokEventsConfig().state === "READY",
       now,
     });
   }
@@ -360,12 +363,13 @@ export class AdClickService {
     const known = await this.tapOutcome(ref, ev.eventId);
     if (known) return { outcome: known };
 
-    const preAttr = this.attribution(ev, [ev.pageUrl], now);
+    const preAttr = this.attribution(ev, null, now);
     const visitRow = await this.ensureVisitRow(ev.visitId, fields, now, cfg, preAttr);
     if (!visitRow) return { outcome: "dropped" };
-    // The platform is decided for THIS tap: the landing URL of the visit
-    // (this event's URL, else the visit's first URL), else the newest stored touch.
-    const attr = this.attribution(ev, [ev.pageUrl, visitRow.pageUrl], now);
+    // The platform is decided for THIS tap: the ad parameters of this event's URL; only when it
+    // has none, the visit's first URL; only when neither has any, the newest stored touch.
+    // Parameters of different URLs are never combined.
+    const attr = this.attribution(ev, visitRow.pageUrl, now);
     const tap = {
       ref,
       eventId: ev.eventId,

@@ -62,7 +62,7 @@ describe("TikTok event payload (exact field names of the Events API 2.0 referenc
   const click = {
     visitId: "0b6f3b0e-52a2-4f0e-8a54-1c1f0f0b6c11",
     pageUrl: `${LANDING}/?utm_source=tiktok&utm_campaign=1790000000000001&ttclid=${TTCLID}`,
-    referrer: "https://www.tiktok.com/",
+    referrer: "https://www.tiktok.com/x?a=1",
     ttclid: TTCLID,
     clientIp: "203.0.113.45",
     userAgent: "Mozilla/5.0 (Linux; Android 14)",
@@ -82,7 +82,7 @@ describe("TikTok event payload (exact field names of the Events API 2.0 referenc
         ip: "203.0.113.45",
         user_agent: "Mozilla/5.0 (Linux; Android 14)",
       },
-      page: { url: click.pageUrl, referrer: "https://www.tiktok.com/" },
+      page: { url: click.pageUrl, referrer: "https://www.tiktok.com" },
     });
     expect(JSON.stringify(e)).not.toMatch(/"ttp"/);
   });
@@ -199,7 +199,8 @@ describe("TikTok error classification", () => {
     expect(classifyTikTokError(500, null)).toBe("transient");
     expect(classifyTikTokError(503, 50000)).toBe("transient");
     expect(classifyTikTokError(null, null)).toBe("transient");
-    expect(classifyTikTokError(200, 40999)).toBe("transient");
+    expect(classifyTikTokError(200, 40999)).toBe("permanent"); // any other business code 4xxxx cannot succeed on retry
+    expect(classifyTikTokError(200, 50001)).toBe("transient");
     expect(classifyTikTokError(404, null)).toBe("permanent");
     expect(classifyTikTokError(408, null)).toBe("transient");
   });

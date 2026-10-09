@@ -1,3 +1,4 @@
+import { originOf } from "./url-params";
 import { sha256, USER_AGENT_MAX } from "./web-capi.payload";
 
 /** The Meta stage events the CRM queues, and the TikTok event each one becomes. */
@@ -16,8 +17,7 @@ export const SKIP_TT_STALE_BEFORE_ENABLE =
 export const SKIP_TT_ATTRIBUTED_ELSEWHERE = (platform: string) =>
   `SKIP_ATTRIBUTED_${platform}: the converting click belongs to ${platform === "META" ? "Meta" : "another platform"}, not TikTok`;
 /** Row on the Meta outbox for a TikTok-attributed tap (so the lead page explains why Meta got nothing). */
-export const SKIP_META_ATTRIBUTED_TIKTOK =
-  "SKIP_ATTRIBUTED_TIKTOK: the converting click came from TikTok, so this event goes to TikTok only";
+export { SKIP_META_ATTRIBUTED_TIKTOK } from "./web-capi.payload";
 export const skipTooOld = (days: number) =>
   `event older than ${days} days - not sent to TikTok (TikTok documents no maximum age; limit is TIKTOK_EVENTS_MAX_AGE_DAYS)`;
 
@@ -126,7 +126,9 @@ export function buildTikTokEvent(
   if (lead) user.locale = "id-ID";
 
   const page: Record<string, unknown> = { url: click.pageUrl ?? landingPageUrl };
-  if (click.referrer) page.referrer = click.referrer;
+  // only the origin of the referrer: its path and query can carry anything
+  const referrer = originOf(click.referrer);
+  if (referrer) page.referrer = referrer;
 
   const properties: Record<string, unknown> = {};
   if (input.eventName === "Purchase") {
@@ -190,18 +192,23 @@ export type TikTokErrorKind = "permanent" | "auth" | "rate_limit" | "transient";
  * Classifies a failed call by TikTok's return code (the HTTP status is the
  * fallback):
  *  - 40002 invalid payload      -> permanent (never retried)
- *  - 40001 no permission, 40104 empty/invalid token -> auth: a configuration
- *    problem; retried with backoff (a re-generated token fixes it) until the
- *    attempts run out, and surfaced to the admin
+ *  - 40001 no permission, 40102 / 40105 / 40104 token problems -> auth: a
+ *    configuration problem; retried with backoff (a re-generated token fixes it)
+ *    until the attempts run out, and surfaced to the admin
  *  - 40100 too many requests, 429 -> rate_limit (backoff)
- *  - 5xx, network, timeouts, unknown -> transient
- *  - other 4xx -> permanent
+ *  - any other TikTok business code 40000-49999 -> permanent (retrying the
+ *    same payload cannot help)
+ *  - 5xx, 5xxxx server codes, network, timeouts, unknown -> transient
+ *  - other HTTP 4xx -> permanent
  */
+export const TIKTOK_AUTH_CODES: readonly number[] = [40001, 40102, 40104, 40105];
+
 export function classifyTikTokError(status: number | null, code: number | null): TikTokErrorKind {
   if (code === 40002) return "permanent";
-  if (code === 40001 || code === 40104) return "auth";
+  if (code !== null && TIKTOK_AUTH_CODES.includes(code)) return "auth";
   if (code === 40100 || status === 429) return "rate_limit";
   if (status === 401 || status === 403) return "auth";
+  if (code !== null && code >= 40000 && code < 50000) return "permanent";
   if (status !== null && status >= 400 && status < 500 && status !== 408) return "permanent";
   return "transient";
 }

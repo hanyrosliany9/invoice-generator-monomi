@@ -248,8 +248,10 @@ describe("monomi-track.js - TikTok click id (ttclid) and ad-touch times", () => 
     const tt = makeBrowser({ url: TT_LANDING });
     expect(tt.sent[0].body.ttt).toBeGreaterThanOrEqual(before);
     expect(tt.sent[0].body.fbt).toBeUndefined();
-    // utm_source alone is a touch too; an organic visit records none
-    expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=tiktok" }).sent[0].body.ttt).toBeGreaterThanOrEqual(before);
+    // a Meta utm_source alone is a touch; a bare utm_source=tiktok (profile link) is NOT a TikTok ad touch
+    expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=instagram" }).sent[0].body.fbt).toBeGreaterThanOrEqual(before);
+    expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=tiktok" }).sent[0].body.ttt).toBeUndefined();
+    expect(makeBrowser({ url: "https://link.monomiagency.com/?utm_source=tiktok&utm_medium=paid" }).sent[0].body.ttt).toBeUndefined();
     const organic = makeBrowser({ url: "https://link.monomiagency.com/" });
     expect(organic.sent[0].body.fbt).toBeUndefined();
     expect(organic.sent[0].body.ttt).toBeUndefined();
@@ -261,5 +263,33 @@ describe("monomi-track.js - TikTok click id (ttclid) and ad-touch times", () => 
     expect(b.sent[0].body.fbt).toBe(Number(fbAt));
     expect(b.sent[0].body.ttt).toBeGreaterThan(Number(fbAt));
     expect(b.sent[0].body.fbc).toBe("fb.1.1.OLD");
+  });
+});
+
+describe("monomi-track.js - ttclid lifetime and size safety", () => {
+  const DAY = 86_400_000;
+  it("drops a stored ttclid that has no touch time, or an expired one (and clears its storage)", () => {
+    const noTime = makeBrowser({ url: "https://link.monomiagency.com/", cookies: { monomi_ttclid: "E.C.P.stored12345" } });
+    expect(noTime.sent[0].body.ttclid).toBeUndefined();
+    expect(noTime.sent[0].body.ttt).toBeUndefined();
+    const local = new Map([["monomi_ttclid", "E.C.P.stored12345"]]);
+    expect(makeBrowser({ url: "https://link.monomiagency.com/", local }).sent[0].body.ttclid).toBeUndefined();
+    const expired = makeBrowser({ url: "https://link.monomiagency.com/", cookies: { monomi_ttclid: "E.C.P.stored12345", monomi_ttt: String(Date.now() - 31 * DAY) } });
+    expect(expired.sent[0].body.ttclid).toBeUndefined();
+    const fresh = makeBrowser({ url: "https://link.monomiagency.com/", cookies: { monomi_ttclid: "E.C.P.stored12345", monomi_ttt: String(Date.now() - 2 * DAY) } });
+    expect(fresh.sent[0].body.ttclid).toBe("E.C.P.stored12345");
+  });
+
+  it("cuts pageUrl (1500) and referrer (500) before sending so the beacon never goes over the server cap", () => {
+    const longQuery = "x".repeat(5000);
+    const b = makeBrowser({ url: `https://link.monomiagency.com/?ttclid=${"a".repeat(1000)}&q=${longQuery}` });
+    const body = b.sent[0].body;
+    expect(body.pageUrl.length).toBe(1500);
+    // the ttclid itself still travels in full, from the real URL
+    expect(body.ttclid).toBe("a".repeat(1000));
+    expect(JSON.stringify(body).length).toBeLessThan(8192);
+    b.doc.referrer = "https://example.com/" + "r".repeat(2000);
+    b.sandbox.MonomiTrack.track("ViewContent");
+    expect(b.sent[b.sent.length - 1].body.referrer.length).toBe(500);
   });
 });

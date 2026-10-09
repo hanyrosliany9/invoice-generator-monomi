@@ -6,6 +6,9 @@ export const SKIP_WEB_TOO_OLD = "event older than 7 days — not accepted by Met
 export const SKIP_WEB_NO_CLICK = "no landing-page ad click linked to this lead";
 export const SKIP_WEB_LEAD_AT_CLICK =
   "Lead event is already sent when the WhatsApp button is tapped";
+/** A TikTok-attributed click never carries a Meta event (also the marker row of a TikTok-attributed tap). */
+export const SKIP_META_ATTRIBUTED_TIKTOK =
+  "SKIP_ATTRIBUTED_TIKTOK: the converting click came from TikTok, so this event goes to TikTok only";
 export const SKIP_WEB_HAS_CTWA =
   "lead has a Click-to-WhatsApp id — sent through the WhatsApp route instead";
 
@@ -152,6 +155,8 @@ export function webSkipReason(
   // CTWA lead later does not move it to the WhatsApp route.
   if (row.eventName !== "Lead" && row.lead?.ctwaClid) return SKIP_WEB_HAS_CTWA;
   if (!row.adClick) return SKIP_WEB_NO_CLICK;
+  // defence in depth: a Meta row bound to a TikTok click is never sent
+  if ((row.adClick as { attributedPlatform?: string | null }).attributedPlatform === "TIKTOK") return SKIP_META_ATTRIBUTED_TIKTOK;
   if (now.getTime() - row.eventTime.getTime() > WEB_CAPI_MAX_AGE_MS) return SKIP_WEB_TOO_OLD;
   return null;
 }
