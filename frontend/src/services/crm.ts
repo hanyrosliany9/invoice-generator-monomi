@@ -264,7 +264,7 @@ export interface TikTokEventsSummary {
   lastSentAt: string | null;
   lastFailed: { at: string; eventName: string; error: string | null } | null;
   queuedVisitEvents: number;
-  /** A 40001 / 40104 answer was seen since the server started: check the token. */
+  /** An auth-class answer (40001 / 40102 / 40104 / 40105) was seen since the server started: check the token. */
   authProblem: { at: string; code: number } | null;
 }
 

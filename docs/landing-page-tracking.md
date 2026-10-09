@@ -103,7 +103,7 @@ one lead only; one lead can hold several codes (the same person tapping again).
 ### Endpoints (public, no auth)
 
 * `POST /api/v1/public/track/event` – `application/json` or `text/plain`
-  (sendBeacon), max 4 KB. Body: `{ name, visitId, eventId, pageUrl, referrer,
+  (sendBeacon), max 8 KB. Body: `{ name, visitId, eventId, pageUrl, referrer,
   utm:{source,medium,campaign,content,term}, fbclid, fbc, fbp, ref?, meta? }`.
   `name` is whitelisted: `PageView`, `ViewContent`, `EngagedVisit`, `Lead`.
   `Lead` also needs `ref`; `meta` = `{instagram, brandName, category}` (Lead only).
@@ -114,8 +114,8 @@ one lead only; one lead can hold several codes (the same person tapping again).
   stored, duplicate, dropped by the global cap, or a `ref`/`eventId` that clashes
   with another tap (the clash is logged without the input, and is not
   distinguishable from a fresh code, so codes cannot be probed). `400` generic
-  for invalid input (never echoed), `413` above 4 KB (nginx refuses bodies over
-  8 KB before the app), `403` for a browser origin that is not allowed, `429`
+  for invalid input (never echoed), `413` above 8 KB (nginx refuses bodies over
+  8 KB too, before the app), `403` for a browser origin that is not allowed, `429`
   above 120 requests/minute per network: per IPv4 address, per **IPv6 /64**
   (several events per visit, and mobile carriers share addresses).
   **Global cap:** at most `PUBLIC_TRACK_MAX_NEW_PER_MIN` (default 600) new
@@ -498,18 +498,27 @@ WhatsApp tap** (never per person, never by first touch) and stored on the
 `attributionReason` (`url_param` / `last_touch` / `none`). Order of the checks
 (`ad-tracking/ad-attribution.ts`):
 
-1. **The landing URL of the visit** (the tap event's URL, else the visit's first
-   URL): `fbclid` or `utm_source=facebook|instagram|meta|fb|ig` -> Meta;
-   `ttclid` or `utm_source=tiktok` -> TikTok (`url_param`). Both in one URL:
-   `utm_source` decides, else the referrer host (tiktok.com / facebook.com /
-   instagram.com), else **Meta** (the incumbent; today's behaviour).
-2. **No ad parameter in that URL** (a returning direct visit): the snippet keeps
-   the time of the last Meta touch (`fbt`) and the last TikTok touch (`ttt`) in a
-   first-party cookie + localStorage and sends both; the **newer** wins
-   (`last_touch`). A platform with a stored click id but no time (old cached
-   snippet) only wins when the other side has none; unknowns -> Meta.
-3. **Neither** -> `NONE`: organic. Organic keeps today's Meta behaviour (Meta
+1. **The tap event's own URL**: `fbclid` or `utm_source=facebook|instagram|meta|fb|ig`
+   -> Meta; `ttclid`, or `utm_source=tiktok` **together with a paid
+   `utm_medium`** (`paid`, `cpc`, `paid_social`, `ads`) -> TikTok (`url_param`).
+   A bare `utm_source=tiktok` (a profile bio link) is **not** an ad. Both in
+   one URL: `utm_source` decides, else the referrer host (tiktok.com /
+   facebook.com / instagram.com), else **Meta** (the incumbent).
+2. **Only if the tap URL has no ad parameter: the visit's first URL**, with the
+   same rules. Parameters of different URLs are **never merged**.
+3. **Only if neither URL has any: last touch.** The snippet keeps the time of
+   the last Meta touch (`fbt`) and the last TikTok touch (`ttt`, written only
+   when a `ttclid` was captured) in a first-party cookie + localStorage and
+   sends both; the **newer** wins (`last_touch`). The server ignores a `ttt`
+   older than 30 days, and the snippet drops a stored `ttclid` that has no
+   `ttt` or an expired one. A Meta click id of unknown age only wins when
+   TikTok has no recent touch.
+4. **Nothing** -> `NONE`: organic. Organic keeps today's Meta behaviour (Meta
    still gets PageView and the click-time Lead as before); TikTok gets nothing.
+
+TikTok attribution applies **only while the TikTok Events config is READY**.
+While it is OFF, INCOMPLETE or INVALID every TikTok signal is ignored and Meta
+gets everything it always got.
 
 The losing platform gets **nothing for that lead**, and its click ids are never
 sent to the winner (no `fbc` in a TikTok event, no `ttclid` in a Meta event).
@@ -519,7 +528,7 @@ its visit sends no Meta PageView.
 
 **Repeat conversions** (a second tap with another Kode, or a merge): the lead's
 platform for FUTURE stage events is that of its **latest KODE / AUTO_CREATE
-click** (`latestEventClick`; an unverified HANDLE click never decides). Events
+click** (`selectEventClick`, the one selection used for the platform decision and for the device data / click ids of both platforms; an unverified HANDLE click never decides). Events
 already sent stay where they went; a later stage event (including the implied
 CompleteRegistration) goes to the new platform. A Click-to-WhatsApp lead
 (`ctwa_clid`) always stays on Meta. The lead page shows
