@@ -35,6 +35,9 @@ export const adminGuides: GuideDef[] = [
       // text-only steps: they happen in Meta Business Settings / Ads Manager, there is no screen of this app to show
       { id: 'domain-verifikasi', href: '/crm/settings' },
       { id: 'kampanye-website', href: '/crm/campaigns' },
+      // TikTok: the pixel, token and ad link are made in TikTok Ads Manager; the app only shows the status card
+      { id: 'tiktok', href: '/crm/settings' },
+      { id: 'tiktok-iklan', href: '/crm/campaigns' },
     ],
   },
   {

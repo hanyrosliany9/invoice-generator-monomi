@@ -1,4 +1,7 @@
-# Landing page tracking (visit -> WhatsApp chat -> CRM lead -> Meta events, server-side only)
+# Landing page tracking (visit -> WhatsApp chat -> CRM lead -> Meta / TikTok events, server-side only)
+
+> TikTok (Events API + ad spend) is documented in section 9 below. Everything above
+> describes the Meta route, which is unchanged; one lead goes to ONE platform (see 9.1).
 
 Monomi runs Meta ads to a static landing page (`https://link.monomiagency.com`).
 Every call to action opens WhatsApp (`wa.me/6285126203934` with a pre-filled
@@ -329,6 +332,7 @@ lead page as an `@handle` link, and in the quick-add chip); an
 | `META_ADS_SYNC_ENABLED` | `true` | Meta Ads sync on/off (it needs `META_SYSTEM_USER_TOKEN`, shared with auto-publishing, with `ads_read`) |
 | `META_ADS_SYNC_BACKFILL_DAYS` | `90` | history pulled by the first sync run (1-365) |
 | `META_WEB_CAPI_GRAPH_BASE_URL` | unset | DEV ONLY fake Graph server, ignored in production |
+| `TIKTOK_*` | see 9.4 | TikTok Events API and TikTok Ads sync (all optional, OFF by default) |
 
 States (shown in CRM settings, never fatal at boot): **OFF**, **INCOMPLETE**
 (enabled, pixel or token missing), **INVALID** (malformed value / placeholder),
@@ -474,3 +478,211 @@ Recommended before going live:
   leads (delete it by hand on request).
 
 Have the final wording reviewed by someone qualified.
+
+## 9. TikTok: Events API (server-side conversions) and ad spend sync
+
+TikTok mirrors the Meta website route one for one: the same snippet, the same
+click rows, a separate outbox table and sender, and a spend sync with the same
+lease / back-off / auto-link design. Field names are those of TikTok's official
+"Report events" reference (Events API 2.0, `POST
+https://business-api.tiktok.com/open_api/v1.3/event/track/`, header
+`Access-Token`, body `event_source: "web"`, `event_source_id` = the Pixel Code,
+`data[]`).
+
+### 9.1 One platform per lead (attribution)
+
+A lead's events go to ONE platform: **the most recent ad touch that led the
+person to convert wins.** It is decided **per click, at the moment of the
+WhatsApp tap** (never per person, never by first touch) and stored on the
+`ad_clicks` row as `attributedPlatform` (`META` / `TIKTOK` / `NONE`) with
+`attributionReason` (`url_param` / `last_touch` / `none`). Order of the checks
+(`ad-tracking/ad-attribution.ts`):
+
+1. **The landing URL of the visit** (the tap event's URL, else the visit's first
+   URL): `fbclid` or `utm_source=facebook|instagram|meta|fb|ig` -> Meta;
+   `ttclid` or `utm_source=tiktok` -> TikTok (`url_param`). Both in one URL:
+   `utm_source` decides, else the referrer host (tiktok.com / facebook.com /
+   instagram.com), else **Meta** (the incumbent; today's behaviour).
+2. **No ad parameter in that URL** (a returning direct visit): the snippet keeps
+   the time of the last Meta touch (`fbt`) and the last TikTok touch (`ttt`) in a
+   first-party cookie + localStorage and sends both; the **newer** wins
+   (`last_touch`). A platform with a stored click id but no time (old cached
+   snippet) only wins when the other side has none; unknowns -> Meta.
+3. **Neither** -> `NONE`: organic. Organic keeps today's Meta behaviour (Meta
+   still gets PageView and the click-time Lead as before); TikTok gets nothing.
+
+The losing platform gets **nothing for that lead**, and its click ids are never
+sent to the winner (no `fbc` in a TikTok event, no `ttclid` in a Meta event).
+A TikTok-attributed tap leaves a SKIPPED marker row on the Meta outbox
+(`SKIP_ATTRIBUTED_TIKTOK`) so the lead page explains why Meta got nothing, and
+its visit sends no Meta PageView.
+
+**Repeat conversions** (a second tap with another Kode, or a merge): the lead's
+platform for FUTURE stage events is that of its **latest KODE / AUTO_CREATE
+click** (`latestEventClick`; an unverified HANDLE click never decides). Events
+already sent stay where they went; a later stage event (including the implied
+CompleteRegistration) goes to the new platform. A Click-to-WhatsApp lead
+(`ctwa_clid`) always stays on Meta. The lead page shows
+"Attributed to TikTok - last ad click before WhatsApp".
+
+### 9.2 Event mapping
+
+| Moment | TikTok event | When |
+|---|---|---|
+| Landing view | `ViewContent` | the first PageView of a TikTok-attributed visit (in-memory batch queue, up to 1000 per request) |
+| WhatsApp tap | `Contact` | the tap, through the same anti-abuse gate as Meta's click-time Lead (outbox row, `click:<eventId>`) |
+| Chat arrives / Kode matched, phone known | `Lead` | waiting lead filled in, merge, manual quick-add / link; once per lead (`<leadId>:Lead`) |
+| Qualified (also implied: skipping past Qualified to a later or Won stage) | `CompleteRegistration` | same trigger as Meta's `QualifiedLead` (`<leadId>:CompleteRegistration`) |
+| Won / invoice paid | `Purchase` | `value` (plain number), `currency: "IDR"`, `order_id` = the paid invoice number (else the lead id) |
+
+Only standard events are used (custom events are not optimisable). EngagedVisit
+and an explicit ViewContent are not forwarded to TikTok. The CRM hooks are
+shared with Meta (`changeStage`, quotation approved, invoice paid, waiting-lead
+phone fill, quick-add): for a TikTok lead they queue the TikTok event instead,
+and Meta behaviour for Meta and organic leads is unchanged.
+
+### 9.3 Payload and hashing
+
+`user`: `ttclid` (raw), `phone` / `email` / `external_id` (SHA-256), `ip` and
+`user_agent` (raw, from the stored click), `locale: "id-ID"` when the lead is
+known. `page.url` is the stored landing URL (only on an allowed origin, else
+`LANDING_PAGE_URL`) and `page.referrer`. **`_ttp` is never generated**: without
+the TikTok Pixel nothing in the browser sets it, and a made-up value matches
+nothing. `event_time` is the real event time in UNIX seconds (UTC).
+
+* **Phone is E.164 WITH the "+"** (`+6281234567890`) and then SHA-256. This is
+  NOT Meta's format (`normalizePhoneForMeta` strips the "+"): hashing the Meta
+  form silently gives zero matches. `0812-3456-7890`, `+62 812 ...`, `62812...`
+  and `812...` all become `+6281234567890`; an input that starts with "+" is kept
+  as typed (so a foreign number is never turned into +62). Worked example:
+  `+6281234567890` -> `62397bbd6a8c9ae53bc914a6017300eb6b13af5be20e4cc9ad2dc3d61ecb24cd`.
+* Email: trimmed, lowercased, then SHA-256. `external_id`: SHA-256 of the visit
+  id and of the lead id (an array).
+* `event_id` is stable per event (`tt_contact_<eventId>`, `tt_lead_<leadId>`,
+  `tt_qualified_<leadId>`, `tt_purchase_<leadId>`, `tt_view_<eventId>`): TikTok
+  drops repeats of (pixel, event, event_id) for 48 hours, so an outbox retry is
+  idempotent.
+
+### 9.4 Environment variables
+
+| variable | default | meaning |
+|---|---|---|
+| `TIKTOK_PIXEL_ID` | unset | Pixel Code (`event_source_id`) |
+| `TIKTOK_EVENTS_ACCESS_TOKEN` | unset | Events API token: Events Manager > the pixel > Settings > Generate Access Token (admin / operator of the ad account) |
+| `TIKTOK_EVENTS_ENABLED` | `false` | `true` to send events |
+| `TIKTOK_TEST_EVENT_CODE` | unset | Events Manager > Test Events code, sent as top-level `test_event_code` (REMOVE for production) |
+| `TIKTOK_EVENTS_MAX_AGE_DAYS` | `7` | older events are SKIPPED with a clear reason (TikTok documents no maximum age: open item) |
+| `TIKTOK_EVENTS_API_BASE_URL` | unset | TEST/DEV ONLY fake server, ignored in production |
+| `TIKTOK_ADS_SYNC_ENABLED` | `false` | spend sync on/off (OFF until set) |
+| `TIKTOK_ADVERTISER_ID` | unset | the ad account (advertiser) id |
+| `TIKTOK_ADS_ACCESS_TOKEN` | unset | long-term advertiser token (from "Connect TikTok Ads"); wins over a stored one |
+| `TIKTOK_ADS_APP_ID`, `TIKTOK_ADS_APP_SECRET` | unset | the approved developer app, only used by "Connect TikTok Ads" |
+| `TIKTOK_ADS_SYNC_BACKFILL_DAYS` | `90` | history pulled by the first run (1-365) |
+| `TIKTOK_ADS_API_BASE_URL` | unset | TEST/DEV ONLY fake server, ignored in production |
+
+States (never fatal at boot): OFF, INCOMPLETE, INVALID, READY, as for Meta.
+The tokens are secrets: never logged, never returned by any API, scrubbed from
+stored errors. `docker-compose.prod.yml` passes them through.
+
+### 9.5 Sender
+
+`TikTokEventOutbox` is a separate table (Meta's dedupe keys such as
+`<leadId>:Purchase` would collide). It has the same lanes and guarantees as the
+Meta website sender: stage events first, then click-time Contacts; one event per
+request; a claim (`inFlightAt`) makes sending at-most-once and an interrupted
+claim is retried with the same `event_id`; the first READY run skips Contacts
+that waited more than 24 h; the merge SKIP markers
+(`SKIP_SENT_BEFORE_MERGE`) and the cleanup of unlinked Contact rows are carried
+over. Responses: code `0` = success. `40002` (invalid payload) is permanent
+(FAILED, never retried); `40001` (no permission) and `40104` (token empty /
+invalid) are auth problems: retried with backoff until the attempts run out and
+shown on the settings card; `40100` / HTTP 429 and 5xx / network errors are
+retried with backoff. In a visit batch, a `40002` that names a zero-based index
+drops only that event.
+
+### 9.6 Spend sync
+
+`GET /open_api/v1.3/report/integrated/get/` (`report_type=BASIC`,
+`data_level=AUCTION_CAMPAIGN`, `dimensions=["campaign_id","stat_time_day"]`,
+metrics spend / impressions / clicks / campaign_name), paged, in 30-day chunks;
+`campaign/get/` for names and status and `advertiser/info/` for currency and time
+zone. First run: `TIKTOK_ADS_SYNC_BACKFILL_DAYS`; later runs re-read the last 7
+days (reporting lags about 11 h and restates). Every 3 hours (Asia/Jakarta) and
+on **Sync now**; DB lease; rate-limit back-off 15 min doubling to 3 h.
+
+Storage: new `tiktok_ads_*` tables (state, campaigns, daily insights) instead of
+a `platform` column on the Meta tables, because the Meta tables, their unique
+keys and the working Meta sync stay untouched and the TikTok campaign id space
+and status vocabulary differ. The CRM `Campaign` gets `tiktokCampaignId*` fields
+and the `TIKTOK` platform; `CampaignSpendSource` gets `TIKTOK`. Auto-link /
+create, `codeAuto`, the opt-out on unlink or switch and the `campaignSource`
+AUTO / MANUAL rules are the Meta ones (a campaign linked to Meta is never taken
+over). A landing visit whose `utm_campaign` is the numeric TikTok campaign id is
+attributed to the linked campaign.
+
+**Connect TikTok Ads** (CRM settings > TikTok, admin only): paste the `auth_code`
+from the OAuth redirect; the server posts `app_id`, `secret`, `auth_code` to
+`/open_api/v1.3/oauth2/access_token/` and stores the long-term token AES-256-GCM
+encrypted in `tiktok_ads_sync_state` when `TOKEN_ENCRYPTION_KEY` exists (never
+shown again); without the key nothing is stored and the token is shown ONCE to
+copy into `TIKTOK_ADS_ACCESS_TOKEN`.
+
+### 9.7 Ad URL, go-live and test
+
+Ad URL parameters (no leading `?`):
+`utm_source=tiktok&utm_medium=paid&utm_campaign=__CAMPAIGN_ID__&utm_term=__AID__&utm_content=__CID__`
+(Campaigns > Copy TikTok ad link). TikTok appends `ttclid` itself; do not add
+`__CALLBACK_PARAM__`. Macros are case-sensitive.
+
+1. Events Manager: create the Web pixel (manual / Events API), Settings >
+   Generate Access Token; set `TIKTOK_PIXEL_ID`, `TIKTOK_EVENTS_ACCESS_TOKEN`,
+   `TIKTOK_EVENTS_ENABLED=true` and, for the test, `TIKTOK_TEST_EVENT_CODE`.
+2. Open the landing page with `?utm_source=tiktok&ttclid=test123`, tap WhatsApp,
+   fill the phone, move to Qualified, mark Won, **Send queued events now**:
+   ViewContent, Contact, Lead, CompleteRegistration, Purchase appear under Test
+   Events (Server). Remove the test code and restart.
+3. Optimise a Lead Generation campaign on Contact / Lead / CompleteRegistration.
+
+### 9.8 Privacy, consent, retention
+
+Same handling as Meta. The app has no per-lead consent record for Meta events
+today, so none gates TikTok either; consent belongs on the landing page (see
+section 8) and the privacy policy must name TikTok next to Meta and the
+cross-border transfer. Retention: visits without a tap 48 h, unlinked taps 30
+days (their `ttclid` goes with the row), and on linked clicks `ttclid` is nulled
+and stripped from `pageUrl` with the other device identifiers after
+`AD_CLICK_PII_RETENTION_DAYS`. Later stage events of such a lead go out with the
+hashed phone / email and external id only. `ttclid` lives in a first-party
+cookie + localStorage for 30 days (TikTok recommends at least 28).
+
+### 9.9 Open items to confirm with a real `test_event_code`
+
+* Maximum accepted `event_time` age / future tolerance (we skip after 7 days):
+  send backdated test events (8, 29, 60 days) and record accept / reject.
+* Back-office events (CompleteRegistration, Purchase days later) with the stored
+  `page.url` + `ttclid` are attributed normally (check reporting after 24 h).
+* Whether Ads Manager offers `CompleteRegistration` (and `Contact`) as the
+  optimisation goal of a website Lead Generation campaign.
+* Whether the Events Manager token expires (not documented): alert on 40001 /
+  40104 (the settings card does) and keep a re-generate runbook.
+* The report endpoint's exact limits (page size, max range per request, scope
+  names) and the `campaign/get` / `advertiser/info` field names come from
+  vendor docs and memory, not from the official pages we could read: verify with
+  the first real sync; the developer app needs reporting access approval first.
+* `__CID__` equals the report's `ad_id` (only the ids in `utm_*` are stored).
+* CRM events / deep-funnel optimisation need a TikTok `lead_id` for Website /
+  WhatsApp leads: not implemented (phase 2, only after a no-`lead_id` test event
+  is accepted).
+* TikTok's own WhatsApp messaging ads pass no click id and cannot feed this
+  pipeline; use ads that open the landing page.
+
+### 9.10 Testing
+
+`cd backend && npx jest src/modules/ad-tracking src/modules/crm`: attribution
+(`ad-attribution.spec.ts`), payload / hashing / config / error classification
+(`tiktok-events.payload.spec.ts`), routing, outbox lanes, dedupe, staleness,
+merge and sender (`tiktok-events.service.spec.ts`), snippet ttclid persistence
+(`monomi-track.spec.ts`), spend sync, auto-link, attribution and the OAuth helper
+(`crm/tiktok-ads/tiktok-ads.spec.ts`), stats (`crm-stats.spec.ts`). Locally,
+point `TIKTOK_EVENTS_API_BASE_URL` / `TIKTOK_ADS_API_BASE_URL` at a fake server;
+never call the real TikTok endpoints from tests.
