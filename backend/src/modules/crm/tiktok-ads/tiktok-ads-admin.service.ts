@@ -62,15 +62,20 @@ export class TikTokAdsAdminService {
     private readonly sync: TikTokAdsSyncService,
   ) {}
 
-  private canStore(): boolean {
+  /** TOKEN_ENCRYPTION_KEY: usable, not set, or set but not valid. */
+  private keyState(): "ok" | "missing" | "invalid" {
     const env = this.sync.env();
-    if (!env.TOKEN_ENCRYPTION_KEY?.trim()) return false;
+    if (!env.TOKEN_ENCRYPTION_KEY?.trim()) return "missing";
     try {
       resolveTokenKey(env);
-      return true;
+      return "ok";
     } catch {
-      return false;
+      return "invalid";
     }
+  }
+
+  private canStore(): boolean {
+    return this.keyState() === "ok";
   }
 
   async status(): Promise<TikTokAdsStatus> {
@@ -210,6 +215,14 @@ export class TikTokAdsAdminService {
     if (!cfg.appId || !cfg.appSecret) {
       throw new BadRequestException("TIKTOK_ADS_APP_ID dan TIKTOK_ADS_APP_SECRET belum diatur di server.");
     }
+    // Decided BEFORE the exchange: the auth_code is single use, and a plaintext token is never
+    // shown in production or when the configured key is broken.
+    const keyState = this.keyState();
+    if (keyState === "invalid" || (keyState === "missing" && this.sync.env().NODE_ENV === "production")) {
+      throw new BadRequestException(
+        "TOKEN_ENCRYPTION_KEY belum diatur atau tidak valid, jadi token tidak bisa disimpan dengan aman. Isi TOKEN_ENCRYPTION_KEY yang valid (openssl rand -base64 32), restart backend, lalu hubungkan lagi. Kode otorisasi belum dipakai.",
+      );
+    }
     let res: { status: number; json: any };
     try {
       res = await this.sync.http.request("POST", `${cfg.baseUrl}/open_api/v1.3/oauth2/access_token/`, {
@@ -222,7 +235,7 @@ export class TikTokAdsAdminService {
     const code = typeof res.json?.code === "number" ? res.json.code : null;
     const data = res.json?.data;
     if (res.status !== 200 || code !== 0 || typeof data?.access_token !== "string" || !data.access_token) {
-      const msg = scrubSecrets(String(res.json?.message ?? `HTTP ${res.status}`)).replace(cfg.appSecret, "[redacted]");
+      const msg = scrubSecrets(String(res.json?.message ?? `HTTP ${res.status}`)).split(cfg.appSecret).join("[redacted]");
       this.logger.warn(`TikTok OAuth exchange refused: code ${code ?? "-"}`);
       throw new BadRequestException(`TikTok menolak kode otorisasi: ${msg}`);
     }

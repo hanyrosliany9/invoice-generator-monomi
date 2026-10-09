@@ -380,6 +380,51 @@ describe("TikTok Ads sync", () => {
     });
   });
 
+  describe("auto-link never changes another platform's campaign", () => {
+    it("a CRM campaign whose platform is something else is not taken over: a new codeAuto campaign is created", async () => {
+      const { svc, t } = setup({}, { campaign: [{ id: "fb", name: "TT Okt Promo", code: "TT-OKT-PROMO", platform: "FACEBOOK", metaAdIds: [], tiktokCampaignId: null, metaCampaignId: null }] });
+      await svc.run("MANUAL");
+      expect(t.campaign.find((c) => c.id === "fb")).toMatchObject({ platform: "FACEBOOK", tiktokCampaignId: null });
+      expect(t.campaign.find((c) => c.tiktokCampaignId === C1)).toMatchObject({ code: "TT-OKT-PROMO-2", codeAuto: true, platform: "TIKTOK" });
+    });
+
+    it("a campaign whose platform is unset or already TIKTOK is still linked", async () => {
+      const { svc, t } = setup({}, {
+        campaign: [
+          { id: "unset", name: "TT Okt Promo", code: "TT-OKT-PROMO", platform: null, metaAdIds: [], tiktokCampaignId: null, metaCampaignId: null },
+          { id: "tt", name: "TT Brand Awareness", code: "BRAND", platform: "TIKTOK", metaAdIds: [], tiktokCampaignId: null, metaCampaignId: null },
+        ],
+      });
+      await svc.run("MANUAL");
+      expect(t.campaign.find((c) => c.id === "unset")).toMatchObject({ tiktokCampaignId: C1, platform: "TIKTOK" });
+      expect(t.campaign.find((c) => c.id === "tt")).toMatchObject({ tiktokCampaignId: C2 });
+      expect(t.campaign).toHaveLength(2);
+    });
+  });
+
+  describe("spend is never summed across currencies", () => {
+    it("TikTok in USD against a rupiah total is shown apart, not added", async () => {
+      const { svc, prisma, t } = setup({ currency: "USD" });
+      await svc.run("MANUAL");
+      const c1 = t.campaign.find((c) => c.tiktokCampaignId === C1);
+      const row: any = (await new CrmCampaignsService(prisma as any).list()).find((c: any) => c.id === c1.id);
+      expect(row).toMatchObject({ tiktokSpend: 250000.4, tiktokCurrency: "USD", tiktokSeparate: true, spend: 0, spendCurrency: "IDR" });
+    });
+
+    it("Meta in USD and TikTok in IDR: TikTok stays apart (and manual rupiah too); Meta in USD and TikTok in USD add up in USD", async () => {
+      const { tiktokSpendSeparate } = require("./tiktok-ads-spend");
+      expect(tiktokSpendSeparate("USD", "IDR")).toBe(true);
+      expect(tiktokSpendSeparate("IDR", "USD")).toBe(true);
+      expect(tiktokSpendSeparate("USD", "USD")).toBe(false);
+      expect(tiktokSpendSeparate("IDR", "IDR")).toBe(false);
+      const ctx = setup({ currency: "IDR" }, { metaAdsSyncState: [{ id: "default", currency: "USD", lastSuccessAt: NOW }] });
+      await ctx.svc.run("MANUAL");
+      const c1 = ctx.t.campaign.find((c) => c.tiktokCampaignId === C1);
+      const row: any = (await new CrmCampaignsService(ctx.prisma as any).list()).find((c: any) => c.id === c1.id);
+      expect(row).toMatchObject({ spendCurrency: "USD", tiktokCurrency: "IDR", tiktokSeparate: true, spend: 0 });
+    });
+  });
+
   describe("attribution by TikTok campaign id", () => {
     const click = (over: any) => ({ id: over.id, utmCampaign: null, campaignCode: null, leadId: null, ...over });
 
@@ -589,6 +634,49 @@ describe("TikTok Ads sync", () => {
       expect((await admin.status()).tokenSource).toBe("ENV");
       await admin.disconnect();
       expect(t.tikTokAdsSyncState[0]).toMatchObject({ tokenEnc: null, tokenKeyId: null, tokenAdvertiserIds: [] });
+    });
+
+    it("redacts EVERY occurrence of the app secret in a refusal message (split/join, not a first-match replace)", async () => {
+      const { admin, state } = withOAuth({ TOKEN_ENCRYPTION_KEY: ENC_KEY });
+      state.oauth = () => ({ status: 200, json: { code: 40110, message: `bad ${APP_SECRET} and again ${APP_SECRET} $& ${APP_SECRET}`, request_id: "R" } });
+      const err: any = await admin.connect("authcode_1234567890abcdef").catch((e) => e);
+      expect(err.status).toBe(400);
+      expect(JSON.stringify(err.response)).not.toContain(APP_SECRET);
+      expect(JSON.stringify(err.response)).toContain("[redacted]");
+    });
+
+    it("in production a plaintext token is NEVER returned: no key -> clear error, and the auth_code is not spent", async () => {
+      const { admin, calls, t } = withOAuth({ NODE_ENV: "production" });
+      const err: any = await admin.connect("authcode_1234567890abcdef").catch((e) => e);
+      expect(err.status).toBe(400);
+      expect(JSON.stringify(err.response)).toMatch(/TOKEN_ENCRYPTION_KEY/);
+      expect(JSON.stringify(err.response)).not.toContain(TOKEN);
+      expect(calls.filter((c) => c.path === "oauth2/access_token/")).toHaveLength(0);
+      expect(t.tikTokAdsSyncState).toHaveLength(0);
+    });
+
+    it("a key that is present but INVALID is the same error (in production and elsewhere), never a plaintext fallback", async () => {
+      for (const NODE_ENV of ["production", "test"]) {
+        const { admin, calls } = withOAuth({ NODE_ENV, TOKEN_ENCRYPTION_KEY: "not-a-valid-key" });
+        const err: any = await admin.connect("authcode_1234567890abcdef").catch((e) => e);
+        expect(err.status).toBe(400);
+        expect(JSON.stringify(err.response)).toMatch(/TOKEN_ENCRYPTION_KEY/);
+        expect(calls.filter((c) => c.path === "oauth2/access_token/")).toHaveLength(0);
+      }
+    });
+
+    it("with a valid key production stores the token encrypted as usual", async () => {
+      const { admin } = withOAuth({ NODE_ENV: "production", TOKEN_ENCRYPTION_KEY: ENC_KEY });
+      expect(await admin.connect("authcode_1234567890abcdef")).toEqual({ stored: true, advertiserIds: [ADV, "7000000000000002"] });
+    });
+
+    it("the connect response is sent with Cache-Control: no-store", async () => {
+      const { CrmController } = require("../crm.controller");
+      const res = { setHeader: jest.fn() };
+      const connect = jest.fn().mockResolvedValue({ stored: true, advertiserIds: [] });
+      await CrmController.prototype.tiktokAdsConnect.call({ tiktokAds: { connect } }, { authCode: "authcode_1234567890abcdef" }, res);
+      expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "no-store");
+      expect(connect).toHaveBeenCalledWith("authcode_1234567890abcdef");
     });
 
     it("a network failure during the exchange is a plain 400 (no internals)", async () => {

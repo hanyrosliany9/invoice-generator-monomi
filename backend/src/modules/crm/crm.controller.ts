@@ -10,8 +10,10 @@ import {
   Put,
   Query,
   Req,
+  Res,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import type { Response } from "express";
 import { RequireAdmin } from "../auth/decorators/auth.decorators";
 import { CrmCampaignsService } from "./crm-campaigns.service";
 import { CrmLeadsService } from "./crm-leads.service";
@@ -327,7 +329,9 @@ export class CrmController {
   @Post("tiktok-ads/connect")
   @HttpCode(200)
   @ApiOperation({ summary: "Connect TikTok Ads: exchange the OAuth auth_code for the long-term token (stored encrypted, never shown again)" })
-  tiktokAdsConnect(@Body() dto: ConnectTikTokAdsDto) {
+  tiktokAdsConnect(@Body() dto: ConnectTikTokAdsDto, @Res({ passthrough: true }) res: Response) {
+    // the response may hold a one-time token: never cached
+    res.setHeader("Cache-Control", "no-store");
     return this.tiktokAds.connect(dto.authCode);
   }
 

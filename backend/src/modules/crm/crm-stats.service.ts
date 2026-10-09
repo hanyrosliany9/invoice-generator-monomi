@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { loadMetaSpend } from "./meta-ads/meta-ads-spend";
-import { loadTikTokSpend } from "./tiktok-ads/tiktok-ads-spend";
+import { loadTikTokSpend, tiktokSpendSeparate } from "./tiktok-ads/tiktok-ads-spend";
 import { dateOnly, wibDateString } from "./meta-ads/meta-ads.utils";
 import { CrmSettingsService } from "./crm-settings.service";
 import {
@@ -204,7 +204,7 @@ export class CrmStatsService {
 
     // synced TikTok spend adds to the rupiah totals too (a foreign-currency account is kept apart)
     const tiktok = await loadTikTokSpend(this.prisma, { range, campaignId: params.campaignId });
-    const ttSeparate = tiktok.currency !== "IDR";
+    const ttSeparate = tiktokSpendSeparate(meta.currency, tiktok.currency);
     if (!ttSeparate) {
       for (const [cid, m] of tiktok.byCampaign) {
         spend += m.amount;

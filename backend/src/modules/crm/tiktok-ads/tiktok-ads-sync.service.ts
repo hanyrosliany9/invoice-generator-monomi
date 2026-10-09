@@ -435,7 +435,7 @@ export class TikTokAdsSyncService {
     rows: Map<string, { tiktokCampaignId: string; amount: number }>,
   ): Promise<number> {
     const existing = await this.prisma.campaign.findMany({
-      select: { id: true, code: true, name: true, metaCampaignId: true, tiktokCampaignId: true, tiktokCampaignName: true, tiktokStatus: true, tiktokObjective: true },
+      select: { id: true, code: true, name: true, platform: true, metaCampaignId: true, tiktokCampaignId: true, tiktokCampaignName: true, tiktokStatus: true, tiktokObjective: true },
     });
     const linked = new Map(existing.filter((c) => c.tiktokCampaignId).map((c) => [c.tiktokCampaignId as string, c]));
     const taken = new Set(existing.map((c) => c.code.toLowerCase()));
@@ -471,13 +471,14 @@ export class TikTokAdsSyncService {
 
       // An existing, still unlinked CRM campaign with the same (sanitised) code or name IS this
       // campaign: link it instead of creating a duplicate "-2". A campaign already linked to Meta
-      // is a Meta campaign, never taken over.
+      // is a Meta campaign, never taken over; nor is one whose platform is something else (only unset or TIKTOK).
       const base = sanitizeCampaignCode(info.name, id, "TT").toLowerCase();
       const wanted = info.name.trim().toLowerCase();
       const match = existing.find(
         (c: any) =>
           !c.tiktokCampaignId &&
           !c.metaCampaignId &&
+          (!c.platform || c.platform === "TIKTOK") &&
           !claimed.has(c.id) &&
           (c.code.toLowerCase() === base || c.code.toLowerCase() === wanted || c.name.trim().toLowerCase() === wanted),
       );

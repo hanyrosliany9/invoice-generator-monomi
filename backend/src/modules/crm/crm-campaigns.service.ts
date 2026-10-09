@@ -9,7 +9,7 @@ import {
 } from "./dto/crm.dto";
 import { campaignCostMetrics, maxReachedOrder } from "./crm.utils";
 import { loadMetaSpend } from "./meta-ads/meta-ads-spend";
-import { loadTikTokSpend } from "./tiktok-ads/tiktok-ads-spend";
+import { loadTikTokSpend, tiktokSpendSeparate } from "./tiktok-ads/tiktok-ads-spend";
 
 @Injectable()
 export class CrmCampaignsService {
@@ -39,8 +39,8 @@ export class CrmCampaignsService {
       loadMetaSpend(this.prisma),
       loadTikTokSpend(this.prisma),
     ]);
-    // a TikTok account in another currency is kept apart (never added to rupiah totals)
-    const ttSeparate = tiktok.currency !== "IDR";
+    // a TikTok account in another currency than the totals is kept apart (never summed across currencies)
+    const ttSeparate = tiktokSpendSeparate(meta.currency, tiktok.currency);
     const counts = new Map<string, { leads: number; qualified: number; won: number }>();
     for (const l of leadRows) {
       const e = counts.get(l.campaignId as string) ?? { leads: 0, qualified: 0, won: 0 };

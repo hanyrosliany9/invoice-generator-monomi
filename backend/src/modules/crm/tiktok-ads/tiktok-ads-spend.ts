@@ -50,3 +50,10 @@ export async function loadTikTokSpend(
   }
   return { byCampaign, currency, lastSyncAt: state?.lastSuccessAt ?? null };
 }
+
+/**
+ * The totals ("spend", cost per ...) are in ONE currency: the Meta account's (rupiah when it has
+ * none). TikTok spend is only added when its account is in that same currency; otherwise it is
+ * kept apart and shown in its own currency, never summed across currencies.
+ */
+export const tiktokSpendSeparate = (totalsCurrency: string, tiktokCurrency: string): boolean => tiktokCurrency !== totalsCurrency;
